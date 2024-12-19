@@ -21,18 +21,17 @@ def get_balance_responsible_parties(code=None, country=None, name=None):
     return response.json()
 
 
-def ingest_raw_data(code=None, country=None, name=None):
+def ingest_data(code=None, country=None, name=None):
     logger.info('Starting data ingestion...')
     data = get_balance_responsible_parties(code, country, name)
     logger.info(f'Ingested data: {data}')  # Log the ingested data
-    # Here you would typically store the data in a database or another entity
     return data
 
 
 if __name__ == '__main__':
-    # Example usage of ingest_raw_data
+    # Example usage of ingest_data
     try:
-        result = ingest_raw_data(code='some_code', country='FI', name='some_name')
+        result = ingest_data(code='some_code', country='FI', name='some_name')
         print(result)
     except Exception as e:
         logger.error(f'An error occurred: {e}')  # Log any error
@@ -50,10 +49,10 @@ class TestDataIngestion(unittest.TestCase):
         self.assertEqual(response, [{'id': 1, 'name': 'Responsible Party A', 'code': 'RP001', 'country': 'FI'}])
 
     @patch('requests.get')
-    def test_ingest_raw_data(self, mock_get):
+    def test_ingest_data(self, mock_get):
         mock_get.return_value.status_code = 200
         mock_get.return_value.json.return_value = [{'id': 1, 'name': 'Responsible Party A', 'code': 'RP001', 'country': 'FI'}]
-        result = ingest_raw_data(code='some_code', country='FI', name='some_name')
+        result = ingest_data(code='some_code', country='FI', name='some_name')
         self.assertIsInstance(result, list)
         self.assertGreater(len(result), 0)
 

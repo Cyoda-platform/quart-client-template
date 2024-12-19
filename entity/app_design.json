@@ -1,1 +1,1 @@
-{"can_proceed": false, "questions_to_answer": ["What specific endpoints from the API will provide the raw data?", "How frequently do you want the data ingestion to occur (e.g., scheduled, on-demand)?", "What format do you want the raw data to be stored in?", "Do you have any specific requirements for error handling or logging?", "Are there any authentication or API key requirements for accessing the API?"]}
+{"can_proceed": true, "questions_to_answer": []}

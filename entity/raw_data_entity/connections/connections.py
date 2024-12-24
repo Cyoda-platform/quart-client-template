@@ -1,4 +1,32 @@
-{
-    "summary": "Connection details summary: The connection is established with the name 'eSett Open Data API' using HTTP as the connection type. The base URL for the connection is 'https://api.opendata.esett.com', and it includes an endpoint '/EXP01/BalanceResponsibleParties' for retrieving a list of Balance Responsible Parties with options for querying by code, country, and name.",
-    "can_proceed": false
-}
+import requests
+
+BASE_URL = "https://api.opendata.esett.com"
+
+
+def get_balance_responsible_parties(code=None, country=None, name=None):
+    """Retrieve a list of Balance Responsible Parties based on optional parameters."""
+    endpoint = "/EXP01/BalanceResponsibleParties"
+    params = {}
+    if code:
+        params["code"] = code
+    if country:
+        params["country"] = country
+    if name:
+        params["name"] = name
+    response = requests.get(BASE_URL + endpoint, params=params)
+    return response.json()
+
+
+def ingest_data(code=None, country=None, name=None):
+    """Ingest data from the external data source."""
+    data = get_balance_responsible_parties(code, country, name)
+    print(data)
+
+
+def main():
+    # Test the ingest_data function
+    ingest_data(code="BRP123", country="FI", name="Example BRP")
+
+
+if __name__ == "__main__":
+    main()

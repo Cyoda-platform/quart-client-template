@@ -1,0 +1,48 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Entity data",
+    "entity": {
+        "report_id": "report_001",
+        "generated_at": "2023-10-01T10:00:00Z",
+        "report_title": "Monthly Data Analysis",
+        "summary": {
+            "total_entries": 150,
+            "successful_ingests": 145,
+            "failed_ingests": 5,
+            "percentage_success": 96.67
+        },
+        "details": [
+            {
+                "brpCode": "7080005051286",
+                "brpName": "\u00c5 Energi Vannkraft AS",
+                "country": "FI",
+                "businessId": "882973972",
+                "codingScheme": "GS1",
+                "validityStart": "2016-12-31T23:00:00",
+                "validityEnd": "2026-12-31T23:00:00",
+                "status": "Active"
+            },
+            {
+                "brpCode": "7080005051287",
+                "brpName": "B Energi Vannkraft AS",
+                "country": "FI",
+                "businessId": "882973973",
+                "codingScheme": "GS1",
+                "validityStart": "2018-01-01T00:00:00",
+                "validityEnd": "2028-01-01T00:00:00",
+                "status": "Inactive"
+            },
+            {
+                "brpCode": "7080005051288",
+                "brpName": "C Energi Vannkraft AS",
+                "country": "FI",
+                "businessId": "882973974",
+                "codingScheme": "GS1",
+                "validityStart": "2020-01-01T00:00:00",
+                "validityEnd": "2030-01-01T00:00:00",
+                "status": "Active"
+            }
+        ],
+        "comments": "Report generated for internal use to track data ingestion and processing."
+    }
+}

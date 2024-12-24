@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Answer schema",
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What email service or API should be used to send the email?",
+        "What content should be included in the email besides 'Hello World'?",
+        "Should the email be sent to a specific recipient or a list of recipients?",
+        "Is there any specific format required for the email (e.g., HTML, plain text)?",
+        "What should happen if the job fails to send the email?"
+    ]
+}

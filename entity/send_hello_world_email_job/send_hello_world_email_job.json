@@ -1,0 +1,29 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "entity": {
+        "job_id": "job_20231012",
+        "created_timestamp": "2023-10-12T12:00:00Z",
+        "scheduled_time": "2023-10-12T17:00:00Z",
+        "status": "scheduled",
+        "email_details": {
+            "subject": "Hello World from Mock Data",
+            "body": "This is a mock email generated for testing purposes.",
+            "recipient": "mockuser@example.com",
+            "sender": "mocksender@example.com",
+            "attachments": [
+                {
+                    "file_name": "sample_attachment.txt",
+                    "file_size": 1024,
+                    "file_type": "text/plain"
+                }
+            ]
+        },
+        "execution_details": {
+            "execution_status": "pending",
+            "start_time": null,
+            "end_time": null
+        },
+        "error_count": 0,
+        "last_modified_timestamp": "2023-10-12T12:00:00Z"
+    }
+}

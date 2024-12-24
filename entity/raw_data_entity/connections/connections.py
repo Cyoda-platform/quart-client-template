@@ -25,7 +25,7 @@ def ingest_data(code=None, country=None, name=None):
 
 def main():
     # Test the ingest_data function
-    ingest_data(code="BRP123", country="FI", name="Example BRP")
+    ingest_data(code="7080005051286", country="FI", name="")
 
 
 if __name__ == "__main__":

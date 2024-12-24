@@ -1,0 +1,10 @@
+{
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What is the format of the data being ingested from data source A?",
+        "What specific aggregation operations should be performed on the ingested data using pandas?",
+        "What should the report contain, and in what format should it be saved (e.g., CSV, Excel)?",
+        "What is the admin email address to which the report should be sent?",
+        "Are there any specific scheduling requirements (e.g., time of day for the ingestion)?"
+    ]
+}

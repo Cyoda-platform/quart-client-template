@@ -1,22 +1,28 @@
 {
+    "can_proceed": false,
     "entities": [
         {
-            "entity_name": "34g7M1ob",
-            "entity_type": "EXTERNAL_SOURCES_PUSH_BASED_RAW_DATA",
-            "entity_source": "SCHEDULED",
-            "depends_on_entity": "Kzw8SLjHojOQWbg",
+            "entity_name": "rgpHkw2xibqsVT5",
+            "entity_type": "CONFIG",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "9L9GzsM9aP",
             "entity_workflow": {
-                "name": "vfVpgjkoUZ95s",
+                "name": "nQFho5k",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": [
                     {
-                        "name": "MYFu7fX",
-                        "start_state": "0hhFDzZvis",
-                        "end_state": "15SOIX",
+                        "name": "8bCYeRNFwAww",
+                        "description": "CxpeeSqF5S33",
+                        "start_state": "vaWrtj",
+                        "end_state": "L0q6r",
+                        "criteria": {
+                            "name": "nJkU755JF",
+                            "description": "VP30Z"
+                        },
                         "process": {
-                            "name": "7B8fOmB",
-                            "description": "wdBw3LcEOMMK",
-                            "adds_new_entites": "PYtRjG3Zw0e"
+                            "name": "yL3zi3",
+                            "description": "cgSqjrU",
+                            "adds_new_entites": "qMV4u"
                         }
                     }
                 ]

@@ -13,9 +13,11 @@ class SendHelloWorldEmailJobScheduler:
 
     def schedule_job(self, token: str, data: dict) -> dict:
         # Save a job entity with data model $data to cyoda
+        logger.info("Scheduling job with data: %s", data)
         job_entity = self.entity_service.add_item(
             token, "send_hello_world_email_job", ENTITY_VERSION, data
         )
+        logger.info("Job scheduled successfully: %s", job_entity)
         return job_entity
 
 

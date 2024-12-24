@@ -1,0 +1,11 @@
+{
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What specific data source should we be ingesting the data from?",
+        "What format is the data in when it is ingested?",
+        "What specific aggregation operations need to be performed on the ingested data?",
+        "What kind of report should be generated, and what data should it include?",
+        "What email service should be used to send the report to the admin?",
+        "Are there any specific requirements for scheduling the data ingestion (e.g., time of day)?"
+    ]
+}

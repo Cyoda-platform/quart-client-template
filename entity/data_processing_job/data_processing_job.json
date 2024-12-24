@@ -1,6 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Entity data",
+    "title": "Improved Entity entity",
+    "can_proceed": true,
     "entity": {
         "job_id": "job_001",
         "job_name": "Data Processing Job",
@@ -24,6 +25,11 @@
             "source_name": "External API",
             "source_url": "https://api.example.com/data",
             "data_retrieval_method": "GET"
+        },
+        "request_parameters": {
+            "param1": "value1",
+            "param2": "value2",
+            "param3": "value3"
         },
         "recipients": [
             {

@@ -1,0 +1,11 @@
+{
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What is the data source A? Is it an API, a database, or something else?",
+        "What specific data fields need to be ingested from source A?",
+        "What format should the report be in (e.g., CSV, PDF)?",
+        "What is the structure of the report?",
+        "What is the email address of the admin to send the report to?",
+        "Are there any specific aggregation methods or functions to apply using pandas?"
+    ]
+}

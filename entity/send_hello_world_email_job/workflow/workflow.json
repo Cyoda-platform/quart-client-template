@@ -1,0 +1,51 @@
+{
+    "name": "send_hello_world_email_workflow",
+    "description": "Workflow to schedule and send 'Hello World' email.",
+    "workflow_criterias": {
+        "externalized_criterias": [],
+        "condition_criterias": []
+    },
+    "transitions": [
+        {
+            "name": "scheduled_email_job",
+            "description": "Triggered by a schedule to send a 'Hello World' email.",
+            "start_state": "None",
+            "start_state_description": "Initial state before the email is sent.",
+            "end_state": "email_sent",
+            "end_state_description": "Email has been successfully sent.",
+            "automated": true,
+            "transition_criterias": {
+                "externalized_criterias": [],
+                "condition_criterias": []
+            },
+            "processes": {
+                "schedule_transition_processors": [
+                    {
+                        "name": "send_email_process",
+                        "description": "Process to send 'Hello World' email at 5 PM every day.",
+                        "delay_ms": "0",
+                        "timeout_ms": "0",
+                        "transition_name": "email_sent",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criterias": {
+                            "externalized_criterias": [
+                                {
+                                    "name": "email_calculation",
+                                    "description": "Calculation for sending email.",
+                                    "calculation_nodes_tags": "dd6c484f-c249-11ef-a937-40c2ba0ac9eb",
+                                    "attach_entity": false,
+                                    "calculation_response_timeout_ms": "5000",
+                                    "retry_policy": "FIXED"
+                                }
+                            ],
+                            "condition_criterias": []
+                        }
+                    }
+                ],
+                "externalized_processors": []
+            }
+        }
+    ]
+}

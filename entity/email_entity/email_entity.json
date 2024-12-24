@@ -1,0 +1,11 @@
+{
+    "entity": {
+        "id": "email-12345",
+        "subject": "Hello World",
+        "body": "This is a sample email to say Hello World!",
+        "sender": "noreply@example.com",
+        "recipient": "user@example.com",
+        "sent_timestamp": "2023-10-12T17:00:00Z",
+        "status": "sent"
+    }
+}

@@ -3,7 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 from common.app_init import entity_service, ai_service
-from common.config.config import TRINO_AI_API
+from common.config.config import TRINO_AI_API, ENTITY_VERSION
 from common.service.trino_service import get_trino_schema_id_by_entity_name
 
 logging.basicConfig(level=logging.INFO)
@@ -29,7 +29,7 @@ def create_report(meta, data):
             "report_title": "Monthly Data Processing Report",
             "content": report_content,
         }
-        entity_service.add_item(meta["token"], "report_entity", "1.0", report_data)
+        entity_service.add_item(meta["token"], "report_entity", ENTITY_VERSION, report_data)
         logger.info("Report generated and saved successfully.")
     except Exception as e:
         logger.error(f"Error generating report: {e}")

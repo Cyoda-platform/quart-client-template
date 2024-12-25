@@ -1,0 +1,43 @@
+{
+    "name": "report_workflow",
+    "description": "Workflow to generate reports from ingested data.",
+    "workflow_criterias": {
+        "externalized_criterias": [],
+        "condition_criterias": []
+    },
+    "transitions": [
+        {
+            "name": "generate_report",
+            "description": "Generate report from the ingested data.",
+            "start_state": "None",
+            "start_state_description": "Initial state",
+            "end_state": "report_generated",
+            "end_state_description": "A report has been generated",
+            "automated": true,
+            "transition_criterias": {
+                "externalized_criterias": [],
+                "condition_criterias": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "create_report",
+                        "description": "Aggregate data and create a report.",
+                        "calculation_nodes_tags": "7b5ccb57-c30d-11ef-b134-40c2ba0ac9eb",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "5000",
+                        "retry_policy": "FIXED",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criterias": {
+                            "externalized_criterias": [],
+                            "condition_criterias": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

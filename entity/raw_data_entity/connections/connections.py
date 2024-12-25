@@ -15,7 +15,7 @@ def get_balance_responsible_parties(code=None, country=None, name=None):
     return response.json() if response.status_code == 200 else response.text
 
 
-def ingest_data(code=None, country=None, name=None):
+def ingest_raw_data(code=None, country=None, name=None):
     data = get_balance_responsible_parties(code, country, name)
     print("Retrieved Data:", data)
     return data
@@ -24,7 +24,7 @@ def ingest_data(code=None, country=None, name=None):
 def main():
     # Example test call to ingest_data
     print("Testing ingest_data function...")
-    ingest_data(code="7080005051286", country="FI", name="")
+    ingest_raw_data(code="7080005051286", country="FI", name="")
 
 
 if __name__ == "__main__":

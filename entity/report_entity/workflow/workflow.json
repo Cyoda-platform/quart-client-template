@@ -26,7 +26,7 @@
                         "description": "Aggregate data and create a report.",
                         "calculation_nodes_tags": "7b5ccb57-c30d-11ef-b134-40c2ba0ac9eb",
                         "attach_entity": true,
-                        "calculation_response_timeout_ms": "5000",
+                        "calculation_response_timeout_ms": "120000",
                         "retry_policy": "FIXED",
                         "sync_process": true,
                         "new_transaction_for_async": false,

@@ -1,4 +1,31 @@
-{
-    "summary": "The connection details include the following information: The API is titled 'eSett open data API' and is at version '0.0.1'. The server URL is 'https://api.opendata.esett.com'. The available endpoint '/EXP01/BalanceResponsibleParties' allows users to retrieve a list of Balance Responsible Parties (BRPs) using a GET method. This endpoint accepts optional query parameters: 'code' for a free text search of BRP code, 'country' which is a two-letter ISO code with an example of 'FI', and 'name' for a free text search of BRP name. The responses include a successful response (200) with a JSON array of BRPs, a no-content response (204), and a validation error response (400). Each BRP is described by the 'BalanceResponsiblePartyDTO' schema detailing properties such as 'brpCode', 'brpName', 'businessId', 'codingScheme', and 'country'.",
-    "can_proceed": false
-}
+import requests
+
+API_URL = "https://api.opendata.esett.com"
+
+
+def get_balance_responsible_parties(code=None, country=None, name=None):
+    params = {}
+    if code:
+        params["code"] = code
+    if country:
+        params["country"] = country
+    if name:
+        params["name"] = name
+    response = requests.get(f"{API_URL}/EXP01/BalanceResponsibleParties", params=params)
+    return response.json() if response.status_code == 200 else response.text
+
+
+def ingest_data(code=None, country=None, name=None):
+    data = get_balance_responsible_parties(code, country, name)
+    print("Retrieved Data:", data)
+    return data
+
+
+def main():
+    # Example test call to ingest_data
+    print("Testing ingest_data function...")
+    ingest_data(code="some_code", country="FI", name="some_name")
+
+
+if __name__ == "__main__":
+    main()

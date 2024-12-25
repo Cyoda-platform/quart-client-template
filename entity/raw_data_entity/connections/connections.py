@@ -24,7 +24,7 @@ def ingest_data(code=None, country=None, name=None):
 def main():
     # Example test call to ingest_data
     print("Testing ingest_data function...")
-    ingest_data(code="some_code", country="FI", name="some_name")
+    ingest_data(code="7080005051286", country="FI", name="")
 
 
 if __name__ == "__main__":

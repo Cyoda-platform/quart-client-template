@@ -1,21 +1,18 @@
 {
-    "can_proceed": true,
-    "entity": {
-        "aggregated_data_summary": {
-            "total_active_brps": 2,
-            "total_inactive_brps": 1,
-            "active_brps_by_country": {
-                "FI": 2
-            },
-            "overall_data_quality": "High",
-            "reason_for_inactivity": "Pending renewal of license."
-        },
-        "comments": "This report summarizes the data ingestion for the month.",
-        "generated_at": "2023-10-01T10:00:00Z",
-        "percentage_success": 96.67,
-        "report_id": "report_001",
-        "report_title": "Monthly Data Processing Report",
-        "successful_ingests": 145,
-        "total_entries": 150
-    }
+  "aggregated_data_summary": {
+    "total_active_brps": 2,
+    "total_inactive_brps": 1,
+    "active_brps_by_country": {
+      "FI": 2
+    },
+    "overall_data_quality": "High",
+    "reason_for_inactivity": "Pending renewal of license."
+  },
+  "comments": "This report summarizes the data ingestion for the month.",
+  "generated_at": "2023-10-01T10:00:00Z",
+  "percentage_success": 96.67,
+  "report_id": "report_001",
+  "report_title": "Monthly Data Processing Report",
+  "successful_ingests": 145,
+  "total_entries": 150
 }

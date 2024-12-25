@@ -1,5 +1,6 @@
 from common.app_init import entity_service
 from common.auth.auth import authenticate
+from common.config.config import ENTITY_VERSION
 
 
 def data_ingestion_job_scheduler(token: str, data: dict) -> dict:

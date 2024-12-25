@@ -1,0 +1,4 @@
+{
+    "summary": "The connection details include the following information: The API is titled 'eSett open data API' and is at version '0.0.1'. The server URL is 'https://api.opendata.esett.com'. The available endpoint '/EXP01/BalanceResponsibleParties' allows users to retrieve a list of Balance Responsible Parties (BRPs) using a GET method. This endpoint accepts optional query parameters: 'code' for a free text search of BRP code, 'country' which is a two-letter ISO code with an example of 'FI', and 'name' for a free text search of BRP name. The responses include a successful response (200) with a JSON array of BRPs, a no-content response (204), and a validation error response (400). Each BRP is described by the 'BalanceResponsiblePartyDTO' schema detailing properties such as 'brpCode', 'brpName', 'businessId', 'codingScheme', and 'country'.",
+    "can_proceed": false
+}

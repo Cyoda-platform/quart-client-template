@@ -60,17 +60,19 @@ def init_trino(entity_name, token):
     resp = send_get_request(token=token, api_url=CYODA_API_URL, path="treeNode/model/")
     trino_models = resp.json()
     for model in trino_models:
-        if model['modelName'] == entity_name:
+        if model['modelName'] == entity_name and str(model['modelVersion']) == str(ENTITY_VERSION):
             model_details = send_get_request(token=token, api_url=CYODA_API_URL,
-                                             path=f"/sql/schema/genTables/{model['id']}")
+                                             path=f"sql/schema/genTables/{model['id']}")
             data = {
+                "id": None,
                 "schemaName": entity_name,
-                "tables:": model_details.json()
+                "tables": model_details.json()
             }
             resp = send_post_request(token=token, api_url=CYODA_API_URL, path="sql/schema/", data=json.dumps(data))
             chat_id = resp.json()
             ai_service.init_trino_chat(token=token, chat_id=chat_id, schema_name=entity_name)
             trino_models_config[entity_name] = chat_id
+            break
     config_file_path = entity_dir / 'config.json'
     with open(config_file_path, 'w') as file:
         # Write the dictionary as JSON

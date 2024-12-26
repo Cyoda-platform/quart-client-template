@@ -1,20 +1,9 @@
 {
-    "entity": {
-        "aggregated_data": [
-            {
-                "country": "FI",
-                "total_brp": 5,
-                "total_business_id": 5,
-                "validity_start": "2016-12-31T23:00:00",
-                "validity_end": "2026-12-31T23:00:00"
-            },
-            {
-                "country": "SE",
-                "total_brp": 3,
-                "total_business_id": 3,
-                "validity_start": "2017-01-01T00:00:00",
-                "validity_end": "2027-01-01T00:00:00"
-            }
-        ]
-    }
+  "aggregated_data": {
+    "country": "FI",
+    "total_brp": 5,
+    "total_business_id": 5,
+    "validity_start": "2016-12-31T23:00:00",
+    "validity_end": "2026-12-31T23:00:00"
+  }
 }

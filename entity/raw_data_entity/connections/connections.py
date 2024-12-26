@@ -16,5 +16,5 @@ def ingest_data(code=None, country=None, name=None):
 
 
 if __name__ == "__main__":
-    test_data = ingest_data(country="FI")
+    test_data = ingest_data(code='7080005051286', country="FI")
     print(test_data)

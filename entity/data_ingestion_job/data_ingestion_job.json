@@ -4,12 +4,12 @@
         "status": "completed",
         "start_time": "2023-10-05T10:00:00Z",
         "end_time": "2023-10-05T11:30:00Z",
-        "raw_entity_link": "/entity/raw_data_entity/raw_data_entity.json",
-        "aggregated_entity_link": "/entity/aggregated_data_entity/aggregated_data_entity.json",
+        "raw_entity_id": "",
+        "aggregated_entity_id": "",
         "parameters": {
             "country": "FI",
-            "code": "7080005051286",
-            "name": "\u00c5 Energi Vannkraft AS"
+            "code": "",
+            "name": ""
         }
     }
 }

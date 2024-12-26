@@ -1,10 +1,7 @@
 {
-    "can_proceed": true,
-    "entity": {
-        "summary": {
-            "valid_brps": 1,
-            "invalid_brps": 0,
-            "notes": "All BRPs in this batch are valid and have correct licensing details."
-        }
-    }
+  "summary": {
+    "valid_brps": 1,
+    "invalid_brps": 0,
+    "notes": "All BRPs in this batch are valid and have correct licensing details."
+  }
 }

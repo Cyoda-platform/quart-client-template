@@ -1,5 +1,9 @@
+import logging
+
 import requests
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def get_balance_responsible_parties(code=None, country=None, name=None):
     url = "https://api.opendata.esett.com/EXP01/BalanceResponsibleParties"
@@ -16,11 +20,12 @@ def get_balance_responsible_parties(code=None, country=None, name=None):
 
 def ingest_data(code=None, country=None, name=None):
     data = get_balance_responsible_parties(code, country, name)
-    print("Data ingested:", data)
+    logger.info(data)
+    return data
 
 
 def main():
-    ingest_data(code="BRP123", country="FI", name="Sample BRP")
+    ingest_data(code="579000282425", country="", name="")
 
 
 if __name__ == "__main__":

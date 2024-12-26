@@ -1,0 +1,33 @@
+{
+    "entity": {
+        "report_id": "report_123",
+        "generated_at": "2023-10-05T14:30:00Z",
+        "report_title": "Quarterly Performance Review",
+        "summary": {
+            "total_entries": 200,
+            "successful_entries": 195,
+            "failed_entries": 5,
+            "percentage_success": 97.5,
+            "average_processing_time_ms": 300,
+            "max_processing_time_ms": 600,
+            "min_processing_time_ms": 150
+        },
+        "details": {
+            "data_source": {
+                "source_name": "Internal Database",
+                "source_url": "https://internal.example.com/data",
+                "data_retrieval_method": "SQL Query"
+            },
+            "recipients": [
+                {
+                    "name": "Manager",
+                    "email": "manager@example.com"
+                },
+                {
+                    "name": "Analyst",
+                    "email": "analyst@example.com"
+                }
+            ]
+        }
+    }
+}

@@ -1,4 +1,5 @@
 {
+    "can_proceed": true,
     "entity": {
         "job_id": "job_001",
         "job_name": "Data Processing Job",
@@ -7,6 +8,11 @@
             "source_name": "External API",
             "source_url": "https://api.example.com/data",
             "data_retrieval_method": "GET"
+        },
+        "request_parameters": {
+            "code": "7080005051286",
+            "country": "FI",
+            "name": "Sample BRP"
         },
         "recipients": [
             {

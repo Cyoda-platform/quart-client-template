@@ -1,0 +1,19 @@
+{
+    "entity": {
+        "report_id": "report_001",
+        "generated_at": "2023-10-01T10:00:00Z",
+        "report_title": "Monthly Data Processing Report",
+        "summary": {
+            "total_entries": 150,
+            "successful_ingests": 145,
+            "failed_ingests": 5,
+            "percentage_success": 96.67,
+            "total_active_brps": 2,
+            "total_inactive_brps": 1
+        },
+        "distribution_info": {
+            "sent_at": "2023-10-01T10:05:00Z",
+            "communication_method": "Email"
+        }
+    }
+}

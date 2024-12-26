@@ -46,7 +46,6 @@
                         "process": {
                             "name": "generate_report_process",
                             "description": "Process to create a report and send it via email.",
-                            "adds_new_entites": "report_entity"
                         }
                     }
                 ]

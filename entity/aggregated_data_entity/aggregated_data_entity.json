@@ -1,0 +1,24 @@
+{
+    "entity": {
+        "aggregated_data": [
+            {
+                "brpCode": "579000282425",
+                "brpName": "42 Renaissance ApS",
+                "country": "DK",
+                "businessId": "44689979",
+                "codingScheme": "GS1",
+                "validityPeriod": {
+                    "validityStart": "2024-06-27T22:00:00",
+                    "validityEnd": "2026-12-31T23:00:00"
+                }
+            }
+        ],
+        "aggregation_timestamp": "2023-10-01T10:00:00Z",
+        "total_entries": 1,
+        "summary": {
+            "valid_brps": 1,
+            "invalid_brps": 0,
+            "notes": "All BRPs in this batch are valid and have correct licensing details."
+        }
+    }
+}

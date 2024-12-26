@@ -1,0 +1,36 @@
+{
+    "entity": {
+        "aggregated_data_entries": [
+            {
+                "brpCode": "7080005051286",
+                "totalConsumption": 5000,
+                "totalProduction": 4500,
+                "netBalance": -500,
+                "reportDate": "2023-09-30",
+                "validityStart": "2023-09-01T00:00:00",
+                "validityEnd": "2023-09-30T23:59:59",
+                "additionalInfo": "Data reflects monthly aggregation."
+            },
+            {
+                "brpCode": "7080005051288",
+                "totalConsumption": 6000,
+                "totalProduction": 6500,
+                "netBalance": 500,
+                "reportDate": "2023-09-30",
+                "validityStart": "2023-09-01T00:00:00",
+                "validityEnd": "2023-09-30T23:59:59",
+                "additionalInfo": "Data reflects monthly aggregation."
+            },
+            {
+                "brpCode": "7080005051287",
+                "totalConsumption": 3000,
+                "totalProduction": 2000,
+                "netBalance": -1000,
+                "reportDate": "2023-09-30",
+                "validityStart": "2023-09-01T00:00:00",
+                "validityEnd": "2023-09-30T23:59:59",
+                "additionalInfo": "Data reflects monthly aggregation."
+            }
+        ]
+    }
+}

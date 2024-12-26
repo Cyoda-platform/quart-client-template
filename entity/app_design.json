@@ -1,14 +1,15 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Cyoda design",
+    "title": "Improved Cyoda design",
+    "can_proceed": true,
     "entities": [
         {
-            "entity_name": "data_ingestion_job",
+            "entity_name": "data_processing_job",
             "entity_type": "JOB",
             "entity_source": "SCHEDULED",
             "depends_on_entity": "None",
             "entity_workflow": {
-                "name": "data_ingestion_workflow",
+                "name": "data_processing_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": [
                     {
@@ -23,30 +24,7 @@
                             "description": "Process to ingest raw data from the specified data source.",
                             "adds_new_entites": "raw_data_entity"
                         }
-                    }
-                ]
-            }
-        },
-        {
-            "entity_name": "raw_data_entity",
-            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
-            "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "data_ingestion_job",
-            "entity_workflow": {
-                "name": "raw_data_workflow",
-                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": []
-            }
-        },
-        {
-            "entity_name": "data_aggregation_job",
-            "entity_type": "JOB",
-            "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "data_ingestion_job",
-            "entity_workflow": {
-                "name": "data_aggregation_workflow",
-                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": [
+                    },
                     {
                         "name": "aggregate_data",
                         "description": "Aggregate the ingested raw data.",
@@ -59,30 +37,7 @@
                             "description": "Process to aggregate raw data for reporting.",
                             "adds_new_entites": "aggregated_data_entity"
                         }
-                    }
-                ]
-            }
-        },
-        {
-            "entity_name": "aggregated_data_entity",
-            "entity_type": "SECONDARY_DATA",
-            "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "data_aggregation_job",
-            "entity_workflow": {
-                "name": "aggregated_data_workflow",
-                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": []
-            }
-        },
-        {
-            "entity_name": "report_generation_job",
-            "entity_type": "JOB",
-            "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "data_aggregation_job",
-            "entity_workflow": {
-                "name": "report_generation_workflow",
-                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": [
+                    },
                     {
                         "name": "generate_and_send_report",
                         "description": "Generate a report from aggregated data and send it to admin email.",
@@ -100,10 +55,32 @@
             }
         },
         {
+            "entity_name": "raw_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_processing_job",
+            "entity_workflow": {
+                "name": "raw_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "aggregated_data_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_processing_job",
+            "entity_workflow": {
+                "name": "aggregated_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
             "entity_name": "report_entity",
             "entity_type": "SECONDARY_DATA",
             "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "report_generation_job",
+            "depends_on_entity": "data_processing_job",
             "entity_workflow": {
                 "name": "report_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",

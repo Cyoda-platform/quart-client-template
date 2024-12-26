@@ -2,7 +2,6 @@ import logging
 from common.app_init import entity_service
 from common.service.raw_data_ingestion import ingest_data
 from common.service.trino_service import get_trino_schema_id_by_entity_name
-from common.ai.ai_assistant_service import IAiAssistantService
 import json
 
 logging.basicConfig(level=logging.INFO)

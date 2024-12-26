@@ -1,1 +1,27 @@
-import requests\n\ndef get_balance_responsible_parties(code=None, country=None, name=None):\n    url = 'https://api.opendata.esett.com/EXP01/BalanceResponsibleParties'\n    params = {}\n    if code:\n        params['code'] = code\n    if country:\n        params['country'] = country\n    if name:\n        params['name'] = name\n    response = requests.get(url, params=params)\n    return response.json() if response.status_code == 200 else response.text\n\ndef ingest_data(code=None, country=None, name=None):\n    data = get_balance_responsible_parties(code, country, name)\n    print('Data ingested:', data)\n\ndef main():\n    ingest_data(code='BRP123', country='FI', name='Sample BRP')\n\nif __name__ == '__main__':\n    main()
+import requests
+
+
+def get_balance_responsible_parties(code=None, country=None, name=None):
+    url = "https://api.opendata.esett.com/EXP01/BalanceResponsibleParties"
+    params = {}
+    if code:
+        params["code"] = code
+    if country:
+        params["country"] = country
+    if name:
+        params["name"] = name
+    response = requests.get(url, params=params)
+    return response.json() if response.status_code == 200 else response.text
+
+
+def ingest_data(code=None, country=None, name=None):
+    data = get_balance_responsible_parties(code, country, name)
+    print("Data ingested:", data)
+
+
+def main():
+    ingest_data(code="BRP123", country="FI", name="Sample BRP")
+
+
+if __name__ == "__main__":
+    main()

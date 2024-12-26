@@ -15,7 +15,7 @@ def get_balance_responsible_parties(code=None, country=None, name=None):
     return response.json() if response.status_code == 200 else response.text
 
 
-def ingest_raw_data(code=None, country=None, name=None):
+def ingest_raw_data(code, country, name):
     data = get_balance_responsible_parties(code, country, name)
     print("Retrieved Data:", data)
     return data

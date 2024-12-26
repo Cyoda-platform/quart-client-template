@@ -11,6 +11,7 @@ API_V_CYODA_ = "api/v1/cyoda"
 API_V_WORKFLOWS_ = "api/v1/workflows"
 API_V_RANDOM_ = "api/v1/random"
 API_V_TRINO_ = "api/v1/trino"
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,6 +63,12 @@ class AiAssistantService(IAiAssistantService):
     def init_random_chat(self, token, chat_id):
         data = json.dumps({"chat_id": f"{chat_id}"})
         resp = send_post_request(token, CYODA_AI_URL, "%s/initial" % API_V_RANDOM_, data)
+        return resp.json()
+
+
+    def init_trino_chat(self, token, chat_id, schema_name):
+        data = json.dumps({"chat_id": f"{chat_id}", "schema_name": f"{schema_name}"})
+        resp = send_post_request(token, CYODA_AI_URL, "%s/initial" % API_V_TRINO_, data)
         return resp.json()
 
 

@@ -3,8 +3,8 @@ import unittest
 from unittest.mock import patch
 
 from common.app_init import entity_service
-from entity.raw_data_entity.connections.connections import ingest_raw_data
 from common.config.config import ENTITY_VERSION
+from entity.raw_data_entity.connections.connections import ingest_raw_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -19,15 +19,17 @@ def ingest_data(meta, data):
         # Call the external API to retrieve data
         raw_data = ingest_raw_data(code, country, name)
         # Save the raw data to the raw_data_entity
-        raw_data_entity_data = {
-            "brpCode": raw_data.get("brpCode"),
-            "brpName": raw_data.get("brpName"),
-            "country": raw_data.get("country"),
-            "businessId": raw_data.get("businessId"),
-            "codingScheme": raw_data.get("codingScheme"),
-            "validityStart": raw_data.get("validityStart"),
-            "validityEnd": raw_data.get("validityEnd"),
-        }
+        raw_data_entity_data = []
+        for item in raw_data:
+            raw_data_entity_data.append({
+                    "brpCode": item.get("brpCode"),
+                    "brpName": item.get("brpName"),
+                    "country": item.get("country"),
+                    "businessId": item.get("businessId"),
+                    "codingScheme": item.get("codingScheme"),
+                    "validityStart": item.get("validityStart"),
+                    "validityEnd": item.get("validityEnd"),
+                })
         entity_service.add_item(
             meta["token"], "raw_data_entity", ENTITY_VERSION, raw_data_entity_data
         )
@@ -38,31 +40,11 @@ def ingest_data(meta, data):
 
 
 class TestDataIngestionJob(unittest.TestCase):
-    @patch("common.app_init.entity_service.add_item")
-    @patch("entity.raw_data_entity.connections.connections.ingest_raw_data")
-    def test_ingest_data(self, mock_ingest_raw_data, mock_entity_service):
+    @patch("workflow.ingest_raw_data")
+    @patch("common.app_init.entity_service.add_item")  # Inner decorator
+    def test_ingest_data(self, mock_entity_service, mock_ingest_raw_data):
         # Arrange
-        mock_ingest_raw_data.return_value = {
-            "brpCode": "7080005051286",
-            "brpName": "Example Name",
-            "country": "FI",
-            "businessId": "123456789",
-            "codingScheme": "GS1",
-            "validityStart": "2023-01-01",
-            "validityEnd": "2025-01-01"
-        }
-        mock_entity_service.return_value = "raw_data_entity_id"
-        meta = {"token": "test_token"}
-        data = {"request_parameters": {"code": "7080005051286", "country": "FI", "name": ""}}
-
-        # Act
-        ingest_data(meta, data)
-
-        # Assert
-        mock_entity_service.assert_called_once_with(
-            meta["token"],
-            "raw_data_entity",
-            ENTITY_VERSION,
+        mock_ingest_raw_data.return_value = [
             {
                 "brpCode": "7080005051286",
                 "brpName": "Example Name",
@@ -72,6 +54,37 @@ class TestDataIngestionJob(unittest.TestCase):
                 "validityStart": "2023-01-01",
                 "validityEnd": "2025-01-01"
             }
+        ]
+        mock_entity_service.return_value = "raw_data_entity_id"
+
+        meta = {"token": "test_token"}
+        data = {
+            "request_parameters": {
+                "code": "7080005051286",
+                "country": "FI",
+                "name": ""
+            }
+        }
+
+        # Act
+        ingest_data(meta, data)
+
+        # Assert
+        mock_entity_service.assert_called_once_with(
+            meta["token"],
+            "raw_data_entity",
+            ENTITY_VERSION,
+            [
+                {
+                    "brpCode": "7080005051286",
+                    "brpName": "Example Name",
+                    "country": "FI",
+                    "businessId": "123456789",
+                    "codingScheme": "GS1",
+                    "validityStart": "2023-01-01",
+                    "validityEnd": "2025-01-01"
+                }
+            ]
         )
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 # Load environment variables
 CYODA_AI_URL = os.getenv("CYODA_AI_URL")
-API_URL = os.getenv("CYODA_API_URL") + "/api"
+CYODA_API_URL = os.getenv("CYODA_API_URL") + "/api"
 decoded_bytes_cyoda_api_key = base64.b64decode(os.getenv("CYODA_API_KEY"))
 API_KEY = decoded_bytes_cyoda_api_key.decode("utf-8")
 decoded_bytes_cyoda_api_secret = base64.b64decode(os.getenv("CYODA_API_SECRET"))
@@ -26,3 +26,4 @@ MOCK_AI = os.getenv("MOCK_AI",  "false")
 CONNECTION_AI_API = os.getenv("CONNECTION_AI_API")
 RANDOM_AI_API = os.getenv("RANDOM_AI_API")
 TRINO_AI_API = os.getenv("TRINO_AI_API")
+CHAT_ID = os.getenv("CHAT_ID")

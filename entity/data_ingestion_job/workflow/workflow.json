@@ -1,43 +1,62 @@
 {
-    "name": "data_ingestion_workflow",
-    "description": "Workflow for ingesting data from specified data sources.",
-    "workflow_criterias": {
+  "name": "data_ingestion_workflow",
+  "description": "Workflow for ingesting data from specified data sources.",
+  "workflow_criterias":{
+      "externalized_criterias":[
+
+      ],
+      "condition_criterias":[
+         {
+            "name":"data_ingestion_job",
+            "description":"Checks whether the entity model is valid.",
+            "condition":{
+               "group_condition_operator":"AND",
+               "conditions":[
+                  {
+                     "field_name":"entityModelName",
+                     "is_meta_field": true,
+                     "operation":"equals",
+                     "value":"data_ingestion_job",
+                     "value_type":"strings"
+                  }
+               ]
+            }
+         }
+      ]
+   },
+  "transitions": [
+    {
+      "name": "scheduled_data_ingestion",
+      "description": "Triggered by a schedule to ingest data from the specified data source.",
+      "start_state": "None",
+      "start_state_description": "Initial state",
+      "end_state": "data_ingested",
+      "end_state_description": "Data has been ingested.",
+      "automated": true,
+      "transition_criterias": {
         "externalized_criterias": [],
         "condition_criterias": []
-    },
-    "transitions": [
-        {
-            "name": "scheduled_data_ingestion",
-            "description": "Triggered by a schedule to ingest data from the specified data source.",
-            "start_state": "None",
-            "start_state_description": "Initial state",
-            "end_state": "data_ingested",
-            "end_state_description": "Data has been ingested.",
-            "automated": true,
-            "transition_criterias": {
-                "externalized_criterias": [],
-                "condition_criterias": []
-            },
-            "processes": {
-                "schedule_transition_processors": [],
-                "externalized_processors": [
-                    {
-                        "name": "ingest_data",
-                        "description": "Ingest data from the specified source.",
-                        "calculation_nodes_tags": "7b5ccb57-c30d-11ef-b134-40c2ba0ac9eb",
-                        "attach_entity": true,
-                        "calculation_response_timeout_ms": "5000",
-                        "retry_policy": "FIXED",
-                        "sync_process": true,
-                        "new_transaction_for_async": false,
-                        "none_transactional_for_async": false,
-                        "processor_criterias": {
-                            "externalized_criterias": [],
-                            "condition_criterias": []
-                        }
-                    }
-                ]
+      },
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "ingest_data",
+            "description": "Ingest data from the specified source.",
+            "calculation_nodes_tags": "7b5ccb57-c30d-11ef-b134-40c2ba0ac9eb",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "5000",
+            "retry_policy": "FIXED",
+            "sync_process": true,
+            "new_transaction_for_async": false,
+            "none_transactional_for_async": false,
+            "processor_criterias": {
+              "externalized_criterias": [],
+              "condition_criterias": []
             }
-        }
-    ]
+          }
+        ]
+      }
+    }
+  ]
 }

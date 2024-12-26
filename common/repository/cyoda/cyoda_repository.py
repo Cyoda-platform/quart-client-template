@@ -5,7 +5,7 @@ from typing import List, Any, Optional
 
 import logging
 
-from common.config.config import API_URL
+from common.config.config import CYODA_API_URL
 from common.repository.crud_repository import CrudRepository
 from common.util.utils import *
 
@@ -178,7 +178,7 @@ class CyodaRepository(CrudRepository):
         path = f"entity/JSON/TREE/{entity_name}/{version}"
 
         try:
-            response = send_post_request(token=token, api_url=API_URL, path=path, data=data)
+            response = send_post_request(token=token, api_url=CYODA_API_URL, path=path, data=data)
             if response.status_code == 200:
                 logger.info(
                     f"Successfully saved schema for entity '{entity_name}' with version '{version}'. Response: {response}")
@@ -198,7 +198,7 @@ class CyodaRepository(CrudRepository):
         path = f"treeNode/model/{entity_name}/{version}/lock"
 
         try:
-            response = send_put_request(token=token, api_url=API_URL, path=path, data=data)
+            response = send_put_request(token=token, api_url=CYODA_API_URL, path=path, data=data)
 
             if response.status_code == 200:
                 logger.info(
@@ -216,7 +216,7 @@ class CyodaRepository(CrudRepository):
     @staticmethod
     def _model_exists(token, entity_name, version) -> bool:
         export_model_path = f"treeNode/model/export/SIMPLE_VIEW/{entity_name}/{version}"
-        response = send_get_request(token, API_URL, export_model_path)
+        response = send_get_request(token, CYODA_API_URL, export_model_path)
 
         if response.status_code == 200:
             return True
@@ -229,7 +229,7 @@ class CyodaRepository(CrudRepository):
     def _get_model(token, entity_name, version):
         export_model_url = f"treeNode/model/export/SIMPLE_VIEW/{entity_name}/{version}"
 
-        response = send_get_request(token, API_URL, export_model_url)
+        response = send_get_request(token, CYODA_API_URL, export_model_url)
 
         if response.status_code == 200:
             return response.json()
@@ -242,7 +242,7 @@ class CyodaRepository(CrudRepository):
         logger.info(f"Saving new entity to path: {path}")
 
         try:
-            response = send_post_request(token=token, api_url=API_URL, path=path, data=data)
+            response = send_post_request(token=token, api_url=CYODA_API_URL, path=path, data=data)
 
             if response.status_code == 200:
                 logger.info(f"Successfully saved new entity. Response: {response}")
@@ -259,7 +259,7 @@ class CyodaRepository(CrudRepository):
     def _delete_all_entities(token, model_name, model_version):
         delete_entities_url = f"entity/TREE/{model_name}/{model_version}"
 
-        response = send_delete_request(token, API_URL, delete_entities_url)
+        response = send_delete_request(token, CYODA_API_URL, delete_entities_url)
 
         if response.status_code == 200:
             return response.json()
@@ -270,7 +270,7 @@ class CyodaRepository(CrudRepository):
     def _create_snapshot_search(token, model_name, model_version, condition):
         search_url = f"treeNode/search/snapshot/{model_name}/{model_version}"
         logger.info(condition)
-        response = send_post_request(token, API_URL, search_url, data=json.dumps(condition))
+        response = send_post_request(token, CYODA_API_URL, search_url, data=json.dumps(condition))
         if response.status_code == 200:
             return response.json()
         else:
@@ -280,7 +280,7 @@ class CyodaRepository(CrudRepository):
     def _get_snapshot_status(token, snapshot_id):
         status_url = f"treeNode/search/snapshot/{snapshot_id}/status"
 
-        response = send_get_request(token, API_URL, status_url)
+        response = send_get_request(token, CYODA_API_URL, status_url)
         if response.status_code == 200:
             return response.json()
         else:
@@ -315,7 +315,7 @@ class CyodaRepository(CrudRepository):
             'pageNumber': f"{page_number}"
         }
 
-        response = send_get_request(token=token, api_url=API_URL, path=result_url)
+        response = send_get_request(token=token, api_url=CYODA_API_URL, path=result_url)
 
         if response.status_code == 200:
             return response.json()
@@ -340,7 +340,7 @@ class CyodaRepository(CrudRepository):
                 "payload": payload_json
             })
             data = json.dumps(payload)
-            response = send_put_request(meta["token"], API_URL, path, data=data)
+            response = send_put_request(meta["token"], CYODA_API_URL, path, data=data)
             if response.status_code == 200:
                 return entities
             else:
@@ -357,7 +357,7 @@ class CyodaRepository(CrudRepository):
                 if value is not None and key != "technical_id"
             }
             payload_json = json.dumps(entities_data)
-            response = send_put_request(meta["token"], API_URL,
+            response = send_put_request(meta["token"], CYODA_API_URL,
                                         f"{path}/{entity.technical_id}/{meta["update_transition"]}", data=payload_json)
             if response.status_code == 200:
                 return entities
@@ -387,17 +387,17 @@ class CyodaRepository(CrudRepository):
 
     def _get_by_id(self, meta, uuid):
         path = f"entity/TREE/{uuid}"
-        response = send_get_request(meta["token"], API_URL, path=path)
+        response = send_get_request(meta["token"], CYODA_API_URL, path=path)
         logger.info(response.json())
         return response.json()
 
     def _get_all_entities(self, meta):
         path = f"entity/TREE/{meta["entity_model"]}/{meta["entity_version"]}"
-        response = send_get_request(meta["token"], API_URL, path=path)
+        response = send_get_request(meta["token"], CYODA_API_URL, path=path)
         logger.info(response.json())
         return response.json()
 
     def _launch_transition(self, meta):
         path = f"/platform-api/entity/transition?entityId={meta["technical_id"]}&entityClass=com.cyoda.tdb.model.treenode.TreeNodeEntity&transitionName={meta["update_transition"]}"
-        response = send_put_request(meta["token"], API_URL, path)
+        response = send_put_request(meta["token"], CYODA_API_URL, path)
         return response.json()

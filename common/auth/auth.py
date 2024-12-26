@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 # Helper function to authenticate and retrieve token
 def authenticate():
-    login_url = f"{config.API_URL}/auth/login"
+    login_url = f"{config.CYODA_API_URL}/auth/login"
     headers = {"Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest"}
     auth_data = {"username": config.API_KEY, "password": config.API_SECRET}
 

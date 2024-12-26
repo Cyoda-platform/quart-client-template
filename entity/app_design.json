@@ -16,9 +16,9 @@
                         "start_state": "None",
                         "end_state": "data_ingested",
                         "process": {
-                            "name": "ingest_data",
-                            "description": "Ingest data and save it as raw_data_entity.",
-                            "adds_new_entites": "raw_data_entity"
+                            "name": "ingest_and_aggregate_data",
+                            "description": "Ingest raw data and aggregate it.",
+                            "adds_new_entites": "aggregated_data_entity"
                         }
                     }
                 ]
@@ -32,42 +32,18 @@
             "entity_workflow": {
                 "name": "raw_data_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": [
-                    {
-                        "name": "process_and_aggregate_data",
-                        "description": "Process the raw data and aggregate it.",
-                        "start_state": "None",
-                        "end_state": "data_processed",
-                        "process": {
-                            "name": "aggregate_data",
-                            "description": "Aggregate the ingested raw data.",
-                            "adds_new_entites": "aggregated_data_entity"
-                        }
-                    }
-                ]
+                "transitions": []
             }
         },
         {
             "entity_name": "aggregated_data_entity",
             "entity_type": "SECONDARY_DATA",
             "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "raw_data_entity",
+            "depends_on_entity": "data_ingestion_job",
             "entity_workflow": {
                 "name": "aggregation_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": [
-                    {
-                        "name": "generate_and_send_report",
-                        "description": "Generate a report from aggregated data and send it via email.",
-                        "start_state": "None",
-                        "end_state": "report_sent",
-                        "process": {
-                            "name": "send_report_email",
-                            "description": "Generate the report and send it to the admin.",
-                            "adds_new_entites": ""
-                        }
-                    }
-                ]
+                "transitions": []
             }
         }
     ]

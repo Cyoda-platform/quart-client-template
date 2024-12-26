@@ -1,10 +1,114 @@
 {
-    "can_proceed": false,
-    "questions_to_answer": [
-        "What is the format of the incoming data from the data source?",
-        "What specific fields or data points should be included in the report?",
-        "How should the data be aggregated before generating the report?",
-        "Are there any specific requirements for the content of the report?",
-        "Is there a specific time for the daily data ingestion?"
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "data_ingestion_workflow",
+                "transitions": [
+                    {
+                        "name": "scheduled_ingestion",
+                        "description": "Scheduled job to ingest data from the data source.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw data from the specified data source.",
+                            "adds_new_entites": "raw_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "raw_data_workflow",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "aggregation_job",
+            "entity_type": "JOB",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "raw_data_entity",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "aggregation_workflow",
+                "transitions": [
+                    {
+                        "name": "aggregate_data",
+                        "description": "Aggregate the ingested raw data.",
+                        "start_state": "None",
+                        "start_state_description": "No data aggregated yet.",
+                        "end_state": "data_aggregated",
+                        "end_state_description": "Data has been successfully aggregated.",
+                        "process": {
+                            "name": "aggregate_raw_data",
+                            "description": "Process to aggregate raw data for reporting.",
+                            "adds_new_entites": "aggregated_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "aggregated_data_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "aggregation_job",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "report_generation_workflow",
+                "transitions": [
+                    {
+                        "name": "generate_report",
+                        "description": "Generate and save the report.",
+                        "start_state": "None",
+                        "start_state_description": "No report generated yet.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been successfully generated.",
+                        "process": {
+                            "name": "create_report",
+                            "description": "Process to create the report from aggregated data.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    },
+                    {
+                        "name": "send_report",
+                        "description": "Send the report to admin via email.",
+                        "start_state": "report_generated",
+                        "start_state_description": "Report has been generated.",
+                        "end_state": "report_sent",
+                        "end_state_description": "Report has been successfully sent to admin.",
+                        "process": {
+                            "name": "email_report",
+                            "description": "Process to email the report to the admin.",
+                            "adds_new_entites": ""
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "aggregated_data_entity",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "report_workflow",
+                "transitions": []
+            }
+        }
     ]
 }

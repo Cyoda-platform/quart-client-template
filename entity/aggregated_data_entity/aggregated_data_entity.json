@@ -1,4 +1,5 @@
 {
+    "can_proceed": true,
     "entity": {
         "aggregated_data_entries": [
             {
@@ -9,7 +10,10 @@
                 "reportDate": "2023-09-30",
                 "validityStart": "2023-09-01T00:00:00",
                 "validityEnd": "2023-09-30T23:59:59",
-                "additionalInfo": "Data reflects monthly aggregation."
+                "additionalInfo": "Data reflects monthly aggregation.",
+                "source": "API",
+                "timestamp": "2023-09-30T12:00:00Z",
+                "location": "Finland"
             },
             {
                 "brpCode": "7080005051288",
@@ -19,7 +23,10 @@
                 "reportDate": "2023-09-30",
                 "validityStart": "2023-09-01T00:00:00",
                 "validityEnd": "2023-09-30T23:59:59",
-                "additionalInfo": "Data reflects monthly aggregation."
+                "additionalInfo": "Data reflects monthly aggregation.",
+                "source": "API",
+                "timestamp": "2023-09-30T12:00:00Z",
+                "location": "Finland"
             },
             {
                 "brpCode": "7080005051287",
@@ -29,7 +36,10 @@
                 "reportDate": "2023-09-30",
                 "validityStart": "2023-09-01T00:00:00",
                 "validityEnd": "2023-09-30T23:59:59",
-                "additionalInfo": "Data reflects monthly aggregation."
+                "additionalInfo": "Data reflects monthly aggregation.",
+                "source": "API",
+                "timestamp": "2023-09-30T12:00:00Z",
+                "location": "Finland"
             }
         ]
     }

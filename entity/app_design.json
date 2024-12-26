@@ -1,10 +1,4 @@
 {
-    "can_proceed": false,
-    "questions_to_answer": [
-        "What is the data source for ingestion? Is it an external API or a database?",
-        "What specific data needs to be aggregated for the report?",
-        "What is the format of the report (e.g., PDF, Excel)?",
-        "Are there any specific conditions or filters to apply during data aggregation?",
-        "What time of day should the data ingestion occur?"
-    ]
+    "success": "false",
+    "error": "'JSONDecodeError' object has no attribute 'message'"
 }

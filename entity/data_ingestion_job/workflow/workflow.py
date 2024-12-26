@@ -91,7 +91,7 @@ def generate_report_process(meta, data):
 
 class TestDataProcessingJob(unittest.TestCase):
 
-    @patch("entity.raw_data_entity.connections.connections.ingest_data")
+    @patch("workflow.ingest_data")
     @patch("common.app_init.entity_service.add_item")
     def test_ingest_data_process(self, mock_entity_service, mock_ingest_data):
         mock_ingest_data.return_value = [

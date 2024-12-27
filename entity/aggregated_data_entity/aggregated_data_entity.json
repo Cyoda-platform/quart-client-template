@@ -1,0 +1,36 @@
+{
+    "aggregated_data": [
+        {
+            "brp_code": "7080005051286",
+            "total_energy_consumed_kwh": 12000,
+            "average_energy_consumed_kwh": 400,
+            "peak_energy_consumed_kwh": 800,
+            "lowest_energy_consumed_kwh": 200,
+            "validity_start": "2023-09-01T00:00:00Z",
+            "validity_end": "2023-09-30T23:59:59Z"
+        },
+        {
+            "brp_code": "7080005051288",
+            "total_energy_consumed_kwh": 15000,
+            "average_energy_consumed_kwh": 500,
+            "peak_energy_consumed_kwh": 900,
+            "lowest_energy_consumed_kwh": 300,
+            "validity_start": "2023-09-01T00:00:00Z",
+            "validity_end": "2023-09-30T23:59:59Z"
+        },
+        {
+            "brp_code": "7080005051287",
+            "total_energy_consumed_kwh": 8000,
+            "average_energy_consumed_kwh": 266.67,
+            "peak_energy_consumed_kwh": 600,
+            "lowest_energy_consumed_kwh": 100,
+            "validity_start": "2023-09-01T00:00:00Z",
+            "validity_end": "2023-09-30T23:59:59Z"
+        }
+    ],
+    "aggregation_period": "2023-09",
+    "total_energy_consumed_kwh": 35000,
+    "average_energy_consumed_kwh": 388.89,
+    "peak_energy_consumed_kwh": 900,
+    "lowest_energy_consumed_kwh": 100
+}

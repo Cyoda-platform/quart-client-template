@@ -1,0 +1,36 @@
+Here is an example of JSON data for the `report_entity`, based on typical reporting use cases and reflecting the structure of the data model:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Report Entity Data",
+  "entity": {
+    "report_id": "report_010",
+    "generated_at": "2023-10-10T12:00:00Z",
+    "report_title": "Weekly Data Summary",
+    "summary": {
+      "total_entries": 200,
+      "successful_ingests": 195,
+      "failed_ingests": 5,
+      "percentage_success": 97.5,
+      "total_active_brps": 3,
+      "total_inactive_brps": 2
+    },
+    "details": {
+      "active_brp_codes": [
+        "7080005051286",
+        "7080005051288",
+        "7080005051290"
+      ],
+      "inactive_brp_codes": [
+        "7080005051287",
+        "7080005051291"
+      ],
+      "report_generation_time_ms": 300,
+      "comments": "This report highlights the performance of the data ingestion process over the week."
+    }
+  }
+}
+```
+
+This JSON structure provides a mock representation of the report entity data, including a summary and detailed information that could typically be included in a data report.

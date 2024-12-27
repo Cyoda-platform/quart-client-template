@@ -1,4 +1,42 @@
 {
-    "can_proceed": false,
-    "questions_to_answer": []
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "entities": [
+        {
+            "entity_name": "data_analysis_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_analysis_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "scheduled_data_analysis",
+                        "description": "Triggered by a schedule to download and analyze data.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data analysis.",
+                        "end_state": "data_analysis_completed",
+                        "end_state_description": "Data analysis has been successfully completed.",
+                        "process": {
+                            "name": "download_and_analyze_data",
+                            "description": "Process to download data from a URL, analyze it using pandas, and generate a report.",
+                            "adds_new_entites": "data_report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "data_report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_analysis_job",
+            "entity_workflow": {
+                "name": "data_report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
 }

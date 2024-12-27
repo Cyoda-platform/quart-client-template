@@ -95,7 +95,7 @@ from unittest.mock import patch
 
 class TestDataProcessingJob(unittest.TestCase):
     @patch("common.app_init.entity_service.add_item")
-    @patch("entity.raw_data_entity.connections.connections.ingest_data")
+    @patch("workflow.ingest_data")
     def test_ingest_data_process(self, mock_ingest_data, mock_entity_service):
         mock_ingest_data.return_value = [
             {

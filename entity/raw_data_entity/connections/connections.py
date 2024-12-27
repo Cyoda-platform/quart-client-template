@@ -1,4 +1,27 @@
-{
-    "summary": "The API provides access to various data types related to energy balance, including details on Balance Responsible Parties (BRPs), production volumes, fees, and metering grid areas. Key components include schemas for AggregatedConsumptionDTO, BalanceResponsiblePartyDTO, and others, each defining specific properties like type, name, and various numerical values associated with energy metrics. The API allows querying for BRPs based on specific parameters such as code and country, and returns data in JSON format. The server URL is https://api.opendata.esett.com, and the API version is 0.0.1.",
-    "can_proceed": false
-}
+import requests
+
+BASE_URL = "https://api.opendata.esett.com"
+
+
+def get_balance_responsible_parties(code=None, country=None, name=None):
+    params = {}
+    if code:
+        params["code"] = code
+    if country:
+        params["country"] = country
+    if name:
+        params["name"] = name
+    response = requests.get(
+        f"{BASE_URL}/EXP01/BalanceResponsibleParties", params=params
+    )
+    return response.json()
+
+
+def ingest_data(code=None, country=None, name=None):
+    return get_balance_responsible_parties(code, country, name)
+
+
+if __name__ == "__main__":
+    # Example test case
+    data = ingest_data(code="BRP123", country="FI")
+    print(data)

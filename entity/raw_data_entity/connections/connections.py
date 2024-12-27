@@ -1,4 +1,28 @@
-{
-    "summary": "The connection details provide a comprehensive overview of various Data Transfer Objects (DTOs) involved in the eSett open data API, including schemas for AggregatedConsumptionDTO, BalanceResponsiblePartyDTO, and others. Each DTO contains specific properties such as 'flex', 'mba', and 'timestamp', with types defined as string or number. The API allows for operations like retrieving a list of Balance Responsible Parties with parameters such as 'code', 'country', and 'name'. The server URL for the API is https://api.opendata.esett.com, and the API version is 0.0.1.",
-    "can_proceed": false
-}
+import requests
+
+BASE_URL = "https://api.opendata.esett.com"
+
+
+def get_balance_responsible_parties(code=None, country=None, name=None):
+    params = {}
+    if code:
+        params["code"] = code
+    if country:
+        params["country"] = country
+    if name:
+        params["name"] = name
+    response = requests.get(
+        f"{BASE_URL}/EXP01/BalanceResponsibleParties", params=params
+    )
+    return response.json()
+
+
+def ingest_data(code=None, country=None, name=None):
+    data = get_balance_responsible_parties(code, country, name)
+    return data
+
+
+if __name__ == "__main__":
+    # Test the ingest_data function
+    test_data = ingest_data(code="BRP123", country="FI", name="Some BRP")
+    print(test_data)

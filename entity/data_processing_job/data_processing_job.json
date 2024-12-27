@@ -1,0 +1,36 @@
+{
+    "job_id": "job_002",
+    "job_name": "Monthly Data Aggregation Job",
+    "scheduled_time": "2023-11-01T00:00:00Z",
+    "status": "pending",
+    "start_time": null,
+    "end_time": null,
+    "total_records_processed": 0,
+    "successful_records": 0,
+    "failed_records": 0,
+    "failure_reason": [],
+    "summary": {
+        "average_processing_time_ms": 0,
+        "max_processing_time_ms": 0,
+        "min_processing_time_ms": 0
+    },
+    "data_source": {
+        "source_name": "Internal Database",
+        "source_url": "https://internal-db.example.com/data",
+        "data_retrieval_method": "SQL Query"
+    },
+    "request_parameters": {
+        "query": "SELECT * FROM energy_consumption WHERE month = '2023-10'",
+        "limit": 1000
+    },
+    "recipients": [
+        {
+            "name": "Data Analyst",
+            "email": "analyst@example.com"
+        },
+        {
+            "name": "System Admin",
+            "email": "admin@example.com"
+        }
+    ]
+}

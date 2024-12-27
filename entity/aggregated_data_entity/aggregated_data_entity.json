@@ -1,0 +1,43 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Entity data",
+    "entity": {
+        "aggregated_data": {
+            "brpCode": "7080005051286",
+            "brpName": "\u00c5 Energi Vannkraft AS",
+            "country": "FI",
+            "businessId": "882973972",
+            "energySupply": [
+                {
+                    "timestamp": "2023-09-30T12:00:00Z",
+                    "amount": 1500,
+                    "unit": "MWh"
+                },
+                {
+                    "timestamp": "2023-09-29T12:00:00Z",
+                    "amount": 1450,
+                    "unit": "MWh"
+                },
+                {
+                    "timestamp": "2023-09-28T12:00:00Z",
+                    "amount": 1600,
+                    "unit": "MWh"
+                }
+            ],
+            "carbonEmissions": {
+                "timestamp": "2023-09-30T12:00:00Z",
+                "value": 120,
+                "unit": "gCO2/kWh"
+            },
+            "renewablePercentage": {
+                "timestamp": "2023-09-30T12:00:00Z",
+                "value": 95,
+                "unit": "%"
+            },
+            "validity": {
+                "validityStart": "2016-12-31T23:00:00",
+                "validityEnd": "2026-12-31T23:00:00"
+            }
+        }
+    }
+}

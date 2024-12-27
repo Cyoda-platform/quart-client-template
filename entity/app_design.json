@@ -1,12 +1,40 @@
 {
-    "can_proceed": false,
-    "questions_to_answer": [
-        "What type of data are you ingesting from test.com?",
-        "What is the frequency of data ingestion (e.g., real-time, daily, weekly)?",
-        "Are there any specific authentication or API keys required to access the data?",
-        "What is the expected format of the data (e.g., JSON, CSV, XML)?",
-        "Do you have any specific transformations or processing requirements for the ingested data?",
-        "Where should the ingested data be stored or forwarded to after ingestion?",
-        "Are there any error handling or retry mechanisms you would like to implement?"
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Start the data ingestion process from test.com.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw data from test.com.",
+                            "adds_new_entites": "raw_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
     ]
 }

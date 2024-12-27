@@ -1,0 +1,4 @@
+{
+    "summary": "The connection details provide a comprehensive overview of various Data Transfer Objects (DTOs) involved in the eSett open data API, including schemas for AggregatedConsumptionDTO, BalanceResponsiblePartyDTO, and others. Each DTO contains specific properties such as 'flex', 'mba', and 'timestamp', with types defined as string or number. The API allows for operations like retrieving a list of Balance Responsible Parties with parameters such as 'code', 'country', and 'name'. The server URL for the API is https://api.opendata.esett.com, and the API version is 0.0.1.",
+    "can_proceed": false
+}

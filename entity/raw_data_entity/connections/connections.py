@@ -1,0 +1,1 @@
+{"summary": "The connection details include a total of 150 entries with 145 successful ingests and 5 failed ingests, resulting in a 96.67% success rate. There are 2 active BRPs and 1 inactive BRP. The report was generated in 250 ms. Active BRPs have valid licenses, while the inactive BRP is pending license renewal.", "can_proceed": false}

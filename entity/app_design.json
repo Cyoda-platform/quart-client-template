@@ -1,10 +1,4 @@
 {
-    "can_proceed": false,
-    "questions_to_answer": [
-        "What specific data source will be used for ingestion?",
-        "What format should the report be in (e.g., PDF, CSV)?",
-        "What criteria should be used for aggregating the data?",
-        "What should be included in the report besides aggregated data?",
-        "Are there any specific error handling or retry mechanisms required?"
-    ]
+    "can_proceed": true,
+    "questions_to_answer": []
 }

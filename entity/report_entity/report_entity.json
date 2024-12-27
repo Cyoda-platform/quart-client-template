@@ -1,36 +1,95 @@
-Here is an example of JSON data for the `report_entity`, based on typical reporting use cases and reflecting the structure of the data model:
+To improve the data model for `report_entity` based on the context provided and typical reporting use cases, we can enhance its structure to include additional metrics and fields that align with the expectations set by the `raw_data_entity.json`. Here’s a suggested schema for `report_entity`:
+
+### Suggested Schema for `report_entity`
 
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Report Entity Data",
-  "entity": {
-    "report_id": "report_010",
-    "generated_at": "2023-10-10T12:00:00Z",
-    "report_title": "Weekly Data Summary",
+  "title": "Report Entity",
+  "type": "object",
+  "properties": {
+    "report_id": {
+      "type": "string",
+      "description": "Unique identifier for the report."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the report was generated."
+    },
+    "report_title": {
+      "type": "string",
+      "description": "Title of the report."
+    },
     "summary": {
-      "total_entries": 200,
-      "successful_ingests": 195,
-      "failed_ingests": 5,
-      "percentage_success": 97.5,
-      "total_active_brps": 3,
-      "total_inactive_brps": 2
+      "type": "object",
+      "properties": {
+        "total_entries": {
+          "type": "integer",
+          "description": "Total number of entries processed."
+        },
+        "successful_ingests": {
+          "type": "integer",
+          "description": "Number of successful data ingests."
+        },
+        "failed_ingests": {
+          "type": "integer",
+          "description": "Number of failed data ingests."
+        },
+        "percentage_success": {
+          "type": "number",
+          "format": "float",
+          "description": "Percentage of successful ingests."
+        },
+        "total_active_brps": {
+          "type": "integer",
+          "description": "Total number of active BRPs."
+        },
+        "total_inactive_brps": {
+          "type": "integer",
+          "description": "Total number of inactive BRPs."
+        }
+      },
+      "required": ["total_entries", "successful_ingests", "failed_ingests", "percentage_success"]
     },
     "details": {
-      "active_brp_codes": [
-        "7080005051286",
-        "7080005051288",
-        "7080005051290"
-      ],
-      "inactive_brp_codes": [
-        "7080005051287",
-        "7080005051291"
-      ],
-      "report_generation_time_ms": 300,
-      "comments": "This report highlights the performance of the data ingestion process over the week."
+      "type": "object",
+      "properties": {
+        "active_brp_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of BRP codes that are active."
+        },
+        "inactive_brp_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of BRP codes that are inactive."
+        },
+        "report_generation_time_ms": {
+          "type": "integer",
+          "description": "Time taken to generate the report in milliseconds."
+        },
+        "comments": {
+          "type": "string",
+          "description": "Additional comments or notes regarding the report."
+        }
+      },
+      "required": ["active_brp_codes", "inactive_brp_codes", "report_generation_time_ms"]
     }
-  }
+  },
+  "required": ["report_id", "generated_at", "report_title", "summary", "details"]
 }
 ```
 
-This JSON structure provides a mock representation of the report entity data, including a summary and detailed information that could typically be included in a data report.
+### Enhancements Made:
+
+- **Unique Identifier**: Added `report_id` to provide a unique identity for each report.
+- **Detailed Summary**: The summary now has properties for `total_active_brps` and `total_inactive_brps` to gain insights into BRP statuses.
+- **Detailed Information**: The `details` section includes both active and inactive BRP codes, enhancing tracking and reporting accuracy.
+- **Comments Field**: A `comments` field allows for additional context or remarks regarding the report.
+
+This improved structure is designed to be comprehensive, capturing the essential elements of a report entity while allowing for further data integrity and tracking. If you have specific requirements or further suggestions, please let me know!

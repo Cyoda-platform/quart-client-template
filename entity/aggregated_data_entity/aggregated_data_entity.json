@@ -1,13 +1,8 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Improved Entity entity",
-    "can_proceed": true,
-    "entity": {
-        "summary": {
-            "active_brp_count": 2,
-            "inactive_brp_count": 1,
-            "major_country": "FI",
-            "number_of_brp_codes": 3
-        }
-    }
+  "summary": {
+    "active_brp_count": 2,
+    "inactive_brp_count": 1,
+    "major_country": "FI",
+    "number_of_brp_codes": 3
+  }
 }

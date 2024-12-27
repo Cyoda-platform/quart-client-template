@@ -1,4 +1,5 @@
 {
+    "can_proceed": false,
     "entities": [
         {
             "entity_name": "data_ingestion_job",
@@ -45,7 +46,7 @@
                         "process": {
                             "name": "send_email_process",
                             "description": "Process to send an email notification with the aggregated data summary.",
-                            "adds_new_entites": "email_entity"
+                            "adds_new_entites": "None"
                         }
                     }
                 ]
@@ -69,17 +70,6 @@
             "depends_on_entity": "data_ingestion_job",
             "entity_workflow": {
                 "name": "aggregated_data_workflow",
-                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": []
-            }
-        },
-        {
-            "entity_name": "email_entity",
-            "entity_type": "EXTERNAL_SOURCES_PUSH_BASED_RAW_DATA",
-            "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "data_ingestion_job",
-            "entity_workflow": {
-                "name": "email_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }

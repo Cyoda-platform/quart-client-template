@@ -1,0 +1,60 @@
+{
+    "name": "data_analysis_workflow",
+    "description": "Workflow for downloading and analyzing data on a scheduled basis.",
+    "workflow_criterias": {
+        "externalized_criterias": [],
+        "condition_criterias": [
+            {
+                "name": "data_analysis_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "data_analysis_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "scheduled_data_analysis",
+            "description": "Triggered by a schedule to download and analyze data.",
+            "start_state": "None",
+            "start_state_description": "Initial state before data analysis.",
+            "end_state": "data_analysis_completed",
+            "end_state_description": "Data analysis has been successfully completed.",
+            "automated": true,
+            "transition_criterias": {
+                "externalized_criterias": [],
+                "condition_criterias": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "download_and_analyze_data",
+                        "description": "Process to download data from a URL, analyze it using pandas, and generate a report.",
+                        "calculation_nodes_tags": "d40d1b80-c481-11ef-be11-3acf80e21564",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criterias": {
+                            "externalized_criterias": [],
+                            "condition_criterias": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

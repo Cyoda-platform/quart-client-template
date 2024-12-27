@@ -1,0 +1,36 @@
+{
+  "job_id": "job_002",
+  "job_name": "Data Ingestion Job",
+  "scheduled_time": "2023-10-02T09:00:00Z",
+  "status": "in_progress",
+  "start_time": "2023-10-02T09:00:00Z",
+  "end_time": null,
+  "total_records_processed": 200,
+  "successful_records": 190,
+  "failed_records": 10,
+  "failure_reason": [
+    "Connection error",
+    "Invalid data format"
+  ],
+  "summary": {
+    "average_processing_time_ms": 300,
+    "max_processing_time_ms": 600,
+    "min_processing_time_ms": 150
+  },
+  "data_source": {
+    "source_name": "Internal Database",
+    "source_url": "https://internal.api.example.com/data",
+    "data_retrieval_method": "POST"
+  },
+  "request_parameters": {
+    "param1": "valueA",
+    "param2": "valueB",
+    "param3": "valueC"
+  },
+  "recipients": [
+    {
+      "name": "Data Engineer",
+      "email": "engineer@example.com"
+    }
+  ]
+}

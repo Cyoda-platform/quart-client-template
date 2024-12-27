@@ -1,0 +1,58 @@
+{
+    "report_id": "report_12345",
+    "generated_at": "2023-10-05T14:30:00Z",
+    "report_title": "Energy Consumption Report - October 2023",
+    "summary": {
+        "total_energy_consumed_kwh": 42000,
+        "average_energy_consumed_kwh": 466.67,
+        "peak_energy_consumed_kwh": 950,
+        "lowest_energy_consumed_kwh": 150,
+        "total_entries": 90,
+        "successful_ingests": 88,
+        "failed_ingests": 2,
+        "percentage_success": 97.78
+    },
+    "details": [
+        {
+            "brp_code": "7080005051286",
+            "total_energy_consumed_kwh": 13000,
+            "average_energy_consumed_kwh": 433.33,
+            "peak_energy_consumed_kwh": 850,
+            "lowest_energy_consumed_kwh": 250,
+            "validity_start": "2023-10-01T00:00:00Z",
+            "validity_end": "2023-10-31T23:59:59Z"
+        },
+        {
+            "brp_code": "7080005051288",
+            "total_energy_consumed_kwh": 16000,
+            "average_energy_consumed_kwh": 533.33,
+            "peak_energy_consumed_kwh": 920,
+            "lowest_energy_consumed_kwh": 320,
+            "validity_start": "2023-10-01T00:00:00Z",
+            "validity_end": "2023-10-31T23:59:59Z"
+        },
+        {
+            "brp_code": "7080005051287",
+            "total_energy_consumed_kwh": 9000,
+            "average_energy_consumed_kwh": 300,
+            "peak_energy_consumed_kwh": 650,
+            "lowest_energy_consumed_kwh": 120,
+            "validity_start": "2023-10-01T00:00:00Z",
+            "validity_end": "2023-10-31T23:59:59Z"
+        }
+    ],
+    "distribution_info": {
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            },
+            {
+                "name": "Data Analyst",
+                "email": "analyst@example.com"
+            }
+        ],
+        "sent_at": "2023-10-05T14:35:00Z",
+        "communication_method": "Email"
+    }
+}

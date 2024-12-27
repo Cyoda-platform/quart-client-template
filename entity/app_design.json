@@ -1,0 +1,13 @@
+{
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What is the specific data source (e.g., API URL, database connection details)?",
+        "What are the exact fields or data points to be ingested from the data source?",
+        "What are the aggregation rules or logic to be applied to the ingested data?",
+        "What should be the content and format of the email notification?",
+        "What is the exact test email address to which the notification should be sent?",
+        "Are there any specific time zones or exact times for the daily scheduled ingestion?",
+        "Are there any error handling or retry mechanisms required for the ingestion process?",
+        "Are there any specific logging or monitoring requirements for the application?"
+    ]
+}

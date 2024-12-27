@@ -1,0 +1,4 @@
+{
+    "summary": "The connection details specify an OpenAPI document for the eSett open data API version 0.0.1. It includes several components such as schemas for AggregatedConsumptionDTO, BalanceResponsiblePartyDTO, BalanceServiceProviderDTO, DistributionSystemOperatorDTO, FeesDTO, ImbalanceVolumeDTO, ImbalanceVolumeTwobalanceDTO, LoadProfileDTO, MBADTO, MBAOptionsDTO, MeteringGridAreaDto, ProductionVolumesDTO, ReconciliationPriceDTO, RetailerBalanceResponsibilityDTO, RetailerDTO, SettlementBankDTO, SinglebalancePriceDTO, TwobalancePriceDTO, and Violation. The paths include an endpoint to retrieve Balance Responsible Parties with specified parameters including BRP code, country code, and BRP name. The server URL is set to https://api.opendata.esett.com, and the API is expected to return a JSON array of BRPs or appropriate status codes.",
+    "can_proceed": false
+}

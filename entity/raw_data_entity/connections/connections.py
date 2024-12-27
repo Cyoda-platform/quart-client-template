@@ -1,0 +1,4 @@
+{
+    "summary": "The connection details comprise various data transfer objects (DTOs) such as AggregatedConsumptionDTO, BalanceResponsiblePartyDTO, and more, each defining relevant properties like flex, meter readings, timestamps, and codes. The API version is 0.0.1 and is designed to return lists of balance responsible parties and their details via the endpoint /EXP01/BalanceResponsibleParties. The server URL is https://api.opendata.esett.com, which handles various queries related to balance responsible parties, providing structured responses in JSON format, including error handling for validation.",
+    "can_proceed": false
+}

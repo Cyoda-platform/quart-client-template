@@ -1,4 +1,27 @@
-{
-    "summary": "The connection details specify an OpenAPI document for the eSett open data API version 0.0.1. It includes several components such as schemas for AggregatedConsumptionDTO, BalanceResponsiblePartyDTO, BalanceServiceProviderDTO, DistributionSystemOperatorDTO, FeesDTO, ImbalanceVolumeDTO, ImbalanceVolumeTwobalanceDTO, LoadProfileDTO, MBADTO, MBAOptionsDTO, MeteringGridAreaDto, ProductionVolumesDTO, ReconciliationPriceDTO, RetailerBalanceResponsibilityDTO, RetailerDTO, SettlementBankDTO, SinglebalancePriceDTO, TwobalancePriceDTO, and Violation. The paths include an endpoint to retrieve Balance Responsible Parties with specified parameters including BRP code, country code, and BRP name. The server URL is set to https://api.opendata.esett.com, and the API is expected to return a JSON array of BRPs or appropriate status codes.",
-    "can_proceed": false
-}
+import requests
+
+BASE_URL = "https://api.opendata.esett.com"
+
+
+def get_balance_responsible_parties(code=None, country=None, name=None):
+    url = f"{BASE_URL}/EXP01/BalanceResponsibleParties"
+    params = {}
+    if code:
+        params["code"] = code
+    if country:
+        params["country"] = country
+    if name:
+        params["name"] = name
+    response = requests.get(url, params=params)
+    return response.json()
+
+
+def ingest_data(code=None, country=None, name=None):
+    data = get_balance_responsible_parties(code, country, name)
+    return data
+
+
+if __name__ == "__main__":
+    # Example test
+    result = ingest_data(code="BRP123", country="FI", name="Example BRP")
+    print(result)

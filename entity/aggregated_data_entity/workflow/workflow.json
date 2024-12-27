@@ -1,0 +1,60 @@
+{
+    "name": "aggregation_workflow",
+    "description": "Workflow to aggregate ingested raw data for reporting.",
+    "workflow_criterias": {
+        "externalized_criterias": [],
+        "condition_criterias": [
+            {
+                "name": "aggregated_data_entity",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "aggregated_data_entity",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "aggregate_data",
+            "description": "Aggregate the ingested raw data.",
+            "start_state": "data_ingested",
+            "start_state_description": "Data has been ingested and is ready for aggregation.",
+            "end_state": "data_aggregated",
+            "end_state_description": "Data has been successfully aggregated.",
+            "automated": true,
+            "transition_criterias": {
+                "externalized_criterias": [],
+                "condition_criterias": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "aggregate_raw_data",
+                        "description": "Process to aggregate raw data for reporting.",
+                        "calculation_nodes_tags": "529fc57a-c459-11ef-be11-3acf80e21564",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criterias": {
+                            "externalized_criterias": [],
+                            "condition_criterias": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

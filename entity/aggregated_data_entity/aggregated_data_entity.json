@@ -1,0 +1,78 @@
+To improve the data model for `aggregated_data_entity`, we can create a schema that defines the structure and constraints of the aggregated data. Here’s a suggested schema for the `aggregated_data_entity` based on typical data aggregation use cases:
+
+### Suggested Schema for `aggregated_data_entity`
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Aggregated Data Entity",
+  "type": "object",
+  "properties": {
+    "aggregated_data_id": {
+      "type": "string",
+      "description": "Unique identifier for the aggregated data."
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the aggregated data was generated."
+    },
+    "report_title": {
+      "type": "string",
+      "description": "Title of the aggregated report."
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_entries": {
+          "type": "integer",
+          "description": "Total number of entries processed."
+        },
+        "successful_ingests": {
+          "type": "integer",
+          "description": "Number of successful data ingests."
+        },
+        "failed_ingests": {
+          "type": "integer",
+          "description": "Number of failed data ingests."
+        },
+        "percentage_success": {
+          "type": "number",
+          "format": "float",
+          "description": "Percentage of successful ingests."
+        }
+      },
+      "required": ["total_entries", "successful_ingests", "failed_ingests", "percentage_success"]
+    },
+    "details": {
+      "type": "object",
+      "properties": {
+        "active_brp_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of BRP codes that are active."
+        },
+        "inactive_brp_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of BRP codes that are inactive."
+        }
+      },
+      "required": ["active_brp_codes", "inactive_brp_codes"]
+    }
+  },
+  "required": ["aggregated_data_id", "generated_at", "report_title", "summary", "details"]
+}
+```
+
+### Key Features of the Updated Schema:
+- **Unique Identifier**: `aggregated_data_id` to ensure that each aggregated data entry is unique.
+- **Timestamps**: `generated_at` to track when the data was aggregated.
+- **Summary Section**: Includes metrics such as `total_entries`, `successful_ingests`, `failed_ingests`, and `percentage_success` for performance tracking.
+- **Details Section**: Categorizes BRP codes into active and inactive lists for better data integrity and status tracking.
+
+This schema provides a clearer structure and a more robust representation of the aggregated data. If the user has any additional suggestions or specific requirements, please let me know to make further adjustments.

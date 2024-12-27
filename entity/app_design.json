@@ -39,16 +39,16 @@
                         }
                     },
                     {
-                        "name": "generate_and_send_report",
-                        "description": "Generate the report and send it via email to the admin.",
+                        "name": "send_report",
+                        "description": "Send the aggregated data as a report via email to the admin.",
                         "start_state": "data_aggregated",
-                        "start_state_description": "Data has been aggregated and is ready to be reported.",
+                        "start_state_description": "Data has been aggregated and is ready to be sent as a report.",
                         "end_state": "report_sent",
                         "end_state_description": "Report has been successfully sent to admin.",
                         "process": {
-                            "name": "generate_report_process",
-                            "description": "Process to create a report and send it via email.",
-                            "adds_new_entites": "report_entity"
+                            "name": "send_report_process",
+                            "description": "Process to send the aggregated data as a report via email.",
+                            "adds_new_entites": "aggregated_data_entity"
                         }
                     }
                 ]
@@ -72,17 +72,6 @@
             "depends_on_entity": "data_processing_job",
             "entity_workflow": {
                 "name": "aggregated_data_workflow",
-                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": []
-            }
-        },
-        {
-            "entity_name": "report_entity",
-            "entity_type": "SECONDARY_DATA",
-            "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "data_processing_job",
-            "entity_workflow": {
-                "name": "report_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }

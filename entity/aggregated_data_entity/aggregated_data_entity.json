@@ -1,42 +1,43 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Entity data",
+    "title": "Improved Entity entity",
+    "can_proceed": true,
     "entity": {
         "aggregated_data": {
-            "brpCode": "7080005051286",
-            "brpName": "\u00c5 Energi Vannkraft AS",
-            "country": "FI",
-            "businessId": "882973972",
-            "energySupply": [
+            "total_brp_codes": 1,
+            "list_of_countries": [
+                "FI"
+            ],
+            "most_frequent_country": {
+                "country": "FI",
+                "frequency": 1
+            },
+            "brp_info": [
                 {
-                    "timestamp": "2023-09-30T12:00:00Z",
-                    "amount": 1500,
-                    "unit": "MWh"
-                },
-                {
-                    "timestamp": "2023-09-29T12:00:00Z",
-                    "amount": 1450,
-                    "unit": "MWh"
-                },
-                {
-                    "timestamp": "2023-09-28T12:00:00Z",
-                    "amount": 1600,
-                    "unit": "MWh"
+                    "brpCode": "7080005051286",
+                    "brpName": "\u00c5 Energi Vannkraft AS",
+                    "businessId": "882973972",
+                    "validity": {
+                        "validityStart": "2016-12-31T23:00:00",
+                        "validityEnd": "2026-12-31T23:00:00"
+                    }
                 }
             ],
-            "carbonEmissions": {
-                "timestamp": "2023-09-30T12:00:00Z",
-                "value": 120,
+            "energy_supply_aggregation": {
+                "total_energy_supplied": 4550,
+                "unit": "MWh",
+                "average_supply": {
+                    "average_amount": 1516.67,
+                    "unit": "MWh"
+                }
+            },
+            "carbon_emissions_average": {
+                "average_value": 120,
                 "unit": "gCO2/kWh"
             },
-            "renewablePercentage": {
-                "timestamp": "2023-09-30T12:00:00Z",
-                "value": 95,
+            "renewable_percentage_average": {
+                "average_value": 95,
                 "unit": "%"
-            },
-            "validity": {
-                "validityStart": "2016-12-31T23:00:00",
-                "validityEnd": "2026-12-31T23:00:00"
             }
         }
     }

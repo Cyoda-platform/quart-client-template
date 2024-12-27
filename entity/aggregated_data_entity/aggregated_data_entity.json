@@ -4,10 +4,10 @@
     "can_proceed": true,
     "entity": {
         "summary": {
-            "number_of_brp_codes": 3,
-            "major_country": "FI",
             "active_brp_count": 2,
-            "inactive_brp_count": 1
+            "inactive_brp_count": 1,
+            "major_country": "FI",
+            "number_of_brp_codes": 3
         }
     }
 }

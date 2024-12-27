@@ -1,0 +1,57 @@
+Here's a sample JSON data model for the `aggregated_data_entity`. This mock data reflects what an aggregated dataset might look like, including fields relevant to business logic or sample analytics results:
+
+```json
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Aggregated Data Entity",
+    "entity": {
+        "aggregated_data_id": "agg_data_001",
+        "total_entries": 150,
+        "successful_ingests": 145,
+        "failed_ingests": 5,
+        "ingestion_summary": {
+            "average_processing_time_ms": 250,
+            "max_processing_time_ms": 500,
+            "min_processing_time_ms": 100
+        },
+        "brp_statistics": {
+            "active_brps": [
+                {
+                    "brp_code": "7080005051286",
+                    "brp_name": "Å Energi Vannkraft AS",
+                    "business_id": "882973972"
+                },
+                {
+                    "brp_code": "7080005051288",
+                    "brp_name": "New Energies AS",
+                    "business_id": "882973973"
+                }
+            ],
+            "inactive_brps": [
+                {
+                    "brp_code": "7080005051287",
+                    "brp_name": "Inactive Example AS",
+                    "business_id": "882973974",
+                    "reason_for_inactivity": "Pending renewal of license."
+                }
+            ]
+        },
+        "report_generated_at": "2023-10-01T10:00:00Z",
+        "report_title": "Monthly Aggregated Data Report",
+        "comments": "This report summarizes the ingestion and processing results for the month."
+    }
+}
+```
+
+### Explanation of Fields:
+- **aggregated_data_id**: A unique identifier for the aggregated data entity.
+- **total_entries**: Total number of records processed.
+- **successful_ingests**: Number of records that were successfully ingested.
+- **failed_ingests**: Number of records that failed to ingest.
+- **ingestion_summary**: Metrics on processing times.
+- **brp_statistics**: Statistics related to Business Responsible Parties (BRPs), including section for active and inactive BRPs.
+- **report_generated_at**: Timestamp indicating when the report was generated.
+- **report_title**: Title of the report.
+- **comments**: Additional remarks regarding the report or processed data.
+
+Feel free to adjust the sample data according to your specific requirements or business logic!

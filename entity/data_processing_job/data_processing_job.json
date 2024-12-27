@@ -1,0 +1,38 @@
+{
+    "entity": {
+        "job_id": "job_20231011",
+        "job_name": "Data Processing Job - Sample",
+        "scheduled_time": "2023-10-11T17:00:00Z",
+        "status": "pending",
+        "start_time": "2023-10-11T17:00:00Z",
+        "end_time": "2023-10-11T17:30:00Z",
+        "total_records_processed": 200,
+        "successful_records": 190,
+        "failed_records": 10,
+        "failure_reason": [
+            "Timeout",
+            "Data format error"
+        ],
+        "summary": {
+            "average_processing_time_ms": 300,
+            "max_processing_time_ms": 600,
+            "min_processing_time_ms": 150
+        },
+        "data_source": {
+            "source_name": "External API",
+            "source_url": "https://api.example.com/data",
+            "data_retrieval_method": "GET"
+        },
+        "request_parameters": {
+            "param1": "value1",
+            "param2": "value2",
+            "param3": "value3"
+        },
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            }
+        ]
+    }
+}

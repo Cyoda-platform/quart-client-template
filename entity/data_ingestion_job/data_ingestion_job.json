@@ -1,0 +1,19 @@
+{
+    "job_id": "job_12345",
+    "job_name": "Data Ingestion Job",
+    "scheduled_time": "2023-10-05T09:00:00Z",
+    "status": "pending",
+    "start_time": null,
+    "end_time": null,
+    "request_parameters": {
+        "code": "579000282425",
+        "country": "DK",
+        "name": "42 Renaissance ApS"
+    },
+    "metadata": {
+        "created_by": "admin@example.com",
+        "created_at": "2023-10-04T12:00:00Z",
+        "retry_count": 0,
+        "priority": "high"
+    }
+}

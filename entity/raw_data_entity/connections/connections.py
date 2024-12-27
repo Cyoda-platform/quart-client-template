@@ -23,5 +23,5 @@ def ingest_data(code=None, country=None, name=None):
 
 if __name__ == "__main__":
     # Example test case
-    data = ingest_data(code="BRP123", country="FI")
+    data = ingest_data(code="7080005051286", country="FI")
     print(data)

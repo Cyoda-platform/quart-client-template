@@ -11,33 +11,6 @@
             "most_frequent_country": {
                 "country": "FI",
                 "frequency": 1
-            },
-            "brp_info": [
-                {
-                    "brpCode": "7080005051286",
-                    "brpName": "\u00c5 Energi Vannkraft AS",
-                    "businessId": "882973972",
-                    "validity": {
-                        "validityStart": "2016-12-31T23:00:00",
-                        "validityEnd": "2026-12-31T23:00:00"
-                    }
-                }
-            ],
-            "energy_supply_aggregation": {
-                "total_energy_supplied": 4550,
-                "unit": "MWh",
-                "average_supply": {
-                    "average_amount": 1516.67,
-                    "unit": "MWh"
-                }
-            },
-            "carbon_emissions_average": {
-                "average_value": 120,
-                "unit": "gCO2/kWh"
-            },
-            "renewable_percentage_average": {
-                "average_value": 95,
-                "unit": "%"
             }
         }
     }

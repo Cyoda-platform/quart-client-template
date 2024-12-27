@@ -1,0 +1,39 @@
+{
+    "aggregated_data": [
+        {
+            "brp_code": "7080005051286",
+            "total_records_processed": 75,
+            "successful_records": 73,
+            "failed_records": 2,
+            "failure_reasons": [
+                "Timeout",
+                "Data format error"
+            ],
+            "average_processing_time_ms": 240,
+            "max_processing_time_ms": 480,
+            "min_processing_time_ms": 110
+        },
+        {
+            "brp_code": "7080005051288",
+            "total_records_processed": 75,
+            "successful_records": 72,
+            "failed_records": 3,
+            "failure_reasons": [
+                "Timeout",
+                "Data format error",
+                "Network issue"
+            ],
+            "average_processing_time_ms": 260,
+            "max_processing_time_ms": 500,
+            "min_processing_time_ms": 100
+        }
+    ],
+    "summary": {
+        "total_records_processed": 150,
+        "total_successful_records": 145,
+        "total_failed_records": 5,
+        "overall_average_processing_time_ms": 250,
+        "overall_max_processing_time_ms": 500,
+        "overall_min_processing_time_ms": 100
+    }
+}

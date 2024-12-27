@@ -47,8 +47,7 @@
                         "end_state_description": "Report has been successfully sent to admin.",
                         "process": {
                             "name": "generate_report_process",
-                            "description": "Process to create a report and send it via email.",
-                            "adds_new_entites": "report_entity"
+                            "description": "Process to create a report and send it via email."
                         }
                     }
                 ]

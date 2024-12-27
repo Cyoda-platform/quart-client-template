@@ -1,0 +1,4 @@
+{
+    "summary": "The API provides access to various data types related to energy balance, including details on Balance Responsible Parties (BRPs), production volumes, fees, and metering grid areas. Key components include schemas for AggregatedConsumptionDTO, BalanceResponsiblePartyDTO, and others, each defining specific properties like type, name, and various numerical values associated with energy metrics. The API allows querying for BRPs based on specific parameters such as code and country, and returns data in JSON format. The server URL is https://api.opendata.esett.com, and the API version is 0.0.1.",
+    "can_proceed": false
+}

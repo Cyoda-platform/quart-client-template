@@ -1,4 +1,5 @@
 {
+    "can_proceed": false,
     "entities": [
         {
             "entity_name": "data_ingestion_job",
@@ -36,16 +37,16 @@
                         }
                     },
                     {
-                        "name": "generate_and_send_report",
-                        "description": "Generate a report and send it to admin via email.",
+                        "name": "send_report_email",
+                        "description": "Send the aggregated data report to admin via email.",
                         "start_state": "data_aggregated",
                         "start_state_description": "Data has been aggregated and is ready to be reported.",
-                        "end_state": "report_sent",
-                        "end_state_description": "Report has been successfully sent to admin.",
+                        "end_state": "email_sent",
+                        "end_state_description": "Report email has been successfully sent to admin.",
                         "process": {
-                            "name": "generate_report_process",
-                            "description": "Process to create a report and send it via email.",
-                            "adds_new_entites": "report_entity"
+                            "name": "send_email_process",
+                            "description": "Process to send the aggregated data report via email.",
+                            "adds_new_entites": "None"
                         }
                     }
                 ]
@@ -69,17 +70,6 @@
             "depends_on_entity": "data_ingestion_job",
             "entity_workflow": {
                 "name": "aggregated_data_workflow",
-                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": []
-            }
-        },
-        {
-            "entity_name": "report_entity",
-            "entity_type": "SECONDARY_DATA",
-            "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "data_ingestion_job",
-            "entity_workflow": {
-                "name": "report_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }

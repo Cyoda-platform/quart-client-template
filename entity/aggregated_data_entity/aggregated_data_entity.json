@@ -1,0 +1,51 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Entity data",
+    "entity": {
+        "total_records": 150,
+        "successful_records": 145,
+        "failed_records": 5,
+        "failure_reasons": [
+            {
+                "reason": "Timeout",
+                "count": 3
+            },
+            {
+                "reason": "Data format error",
+                "count": 2
+            }
+        ],
+        "aggregate_metrics": {
+            "average_processing_time_ms": 250,
+            "max_processing_time_ms": 500,
+            "min_processing_time_ms": 100
+        },
+        "brp_analysis": {
+            "active_brps": [
+                {
+                    "brp_code": "7080005051286",
+                    "brp_name": "\u00c5 Energi Vannkraft AS",
+                    "validity_start": "2016-12-31T23:00:00",
+                    "validity_end": "2026-12-31T23:00:00"
+                },
+                {
+                    "brp_code": "7080005051288",
+                    "brp_name": "B Energi Vannkraft AS",
+                    "validity_start": "2017-01-01T00:00:00",
+                    "validity_end": "2027-01-01T00:00:00"
+                }
+            ],
+            "inactive_brps": [
+                {
+                    "brp_code": "7080005051287",
+                    "reason_for_inactivity": "Pending renewal of license",
+                    "last_validity_end": "2028-01-01T00:00:00"
+                }
+            ]
+        },
+        "reporting_period": {
+            "start_date": "2023-09-01T00:00:00Z",
+            "end_date": "2023-09-30T23:59:59Z"
+        }
+    }
+}

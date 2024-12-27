@@ -1,4 +1,6 @@
+import json
 import logging
+import os
 import unittest
 from unittest.mock import patch
 from common.app_init import entity_service, ai_service

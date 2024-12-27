@@ -1,4 +1,22 @@
 {
-    "success": "false",
-    "error": "JSON validation failed after retries."
+    "entity": {
+        "job_id": "job_003",
+        "job_name": "Weekly Data Cleanup Job",
+        "scheduled_time": "2023-11-07T15:00:00Z",
+        "status": "completed",
+        "start_time": "2023-11-07T15:00:00Z",
+        "end_time": "2023-11-07T15:45:00Z",
+        "total_records_processed": 250,
+        "successful_records": 240,
+        "failed_records": 10,
+        "failure_reason": [
+            "Timeout",
+            "Invalid data entry"
+        ],
+        "summary": {
+            "average_processing_time_ms": 350,
+            "max_processing_time_ms": 700,
+            "min_processing_time_ms": 200
+        }
+    }
 }

@@ -1,107 +1,97 @@
-Here is an example JSON data model for the `data_report_entity` based on the specified properties and aggregations:
-
-```json
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Data Report Entity",
-    "report": {
-        "average_price_by_property_type": {
-            "Apartment": 1,187,385,
-            "Semi-Detached": 1,476,000
+    "average_price_by_property_type": {
+        "Apartment": 1187385,
+        "Semi-Detached": 1476000
+    },
+    "total_count_by_neighborhood": {
+        "Notting Hill": 3,
+        "Westminster": 2,
+        "Soho": 3,
+        "Islington": 1,
+        "Marylebone": 1,
+        "Kensington": 2,
+        "Greenwich": 1
+    },
+    "average_bedrooms": 4.0,
+    "average_bathrooms": 2.0,
+    "price_distribution_by_building_age": {
+        "Less than 10 years": {
+            "count": 1,
+            "average_price": 506666
         },
-        "total_count_by_neighborhood": {
-            "Notting Hill": 3,
-            "Westminster": 2,
-            "Soho": 3,
-            "Islington": 1,
-            "Marylebone": 1,
-            "Kensington": 2,
-            "Greenwich": 1
+        "10-30 years": {
+            "count": 4,
+            "average_price": 1267999
         },
-        "average_bedrooms": 4.0,
-        "average_bathrooms": 2.0,
-        "price_distribution_by_building_age": {
-            "Less than 10 years": {
-                "count": 1,
-                "average_price": 506666
-            },
-            "10-30 years": {
-                "count": 4,
-                "average_price": 1,267,999
-            },
-            "30-50 years": {
-                "count": 3,
-                "average_price": 1,635,000
-            },
-            "More than 50 years": {
-                "count": 2,
-                "average_price": 1,497,000
-            }
+        "30-50 years": {
+            "count": 3,
+            "average_price": 1635000
         },
-        "properties_with_gardens_garages": {
-            "with_garden": 5,
-            "without_garden": 5,
-            "with_garage": 3,
-            "without_garage": 7,
-            "percentage_with_garden": 50,
-            "percentage_with_garage": 30
+        "More than 50 years": {
+            "count": 2,
+            "average_price": 1497000
+        }
+    },
+    "properties_with_gardens_garages": {
+        "with_garden": 5,
+        "without_garden": 5,
+        "with_garage": 3,
+        "without_garage": 7,
+        "percentage_with_garden": 50,
+        "percentage_with_garage": 30
+    },
+    "average_square_meters_by_property_type": {
+        "Apartment": 118.5,
+        "Semi-Detached": 134.7
+    },
+    "heating_type_frequency": {
+        "Electric Heating": 4,
+        "Central Heating": 3,
+        "Underfloor Heating": 1,
+        "Gas Heating": 1
+    },
+    "average_building_age_by_neighborhood": {
+        "Notting Hill": 55,
+        "Westminster": 26,
+        "Soho": 36,
+        "Islington": 53,
+        "Marylebone": 23,
+        "Kensington": 67,
+        "Greenwich": 2
+    },
+    "property_price_trends": [
+        {
+            "bedrooms": 2,
+            "bathrooms": 1,
+            "average_price": 1177500
         },
-        "average_square_meters_by_property_type": {
-            "Apartment": 118.5,
-            "Semi-Detached": 134.7
+        {
+            "bedrooms": 3,
+            "bathrooms": 2,
+            "average_price": 1576666
         },
-        "heating_type_frequency": {
-            "Electric Heating": 4,
-            "Central Heating": 3,
-            "Underfloor Heating": 1,
-            "Gas Heating": 1
+        {
+            "bedrooms": 5,
+            "bathrooms": 3,
+            "average_price": 1830000
+        }
+    ],
+    "view_analysis": {
+        "Park": {
+            "average_price": 1590000,
+            "count": 3
         },
-        "average_building_age_by_neighborhood": {
-            "Notting Hill": 55,
-            "Westminster": 26,
-            "Soho": 36,
-            "Islington": 53,
-            "Marylebone": 23,
-            "Kensington": 67,
-            "Greenwich": 2
+        "City": {
+            "average_price": 1400000,
+            "count": 4
         },
-        "property_price_trends": [
-            {
-                "bedrooms": 2,
-                "bathrooms": 1,
-                "average_price": 1,177,500
-            },
-            {
-                "bedrooms": 3,
-                "bathrooms": 2,
-                "average_price": 1,576,666
-            },
-            {
-                "bedrooms": 5,
-                "bathrooms": 3,
-                "average_price": 1,830,000
-            }
-        ],
-        "view_analysis": {
-            "Park": {
-                "average_price": 1,590,000,
-                "count": 3
-            },
-            "City": {
-                "average_price": 1,400,000,
-                "count": 4
-            },
-            "Street": {
-                "average_price": 1,200,000,
-                "count": 2
-            },
-            "Sea": {
-                "average_price": 1,350,000,
-                "count": 2
-            }
+        "Street": {
+            "average_price": 1200000,
+            "count": 2
+        },
+        "Sea": {
+            "average_price": 1350000,
+            "count": 2
         }
     }
 }
-```
-
-This JSON data model reflects aggregations based on the provided property data. The values are illustrative and can be adjusted as needed for further analysis or reporting.

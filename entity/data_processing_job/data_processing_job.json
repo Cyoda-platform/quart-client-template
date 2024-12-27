@@ -1,4 +1,5 @@
 {
+    "can_proceed": true,
     "entity": {
         "job_id": "job_20231011",
         "job_name": "Data Processing Job - Sample",
@@ -20,13 +21,13 @@
         },
         "data_source": {
             "source_name": "External API",
-            "source_url": "https://api.example.com/data",
+            "source_url": "https://api.opendata.esett.com/EXP01/BalanceResponsibleParties",
             "data_retrieval_method": "GET"
         },
         "request_parameters": {
-            "param1": "value1",
-            "param2": "value2",
-            "param3": "value3"
+            "code": "7080005051286",
+            "country": "FI",
+            "name": "\u00c5 Energi Vannkraft AS"
         },
         "recipients": [
             {

@@ -1,6 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Cyoda design",
+    "title": "Improved Cyoda design",
+    "can_proceed": true,
     "entities": [
         {
             "entity_name": "send_hello_email_job",
@@ -21,21 +22,10 @@
                         "process": {
                             "name": "send_email_process",
                             "description": "Process to send 'Hello!' email once a day.",
-                            "adds_new_entites": "email_entity"
+                            "adds_new_entites": "None"
                         }
                     }
                 ]
-            }
-        },
-        {
-            "entity_name": "email_entity",
-            "entity_type": "EXTERNAL_SOURCES_PUSH_BASED_RAW_DATA",
-            "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "send_hello_email_job",
-            "entity_workflow": {
-                "name": "email_entity_workflow",
-                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": []
             }
         }
     ]

@@ -1,0 +1,10 @@
+{
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What email service or API should be used to send the email?",
+        "What content should be included in the email besides 'Hello!'?",
+        "Is there a specific subject line for the email?",
+        "Should the email be sent in plain text or HTML format?",
+        "What should happen if the job fails to send the email?"
+    ]
+}

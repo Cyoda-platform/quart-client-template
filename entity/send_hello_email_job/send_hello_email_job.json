@@ -1,0 +1,22 @@
+{
+    "job_id": "job_002",
+    "job_name": "Send Hello Email Job",
+    "scheduled_time": "2023-10-02T09:00:00Z",
+    "status": "completed",
+    "start_time": "2023-10-02T09:00:00Z",
+    "end_time": "2023-10-02T09:00:30Z",
+    "recipients": [
+        {
+            "name": "John Doe",
+            "email": "john.doe@example.com"
+        },
+        {
+            "name": "Jane Smith",
+            "email": "jane.smith@example.com"
+        }
+    ],
+    "email_subject": "Hello!",
+    "email_body": "Hello! This is a test email sent by the Send Hello Email Job.",
+    "attempts": 1,
+    "failure_reason": null
+}

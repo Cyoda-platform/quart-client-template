@@ -1,60 +1,35 @@
 {
-    "name": "sentiment_analysis_workflow",
-    "description": "Workflow to analyze sentiment of user feedback.",
-    "workflow_criterias": {
-        "externalized_criterias": [],
-        "condition_criterias": [
+    "can_proceed": true,
+    "entity_workflow": {
+        "name": "sentiment_analysis_workflow",
+        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+        "transitions": [
             {
-                "name": "sentiment_analysis_job",
-                "description": "Workflow criteria",
-                "condition": {
-                    "group_condition_operator": "AND",
-                    "conditions": [
-                        {
-                            "field_name": "entityModelName",
-                            "is_meta_field": true,
-                            "operation": "equals",
-                            "value": "sentiment_analysis_job",
-                            "value_type": "strings"
-                        }
-                    ]
+                "name": "analyze_sentiment",
+                "description": "Analyze the sentiment of the fetched feedback.",
+                "start_state": "feedback_fetched",
+                "start_state_description": "Feedback has been fetched and is ready for analysis.",
+                "end_state": "sentiment_analyzed",
+                "end_state_description": "Sentiment analysis has been completed.",
+                "process": {
+                    "name": "perform_sentiment_analysis",
+                    "description": "Process to analyze sentiment of user feedback and generate a summary.",
+                    "adds_new_entites": "sentiment_summary_entity"
+                }
+            },
+            {
+                "name": "validate_analysis",
+                "description": "Validate the results of the sentiment analysis for accuracy.",
+                "start_state": "sentiment_analyzed",
+                "start_state_description": "Sentiment analysis results are ready for validation.",
+                "end_state": "analysis_validated",
+                "end_state_description": "Sentiment analysis results have been validated.",
+                "process": {
+                    "name": "validate_sentiment_results",
+                    "description": "Process to ensure the sentiment analysis results meet quality standards.",
+                    "adds_new_entites": "validation_summary_entity"
                 }
             }
         ]
-    },
-    "transitions": [
-        {
-            "name": "analyze_sentiment",
-            "description": "Analyze the sentiment of the fetched feedback.",
-            "start_state": "feedback_fetched",
-            "start_state_description": "Feedback has been fetched and is ready for analysis.",
-            "end_state": "sentiment_analyzed",
-            "end_state_description": "Sentiment analysis has been completed.",
-            "automated": true,
-            "transition_criterias": {
-                "externalized_criterias": [],
-                "condition_criterias": []
-            },
-            "processes": {
-                "schedule_transition_processors": [],
-                "externalized_processors": [
-                    {
-                        "name": "perform_sentiment_analysis",
-                        "description": "Process to analyze sentiment of user feedback.",
-                        "calculation_nodes_tags": "c9e9243e-c92a-11ef-9371-06ffdff2f0f8",
-                        "attach_entity": true,
-                        "calculation_response_timeout_ms": "120000",
-                        "retry_policy": "FIXED",
-                        "sync_process": true,
-                        "new_transaction_for_async": false,
-                        "none_transactional_for_async": false,
-                        "processor_criterias": {
-                            "externalized_criterias": [],
-                            "condition_criterias": []
-                        }
-                    }
-                ]
-            }
-        }
-    ]
+    }
 }

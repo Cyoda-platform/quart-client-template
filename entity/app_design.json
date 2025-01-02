@@ -1,11 +1,4 @@
 {
-    "can_proceed": false,
-    "questions_to_answer": [
-        "What specific types of user feedback are you looking to fetch? (e.g., comments, ratings)",
-        "How do you want the sentiment analysis to be conducted? Do you have a preferred method or tool?",
-        "What specific details do you want to include in the summary report?",
-        "Who should the report be emailed to in the marketing team? Are there specific recipients?",
-        "Is there a specific format or template for the summary report?",
-        "What time on Sundays should the data extraction process run?"
-    ]
+    "can_proceed": true,
+    "questions_to_answer": []
 }

@@ -1,0 +1,47 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Email Report Entity Data",
+    "entity": {
+        "report_id": "report_20231010",
+        "job_id": "email_report_job_20231010",
+        "recipient": "marketing_team@example.com",
+        "subject": "Sentiment Analysis Summary Report",
+        "body": "Attached is the summary report of the sentiment analysis conducted on user feedback.",
+        "sent_timestamp": "2023-10-10T17:00:00Z",
+        "status": "SENT",
+        "attachments": [
+            {
+                "file_name": "sentiment_summary_report.pdf",
+                "file_type": "application/pdf",
+                "file_size": 2048
+            }
+        ],
+        "generated_timestamp": "2023-10-10T16:45:00Z",
+        "summary": {
+            "total_feedback": 100,
+            "positive_feedback": 70,
+            "negative_feedback": 20,
+            "neutral_feedback": 10
+        },
+        "created_timestamp": "2023-10-01T12:00:00Z",
+        "last_modified_timestamp": "2023-10-10T16:50:00Z",
+        "error_count": 0,
+        "execution_details": {
+            "start_time": "2023-10-10T16:30:00Z",
+            "end_time": "2023-10-10T16:45:00Z",
+            "execution_status": "completed"
+        },
+        "feedback_summary": {
+            "total_comments": 100,
+            "sentiment_distribution": {
+                "positive": 70,
+                "negative": 20,
+                "neutral": 10
+            }
+        },
+        "additional_info": {
+            "generated_by": "automated_system",
+            "review_status": "pending"
+        }
+    }
+}

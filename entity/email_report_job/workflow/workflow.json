@@ -1,0 +1,60 @@
+{
+    "name": "email_report_workflow",
+    "description": "Workflow to generate and send the summary report of sentiment analysis to the marketing team.",
+    "workflow_criterias": {
+        "externalized_criterias": [],
+        "condition_criterias": [
+            {
+                "name": "email_report_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "email_report_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "send_summary_report",
+            "description": "Generate and send the summary report of sentiment analysis to the marketing team.",
+            "start_state": "sentiment_analyzed",
+            "start_state_description": "Sentiment analysis is complete and report generation is ready.",
+            "end_state": "report_sent",
+            "end_state_description": "Report has been successfully sent to the marketing team.",
+            "automated": true,
+            "transition_criterias": {
+                "externalized_criterias": [],
+                "condition_criterias": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "send_email_report_process",
+                        "description": "Process to generate and send the sentiment summary report via email.",
+                        "calculation_nodes_tags": "c9e9243e-c92a-11ef-9371-06ffdff2f0f8",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criterias": {
+                            "externalized_criterias": [],
+                            "condition_criterias": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

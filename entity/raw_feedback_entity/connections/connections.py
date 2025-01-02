@@ -1,4 +1,4 @@
 {
-    "summary": "This report summarizes the connection details for data ingestion. A total of 150 entries were processed, with 145 successful ingests, resulting in a success rate of 96.67%. There are 2 active BRPs with valid licenses and 1 inactive BRP pending license renewal. The report was generated on 2023-10-01T10:00:00Z and distributed to the recipients via email. The data processing job completed successfully, handling records from an external API. Total processing time averaged 250 ms.",
+    "summary": "This document provides an overview of the User Feedback API version 1.0.0, designed for fetching user feedback and generating sentiment analysis reports. The API includes three main endpoints: GET /feedback for retrieving user comments, POST /feedback/sentiment for analyzing the sentiment of user feedback, and GET /feedback/report for generating a summary report of the feedback. Each endpoint has defined responses, including user feedback retrieval, sentiment analysis results, and report generation outcomes. The API schema details the feedback structure, including unique identifiers and timestamps.",
     "can_proceed": false
 }

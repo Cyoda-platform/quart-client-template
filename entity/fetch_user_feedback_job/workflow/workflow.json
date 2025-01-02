@@ -1,0 +1,60 @@
+{
+    "name": "fetch_user_feedback_workflow",
+    "description": "Workflow to fetch user feedback from the website every Sunday.",
+    "workflow_criterias": {
+        "externalized_criterias": [],
+        "condition_criterias": [
+            {
+                "name": "fetch_user_feedback_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "fetch_user_feedback_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "scheduled_feedback_extraction",
+            "description": "Triggered by a schedule to fetch user feedback from the website.",
+            "start_state": "None",
+            "start_state_description": "Initial state before feedback extraction.",
+            "end_state": "feedback_fetched",
+            "end_state_description": "User feedback has been successfully fetched.",
+            "automated": true,
+            "transition_criterias": {
+                "externalized_criterias": [],
+                "condition_criterias": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "extract_feedback_process",
+                        "description": "Process to extract user feedback from the website every Sunday.",
+                        "calculation_nodes_tags": "c9e9243e-c92a-11ef-9371-06ffdff2f0f8",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criterias": {
+                            "externalized_criterias": [],
+                            "condition_criterias": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

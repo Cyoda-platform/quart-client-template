@@ -1,0 +1,8 @@
+{
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What specific analyses do you want to perform on the data?",
+        "What format should the report be saved in (e.g., CSV, Excel, PDF)?",
+        "Are there any specific insights or metrics you are interested in from the analysis?"
+    ]
+}

@@ -1,0 +1,10 @@
+{
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What specific data points do you want to extract from the user feedback?",
+        "Are there any preferred tools or libraries for sentiment analysis?",
+        "What format should the summary report be in?",
+        "Is there a preferred email format or template for sending the report to the marketing team?",
+        "Do you have an existing database or API for storing the feedback data?"
+    ]
+}

@@ -1,0 +1,10 @@
+{
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What specific metrics or aspects of sentiment analysis are you interested in?",
+        "Are there any particular types of feedback that should be prioritized or excluded?",
+        "What format should the summary report be in?",
+        "Do you have any specific requirements for the email content or recipient list?",
+        "Is there a specific time on Sunday when the data extraction should occur?"
+    ]
+}

@@ -1,0 +1,60 @@
+{
+    "name": "user_feedback_processing_workflow",
+    "description": "Workflow to fetch user feedback and perform sentiment analysis in one job.",
+    "workflow_criterias": {
+        "externalized_criterias": [],
+        "condition_criterias": [
+            {
+                "name": "user_feedback_processing_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "user_feedback_processing_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "scheduled_feedback_fetch_and_analysis",
+            "description": "Fetch user feedback and analyze sentiment in one job.",
+            "start_state": "None",
+            "start_state_description": "Initial state before processing user feedback.",
+            "end_state": "report_generated",
+            "end_state_description": "Sentiment analysis completed and report generated.",
+            "automated": true,
+            "transition_criterias": {
+                "externalized_criterias": [],
+                "condition_criterias": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "fetch_and_analyze_feedback_process",
+                        "description": "Process to fetch user feedback and analyze sentiment, generating a report.",
+                        "calculation_nodes_tags": "5e3c5edc-c9dd-11ef-9371-06ffdff2f0f8",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criterias": {
+                            "externalized_criterias": [],
+                            "condition_criterias": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

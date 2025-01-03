@@ -1,0 +1,10 @@
+{
+    "can_proceed": false,
+    "questions_to_answer": [
+        "What data source or API will be used to fetch user feedback from the website?",
+        "Are there specific sentiment analysis tools or libraries you would like to use?",
+        "What format should the summary report take (e.g., PDF, HTML)?",
+        "Who specifically in the marketing team should receive the email?",
+        "What should be included in the email body along with the summary report?"
+    ]
+}

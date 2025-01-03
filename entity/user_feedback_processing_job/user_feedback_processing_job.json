@@ -1,0 +1,55 @@
+{
+    "job_id": "job_002",
+    "job_name": "User Feedback Processing Job",
+    "scheduled_time": "2023-10-02T09:00:00Z",
+    "status": "completed",
+    "start_time": "2023-10-02T09:00:00Z",
+    "end_time": "2023-10-02T09:15:00Z",
+    "total_feedback_processed": 100,
+    "successful_feedback": 95,
+    "failed_feedback": 5,
+    "failure_reason": [
+        "Data format error",
+        "User ID not found"
+    ],
+    "summary": {
+        "average_processing_time_ms": 180,
+        "max_processing_time_ms": 350,
+        "min_processing_time_ms": 120
+    },
+    "feedback_entries": [
+        {
+            "user_id": "user_101",
+            "feedback": "Love the new features!",
+            "rating": 5,
+            "submitted_at": "2023-09-30T10:00:00Z"
+        },
+        {
+            "user_id": "user_102",
+            "feedback": "Could improve the loading times.",
+            "rating": 3,
+            "submitted_at": "2023-09-30T11:00:00Z"
+        },
+        {
+            "user_id": "user_103",
+            "feedback": "Very intuitive design.",
+            "rating": 4,
+            "submitted_at": "2023-09-30T11:30:00Z"
+        },
+        {
+            "user_id": "user_104",
+            "feedback": "Had some bugs during usage.",
+            "rating": 2,
+            "submitted_at": "2023-09-30T12:00:00Z"
+        },
+        {
+            "user_id": "user_105",
+            "feedback": "Great support team!",
+            "rating": 5,
+            "submitted_at": "2023-09-30T12:30:00Z"
+        }
+    ],
+    "overall_rating": 3.8,
+    "total_feedback_count": 100,
+    "average_processing_time_ms": 200
+}

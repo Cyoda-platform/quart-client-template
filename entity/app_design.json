@@ -1,10 +1,114 @@
 {
-    "can_proceed": false,
-    "questions_to_answer": [
-        "What specific data points do you want to extract from the user feedback?",
-        "Are there any preferred tools or libraries for sentiment analysis?",
-        "What format should the summary report be in?",
-        "Is there a preferred email format or template for sending the report to the marketing team?",
-        "Do you have an existing database or API for storing the feedback data?"
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "entities": [
+        {
+            "entity_name": "fetch_user_feedback_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "fetch_user_feedback_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "scheduled_feedback_fetch",
+                        "description": "Triggered by a schedule to fetch user feedback every Sunday.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before fetching feedback.",
+                        "end_state": "feedback_fetched",
+                        "end_state_description": "User feedback has been successfully fetched.",
+                        "process": {
+                            "name": "fetch_feedback_process",
+                            "description": "Process to fetch user feedback from the website.",
+                            "adds_new_entites": "raw_feedback_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_feedback_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "fetch_user_feedback_job",
+            "entity_workflow": {
+                "name": "raw_feedback_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "sentiment_analysis_job",
+            "entity_type": "JOB",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "fetch_user_feedback_job",
+            "entity_workflow": {
+                "name": "sentiment_analysis_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "analyze_sentiment",
+                        "description": "Analyze the sentiment of the fetched user feedback.",
+                        "start_state": "feedback_fetched",
+                        "start_state_description": "User feedback has been fetched and is ready for analysis.",
+                        "end_state": "sentiment_analyzed",
+                        "end_state_description": "Sentiment analysis on feedback has been completed.",
+                        "process": {
+                            "name": "perform_sentiment_analysis",
+                            "description": "Process to analyze sentiment of the user feedback.",
+                            "adds_new_entites": "sentiment_summary_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "sentiment_summary_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "sentiment_analysis_job",
+            "entity_workflow": {
+                "name": "sentiment_summary_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "report_generation_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "sentiment_analysis_job",
+            "entity_workflow": {
+                "name": "report_generation_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "generate_and_send_report",
+                        "description": "Generate a summary report and send it to the marketing team.",
+                        "start_state": "sentiment_analyzed",
+                        "start_state_description": "Sentiment analysis has been completed and is ready for reporting.",
+                        "end_state": "report_sent",
+                        "end_state_description": "Report has been successfully sent to the marketing team.",
+                        "process": {
+                            "name": "generate_report_process",
+                            "description": "Process to create a report from the sentiment analysis.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "report_generation_job",
+            "entity_workflow": {
+                "name": "report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
     ]
 }

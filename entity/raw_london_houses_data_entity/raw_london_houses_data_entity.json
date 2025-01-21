@@ -1,1 +1,21 @@
-😊 Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!
+[
+    {
+        "Address": "78 Regent Street",
+        "Neighborhood": "Notting Hill",
+        "Bedrooms": 2,
+        "Bathrooms": 3,
+        "Square Meters": 179,
+        "Building Age": 72,
+        "Garden": "No",
+        "Garage": "No",
+        "Floors": 3,
+        "Property Type": "Semi-Detached",
+        "Heating Type": "Electric Heating",
+        "Balcony": "High-level Balcony",
+        "Interior Style": "Industrial",
+        "View": "Garden",
+        "Materials": "Marble",
+        "Building Status": "Renovated",
+        "Price (\u00a3)": 2291200
+    }
+]

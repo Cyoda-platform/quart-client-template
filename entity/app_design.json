@@ -1,7 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Cyoda design",
-    "type": "object",
+    "can_proceed": false,
     "entities": [
         {
             "entity_name": "library_management_job",
@@ -52,16 +50,16 @@
                         }
                     },
                     {
-                        "name": "manage_tasks",
-                        "description": "Manage tasks in the library system.",
+                        "name": "manage_activities",
+                        "description": "Manage activities in the library system.",
                         "start_state": "users_managed",
-                        "start_state_description": "Users have been managed and now handling tasks.",
-                        "end_state": "tasks_managed",
-                        "end_state_description": "Tasks have been successfully managed.",
+                        "start_state_description": "Users have been managed and now handling activities.",
+                        "end_state": "activities_managed",
+                        "end_state_description": "Activities have been successfully managed.",
                         "process": {
-                            "name": "manage_tasks_process",
-                            "description": "Process to handle task operations.",
-                            "adds_new_entites": "task_entity"
+                            "name": "manage_activities_process",
+                            "description": "Process to handle activity operations.",
+                            "adds_new_entites": "activity_entity"
                         }
                     }
                 ]
@@ -101,12 +99,12 @@
             }
         },
         {
-            "entity_name": "task_entity",
+            "entity_name": "activity_entity",
             "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
             "entity_source": "ENTITY_EVENT",
             "depends_on_entity": "library_management_job",
             "entity_workflow": {
-                "name": "task_entity_workflow",
+                "name": "activity_entity_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }

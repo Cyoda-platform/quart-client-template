@@ -1,0 +1,126 @@
+{
+    "name": "data_analysis_workflow",
+    "description": "Workflow for downloading and analyzing London Houses data.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "data_analysis_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "data_analysis_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "download_london_houses_data",
+            "description": "Download the London Houses data for analysis.",
+            "start_state": "None",
+            "start_state_description": "Initial state before data download.",
+            "end_state": "data_downloaded",
+            "end_state_description": "London Houses data has been successfully downloaded.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "download_data_process",
+                        "description": "Process to download the London Houses data.",
+                        "calculation_nodes_tags": "c691f588-d797-11ef-ab48-f23a045c7518",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "analyze_data",
+            "description": "Analyze the downloaded London Houses data using pandas.",
+            "start_state": "data_downloaded",
+            "start_state_description": "London Houses data has been downloaded and is ready for analysis.",
+            "end_state": "data_analyzed",
+            "end_state_description": "Data analysis has been completed.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "analyze_data_process",
+                        "description": "Process to analyze the London Houses data.",
+                        "calculation_nodes_tags": "c691f588-d797-11ef-ab48-f23a045c7518",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "save_report",
+            "description": "Save the analysis report of the London Houses data.",
+            "start_state": "data_analyzed",
+            "start_state_description": "Data analysis has been completed and is ready to save the report.",
+            "end_state": "report_saved",
+            "end_state_description": "Analysis report has been successfully saved.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "save_report_process",
+                        "description": "Process to save the analysis report.",
+                        "calculation_nodes_tags": "c691f588-d797-11ef-ab48-f23a045c7518",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,36 @@
+{
+    "job_id": "job_001",
+    "job_name": "London Houses Data Analysis",
+    "scheduled_time": "2023-10-01T09:00:00Z",
+    "status": "in_progress",
+    "start_time": "2023-10-01T09:00:00Z",
+    "end_time": null,
+    "total_records_processed": 0,
+    "successful_records": 0,
+    "failed_records": 0,
+    "failure_reason": [],
+    "data_source": {
+        "source_name": "London Houses CSV",
+        "source_url": "https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv",
+        "data_retrieval_method": "GET"
+    },
+    "analysis_summary": {
+        "average_price": null,
+        "median_price": null,
+        "max_price": null,
+        "min_price": null,
+        "total_houses": 0,
+        "analysis_date": "2023-10-01"
+    },
+    "report": {
+        "report_generated": false,
+        "report_format": "PDF",
+        "report_url": null
+    },
+    "recipients": [
+        {
+            "name": "Admin User",
+            "email": "admin@example.com"
+        }
+    ]
+}

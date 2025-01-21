@@ -1,0 +1,47 @@
+{
+    "report_title": "London Houses Analysis Report",
+    "generated_at": "2023-10-01T10:00:00Z",
+    "data_summary": {
+        "total_properties": 100,
+        "average_price": 1500000,
+        "median_price": 1450000,
+        "price_variance": 500000,
+        "most_common_neighborhood": "Notting Hill",
+        "properties_with_garden": 60,
+        "properties_with_garage": 30
+    },
+    "price_distribution": [
+        {
+            "price_range": "Under \u00a31M",
+            "count": 15
+        },
+        {
+            "price_range": "\u00a31M - \u00a31.5M",
+            "count": 40
+        },
+        {
+            "price_range": "\u00a31.5M - \u00a32M",
+            "count": 30
+        },
+        {
+            "price_range": "Over \u00a32M",
+            "count": 15
+        }
+    ],
+    "property_types": {
+        "Semi-Detached": 45,
+        "Detached": 25,
+        "Terraced": 20,
+        "Flat": 10
+    },
+    "key_insights": [
+        "Properties with gardens tend to have a higher average price.",
+        "Notting Hill remains the most sought-after neighborhood.",
+        "Detached properties have the highest average square meters."
+    ],
+    "visualizations": {
+        "price_histogram": "URL_to_histogram_image",
+        "neighborhood_distribution_pie_chart": "URL_to_pie_chart_image"
+    },
+    "conclusion": "The London housing market shows a robust demand in premium neighborhoods, with properties having outdoor spaces fetching higher prices."
+}

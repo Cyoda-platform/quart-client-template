@@ -1,0 +1,32 @@
+{
+    "address": "78 Regent Street",
+    "neighborhood": "Notting Hill",
+    "bedrooms": 2,
+    "bathrooms": 3,
+    "square_meters": 179,
+    "building_age": 72,
+    "garden": false,
+    "garage": false,
+    "floors": 3,
+    "property_type": "Semi-Detached",
+    "heating_type": "Electric Heating",
+    "balcony": "High-level Balcony",
+    "interior_style": "Industrial",
+    "view": "Garden",
+    "materials": "Marble",
+    "building_status": "Renovated",
+    "price": 2291200,
+    "analysis_summary": {
+        "average_price_per_square_meter": 12736.25,
+        "price_trend": "increasing",
+        "ideal_buying_price": 2150000,
+        "recommendations": [
+            "Consider investing in properties with a balcony for higher resale value.",
+            "Focus on neighborhoods with a strong community presence."
+        ]
+    },
+    "visualizations": {
+        "price_distribution_chart": "url_to_price_distribution_chart.png",
+        "bedroom_vs_price_scatter_plot": "url_to_bedroom_vs_price_scatter_plot.png"
+    }
+}

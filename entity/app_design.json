@@ -1,8 +1,79 @@
-The requirement is clear and sufficient for creating the Cyoda design. Here are the entities and workflows that can be outlined based on your request:
-
-1. **Data Ingestion Job**: A job entity to handle the downloading of London Houses Data.
-2. **Raw Data Entity**: An entity to store the ingested raw data from the download.
-3. **Data Analysis Job**: A job entity to process the raw data using pandas for analysis.
-4. **Report Entity**: An entity to save the final report generated from the analysis.
-
-I am ready to proceed with generating the Cyoda design JSON based on this structure. If you have any further specifications, please let me know!
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "download_london_houses_data",
+                        "description": "Download the London Houses Data for analysis.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data download.",
+                        "end_state": "data_downloaded",
+                        "end_state_description": "London Houses Data has been successfully downloaded.",
+                        "process": {
+                            "name": "download_data_process",
+                            "description": "Process to download the London Houses Data.",
+                            "adds_new_entites": "raw_houses_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_houses_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_houses_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "data_analysis_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "data_analysis_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "analyze_houses_data",
+                        "description": "Analyze the downloaded London Houses Data using pandas.",
+                        "start_state": "data_downloaded",
+                        "start_state_description": "Data has been downloaded and is ready for analysis.",
+                        "end_state": "data_analyzed",
+                        "end_state_description": "London Houses Data has been successfully analyzed.",
+                        "process": {
+                            "name": "analyze_data_process",
+                            "description": "Process to analyze the raw houses data.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_analysis_job",
+            "entity_workflow": {
+                "name": "report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

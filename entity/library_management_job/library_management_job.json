@@ -1,0 +1,43 @@
+{
+    "entity_name": "library_management_job",
+    "entity_type": "JOB",
+    "entity_source": "SCHEDULED",
+    "depends_on_entity": "None",
+    "job_schedule": "daily",
+    "workflow_steps": [
+        {
+            "step_name": "fetch_books",
+            "description": "Retrieve the list of books from the external API and update the database.",
+            "status": "pending",
+            "execution_time": "2023-10-01T10:00:00Z",
+            "success_criteria": "Books must be fetched successfully with at least 1 new entry."
+        },
+        {
+            "step_name": "fetch_authors",
+            "description": "Retrieve the list of authors associated with the books from the external API.",
+            "status": "pending",
+            "execution_time": "2023-10-01T10:05:00Z",
+            "success_criteria": "Authors must be fetched successfully, with each author linked to the correct book."
+        },
+        {
+            "step_name": "fetch_users",
+            "description": "Retrieve the list of users from the external API and update the user database.",
+            "status": "pending",
+            "execution_time": "2023-10-01T10:10:00Z",
+            "success_criteria": "Users must be fetched successfully, with unique user entries."
+        },
+        {
+            "step_name": "fetch_activities",
+            "description": "Retrieve user activities from the external API for monitoring purposes.",
+            "status": "pending",
+            "execution_time": "2023-10-01T10:15:00Z",
+            "success_criteria": "Activities must be retrieved, allowing tracking of user interactions."
+        }
+    ],
+    "overall_status": "scheduled",
+    "last_execution_time": null,
+    "next_execution_time": "2023-10-02T10:00:00Z",
+    "error_log": [],
+    "created_by": "admin_user",
+    "created_at": "2023-09-30T12:00:00Z"
+}

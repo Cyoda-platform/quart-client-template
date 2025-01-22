@@ -2,7 +2,7 @@
 # 
 # ```python
 import logging
-from common.app_init import entity_service
+from common.app_init import entity_service, cyoda_token
 from common.config.config import ENTITY_VERSION
 
 logging.basicConfig(level=logging.INFO)
@@ -12,7 +12,7 @@ def save_library_management_job(data):
     """Save the library management job entity to Cyoda."""
     try:
         job_entity = entity_service.add_item(
-            "your_token_here",  # Replace with the appropriate token
+            cyoda_token,  # Replace with the appropriate token
             "library_management_job",
             ENTITY_VERSION,
             data

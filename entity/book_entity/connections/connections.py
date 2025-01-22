@@ -1,13 +1,12 @@
 # ```python
 import logging
 import requests
-import json
 from common.app_init import entity_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def ingest_data():
+def ingest_data(meta):
     try:
         # Fetch data from the external data source
         response = requests.get("https://fakerestapi.azurewebsites.net/api/v1/Books", headers={"accept": "text/plain; v=1.0"})
@@ -29,7 +28,7 @@ def ingest_data():
 
         # Ingest the book entities into the entity_service
         for book in book_entities:
-            entity_service.add_item("your_token_here", "book_entity", "1.0", book)
+            entity_service.add_item(meta["token"], "book_entity", "1.0", book)
 
         logger.info("Data ingestion completed successfully.")
     except Exception as e:
@@ -37,12 +36,11 @@ def ingest_data():
         raise
 
 
-# Unit tests
-if __name__ == "__main__":
-    import unittest
-    from unittest.mock import patch
+# Test Code
+import unittest
+from unittest.mock import patch
 
-    class TestDataIngestion(unittest.TestCase):
+class TestIngestDataFunction(unittest.TestCase):
 
         @patch("requests.get")
         @patch("common.app_init.entity_service.add_item")
@@ -60,13 +58,13 @@ if __name__ == "__main__":
                 }
             ]
             mock_add_item.return_value = "book_entity_id"
-
+            meta = {"token": "test_token"}
             # Act
-            ingest_data()
+            ingest_data(meta)
 
             # Assert
             mock_get.assert_called_once_with("https://fakerestapi.azurewebsites.net/api/v1/Books", headers={"accept": "text/plain; v=1.0"})
-            mock_add_item.assert_called_once_with("your_token_here", "book_entity", "1.0", {
+            mock_add_item.assert_called_once_with("test_token", "book_entity", "1.0", {
                 "id": 1,
                 "title": "Test Book",
                 "description": "A book description",
@@ -75,6 +73,7 @@ if __name__ == "__main__":
                 "publish_date": "2023-01-01T00:00:00Z"
             })
 
+if __name__ == "__main__":
     unittest.main()
 # ```
 # 

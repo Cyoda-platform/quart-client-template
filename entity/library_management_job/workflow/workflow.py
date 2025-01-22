@@ -2,11 +2,10 @@
 # 
 # ```python
 import logging
-from common.app_init import entity_service
-from common.service.book_entity.connections.connections import ingest_data as ingest_books
-from common.service.author_entity.connections.connections import ingest_data as ingest_authors
-from common.service.user_entity.connections.connections import ingest_data as ingest_users
-from common.service.activity_entity.connections.connections import ingest_data as ingest_activities
+from entity.book_entity.connections.connections import ingest_data as ingest_books
+from entity.author_entity.connections.connections import ingest_data as ingest_authors
+from entity.user_entity.connections.connections import ingest_data as ingest_users
+from entity.activity_entity.connections.connections import ingest_data as ingest_activities
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -53,11 +52,11 @@ def manage_activities_process(meta, data):
 
 # Testing the processor functions
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 class TestLibraryManagementProcesses(unittest.TestCase):
 
-    @patch('common.service.book_entity.connections.connections.ingest_data')
+    @patch('workflow.ingest_books')
     def test_manage_books_process(self, mock_ingest_books):
         # Arrange
         meta = {"token": "test_token"}
@@ -69,7 +68,7 @@ class TestLibraryManagementProcesses(unittest.TestCase):
         # Assert
         mock_ingest_books.assert_called_once_with(meta)
 
-    @patch('common.service.author_entity.connections.connections.ingest_data')
+    @patch('workflow.ingest_authors')
     def test_manage_authors_process(self, mock_ingest_authors):
         # Arrange
         meta = {"token": "test_token"}
@@ -81,7 +80,7 @@ class TestLibraryManagementProcesses(unittest.TestCase):
         # Assert
         mock_ingest_authors.assert_called_once_with(meta)
 
-    @patch('common.service.user_entity.connections.connections.ingest_data')
+    @patch('workflow.ingest_users')
     def test_manage_users_process(self, mock_ingest_users):
         # Arrange
         meta = {"token": "test_token"}
@@ -93,7 +92,7 @@ class TestLibraryManagementProcesses(unittest.TestCase):
         # Assert
         mock_ingest_users.assert_called_once_with(meta)
 
-    @patch('common.service.activity_entity.connections.connections.ingest_data')
+    @patch('workflow.ingest_activities')
     def test_manage_activities_process(self, mock_ingest_activities):
         # Arrange
         meta = {"token": "test_token"}

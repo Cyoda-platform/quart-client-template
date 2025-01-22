@@ -1,0 +1,13 @@
+The requirement is mostly clear and sufficient for creating the Cyoda design. However, I have a few questions to clarify certain aspects:
+
+1. **Data Fields**: What specific data fields are expected from the SwaggerHub API for the inventory items? This will help in defining the structure of the entities.
+
+2. **Report Format**: What specific format do you envision for displaying the reports? Are there particular chart types or tables you have in mind?
+
+3. **Metrics Definition**: Can you confirm what other statistics, beyond total number of items, average price, and total value, should be included in the reports?
+
+4. **Error Handling**: Could you provide any specific requirements for error handling? Are there particular error messages or actions that should be taken when an error occurs?
+
+5. **Scheduling**: Should the report generation be scheduled at certain intervals, or is it only triggered by user requests?
+
+Once these questions are addressed, I will be ready to proceed with the Cyoda design JSON.

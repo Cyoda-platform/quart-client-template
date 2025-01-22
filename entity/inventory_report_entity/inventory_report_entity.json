@@ -1,0 +1,35 @@
+{
+    "inventory_report_id": "report_2023_10_01",
+    "generated_at": "2023-10-01T10:05:00Z",
+    "total_items": 150,
+    "average_price": 25.5,
+    "total_inventory_value": 3825.0,
+    "item_details": [
+        {
+            "item_id": "item_001",
+            "item_name": "Widget A",
+            "quantity": 30,
+            "unit_price": 20.0,
+            "total_value": 600.0
+        },
+        {
+            "item_id": "item_002",
+            "item_name": "Widget B",
+            "quantity": 50,
+            "unit_price": 25.0,
+            "total_value": 1250.0
+        },
+        {
+            "item_id": "item_003",
+            "item_name": "Widget C",
+            "quantity": 70,
+            "unit_price": 30.0,
+            "total_value": 2100.0
+        }
+    ],
+    "report_summary": {
+        "comments": "This report summarizes the inventory metrics for September 2023.",
+        "report_status": "Completed",
+        "generated_by": "Inventory Management System"
+    }
+}

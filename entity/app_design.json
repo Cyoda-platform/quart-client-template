@@ -1,13 +1,43 @@
-The requirement is mostly clear and sufficient for creating the Cyoda design. However, I have a few questions to clarify certain aspects:
-
-1. **Data Fields**: What specific data fields are expected from the SwaggerHub API for the inventory items? This will help in defining the structure of the entities.
-
-2. **Report Format**: What specific format do you envision for displaying the reports? Are there particular chart types or tables you have in mind?
-
-3. **Metrics Definition**: Can you confirm what other statistics, beyond total number of items, average price, and total value, should be included in the reports?
-
-4. **Error Handling**: Could you provide any specific requirements for error handling? Are there particular error messages or actions that should be taken when an error occurs?
-
-5. **Scheduling**: Should the report generation be scheduled at certain intervals, or is it only triggered by user requests?
-
-Once these questions are addressed, I will be ready to proceed with the Cyoda design JSON.
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "report_generation_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "report_generation_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "scheduled_inventory_report",
+                        "description": "Triggered by a schedule to generate inventory reports.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before the report generation.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been successfully generated.",
+                        "process": {
+                            "name": "generate_inventory_report_process",
+                            "description": "Process to generate inventory report from the SwaggerHub API.",
+                            "adds_new_entites": "inventory_report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "inventory_report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "report_generation_job",
+            "entity_workflow": {
+                "name": "inventory_report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

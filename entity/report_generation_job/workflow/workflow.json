@@ -1,0 +1,60 @@
+{
+    "name": "report_generation_workflow",
+    "description": "Workflow for generating inventory reports on a scheduled basis.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "report_generation_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "report_generation_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "scheduled_inventory_report",
+            "description": "Triggered by a schedule to generate inventory reports.",
+            "start_state": "None",
+            "start_state_description": "Initial state before the report generation.",
+            "end_state": "report_generated",
+            "end_state_description": "Report has been successfully generated.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "generate_inventory_report_process",
+                        "description": "Process to generate inventory report from the SwaggerHub API.",
+                        "calculation_nodes_tags": "5df5ebd0-d902-11ef-b3c6-5ab4c459b722",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

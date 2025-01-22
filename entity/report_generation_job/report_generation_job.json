@@ -1,0 +1,25 @@
+{
+    "report_generation_job": {
+        "job_id": "job_12345",
+        "job_name": "Daily Inventory Report Generation",
+        "scheduled_time": "2023-10-02T08:00:00Z",
+        "status": "completed",
+        "start_time": "2023-10-02T08:00:00Z",
+        "end_time": "2023-10-02T08:15:00Z",
+        "total_items_retrieved": 200,
+        "total_reported_items": 200,
+        "average_price": 25.5,
+        "total_inventory_value": 5100.0,
+        "report_format": "table",
+        "filters_used": {
+            "category": "Electronics",
+            "in_stock": true
+        },
+        "generated_report_link": "https://reports.example.com/inventory/report_2023-10-02.pdf",
+        "error_handling": {
+            "errors_occurred": false,
+            "error_messages": []
+        },
+        "comments": "The report was successfully generated with no errors."
+    }
+}

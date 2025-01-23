@@ -1,3 +1,58 @@
-The requirement you've provided is clear and sufficient for creating the Cyoda design, focusing on the main entities and workflows needed for the application to generate reports on inventory data using the SwaggerHub API. The key elements, such as retrieving inventory items, summarizing metrics, and presenting reports in a user-friendly format, have been adequately outlined.
-
-I am ready to proceed with returning the Cyoda design JSON based on this requirement.
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "depends_on_entity": "None",
+            "entity_name": "inventory_report_job",
+            "entity_source": "SCHEDULED",
+            "entity_type": "JOB",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "inventory_report_workflow",
+                "transitions": [
+                    {
+                        "criteria": {
+                            "description": "Triggered by a scheduled job to generate inventory reports.",
+                            "name": "scheduled_inventory_report"
+                        },
+                        "description": "Start the process to retrieve inventory data and generate a report.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Inventory report has been successfully generated.",
+                        "name": "start_inventory_report_generation",
+                        "process": {
+                            "adds_new_entites": "inventory_report_entity",
+                            "description": "Process to retrieve inventory items and compute report metrics.",
+                            "name": "generate_inventory_report"
+                        },
+                        "start_state": "None",
+                        "start_state_description": "Initial state before report generation."
+                    }
+                ]
+            }
+        },
+        {
+            "depends_on_entity": "inventory_report_job",
+            "entity_name": "inventory_report_entity",
+            "entity_source": "ENTITY_EVENT",
+            "entity_type": "SECONDARY_DATA",
+            "entity_workflow": {
+                "name": "inventory_report_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "depends_on_entity": "inventory_report_job",
+            "entity_name": "inventory_data_entity",
+            "entity_source": "ENTITY_EVENT",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_workflow": {
+                "name": "inventory_data_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

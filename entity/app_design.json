@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Cyoda design",
-    "type": "object",
+    "title": "Improved Cyoda design",
+    "can_proceed": false,
     "entities": [
         {
             "depends_on_entity": "None",
@@ -13,10 +13,6 @@
                 "name": "inventory_report_workflow",
                 "transitions": [
                     {
-                        "criteria": {
-                            "description": "Triggered by a scheduled job to generate inventory reports.",
-                            "name": "scheduled_inventory_report"
-                        },
                         "description": "Start the process to retrieve inventory data and generate a report.",
                         "end_state": "report_generated",
                         "end_state_description": "Inventory report has been successfully generated.",

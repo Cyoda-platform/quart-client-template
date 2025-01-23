@@ -1,0 +1,23 @@
+{
+    "job_id": "job_001",
+    "user_id": "user_123",
+    "departure_airport": "JFK",
+    "arrival_airport": "LAX",
+    "travel_dates": {
+        "departure_date": "2023-12-01",
+        "return_date": "2023-12-10"
+    },
+    "number_of_passengers": 2,
+    "search_status": "in_progress",
+    "searched_at": "2023-10-01T10:00:00Z",
+    "results": {
+        "flights_found": 0,
+        "flights": []
+    },
+    "error": null,
+    "notification_sent": false,
+    "summary": {
+        "description": "This job represents a user-initiated search for flights based on specified criteria.",
+        "created_at": "2023-10-01T10:00:00Z"
+    }
+}

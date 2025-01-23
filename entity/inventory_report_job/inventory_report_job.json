@@ -1,0 +1,42 @@
+{
+    "job_id": "job_001",
+    "job_name": "Daily Inventory Report Generation",
+    "scheduled_time": "2023-10-02T05:00:00Z",
+    "status": "completed",
+    "start_time": "2023-10-02T05:00:00Z",
+    "end_time": "2023-10-02T05:15:00Z",
+    "total_inventory_items": 150,
+    "average_price": 29.99,
+    "total_inventory_value": 4498.5,
+    "report_generated": true,
+    "report_details": {
+        "report_id": "report_2023_10_02",
+        "generated_at": "2023-10-02T05:15:00Z",
+        "summary": "This report summarizes the inventory data processed for the day.",
+        "item_details": [
+            {
+                "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "name": "Widget Adapter",
+                "release_date": "2016-08-29T09:12:33.001Z",
+                "manufacturer_name": "ACME Corporation",
+                "manufacturer_phone": "408-867-5309",
+                "quantity_available": 75,
+                "price": 29.99
+            },
+            {
+                "id": "c57d4b1f-bc4c-4b10-b5ac-aed0a7e0f0d8",
+                "name": "Gadget Pro",
+                "release_date": "2018-03-15T12:00:00.000Z",
+                "manufacturer_name": "Tech Innovations",
+                "manufacturer_phone": "415-555-0199",
+                "quantity_available": 50,
+                "price": 59.99
+            }
+        ]
+    },
+    "notifications": {
+        "admin_email": "admin@example.com",
+        "notification_status": "sent",
+        "sent_at": "2023-10-02T05:16:00Z"
+    }
+}

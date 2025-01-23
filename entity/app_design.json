@@ -1,5 +1,115 @@
-The requirements for the "Library Manager Pro" application are clear and sufficient for outlining the Cyoda design. The information provided includes the application purpose, necessary features, functional requirements, non-functional requirements, user interface details, and example user stories, which are essential for defining the entities and their workflows.
-
-At this stage, I do not have any uncertainties or questions regarding the requirement.
-
-I am ready to proceed with creating the Cyoda design JSON based on the outlined requirements. If you have any further instructions or modifications, please let me know!
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "library_management_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "library_management_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "manage_books",
+                        "description": "Manage books by adding, updating, or deleting.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state for managing books.",
+                        "end_state": "books_managed",
+                        "end_state_description": "Books have been successfully managed.",
+                        "process": {
+                            "name": "process_books",
+                            "description": "Process for managing books through API.",
+                            "adds_new_entites": "book_entity"
+                        }
+                    },
+                    {
+                        "name": "manage_authors",
+                        "description": "Manage authors by adding, updating, or deleting.",
+                        "start_state": "books_managed",
+                        "start_state_description": "Books have been managed and ready for author management.",
+                        "end_state": "authors_managed",
+                        "end_state_description": "Authors have been successfully managed.",
+                        "process": {
+                            "name": "process_authors",
+                            "description": "Process for managing authors through API.",
+                            "adds_new_entites": "author_entity"
+                        }
+                    },
+                    {
+                        "name": "manage_users",
+                        "description": "Manage users by adding, updating, or deleting.",
+                        "start_state": "authors_managed",
+                        "start_state_description": "Authors have been managed and ready for user management.",
+                        "end_state": "users_managed",
+                        "end_state_description": "Users have been successfully managed.",
+                        "process": {
+                            "name": "process_users",
+                            "description": "Process for managing users through API.",
+                            "adds_new_entites": "user_entity"
+                        }
+                    },
+                    {
+                        "name": "manage_tasks",
+                        "description": "Manage tasks associated with users.",
+                        "start_state": "users_managed",
+                        "start_state_description": "Users have been managed and ready for task management.",
+                        "end_state": "tasks_managed",
+                        "end_state_description": "Tasks have been successfully managed.",
+                        "process": {
+                            "name": "process_tasks",
+                            "description": "Process for managing tasks through API.",
+                            "adds_new_entites": "task_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "book_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "library_management_job",
+            "entity_workflow": {
+                "name": "book_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "author_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "library_management_job",
+            "entity_workflow": {
+                "name": "author_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "user_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "library_management_job",
+            "entity_workflow": {
+                "name": "user_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "task_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "library_management_job",
+            "entity_workflow": {
+                "name": "task_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

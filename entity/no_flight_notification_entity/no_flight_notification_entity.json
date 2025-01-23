@@ -1,0 +1,23 @@
+{
+    "notification_id": "notification_001",
+    "message": "No flights were found matching your search criteria.",
+    "search_criteria": {
+        "departure_airport": "GKA",
+        "arrival_airport": "MAG",
+        "travel_dates": {
+            "departure": "2023-10-15",
+            "return": "2023-10-22"
+        },
+        "number_of_passengers": 2
+    },
+    "timestamp": "2023-10-01T10:05:00Z",
+    "user_contact": {
+        "email": "user@example.com",
+        "phone": "+1234567890"
+    },
+    "suggestions": [
+        "Try adjusting your travel dates.",
+        "Consider searching from nearby airports.",
+        "Check back later for updated flight availability."
+    ]
+}

@@ -37,14 +37,9 @@ The following workflows are defined within the entities:
 
 ```mermaid
 flowchart TD
-    A[Start State] -->|transition: start_inventory_report_generation, processor: generate_inventory_report| B[Retrieve Inventory Data]
-    B -->|transition: generate_report, processor: generate_inventory_report| C[Generate Report]
-    C --> D[End State]
+    A[None] -->|transition: start_inventory_report_generation, processor: generate_inventory_report| B[report_generated]
 
-    %% Decision point for criteria
-    B -->|criteria: scheduled_inventory_report| D1{Decision: Check Criteria}
-    D1 -->|true| C
-    D1 -->|false| E[Error: Criteria not met]
+
 
     class A,B,C,D,D1 automated;
 ```
@@ -52,10 +47,14 @@ flowchart TD
 ### Overall Workflow
 
 ```mermaid
-graph TD;
-    A[inventory_report_job] -->|triggers| B[inventory_data_entity];
-    B -->|provides data for| C[inventory_report_entity];
+journey
+    title Overall Workflow Journey
+    section Inventory Process
+      Inventory Report Job: 5: triggers:
+      Inventory Data Entity: 5: provides data for:
+      Inventory Report Entity: 5
 ```
+
 
 ### Sequence Diagram
 

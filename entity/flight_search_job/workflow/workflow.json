@@ -1,0 +1,126 @@
+{
+    "name": "flight_search_workflow",
+    "description": "Workflow for searching flights and handling results.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "flight_search_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "flight_search_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "start_flight_search",
+            "description": "Trigger the flight search based on user input.",
+            "start_state": "None",
+            "start_state_description": "Initial state before flight search.",
+            "end_state": "flights_found",
+            "end_state_description": "Flights have been successfully retrieved from the API.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "search_flights",
+                        "description": "Process to query the Airport Gap API for available flights.",
+                        "calculation_nodes_tags": "dd8405f0-d9aa-11ef-ad20-7a5569f10362",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "handle_no_flights",
+            "description": "Handle the case where no flights are found.",
+            "start_state": "flights_found",
+            "start_state_description": "Received flight search results.",
+            "end_state": "no_flights_found",
+            "end_state_description": "No flights were found based on the search criteria.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "notify_no_flights",
+                        "description": "Notify the user that no flights were found.",
+                        "calculation_nodes_tags": "dd8405f0-d9aa-11ef-ad20-7a5569f10362",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "flight_search_error",
+            "description": "Handle errors that occur during the API call.",
+            "start_state": "None",
+            "start_state_description": "Initial state before any search errors.",
+            "end_state": "api_error",
+            "end_state_description": "An error occurred while searching for flights.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "handle_api_error",
+                        "description": "Process to log and notify the user about the API error.",
+                        "calculation_nodes_tags": "dd8405f0-d9aa-11ef-ad20-7a5569f10362",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,18 +1,18 @@
-# Product Requirements Document (PRD) for Cyoda Design
+# Product Requirements Document (PRD) for Improved Cyoda Design
 
 ## Introduction
 
-This document outlines the Cyoda-based application designed to generate reports on inventory data using the SwaggerHub API. The design includes a Cyoda JSON representation that defines the application's structure, focusing on the entities involved and their workflows. It explains how the Cyoda design aligns with the stated requirements, emphasizing the event-driven architecture and state transitions.
+This document outlines the improved Cyoda-based application designed to generate reports on inventory data using the SwaggerHub API. The updated design includes a refined Cyoda JSON representation that defines the application's structure, focusing on the entities involved and their workflows. It explains how the Cyoda design aligns with the stated requirements, emphasizing the event-driven architecture and state transitions.
 
 ## Cyoda Design Overview
 
 ### What is Cyoda?
 
-Cyoda is a serverless, event-driven framework that facilitates the management of workflows through entities representing jobs and data. Each entity has a defined state, and transitions between states are governed by events that occur within the system. 
+Cyoda is a serverless, event-driven framework that facilitates the management of workflows through entities representing jobs and data. Each entity has a defined state, and transitions between states are governed by events that occur within the system.
 
 ### Cyoda Entity Database
 
-The Cyoda design JSON consists of several entities that capture the application's core functionalities:
+The improved Cyoda design JSON consists of several entities that capture the application's core functionalities:
 
 1. **Inventory Report Job (`inventory_report_job`)**:
    - **Type**: JOB
@@ -87,4 +87,4 @@ This architecture promotes scalability and efficiency, allowing for automated da
 
 ## Conclusion
 
-The Cyoda design effectively aligns with the requirements for generating inventory reports. The outlined entities, workflows, and events comprehensively cover the application's needs, ensuring a smooth and automated reporting process. This PRD serves as a foundation for implementation and development, guiding the technical team through the specifics of the Cyoda architecture while providing clarity for users new to the Cyoda framework.
+The improved Cyoda design effectively aligns with the requirements for generating inventory reports. The outlined entities, workflows, and events comprehensively cover the application's needs, ensuring a smooth and automated reporting process. This PRD serves as a foundation for implementation and development, guiding the technical team through the specifics of the Cyoda architecture while providing clarity for users new to the Cyoda framework.

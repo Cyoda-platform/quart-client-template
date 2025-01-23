@@ -1,1 +1,10 @@
-😊 Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!
+[
+  {
+    "id": 0,
+    "title": "string",
+    "description": "string",
+    "pageCount": 0,
+    "excerpt": "string",
+    "publishDate": "2025-01-21T15:46:30.807Z"
+  }
+]

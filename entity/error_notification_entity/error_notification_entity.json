@@ -1,0 +1,19 @@
+{
+    "notification_id": "notification_001",
+    "timestamp": "2023-10-01T12:00:00Z",
+    "status": "error",
+    "message": "An error occurred while trying to fetch flight data from the Airport Gap API.",
+    "details": {
+        "error_code": "API_CALL_FAILURE",
+        "failed_request": {
+            "url": "https://airportgap.com/api/airports",
+            "method": "GET"
+        },
+        "retry_suggestion": "Please try again later or check your internet connection."
+    },
+    "user_notification": {
+        "user_id": "user_123",
+        "email": "user@example.com",
+        "notification_sent": true
+    }
+}

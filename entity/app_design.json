@@ -1,8 +1,91 @@
-The requirement provided for the flight search application is clear and sufficient for creating the Cyoda design. It outlines the key functionalities needed, such as:
-
-- User input for specifying departure and arrival airports, travel dates, and the number of passengers.
-- Interaction with the Airport Gap API to retrieve flight search results.
-- Displaying and filtering the flight details for users.
-- Robust error handling for API interactions.
-
-No additional details appear to be necessary at this stage, and I am ready to proceed with creating the Cyoda design JSON based on this information.
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "flight_search_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "flight_search_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_flight_search",
+                        "description": "Trigger the flight search based on user input.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before flight search.",
+                        "end_state": "flights_found",
+                        "end_state_description": "Flights have been successfully retrieved from the API.",
+                        "process": {
+                            "name": "search_flights",
+                            "description": "Process to query the Airport Gap API for available flights.",
+                            "adds_new_entites": "flight_results_entity"
+                        }
+                    },
+                    {
+                        "name": "handle_no_flights",
+                        "description": "Handle the case where no flights are found.",
+                        "start_state": "flights_found",
+                        "start_state_description": "Received flight search results.",
+                        "end_state": "no_flights_found",
+                        "end_state_description": "No flights were found based on the search criteria.",
+                        "process": {
+                            "name": "notify_no_flights",
+                            "description": "Notify the user that no flights were found.",
+                            "adds_new_entites": "no_flight_notification_entity"
+                        }
+                    },
+                    {
+                        "name": "flight_search_error",
+                        "description": "Handle errors that occur during the API call.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before any search errors.",
+                        "end_state": "api_error",
+                        "end_state_description": "An error occurred while searching for flights.",
+                        "process": {
+                            "name": "handle_api_error",
+                            "description": "Process to log and notify the user about the API error.",
+                            "adds_new_entites": "error_notification_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "flight_results_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "flight_search_job",
+            "entity_workflow": {
+                "name": "flight_results_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "no_flight_notification_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "flight_search_job",
+            "entity_workflow": {
+                "name": "no_flight_notification_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "error_notification_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "flight_search_job",
+            "entity_workflow": {
+                "name": "error_notification_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

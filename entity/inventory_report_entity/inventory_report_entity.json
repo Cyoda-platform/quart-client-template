@@ -1,0 +1,35 @@
+{
+    "report_id": "report_2023_10_01",
+    "generated_at": "2023-10-01T10:05:00Z",
+    "report_title": "Monthly Inventory Overview",
+    "total_items": 100,
+    "average_price": 15.75,
+    "total_value": 1575.0,
+    "inventory_items": [
+        {
+            "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+            "name": "Widget Adapter",
+            "release_date": "2016-08-29T09:12:33.001Z",
+            "manufacturer": {
+                "name": "ACME Corporation",
+                "home_page": "https://www.acme-corp.com",
+                "phone": "408-867-5309"
+            },
+            "price": 20.0,
+            "quantity": 30
+        },
+        {
+            "id": "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
+            "name": "Gadget Pro",
+            "release_date": "2017-02-15T12:00:00.000Z",
+            "manufacturer": {
+                "name": "Tech Innovations",
+                "home_page": "https://www.techinnovations.com",
+                "phone": "212-555-7890"
+            },
+            "price": 30.0,
+            "quantity": 50
+        }
+    ],
+    "comments": "This report summarizes the inventory items as of October 1, 2023. It includes key metrics such as total items, average price, and total inventory value."
+}

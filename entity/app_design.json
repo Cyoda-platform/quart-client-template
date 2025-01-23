@@ -1,7 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Cyoda design",
-    "type": "object",
+    "can_proceed": false,
     "entities": [
         {
             "entity_name": "library_management_job",
@@ -14,54 +12,54 @@
                 "transitions": [
                     {
                         "name": "manage_books",
-                        "description": "Manage books by adding, updating, or deleting.",
+                        "description": "Manage books in the library system.",
                         "start_state": "None",
-                        "start_state_description": "Initial state for managing books.",
+                        "start_state_description": "Initial state before managing books.",
                         "end_state": "books_managed",
                         "end_state_description": "Books have been successfully managed.",
                         "process": {
-                            "name": "process_books",
-                            "description": "Process for managing books through API.",
+                            "name": "manage_books_process",
+                            "description": "Process to handle book operations.",
                             "adds_new_entites": "book_entity"
                         }
                     },
                     {
                         "name": "manage_authors",
-                        "description": "Manage authors by adding, updating, or deleting.",
+                        "description": "Manage authors in the library system.",
                         "start_state": "books_managed",
-                        "start_state_description": "Books have been managed and ready for author management.",
+                        "start_state_description": "Books have been managed and now handling authors.",
                         "end_state": "authors_managed",
                         "end_state_description": "Authors have been successfully managed.",
                         "process": {
-                            "name": "process_authors",
-                            "description": "Process for managing authors through API.",
+                            "name": "manage_authors_process",
+                            "description": "Process to handle author operations.",
                             "adds_new_entites": "author_entity"
                         }
                     },
                     {
                         "name": "manage_users",
-                        "description": "Manage users by adding, updating, or deleting.",
+                        "description": "Manage users in the library system.",
                         "start_state": "authors_managed",
-                        "start_state_description": "Authors have been managed and ready for user management.",
+                        "start_state_description": "Authors have been managed and now handling users.",
                         "end_state": "users_managed",
                         "end_state_description": "Users have been successfully managed.",
                         "process": {
-                            "name": "process_users",
-                            "description": "Process for managing users through API.",
+                            "name": "manage_users_process",
+                            "description": "Process to handle user operations.",
                             "adds_new_entites": "user_entity"
                         }
                     },
                     {
-                        "name": "manage_tasks",
-                        "description": "Manage tasks associated with users.",
+                        "name": "manage_activities",
+                        "description": "Manage activities in the library system.",
                         "start_state": "users_managed",
-                        "start_state_description": "Users have been managed and ready for task management.",
-                        "end_state": "tasks_managed",
-                        "end_state_description": "Tasks have been successfully managed.",
+                        "start_state_description": "Users have been managed and now handling activities.",
+                        "end_state": "activities_managed",
+                        "end_state_description": "Activities have been successfully managed.",
                         "process": {
-                            "name": "process_tasks",
-                            "description": "Process for managing tasks through API.",
-                            "adds_new_entites": "task_entity"
+                            "name": "manage_activities_process",
+                            "description": "Process to handle activity operations.",
+                            "adds_new_entites": "activity_entity"
                         }
                     }
                 ]
@@ -73,7 +71,7 @@
             "entity_source": "ENTITY_EVENT",
             "depends_on_entity": "library_management_job",
             "entity_workflow": {
-                "name": "book_workflow",
+                "name": "book_entity_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }
@@ -84,7 +82,7 @@
             "entity_source": "ENTITY_EVENT",
             "depends_on_entity": "library_management_job",
             "entity_workflow": {
-                "name": "author_workflow",
+                "name": "author_entity_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }
@@ -95,18 +93,18 @@
             "entity_source": "ENTITY_EVENT",
             "depends_on_entity": "library_management_job",
             "entity_workflow": {
-                "name": "user_workflow",
+                "name": "user_entity_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }
         },
         {
-            "entity_name": "task_entity",
+            "entity_name": "activity_entity",
             "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
             "entity_source": "ENTITY_EVENT",
             "depends_on_entity": "library_management_job",
             "entity_workflow": {
-                "name": "task_workflow",
+                "name": "activity_entity_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }

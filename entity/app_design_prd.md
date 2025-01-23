@@ -28,7 +28,7 @@ For each entity with transitions, we provide a flowchart to visualize its workfl
 
 ```mermaid
 flowchart TD
-    A[Start State] -->|transition: start_flight_search, processor: search_flights, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| B[flights_found]
+    A[None] -->|transition: start_flight_search, processor: search_flights, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| B[flights_found]
     B -->|transition: handle_no_flights, processor: notify_no_flights, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| C[no_flights_found]
     B -->|transition: flight_search_error, processor: handle_api_error, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| D[api_error]
 

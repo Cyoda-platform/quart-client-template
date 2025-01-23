@@ -1,0 +1,65 @@
+{
+    "job_id": "library_job_001",
+    "job_name": "Daily Library Management Job",
+    "scheduled_time": "2023-10-01T05:00:00Z",
+    "status": "completed",
+    "start_time": "2023-10-01T05:00:00Z",
+    "end_time": "2023-10-01T05:30:00Z",
+    "total_books_processed": 100,
+    "total_authors_processed": 10,
+    "total_users_processed": 50,
+    "total_tasks_processed": 25,
+    "book_updates": [
+        {
+            "book_id": 1,
+            "operation": "updated",
+            "timestamp": "2023-10-01T05:10:00Z",
+            "details": {
+                "title": "Updated Book Title",
+                "description": "Updated description of the book.",
+                "pageCount": 150
+            }
+        },
+        {
+            "book_id": 2,
+            "operation": "deleted",
+            "timestamp": "2023-10-01T05:15:00Z",
+            "details": {
+                "title": "Old Book Title"
+            }
+        }
+    ],
+    "author_updates": [
+        {
+            "author_id": 1,
+            "operation": "added",
+            "timestamp": "2023-10-01T05:20:00Z",
+            "details": {
+                "first_name": "John",
+                "last_name": "Doe"
+            }
+        }
+    ],
+    "user_updates": [
+        {
+            "user_id": 1,
+            "operation": "updated",
+            "timestamp": "2023-10-01T05:25:00Z",
+            "details": {
+                "username": "updated_user",
+                "email": "updated_email@example.com"
+            }
+        }
+    ],
+    "task_updates": [
+        {
+            "task_id": 1,
+            "operation": "completed",
+            "timestamp": "2023-10-01T05:28:00Z",
+            "details": {
+                "title": "Read Book",
+                "status": "completed"
+            }
+        }
+    ]
+}

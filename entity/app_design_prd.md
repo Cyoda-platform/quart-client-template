@@ -1,100 +1,100 @@
-# Product Requirements Document (PRD) for Library Manager Pro
+# Product Requirement Document (PRD) for Library Manager Pro
 
-## Introduction
+## Overview
 
-This document outlines the design and architecture of the "Library Manager Pro" application, a comprehensive library management system. It details the Cyoda-based design that integrates with the FakeRest API to manage books, authors, users, and tasks effectively. The Cyoda design JSON is translated into a human-readable format, presenting the entities, workflows, and how they align with the specified requirements.
+The Library Manager Pro is a comprehensive library management system designed to facilitate the management of books, authors, users, and tasks effectively. This document outlines the Cyoda design that supports the functionalities outlined in the requirements, employing an event-driven architecture to orchestrate workflows.
 
 ## What is Cyoda?
 
-Cyoda is a serverless, event-driven framework that orchestrates workflows through entities representing jobs and data. Each entity has a defined state, and transitions between these states are governed by events within the system, enabling a responsive and scalable architecture.
+Cyoda is an event-driven application platform that manages workflows through entity events. Each entity represents a specific data type or operation and transitions between states based on defined triggers. In Cyoda, entities are the building blocks of the application, and they can be linked to create complex workflows.
 
 ### Cyoda Entity Database
+- **Entity**: An entity can represent various data types, such as jobs, raw data, or secondary data. It includes metadata and specific attributes relevant to its function.
+- **External Sources**: Entities may also represent data sourced from external systems, such as APIs, which can be pulled or pushed based on events.
+- **Workflows**: Workflows define how entities interact, evolve, and respond to various events, acting like state machines that manage the lifecycle of each entity.
 
-The Cyoda design for the Library Manager Pro application consists of several entities, each with its own defined workflows and transitions:
+## Event-Driven Architecture
 
-1. **Library Management Job (`library_management_job`)**:
+In the context of Library Manager Pro, the event-driven approach enables the system to respond dynamically to changes and actions. Each user action, such as adding or updating a book, triggers an event that activates the corresponding workflow.
+
+### How It Works
+1. **Triggers**: User actions or scheduled events trigger workflows.
+2. **State Transitions**: Each entity transitions between states (e.g., from "None" to "books_managed") based on the defined workflow.
+3. **Processes**: Each transition is associated with a process that carries out specific operations, such as managing books, authors, users, and tasks.
+4. **Event Emission**: When entities are created, modified, or deleted, events are emitted, which can trigger further workflows or actions.
+
+## Cyoda Design JSON Explained
+
+The Cyoda design JSON defines the entities and workflows for the Library Manager Pro application as follows:
+
+### Entities
+
+1. **library_management_job**: 
    - **Type**: JOB
    - **Source**: SCHEDULED
-   - **Description**: Orchestrates the overall management of books, authors, users, and tasks.
+   - **Description**: This job orchestrates the entire management of the library components. It triggers workflows for managing books, authors, users, and tasks.
 
-2. **Book Entity (`book_entity`)**:
+2. **book_entity**:
    - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA
    - **Source**: ENTITY_EVENT
-   - **Description**: Represents the raw data for books managed through the application.
+   - **Description**: Represents the data related to books in the library. It will be populated by the job when books are managed.
 
-3. **Author Entity (`author_entity`)**:
+3. **author_entity**:
    - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA
    - **Source**: ENTITY_EVENT
-   - **Description**: Represents the raw data for authors managed through the application.
+   - **Description**: Represents the data for authors linked to the books.
 
-4. **User Entity (`user_entity`)**:
+4. **user_entity**:
    - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA
    - **Source**: ENTITY_EVENT
-   - **Description**: Represents the raw data for users managed through the application.
+   - **Description**: Represents the users who interact with the library system.
 
-5. **Task Entity (`task_entity`)**:
+5. **task_entity**:
    - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA
    - **Source**: ENTITY_EVENT
-   - **Description**: Represents the raw data for tasks assigned to users.
+   - **Description**: Represents tasks assigned to users in the library management system.
 
-### Workflow Overview
+### Workflows
 
-Each entity has defined workflows that facilitate the management of its associated data. Below are the flowcharts representing the workflows for the entities with transitions.
+Each job and entity has defined workflows that specify the transitions and processes:
+- The **library_management_job** manages transitions for handling books, authors, users, and tasks through a sequential process where each step must be completed before proceeding to the next.
 
-#### Library Management Job Workflow
+### Diagrams
+
+#### Entity Diagram
 ```mermaid
-flowchart TD
-    A[Start State: None] -->|transition: manage_books, processor: process_books| B[State 1: books_managed]
-    B -->|transition: manage_authors, processor: process_authors| C[State 2: authors_managed]
-    C -->|transition: manage_users, processor: process_users| D[State 3: users_managed]
-    D -->|transition: manage_tasks, processor: process_tasks| E[End State: tasks_managed]
-
-    class A,B,C,D automated;
+graph TD;
+    A[library_management_job]
+    A -->|manages| B[book_entity]
+    A -->|manages| C[author_entity]
+    A -->|manages| D[user_entity]
+    A -->|manages| E[task_entity]
 ```
 
-### Sequence Diagram
-
-The following sequence diagram illustrates the interactions between various components when the Library Management Job is triggered to manage books, authors, users, and tasks.
-
+#### Sequence Diagram
 ```mermaid
 sequenceDiagram
     participant User
-    participant Scheduler
-    participant Library Management Job
-    participant Book Entity
-    participant Author Entity
-    participant User Entity
-    participant Task Entity
+    participant LibraryManager
+    participant BookEntity
+    participant AuthorEntity
+    participant UserEntity
+    participant TaskEntity
 
-    User->>Scheduler: Schedule library management job
-    Scheduler->>Library Management Job: Trigger library management job
-    Library Management Job->>Book Entity: Process books
-    Book Entity-->>Library Management Job: Books processed
-    Library Management Job->>Author Entity: Process authors
-    Author Entity-->>Library Management Job: Authors processed
-    Library Management Job->>User Entity: Process users
-    User Entity-->>Library Management Job: Users processed
-    Library Management Job->>Task Entity: Process tasks
-    Task Entity-->>Library Management Job: Tasks processed
-    Library Management Job->>User: Notify completion
+    User->>LibraryManager: Add/Update Book
+    LibraryManager->>BookEntity: Manage Book
+    BookEntity-->>LibraryManager: Book Managed
+    LibraryManager->>AuthorEntity: Manage Authors
+    AuthorEntity-->>LibraryManager: Authors Managed
+    LibraryManager->>UserEntity: Manage Users
+    UserEntity-->>LibraryManager: Users Managed
+    LibraryManager->>TaskEntity: Manage Tasks
+    TaskEntity-->>LibraryManager: Tasks Managed
+    LibraryManager-->>User: Confirmation of Management
 ```
-
-### Event-Driven Approach
-
-The Cyoda design employs an event-driven architecture that allows the application to automatically react to changes or triggers. Events are emitted when entities are created, modified, or deleted, which in turn advance workflows and move entities through their defined transitions.
-
-### Actors Involved
-
-- **User**: Initiates the scheduling of the library management job.
-- **Scheduler**: Responsible for triggering the library management job at predefined times.
-- **Library Management Job**: Central to managing the workflow of books, authors, users, and tasks.
-- **Book Entity**: Stores and processes book-related data.
-- **Author Entity**: Stores and processes author-related data.
-- **User Entity**: Stores and processes user-related data.
-- **Task Entity**: Stores and processes task-related data.
 
 ## Conclusion
 
-The Cyoda design for the Library Manager Pro application effectively aligns with the requirements for creating a robust library management system. By utilizing the event-driven model, the application can efficiently manage state transitions of each entity, from the management of books to the processing of tasks. The outlined entities, workflows, and events comprehensively cover the needs of the application, ensuring a smooth and automated process.
+The Cyoda design for the Library Manager Pro effectively aligns with the requirements by leveraging an event-driven architecture that promotes scalability and responsiveness. Each component—jobs, entities, transitions, and workflows—collaborates to create a seamless library management experience, enabling users to efficiently manage books, authors, users, and tasks through intuitive interactions with the system. 
 
-This PRD serves as a foundation for implementation and development, guiding the technical team through the specifics of the Cyoda architecture while providing clarity for users who may be new to the Cyoda framework.
+This document serves as a foundational overview of the Cyoda design and its alignment with the business goals of the Library Manager Pro application.

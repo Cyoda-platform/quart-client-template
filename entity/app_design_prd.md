@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document provides a comprehensive overview of the Cyoda-based application design for Library Manager Pro. This system is intended to manage library operations, including book management, author management, user management, task management, and user activity management via integration with the FakeRest API. The design outlined aligns directly with the specified requirements and focuses on the structure of entities, workflows, and the event-driven architecture that underpins the application.
+This document provides a comprehensive overview of the updated Cyoda-based application design for Library Manager Pro. This system is intended to manage library operations, including book management, author management, user management, and user activity management via integration with the FakeRest API. The design outlined aligns directly with the specified requirements and focuses on the structure of entities, workflows, and the event-driven architecture that underpins the application.
 
 ## Cyoda Overview
 
@@ -10,12 +10,12 @@ Cyoda is a serverless, event-driven framework that simplifies workflow managemen
 
 ## Cyoda Entity Database
 
-The Cyoda design JSON outlines several key entities for the Library Manager Pro application:
+The updated Cyoda design JSON outlines several key entities for the Library Manager Pro application:
 
 1. **Library Management Job (`library_management_job`)**:
    - **Type**: JOB
    - **Source**: SCHEDULED
-   - **Description**: Responsible for orchestrating workflows that fetch data from the FakeRest API for books, authors, users, tasks, and user activities.
+   - **Description**: Responsible for orchestrating workflows that fetch data from the FakeRest API for books, authors, users, and user activities.
 
 2. **Book Entity (`book_entity`)**:
    - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA
@@ -32,12 +32,7 @@ The Cyoda design JSON outlines several key entities for the Library Manager Pro 
    - **Source**: ENTITY_EVENT
    - **Description**: Stores data fetched about users.
 
-5. **Task Entity (`task_entity`)**:
-   - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA
-   - **Source**: ENTITY_EVENT
-   - **Description**: Stores data fetched about tasks.
-
-6. **User Activity Entity (`user_activity_entity`)**:
+5. **User Activity Entity (`user_activity_entity`)**:
    - **Type**: EXTERNAL_SOURCES_PULL_BASED_RAW_DATA
    - **Source**: ENTITY_EVENT
    - **Description**: Stores data fetched about user activities.
@@ -53,15 +48,14 @@ flowchart TD
     A[Start State] -->|transition: fetch_books, processor: fetch_books_process| B[Books Fetched]
     B -->|transition: fetch_authors, processor: fetch_authors_process| C[Authors Fetched]
     C -->|transition: fetch_users, processor: fetch_users_process| D[Users Fetched]
-    D -->|transition: fetch_tasks, processor: fetch_tasks_process| E[Tasks Fetched]
-    E -->|transition: fetch_user_activities, processor: fetch_user_activities_process| F[User Activities Fetched]
+    D -->|transition: fetch_user_activities, processor: fetch_user_activities_process| E[User Activities Fetched]
 
     %% Decision point for criteria
     B -->|criteria: books_available| D1{Decision: Check Books Availability}
     D1 -->|true| C
     D1 -->|false| E1[Error: No Books Available]
 
-    class A,B,C,D,E,F,D1,E1 automated;
+    class A,B,C,D,E,D1,E1 automated;
 ```
 
 ## Event-Driven Architecture
@@ -89,8 +83,6 @@ sequenceDiagram
     API-->>Library Management Job: Return authors data
     Library Management Job->>API: Fetch users
     API-->>Library Management Job: Return users data
-    Library Management Job->>API: Fetch tasks
-    API-->>Library Management Job: Return tasks data
     Library Management Job->>API: Fetch user activities
     API-->>Library Management Job: Return user activities data
     Library Management Job->>User: Notify data fetch completion
@@ -105,12 +97,11 @@ graph TD;
     A[library_management_job] -->|triggers| B[book_entity];
     A -->|triggers| C[author_entity];
     A -->|triggers| D[user_entity];
-    A -->|triggers| E[task_entity];
-    A -->|triggers| F[user_activity_entity];
+    A -->|triggers| E[user_activity_entity];
 ```
 
 ## Conclusion
 
-The Cyoda design aligns effectively with the requirements for the Library Manager Pro application. By utilizing the event-driven model, the application efficiently manages state transitions of each entity involved from data fetching to storage. The outlined entities, workflows, and events comprehensively cover the needs of the application, ensuring a smooth and automated process for library management.
+The updated Cyoda design aligns effectively with the requirements for the Library Manager Pro application. By utilizing the event-driven model, the application efficiently manages state transitions of each entity involved, from data fetching to storage. The outlined entities, workflows, and events comprehensively cover the needs of the application, ensuring a smooth and automated process for library management.
 
 This PRD serves as a foundational guide for the implementation and development of the Library Manager Pro application using the Cyoda framework.

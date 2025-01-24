@@ -95,6 +95,26 @@ graph TD;
     C -->|generates| D[report_entity];
 ```
 
+```mermaid
+journey
+    title User Flow for Downloading and Analyzing London Houses Data
+    section Start
+      User initiates the process: 5: User
+      User schedules the data ingestion job: 5: User
+    section Data Ingestion
+      Data ingestion job starts: 5: Scheduler
+      Data is downloaded from the source: 5: Data Ingestion Job
+      Raw data is stored: 5: Raw Data Entity
+    section Data Analysis
+      Analysis process begins: 5: Processed Data Entity
+      Data is analyzed using pandas: 5: Analyze Data Process
+      Processed data is ready: 5: Processed Data Entity
+    section Report Generation
+      Report generation process starts: 5: Report Entity
+      Report is generated and saved: 5: Report Entity
+```
+
+
 ## Conclusion
 
 The Cyoda design effectively meets the requirements for creating a robust application that automates the data downloading, analysis, and reporting processes. The outlined entities, workflows, and events ensure a smooth and efficient operation. This PRD serves as a foundation for implementation and development, providing guidance for the technical team and clarity for users unfamiliar with the Cyoda framework.

@@ -39,29 +39,45 @@ async def ingest_data() -> list:
 
     return mapped_data
 
-# Unit tests for the ingest_data function
+from unittest.mock import patch, AsyncMock
+
 class TestDataIngestion(unittest.TestCase):
 
-    def test_ingest_data_success(self):
+    @patch("aiohttp.ClientSession.get")
+    def test_ingest_data_success(self, mock_get):
+        # Mock API response
+        mock_response = AsyncMock()
+        mock_response.status = 200
+        mock_response.json.return_value = [
+            {"id": 1, "userName": "User 1"},
+            {"id": 2, "userName": "User 2"}
+        ]
+        mock_get.return_value.__aenter__.return_value = mock_response
+
         # Run the ingest_data function
         result = asyncio.run(ingest_data())
 
-        # Assertions to check that data is mapped correctly
+        # Assertions
         self.assertTrue(len(result) > 0)  # Ensure data was received
         self.assertIn("id", result[0])  # Check for 'id' field
         self.assertIn("user_name", result[0])  # Check for 'user_name' field
         self.assertEqual(result[0]["user_name"], "User 1")  # Verify first user name
         self.assertEqual(result[1]["user_name"], "User 2")  # Verify second user name
 
-    def test_fetch_data_error_handling(self):
-        # Simulating an error by changing the URL
-        global API_URL
-        API_URL = "https://fakerestapi.azurewebsites.net/api/v1/InvalidEndpoint"
+    @patch("aiohttp.ClientSession.get")
+    def test_fetch_data_error_handling(self, mock_get):
+        # Mock API error response
+        mock_response = AsyncMock()
+        mock_response.status = 404
+        mock_response.json.return_value = None
+        mock_get.return_value.__aenter__.return_value = mock_response
 
+        # Run the ingest_data function
         result = asyncio.run(ingest_data())
 
-        # Assertions to check that no data is returned on error
-        self.assertEqual(result, [])
+        # Assertions
+        self.assertEqual(result, [])  # Ensure no data is returned on error
+
 
 if __name__ == "__main__":
     unittest.main()

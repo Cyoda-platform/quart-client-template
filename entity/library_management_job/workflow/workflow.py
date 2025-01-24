@@ -12,19 +12,19 @@ from unittest.mock import patch
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 async def fetch_books_process(meta, data):
     """Fetch books from the API and save them to the respective entity."""
     logger.info("Fetching books...")
     try:
         books = await ingest_books_data()  # Fetch book data from the external source
         if books:
-            for book in books:
-                # Save each book entity
-                book_id = await entity_service.add_item(meta["token"], "book_entity", "1.0", book)
-                logger.info(f"Book entity saved with ID: {book_id}")
+            book_id = await entity_service.add_item(meta["token"], "book_entity", "1.0", books)
+            logger.info(f"Book entity saved with ID: {book_id}")
             return books
     except Exception as e:
         logger.error(f"Error in fetch_books_process: {e}")
+
 
 async def fetch_authors_process(meta, data):
     """Fetch authors from the API and save them to the respective entity."""
@@ -40,6 +40,7 @@ async def fetch_authors_process(meta, data):
     except Exception as e:
         logger.error(f"Error in fetch_authors_process: {e}")
 
+
 async def fetch_users_process(meta, data):
     """Fetch users from the API and save them to the respective entity."""
     logger.info("Fetching users...")
@@ -53,6 +54,7 @@ async def fetch_users_process(meta, data):
             return users
     except Exception as e:
         logger.error(f"Error in fetch_users_process: {e}")
+
 
 async def fetch_user_activities_process(meta, data):
     """Fetch user activities from the API and save them to the respective entity."""
@@ -68,17 +70,74 @@ async def fetch_user_activities_process(meta, data):
     except Exception as e:
         logger.error(f"Error in fetch_user_activities_process: {e}")
 
+
 # Unit tests for the processor functions
 class TestLibraryManagementJob(unittest.TestCase):
 
-    @patch("entity.book_entity.connections.connections.ingest_data")
-    @patch("entity.author_entity.connections.connections.ingest_data")
-    @patch("entity.user_entity.connections.connections.ingest_data")
-    @patch("entity.user_activity_entity.connections.connections.ingest_data")
-    @patch("common.service.entity_service_interface.EntityService.add_item")
-    def test_fetch_books_process(self, mock_add_item, mock_ingest_books, mock_ingest_authors, mock_ingest_users, mock_ingest_user_activities):
+    @patch("workflow.ingest_books_data")
+    @patch("workflow.ingest_authors_data")
+    @patch("workflow.ingest_users_data")
+    @patch("workflow.ingest_user_activities_data")
+    @patch("app_init.app_init.entity_service.add_item")
+    def test_fetch_books_process(self, mock_add_item):
         # Set up mock return values
-        mock_ingest_books.return_value = [{"id": 1, "title": "Book 1"}, {"id": 2, "title": "Book 2"}]
+
+        ingest_user_activities_data.return_value = [
+            {
+                "id": 1,
+                "title": "Activity 1",
+                "dueDate": "2025-01-24T16:11:04.1754235+00:00",
+                "completed": False
+            },
+            {
+                "id": 2,
+                "title": "Activity 2",
+                "dueDate": "2025-01-24T17:11:04.1754265+00:00",
+                "completed": True
+            }]
+        ingest_users_data.return_value = [
+            {
+                "id": 1,
+                "userName": "User 1",
+                "password": "Password1"
+            },
+            {
+                "id": 2,
+                "userName": "User 2",
+                "password": "Password2"
+            }]
+
+        ingest_authors_data.return_value = [
+            {
+                "id": 1,
+                "idBook": 1,
+                "firstName": "First Name 1",
+                "lastName": "Last Name 1"
+            },
+            {
+                "id": 2,
+                "idBook": 1,
+                "firstName": "First Name 2",
+                "lastName": "Last Name 2"
+            }]
+        ingest_books_data.return_value = [
+            {
+                "id": 1,
+                "title": "Book 1",
+                "description": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
+                "pageCount": 100,
+                "excerpt": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
+                "publishDate": "2025-01-23T14:56:16.9335733+00:00"
+            },
+            {
+                "id": 2,
+                "title": "Book 2",
+                "description": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
+                "pageCount": 200,
+                "excerpt": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
+                "publishDate": "2025-01-22T14:56:16.9335857+00:00"
+            }]
+
         mock_add_item.return_value = "book_entity_id"
 
         meta = {"token": "test_token"}
@@ -91,6 +150,135 @@ class TestLibraryManagementJob(unittest.TestCase):
         self.assertEqual(mock_add_item.call_count, 2)
 
     # Similar tests for authors, users, and user activities can be added here...
+    @patch("workflow.ingest_user_activities_data")
+    @patch("app_init.app_init.entity_service.add_item")
+    def test_fetch_books_process(self, mock_add_item, mock_ingest_user_activities_data):
+        user_activities = [
+            {
+                "id": 1,
+                "title": "Activity 1",
+                "dueDate": "2025-01-24T16:11:04.1754235+00:00",
+                "completed": False
+            },
+            {
+                "id": 2,
+                "title": "Activity 2",
+                "dueDate": "2025-01-24T17:11:04.1754265+00:00",
+                "completed": True
+            }
+        ]
+        mock_ingest_user_activities_data.return_value = user_activities
+
+        mock_add_item.return_value = "user_activity_entity_id"
+
+        meta = {"token": "test_token"}
+        data = {}
+
+        # Run the fetch_books_process function
+        asyncio.run(fetch_authors_process(meta, data))
+
+        # Assertions to check that the add_item method was called
+        self.assertEqual(mock_add_item.call_count, 1)
+        self.assertEqual(
+            mock_add_item.call_args.args,
+            (meta["token"], "user_activity_entity", "1.0", user_activities)
+        )
+
+    @patch("workflow.ingest_authors_data")
+    @patch("app_init.app_init.entity_service.add_item")
+    def test_fetch_books_process(self, mock_add_item,
+                                 mock_ingest_users_data):
+        users = [
+            {
+                "id": 1,
+                "userName": "User 1",
+                "password": "Password1"
+            },
+            {
+                "id": 2,
+                "userName": "User 2",
+                "password": "Password2"
+            }]
+        mock_ingest_users_data.return_value = users
+
+        mock_add_item.return_value = "user_entity_id"
+
+        meta = {"token": "test_token"}
+        data = {}
+
+        # Run the fetch_books_process function
+        asyncio.run(fetch_authors_process(meta, data))
+
+        # Assertions to check that the add_item method was called
+        self.assertEqual(mock_add_item.call_count, 1)
+        self.assertEqual(mock_add_item.call_args.args, (meta["token"], "user_entity", "1.0", users))
+
+    @patch("workflow.ingest_authors_data")
+    @patch("app_init.app_init.entity_service.add_item")
+    def test_fetch_books_process(self, mock_add_item,
+                                 mock_ingest_authors_data):
+        authors =[
+  {
+    "id": 1,
+    "idBook": 1,
+    "firstName": "First Name 1",
+    "lastName": "Last Name 1"
+  },
+  {
+    "id": 2,
+    "idBook": 1,
+    "firstName": "First Name 2",
+    "lastName": "Last Name 2"
+  }]
+        mock_ingest_authors_data.return_value = authors
+
+        mock_add_item.return_value = "author_entity_id"
+
+        meta = {"token": "test_token"}
+        data = {}
+
+        # Run the fetch_books_process function
+        asyncio.run(fetch_authors_process(meta, data))
+
+        # Assertions to check that the add_item method was called
+        self.assertEqual(mock_add_item.call_count, 1)
+        self.assertEqual(mock_add_item.call_args.args, (meta["token"], "author_entity", "1.0", authors))
+
+
+    @patch("workflow.ingest_books_data")
+    @patch("app_init.app_init.entity_service.add_item")
+    def test_fetch_books_process(self, mock_add_item,
+                                 mock_ingest_books_data):
+        books = [
+            {
+                "id": 1,
+                "title": "Book 1",
+                "description": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
+                "pageCount": 100,
+                "excerpt": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
+                "publishDate": "2025-01-23T14:56:16.9335733+00:00"
+            },
+            {
+                "id": 2,
+                "title": "Book 2",
+                "description": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
+                "pageCount": 200,
+                "excerpt": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
+                "publishDate": "2025-01-22T14:56:16.9335857+00:00"
+            }]
+        mock_ingest_books_data.return_value = books
+
+        mock_add_item.return_value = "book_entity_id"
+
+        meta = {"token": "test_token"}
+        data = {}
+
+        # Run the fetch_books_process function
+        asyncio.run(fetch_books_process(meta, data))
+
+        # Assertions to check that the add_item method was called
+        self.assertEqual(mock_add_item.call_count, 1)
+        self.assertEqual(mock_add_item.call_args.args, (meta["token"], "book_entity", "1.0", books))
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,20 +40,22 @@ async def ingest_data() -> list:
     
     return mapped_data
 
+from unittest.mock import AsyncMock, patch
+
 class TestDataIngestion(unittest.TestCase):
 
     @patch("aiohttp.ClientSession.get")
     def test_ingest_data_success(self, mock_get):
-        # Mock the API response
+        # Mock API response data to match test assertions
+        mock_response_data = [
+            {"id": 0, "userName": "test_user", "password": "test_password"}
+        ]
+
+        # Configure the mock to return a 200 status and the mocked data
         mock_get.return_value.__aenter__.return_value.status = 200
-        mock_get.return_value.__aenter__.return_value.json = asyncio.Future()
-        mock_get.return_value.__aenter__.return_value.json.set_result([
-            {
-                "id": 0,
-                "userName": "test_user",
-                "password": "test_password"
-            }
-        ])
+        mock_get.return_value.__aenter__.return_value.json = AsyncMock(
+            return_value=mock_response_data
+        )
 
         # Run the ingest_data function
         result = asyncio.run(ingest_data())

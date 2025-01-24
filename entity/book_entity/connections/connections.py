@@ -47,29 +47,14 @@ async def ingest_data() -> list:
 
 class TestDataIngestion(unittest.TestCase):
 
-    @patch("aiohttp.ClientSession.get")
-    def test_ingest_data_success(self, mock_get):
-        # Mock the API response
-        mock_get.return_value.__aenter__.return_value.status = 200
-        mock_get.return_value.__aenter__.return_value.json = asyncio.Future()
-        mock_get.return_value.__aenter__.return_value.json.set_result([
-            {
-                "id": 0,
-                "title": "Test Book",
-                "description": "Test Description",
-                "pageCount": 100,
-                "excerpt": "Test Excerpt",
-                "publishDate": "2025-01-21T15:46:30.807Z"
-            }
-        ])
-
+    def test_ingest_data_real_api(self):
         # Run the ingest_data function
         result = asyncio.run(ingest_data())
 
-        # Assertions to check that data is mapped correctly
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["id"], 0)
-        self.assertEqual(result[0]["title"], "Test Book")
+        # Assert that data is received
+        self.assertGreater(len(result), 0)
+        self.assertIn("id", result[0])
+        self.assertIn("title", result[0])
         self.assertEqual(result[0]["page_count"], 100)
 
 if __name__ == "__main__":

@@ -45,7 +45,7 @@ The workflows in Cyoda are primarily managed through the `library_management_job
 
 ```mermaid
 flowchart TD
-    A[Start State] -->|transition: fetch_books, processor: fetch_books_process| B[Books Fetched]
+    A[None] -->|transition: fetch_books, processor: fetch_books_process| B[Books Fetched]
     B -->|transition: fetch_authors, processor: fetch_authors_process| C[Authors Fetched]
     C -->|transition: fetch_users, processor: fetch_users_process| D[Users Fetched]
     D -->|transition: fetch_user_activities, processor: fetch_user_activities_process| E[User Activities Fetched]

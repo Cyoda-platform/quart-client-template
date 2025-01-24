@@ -1,8 +1,93 @@
-The requirement to download "London Houses Data," analyze it using pandas, and save a report is clear and sufficient for outlining the entities and their workflows in the Cyoda design. We will need to define:
-
-1. **Data Ingestion Job**: For downloading the data.
-2. **Raw Data Entity**: To store the downloaded data.
-3. **Secondary Data Entity**: To hold the processed results after analysis.
-4. **Report Entity**: For storing and sending the generated report.
-
-No further details are required at this stage. I am ready to proceed with creating the Cyoda design JSON based on this requirement.
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Start the data ingestion process from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw London Houses data from the specified API.",
+                            "adds_new_entites": "raw_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "processed_data_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "processed_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "analyze_data",
+                        "description": "Analyze the raw data using pandas.",
+                        "start_state": "data_ingested",
+                        "start_state_description": "Data has been ingested and is ready for analysis.",
+                        "end_state": "data_processed",
+                        "end_state_description": "Data has been successfully analyzed.",
+                        "process": {
+                            "name": "analyze_raw_data",
+                            "description": "Process to analyze raw data using pandas.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "processed_data_entity",
+            "entity_workflow": {
+                "name": "report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "generate_report",
+                        "description": "Generate and save a report from the processed data.",
+                        "start_state": "data_processed",
+                        "start_state_description": "Data has been processed and is ready for report generation.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been successfully generated and saved.",
+                        "process": {
+                            "name": "create_report",
+                            "description": "Process to create a report from the analyzed data.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

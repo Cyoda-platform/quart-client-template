@@ -1,12 +1,8 @@
-{
-    "id": 1,
-    "idBook": 1,
-    "firstName": "First Name 1",
-    "lastName": "Last Name 1"
-  },
+[
   {
-    "id": 2,
-    "idBook": 1,
-    "firstName": "First Name 2",
-    "lastName": "Last Name 2"
+    "id": 0,
+    "title": "string",
+    "dueDate": "2025-01-24T15:11:04.069Z",
+    "completed": true
   }
+]

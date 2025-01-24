@@ -45,23 +45,7 @@ async def ingest_data() -> list:
 
 class TestDataIngestion(unittest.TestCase):
 
-    @patch("aiohttp.ClientSession.get")
-    def test_ingest_data_success(self, mock_get):
-        # Mock the API response
-        mock_get.return_value.__aenter__.return_value.status = 200
-        mock_get.return_value.__aenter__.return_value.json = asyncio.Future()
-        mock_get.return_value.__aenter__.return_value.json.set_result([
-            {
-                "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-                "name": "Widget Adapter",
-                "releaseDate": "2016-08-29T09:12:33.001Z",
-                "manufacturer": {
-                    "name": "ACME Corporation",
-                    "homePage": "https://www.acme-corp.com",
-                    "phone": "408-867-5309"
-                }
-            }
-        ])
+    def test_ingest_data_success(self):
 
         # Run the ingest_data function
         result = asyncio.run(ingest_data())

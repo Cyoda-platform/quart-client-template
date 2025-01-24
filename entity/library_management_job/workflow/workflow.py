@@ -12,7 +12,6 @@ from unittest.mock import patch
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
 async def fetch_books_process(meta, data):
     """Fetch books from the API and save them to the respective entity."""
     logger.info("Fetching books...")

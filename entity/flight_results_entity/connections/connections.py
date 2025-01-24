@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 API_URL = "https://airportgap.com/api/airports"
 
 async def fetch_data():
+
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(API_URL) as response:

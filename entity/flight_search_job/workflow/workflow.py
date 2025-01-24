@@ -1,8 +1,9 @@
 # ```python
 import asyncio
+import copy
 import logging
-import aiohttp
 from app_init.app_init import entity_service
+from entity.flight_results_entity.connections.connections import ingest_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -12,29 +13,15 @@ async def search_flights(meta, data):
     """Trigger the flight search based on user input."""
     logger.info("Starting flight search process.")
     try:
-        # Construct the API query based on user input
-        departure_airport = data["departure_airport"]
-        arrival_airport = data["arrival_airport"]
-        departure_date = data["travel_dates"]["departure_date"]
-        return_date = data["travel_dates"]["return_date"]
-        passengers = data["number_of_passengers"]
+        flight_data = await ingest_data()
 
-        # Query the Airport Gap API to get flight details
-        async with aiohttp.ClientSession() as session:
-            api_url = f"https://airportgap.com/api/airports/search?departure={departure_airport}&arrival={arrival_airport}&departure_date={departure_date}&return_date={return_date}&passengers={passengers}"
-            async with session.get(api_url) as response:
-                if response.status == 200:
-                    flight_data = await response.json()
-                    
-                    # Save the flight results to flight_results_entity
-                    flight_results_id = await entity_service.add_item(
-                        meta["token"], "flight_results_entity", "1.0", flight_data
-                    )
-                    data["flight_results_entity"] = {"technical_id": flight_results_id}
-                    logger.info(f"Flight results saved with ID: {flight_results_id}")
-                else:
-                    logger.warning("No flights found in the response.")
-                    await notify_no_flights(meta, data)
+        # Save the flight results to flight_results_entity
+        flight_results_id = await entity_service.add_item(
+            meta["token"], "flight_results_entity", "1.0", flight_data
+        )
+        data["flight_results_entity"] = {"technical_id": flight_results_id}
+        logger.info(f"Flight results saved with ID: {flight_results_id}")
+
     except Exception as e:
         logger.error(f"Error in search_flights: {e}")
         await handle_api_error(meta, data)
@@ -115,15 +102,84 @@ async def handle_api_error(meta, data):
 import unittest
 from unittest.mock import patch
 
-class TestFlightSearchJob(unittest.TestCase):
 
-    @patch("aiohttp.ClientSession.get")
+class TestFlightSearchJob(unittest.TestCase):
+    @patch("workflow.ingest_data")
     @patch("app_init.app_init.entity_service.add_item")
-    def test_search_flights_success(self, mock_add_item, mock_get):
+    def test_search_flights_success(self, mock_add_item, mock_ingest_data):
         # Setup
-        mock_get.return_value.__aenter__.return_value.status = 200
-        mock_get.return_value.__aenter__.return_value.json = asyncio.Future()
-        mock_get.return_value.__aenter__.return_value.json.set_result({"data": []})
+        ingested_data = {
+            "data": [{
+                "attributes": {
+                    "altitude": 5283,
+                    "city": "Goroka",
+                    "country": "Papua New Guinea",
+                    "iata": "GKA",
+                    "icao": "AYGA",
+                    "latitude": "-6.08169",
+                    "longitude": "145.391998",
+                    "name": "Goroka Airport",
+                    "timezone": "Pacific/Port_Moresby"
+
+                },
+                "id": "GKA",
+                "type": "airport"
+            },
+                {
+                    "attributes": {
+                        "altitude": 20,
+                        "city": "Madang",
+                        "country": "Papua New Guinea",
+                        "iata": "MAG",
+                        "icao": "AYMD",
+                        "latitude": "-5.20708",
+                        "longitude": "145.789001",
+                        "name": "Madang Airport",
+                        "timezone": "Pacific/Port_Moresby"
+                    },
+                    "id": "MAG",
+                    "type": "airport"
+                },
+                {
+                    "attributes": {
+                        "altitude": 1343,
+                        "city": "Brandon",
+                        "country": "Canada",
+                        "iata": "YBR",
+                        "icao": "CYBR",
+                        "latitude": "49.91",
+                        "longitude": "-99.951897",
+                        "name": "Brandon Municipal Airport",
+                        "timezone": "America/Winnipeg"
+                    },
+                    "id": "YBR",
+                    "type": "airport"
+                },
+                {
+                    "attributes": {
+                        "altitude": 90,
+                        "city": "Cambridge Bay",
+                        "country": "Canada",
+                        "iata": "YCB",
+                        "icao": "CYCB",
+                        "latitude": "69.108101",
+                        "longitude": "-105.138",
+                        "name": "Cambridge Bay Airport",
+                        "timezone": "America/Edmonton"
+                    },
+                    "id": "YCB",
+                    "type": "airport"
+                }
+            ],
+            "links": {
+                "first": "https://airportgap.com/api/airports",
+                "last": "https://airportgap.com/api/airports?page=203",
+                "next": "https://airportgap.com/api/airports?page=2",
+                "prev": "https://airportgap.com/api/airports",
+                "self": "https://airportgap.com/api/airports"
+            }
+        }
+        mock_ingest_data.return_value = ingested_data
 
         mock_add_item.return_value = "flight_results_id"
 
@@ -143,8 +199,9 @@ class TestFlightSearchJob(unittest.TestCase):
 
         # Assertions
         mock_add_item.assert_called_once_with(
-            meta["token"], "flight_results_entity", "1.0", {"data": []}
+            meta["token"], "flight_results_entity", "1.0", ingested_data
         )
+
 
     @patch("app_init.app_init.entity_service.add_item")
     def test_notify_no_flights(self, mock_add_item):
@@ -162,31 +219,30 @@ class TestFlightSearchJob(unittest.TestCase):
 
         asyncio.run(notify_no_flights(meta, data))
 
+        notification_data = {
+            "notification_id": "notification_001",
+            "message": "No flights were found matching your search criteria.",
+            "search_criteria": {
+                "departure_airport": data["departure_airport"],
+                "arrival_airport": data["arrival_airport"],
+                "travel_dates": data["travel_dates"],
+                "number_of_passengers": data["number_of_passengers"],
+            },
+            "timestamp": "2023-10-01T10:05:00Z",  # Replace with current timestamp
+            "user_contact": {
+                "email": "user@example.com",  # This should be dynamically retrieved
+                "phone": "+1234567890"  # This should be dynamically retrieved
+            },
+            "suggestions": [
+                "Try adjusting your travel dates.",
+                "Consider searching from nearby airports.",
+                "Check back later for updated flight availability."
+            ]
+        }
         mock_add_item.assert_called_once_with(
-            meta["token"], "no_flight_notification_entity", "1.0", {
-                "notification_id": "notification_001",
-                "message": "No flights were found matching your search criteria.",
-                "search_criteria": {
-                    "departure_airport": "JFK",
-                    "arrival_airport": "LAX",
-                    "travel_dates": {
-                        "departure": "2023-12-01",
-                        "return": "2023-12-10"
-                    },
-                    "number_of_passengers": 2
-                },
-                "timestamp": "2023-10-01T10:05:00Z",
-                "user_contact": {
-                    "email": "user@example.com",
-                    "phone": "+1234567890"
-                },
-                "suggestions": [
-                    "Try adjusting your travel dates.",
-                    "Consider searching from nearby airports.",
-                    "Check back later for updated flight availability."
-                ]
-            }
+            meta["token"], "no_flight_notification_entity", "1.0", notification_data
         )
+
 
     @patch("app_init.app_init.entity_service.add_item")
     def test_handle_api_error(self, mock_add_item):
@@ -218,6 +274,7 @@ class TestFlightSearchJob(unittest.TestCase):
                 }
             }
         )
+
 
 if __name__ == "__main__":
     unittest.main()

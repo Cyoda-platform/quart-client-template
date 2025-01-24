@@ -30,9 +30,6 @@
       "id": "MAG",
       "type": "airport"
     },
-
-    ...
-
     {
       "attributes": {
         "altitude": 1343,

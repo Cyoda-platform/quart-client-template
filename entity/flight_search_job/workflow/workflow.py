@@ -3,7 +3,6 @@ import asyncio
 import logging
 import aiohttp
 from app_init.app_init import entity_service
-from common.service.trino_service import run_sql_query
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -120,7 +119,7 @@ class TestFlightSearchJob(unittest.TestCase):
 
     @patch("aiohttp.ClientSession.get")
     @patch("app_init.app_init.entity_service.add_item")
-    async def test_search_flights_success(self, mock_add_item, mock_get):
+    def test_search_flights_success(self, mock_add_item, mock_get):
         # Setup
         mock_get.return_value.__aenter__.return_value.status = 200
         mock_get.return_value.__aenter__.return_value.json = asyncio.Future()
@@ -140,7 +139,7 @@ class TestFlightSearchJob(unittest.TestCase):
         }
 
         # Execute
-        await search_flights(meta, data)
+        asyncio.run(search_flights(meta, data))
 
         # Assertions
         mock_add_item.assert_called_once_with(
@@ -148,7 +147,7 @@ class TestFlightSearchJob(unittest.TestCase):
         )
 
     @patch("app_init.app_init.entity_service.add_item")
-    async def test_notify_no_flights(self, mock_add_item):
+    def test_notify_no_flights(self, mock_add_item):
         meta = {"token": "test_token"}
         data = {
             "departure_airport": "JFK",
@@ -161,7 +160,7 @@ class TestFlightSearchJob(unittest.TestCase):
             "user_id": "user_123"
         }
 
-        await notify_no_flights(meta, data)
+        asyncio.run(notify_no_flights(meta, data))
 
         mock_add_item.assert_called_once_with(
             meta["token"], "no_flight_notification_entity", "1.0", {
@@ -190,13 +189,13 @@ class TestFlightSearchJob(unittest.TestCase):
         )
 
     @patch("app_init.app_init.entity_service.add_item")
-    async def test_handle_api_error(self, mock_add_item):
+    def test_handle_api_error(self, mock_add_item):
         meta = {"token": "test_token"}
         data = {
             "user_id": "user_123"
         }
 
-        await handle_api_error(meta, data)
+        asyncio.run(handle_api_error(meta, data))
 
         mock_add_item.assert_called_once_with(
             meta["token"], "error_notification_entity", "1.0", {

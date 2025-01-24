@@ -1,0 +1,55 @@
+{
+    "job_id": "lib_mgmt_job_001",
+    "job_name": "Daily Data Sync",
+    "execution_date": "2023-10-01T05:00:00Z",
+    "status": "completed",
+    "total_books_fetched": 200,
+    "total_authors_fetched": 50,
+    "total_users_fetched": 120,
+    "total_activities_fetched": 30,
+    "successful_operations": {
+        "books": 190,
+        "authors": 48,
+        "users": 115,
+        "activities": 28
+    },
+    "failed_operations": {
+        "books": 10,
+        "authors": 2,
+        "users": 5,
+        "activities": 2
+    },
+    "failure_reasons": [
+        {
+            "entity": "books",
+            "details": "10 books failed to sync due to missing data."
+        },
+        {
+            "entity": "authors",
+            "details": "2 authors missing required fields."
+        },
+        {
+            "entity": "users",
+            "details": "5 users failed due to network timeout."
+        },
+        {
+            "entity": "activities",
+            "details": "2 activities failed due to invalid date format."
+        }
+    ],
+    "report": {
+        "generated": true,
+        "report_id": "report_001",
+        "distribution_status": "sent",
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            },
+            {
+                "name": "Librarian",
+                "email": "librarian@example.com"
+            }
+        ]
+    }
+}

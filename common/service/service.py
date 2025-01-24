@@ -65,6 +65,7 @@ class EntityServiceImpl(EntityService):
         resp = await self._repository.update(meta, technical_id, entity)
         return resp
 
+
     async def _find_by_criteria(self, token, entity_model, entity_version, condition):
         meta = await self._repository.get_meta(token, entity_model, entity_version)
         resp = await self._repository.find_all_by_criteria(meta, condition)

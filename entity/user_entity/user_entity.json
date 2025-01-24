@@ -1,4 +1,4 @@
-{
+[{
     "id": 1,
     "userName": "User 1",
     "password": "Password1"
@@ -7,4 +7,4 @@
     "id": 2,
     "userName": "User 2",
     "password": "Password2"
-  }
+  }]

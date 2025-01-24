@@ -1,7 +1,8 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "Cyoda design",
+    "title": "Improved Cyoda design",
     "type": "object",
+    "can_proceed": false,
     "entities": [
         {
             "entity_name": "library_management_job",
@@ -52,23 +53,10 @@
                         }
                     },
                     {
-                        "name": "fetch_tasks",
-                        "description": "Fetch all tasks from the API.",
-                        "start_state": "users_fetched",
-                        "start_state_description": "Users have been fetched and tasks are being retrieved.",
-                        "end_state": "tasks_fetched",
-                        "end_state_description": "All tasks have been successfully fetched.",
-                        "process": {
-                            "name": "fetch_tasks_process",
-                            "description": "Process to call the /Tasks API to retrieve task list.",
-                            "adds_new_entites": "task_entity"
-                        }
-                    },
-                    {
                         "name": "fetch_user_activities",
                         "description": "Fetch user activities from the API.",
-                        "start_state": "tasks_fetched",
-                        "start_state_description": "Tasks have been fetched and user activities are being retrieved.",
+                        "start_state": "users_fetched",
+                        "start_state_description": "Users have been fetched and user activities are being retrieved.",
                         "end_state": "user_activities_fetched",
                         "end_state_description": "User activities have been successfully fetched.",
                         "process": {
@@ -109,17 +97,6 @@
             "depends_on_entity": "library_management_job",
             "entity_workflow": {
                 "name": "user_workflow",
-                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
-                "transitions": []
-            }
-        },
-        {
-            "entity_name": "task_entity",
-            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
-            "entity_source": "ENTITY_EVENT",
-            "depends_on_entity": "library_management_job",
-            "entity_workflow": {
-                "name": "task_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": []
             }

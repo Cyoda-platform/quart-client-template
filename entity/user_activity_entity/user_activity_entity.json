@@ -1,1 +1,12 @@
-😊 Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!
+{
+    "id": 1,
+    "title": "Activity 1",
+    "dueDate": "2025-01-24T16:11:04.1754235+00:00",
+    "completed": false
+  },
+  {
+    "id": 2,
+    "title": "Activity 2",
+    "dueDate": "2025-01-24T17:11:04.1754265+00:00",
+    "completed": true
+  }

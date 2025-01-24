@@ -70,7 +70,6 @@ async def fetch_user_activities_process(meta, data):
     except Exception as e:
         logger.error(f"Error in fetch_user_activities_process: {e}")
 
-
 # Unit tests for the processor functions
 class TestLibraryManagementJob(unittest.TestCase):
 

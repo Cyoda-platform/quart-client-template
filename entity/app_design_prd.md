@@ -100,6 +100,21 @@ graph TD;
     A -->|triggers| E[user_activity_entity];
 ```
 
+```mermaid
+journey
+    title Fetching Process Journey
+    section Data Fetching Process
+      None: 5: Fetch Books:
+      Books Fetched: 5: Fetch Authors:
+      Authors Fetched: 5: Fetch Users:
+      Users Fetched: 5: Fetch User Activities:
+      User Activities Fetched: 5
+
+    section Decision Point
+      Books Available: 5: Decision: Check Books Availability:
+      Availability Yes: 5: Proceed to Authors
+      Availability No: 5: Error: No Books Available
+```
 ## Conclusion
 
 The updated Cyoda design aligns effectively with the requirements for the Library Manager Pro application. By utilizing the event-driven model, the application efficiently manages state transitions of each entity involved, from data fetching to storage. The outlined entities, workflows, and events comprehensively cover the needs of the application, ensuring a smooth and automated process for library management.

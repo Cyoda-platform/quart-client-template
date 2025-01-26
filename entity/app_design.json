@@ -1,3 +1,9 @@
-The requirement you've provided is clear and sufficient for creating the Cyoda design. It outlines the need to download data for "London Houses," analyze it using pandas, and save a report. This allows us to structure the necessary entities and workflows effectively.
+The requirement you've provided is not clear enough to create the Cyoda design. The term "test" does not specify any entities, workflows, or processes that need to be outlined. 
 
-I am ready to proceed with creating the Cyoda design JSON based on this requirement. Please let me know if you have any additional instructions or if you would like me to start generating the design JSON.
+To proceed effectively, I would need additional details about the specific data, actions, and outcomes desired. Here are some questions to clarify the requirement:
+
+1. What specific data do you want to download or process?
+2. Are there any specific analyses or transformations you want to perform on the data?
+3. What kind of report do you want to generate, and in what format should it be saved?
+
+Please provide more details, and I will be ready to assist further.

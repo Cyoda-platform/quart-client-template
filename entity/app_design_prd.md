@@ -45,9 +45,8 @@ This approach enhances scalability and efficiency by enabling automatic processi
 ```mermaid
 flowchart TD
     A[None] -->|transition: retrieve_pet_details, processor: retrieve_pet_process| B[data_ingested]
-    B --> C[End State]
 
-    class A,B,C automated;
+    class A,B automated;
 ```
 
 ### Entity Diagram

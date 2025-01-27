@@ -138,18 +138,12 @@ class TestLibraryManagementJob(unittest.TestCase):
     @patch("app_init.app_init.entity_service.add_item")
     def test_fetch_authors_process(self, mock_add_item,mock_ingest_authors_data):
         authors =[
-  {
-    "id": 1,
-    "idBook": 1,
-    "firstName": "First Name 1",
-    "lastName": "Last Name 1"
-  },
-  {
-    "id": 2,
-    "idBook": 1,
-    "firstName": "First Name 2",
-    "lastName": "Last Name 2"
-  }]
+            {
+                    "id": 0,
+                    "title": "string",
+                    "dueDate": "2025-01-24T15:11:04.069Z",
+                    "completed": True
+                }]
         mock_ingest_authors_data.return_value = authors
 
         mock_add_item.return_value = "author_entity_id"

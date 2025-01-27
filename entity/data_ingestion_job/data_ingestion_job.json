@@ -1,5 +1,6 @@
 {
     "job_id": "job_001",
+    "pet_id": "7517577846774566682",
     "job_name": "Pet Data Ingestion Job",
     "scheduled_time": "2023-10-01T10:00:00Z",
     "status": "completed",

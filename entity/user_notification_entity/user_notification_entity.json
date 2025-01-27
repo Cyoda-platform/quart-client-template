@@ -1,0 +1,17 @@
+{
+    "notification_id": "notif_001",
+    "user_id": "user_123",
+    "pet_id": "7517577846774566682",
+    "message": "The pet ID you entered is invalid. Please check the ID and try again.",
+    "status": "unread",
+    "timestamp": "2023-10-01T10:00:00Z",
+    "notification_type": "error",
+    "details": {
+        "error_code": "INVALID_PET_ID",
+        "suggestions": [
+            "Ensure the pet ID is correct.",
+            "Check the Petstore API for available pets.",
+            "Contact support if the issue persists."
+        ]
+    }
+}

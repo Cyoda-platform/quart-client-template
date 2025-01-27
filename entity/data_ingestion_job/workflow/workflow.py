@@ -3,7 +3,7 @@ import json
 import logging
 import asyncio
 from app_init.app_init import entity_service
-from entity.raw_data_entity.connections.connections import ingest_data as ingest_raw_data
+from entity.pet_data_entity.connections.connections import ingest_data as ingest_raw_data
 from common.config.config import ENTITY_VERSION
 
 logging.basicConfig(level=logging.INFO)

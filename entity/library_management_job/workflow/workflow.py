@@ -72,85 +72,10 @@ async def fetch_user_activities_process(meta, data):
 # Unit tests for the processor functions
 class TestLibraryManagementJob(unittest.TestCase):
 
-    @patch("workflow.ingest_books_data")
-    @patch("workflow.ingest_authors_data")
-    @patch("workflow.ingest_users_data")
-    @patch("workflow.ingest_user_activities_data")
-    @patch("app_init.app_init.entity_service.add_item")
-    def test_fetch_books_process(self, mock_add_item):
-        # Set up mock return values
-
-        ingest_user_activities_data.return_value = [
-            {
-                "id": 1,
-                "title": "Activity 1",
-                "dueDate": "2025-01-24T16:11:04.1754235+00:00",
-                "completed": False
-            },
-            {
-                "id": 2,
-                "title": "Activity 2",
-                "dueDate": "2025-01-24T17:11:04.1754265+00:00",
-                "completed": True
-            }]
-        ingest_users_data.return_value = [
-            {
-                "id": 1,
-                "userName": "User 1",
-                "password": "Password1"
-            },
-            {
-                "id": 2,
-                "userName": "User 2",
-                "password": "Password2"
-            }]
-
-        ingest_authors_data.return_value = [
-            {
-                "id": 1,
-                "idBook": 1,
-                "firstName": "First Name 1",
-                "lastName": "Last Name 1"
-            },
-            {
-                "id": 2,
-                "idBook": 1,
-                "firstName": "First Name 2",
-                "lastName": "Last Name 2"
-            }]
-        ingest_books_data.return_value = [
-            {
-                "id": 1,
-                "title": "Book 1",
-                "description": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
-                "pageCount": 100,
-                "excerpt": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
-                "publishDate": "2025-01-23T14:56:16.9335733+00:00"
-            },
-            {
-                "id": 2,
-                "title": "Book 2",
-                "description": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
-                "pageCount": 200,
-                "excerpt": "Lorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\nLorem lorem lorem. Lorem lorem lorem. Lorem lorem lorem.\n",
-                "publishDate": "2025-01-22T14:56:16.9335857+00:00"
-            }]
-
-        mock_add_item.return_value = "book_entity_id"
-
-        meta = {"token": "test_token"}
-        data = {}
-
-        # Run the fetch_books_process function
-        asyncio.run(fetch_books_process(meta, data))
-
-        # Assertions to check that the add_item method was called for each book
-        self.assertEqual(mock_add_item.call_count, 2)
-
     # Similar tests for authors, users, and user activities can be added here...
     @patch("workflow.ingest_user_activities_data")
     @patch("app_init.app_init.entity_service.add_item")
-    def test_fetch_books_process(self, mock_add_item, mock_ingest_user_activities_data):
+    def test_fetch_user_activities_process(self, mock_add_item, mock_ingest_user_activities_data):
         user_activities = [
             {
                 "id": 1,
@@ -173,18 +98,16 @@ class TestLibraryManagementJob(unittest.TestCase):
         data = {}
 
         # Run the fetch_books_process function
-        asyncio.run(fetch_authors_process(meta, data))
+        asyncio.run(fetch_user_activities_process(meta, data))
 
         # Assertions to check that the add_item method was called
         self.assertEqual(mock_add_item.call_count, 1)
-        self.assertEqual(
-            mock_add_item.call_args.args,
-            (meta["token"], "user_activity_entity", "1.0", user_activities)
+        self.assertEqual(mock_add_item.call_args.args,(meta["token"], "user_activity_entity", "1.0", user_activities)
         )
 
-    @patch("workflow.ingest_authors_data")
+    @patch("workflow.ingest_users_data")
     @patch("app_init.app_init.entity_service.add_item")
-    def test_fetch_books_process(self, mock_add_item,
+    def test_fetch_users_process(self, mock_add_item,
                                  mock_ingest_users_data):
         users = [
             {
@@ -205,7 +128,7 @@ class TestLibraryManagementJob(unittest.TestCase):
         data = {}
 
         # Run the fetch_books_process function
-        asyncio.run(fetch_authors_process(meta, data))
+        asyncio.run(fetch_users_process(meta, data))
 
         # Assertions to check that the add_item method was called
         self.assertEqual(mock_add_item.call_count, 1)
@@ -213,8 +136,7 @@ class TestLibraryManagementJob(unittest.TestCase):
 
     @patch("workflow.ingest_authors_data")
     @patch("app_init.app_init.entity_service.add_item")
-    def test_fetch_books_process(self, mock_add_item,
-                                 mock_ingest_authors_data):
+    def test_fetch_authors_process(self, mock_add_item,mock_ingest_authors_data):
         authors =[
   {
     "id": 1,

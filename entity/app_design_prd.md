@@ -36,7 +36,7 @@ The workflows associated with each job and data entity define how they transitio
 
 ```mermaid
 flowchart TD
-    A[Start State] -->|transition: start_data_ingestion, processor: ingest_pet_data| B[data_ingested]
+    A[None] -->|transition: start_data_ingestion, processor: ingest_pet_data| B[data_ingested]
     B --> D[End State]
     class A,B,D automated;
 ```

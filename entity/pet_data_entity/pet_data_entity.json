@@ -1,19 +1,18 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<pet>
-	<id>10</id>
-	<name>doggie</name>
-	<category>
-		<id>1</id>
-		<name>Dogs</name>
-	</category>
-	<photoUrls>
-		<photoUrl>string</photoUrl>
-	</photoUrls>
-	<tags>
-		<tag>
-			<id>0</id>
-			<name>string</name>
-		</tag>
-	</tags>
-	<status>available</status>
-</pet>
+{
+  "id": 10,
+  "name": "doggie",
+  "category": {
+    "id": 1,
+    "name": "Dogs"
+  },
+  "photoUrls": [
+    "string"
+  ],
+  "tags": [
+    {
+      "id": 0,
+      "name": "string"
+    }
+  ],
+  "status": "available"
+}

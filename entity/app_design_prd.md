@@ -77,6 +77,24 @@ sequenceDiagram
     Data Ingestion Job->>User Notification Entity: Notify on success or failure
 ```
 
+```mermaid
+journey
+    title Data Ingestion and Notification Process
+    section User Interaction
+      User: 5: Input pet ID and schedule data ingestion job:
+
+    section Scheduling and Processing
+      Scheduler: 5: Trigger data ingestion:
+      Data Ingestion Job: 5: Retrieve pet details by ID:
+      Petstore API: 5: Return pet details:
+
+    section Data Handling
+      Pet Data Entity: 5: Store pet details:
+
+    section Notification
+      User Notification Entity: 5: Notify on success or failure:
+```
+
 ### Actors Involved
 
 - **User**: Inputs a pet ID and triggers data ingestion.

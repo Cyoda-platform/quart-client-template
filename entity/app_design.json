@@ -1,3 +1,93 @@
-The requirement provided is clear and sufficient for creating the Cyoda design. It specifies the objective of downloading London Houses Data, analyzing it using pandas, and saving a report. Based on this, I can outline the necessary entities and their workflows in the Cyoda design.
-
-I am ready to proceed with the design JSON to reflect this requirement. If you have any specific considerations or additional entities you would like to include, please let me know!
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "data_ingestion_workflow",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Start the data ingestion process for London Houses Data.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_london_houses_data",
+                            "description": "Process to ingest London Houses Data from the specified API.",
+                            "adds_new_entites": "raw_london_houses_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_london_houses_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "raw_london_houses_data_workflow",
+                "transitions": [
+                    {
+                        "name": "analyze_data",
+                        "description": "Analyze the raw London Houses Data using pandas.",
+                        "start_state": "data_ingested",
+                        "start_state_description": "Data has been ingested and is ready for analysis.",
+                        "end_state": "data_analyzed",
+                        "end_state_description": "Data has been successfully analyzed.",
+                        "process": {
+                            "name": "analyze_london_houses_data",
+                            "description": "Process to analyze raw London Houses Data using pandas.",
+                            "adds_new_entites": "analyzed_london_houses_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "analyzed_london_houses_data_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "raw_london_houses_data_entity",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "analyzed_london_houses_data_workflow",
+                "transitions": [
+                    {
+                        "name": "generate_report",
+                        "description": "Generate a report from the analyzed London Houses Data.",
+                        "start_state": "data_analyzed",
+                        "start_state_description": "Data has been analyzed and is ready for reporting.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been successfully generated.",
+                        "process": {
+                            "name": "generate_london_houses_report",
+                            "description": "Process to generate a report from the analyzed London Houses Data.",
+                            "adds_new_entites": "london_houses_report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "london_houses_report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "analyzed_london_houses_data_entity",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "london_houses_report_workflow",
+                "transitions": []
+            }
+        }
+    ]
+}

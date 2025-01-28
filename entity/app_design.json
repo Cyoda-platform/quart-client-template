@@ -1,13 +1,43 @@
-The requirement you provided is clear and sufficient for creating a Cyoda design. Here’s a validation of the required components:
-
-1. **Entities Outline**:
-   - **Data Ingestion Job (JOB)**: Responsible for managing the retrieval of user details from the ReqRes API. This will include handling the input user ID and sending the GET request.
-   - **User Details Entity (DATA)**: To store the retrieved user information. This will be a raw data entity capturing the details from the API response.
-
-2. **Workflows**:
-   - The workflow will define the process of handling the input user ID, making the API call, and managing the outcome based on whether the user was found or if an error occurred (e.g., invalid ID).
-
-3. **State Management**:
-   - The states will reflect the process from receiving the user ID, making the request to the API, and the potential outcomes (success and error states).
-
-No further details are required at this stage to outline these entities and their workflows. I am ready to proceed with creating the Cyoda design JSON based on this information. 
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "user_details_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "user_details_workflow",
+                "transitions": [
+                    {
+                        "name": "retrieve_user_details",
+                        "description": "Retrieve user details from ReqRes API based on provided user ID.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before processing.",
+                        "end_state": "user_details_retrieved",
+                        "end_state_description": "User details have been successfully retrieved.",
+                        "process": {
+                            "name": "get_user_details",
+                            "description": "Process to send GET request to ReqRes API and retrieve user information.",
+                            "adds_new_entites": "user_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "user_details_job",
+            "entity_workflow": {
+                "name": "user_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

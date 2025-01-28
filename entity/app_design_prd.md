@@ -14,7 +14,7 @@ In the Cyoda ecosystem, entities are fundamental components that represent proce
 
 1. **Book Data Ingestion Job (`book_data_ingestion_job`)**:
    - **Type**: JOB
-   - **Source**: SCHEDULED
+   - **Source**: API_REQUEST
    - **Description**: This job is responsible for ingesting book data from the specified API.
 
 2. **Book Entity (`book_entity`)**:
@@ -64,20 +64,20 @@ graph TD;
 ```mermaid
 sequenceDiagram
     participant User
-    participant Scheduler
+    participant API
     participant Book Data Ingestion Job
     participant Book Entity
 
-    User->>Scheduler: Schedule book data ingestion job
-    Scheduler->>Book Data Ingestion Job: Trigger data ingestion
+    User->>API: Initiate book data ingestion
+    API->>Book Data Ingestion Job: Trigger data ingestion
     Book Data Ingestion Job->>Book Entity: Ingest book data
     Book Entity-->>Book Data Ingestion Job: Book data saved
 ```
 
 ## Actors Involved
 
-- **User**: Initiates the scheduling of the book data ingestion job.
-- **Scheduler**: Responsible for triggering the job at predefined times.
+- **User**: Initiates the API call for book data ingestion.
+- **API**: Responsible for triggering the book data ingestion job.
 - **Book Data Ingestion Job**: Central to managing the workflow of book data processing.
 - **Book Entity**: Stores the ingested book data.
 

@@ -1,0 +1,93 @@
+{
+    "name": "trip_management_workflow",
+    "description": "Workflow to manage trips and events within trips.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "trip_management_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "trip_management_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "manage_trip",
+            "description": "Manage trip scheduling and user assignments.",
+            "start_state": "None",
+            "start_state_description": "Initial state before managing trips.",
+            "end_state": "trip_managed",
+            "end_state_description": "Trip has been successfully managed.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "manage_trip_process",
+                        "description": "Process to manage trips, add/remove users, and handle events.",
+                        "calculation_nodes_tags": "5ce1bfd6-dda7-11ef-a287-eac462a7cb9f",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "create_event",
+            "description": "Create an event within a trip.",
+            "start_state": "trip_managed",
+            "start_state_description": "Trip management is complete; ready to add events.",
+            "end_state": "event_created",
+            "end_state_description": "Event has been successfully created.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "create_event_process",
+                        "description": "Process to create new events associated with trips.",
+                        "calculation_nodes_tags": "5ce1bfd6-dda7-11ef-a287-eac462a7cb9f",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

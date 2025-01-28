@@ -1,8 +1,104 @@
-The requirement you provided is clear and sufficiently outlines the necessary components for creating the Cyoda design. Here is a summary of the key aspects:
-
-- **Specific Entities**: You've identified four essential entities (Pet Entity, Transformed Pet Entity, User Interaction Entity, and Notification Entity) that align with the application's goals and needed functionalities.
-- **Application Flow Orchestration**: Your choice to use multiple job entities is suitable for managing different processes separately, which will enhance modularity and clarity in the application design.
-- **Workflow Assignment**: The workflows assigned to each job entity (Data Ingestion, Data Transformation, Display, and Notification) are well-defined and will cover all necessary operations.
-- **Entity Saving Triggers**: The method for triggering the saving of entities through API calls based on user interactions is appropriate for ensuring up-to-date information.
-
-There are no uncertainties in the requirements at this stage, and everything is clear. I am ready to proceed with outlining the Cyoda design.
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "scheduled_ingestion",
+                        "description": "Triggered by a scheduled job to ingest pet data from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Pet data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_pet_data",
+                            "description": "Process to fetch pet details from the API using user-defined parameters.",
+                            "adds_new_entites": "pet_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "pet_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "pet_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "transformed_pet_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "transformed_pet_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "transform_pet_data",
+                        "description": "Transform pet data into a user-friendly format.",
+                        "start_state": "data_ingested",
+                        "start_state_description": "Pet data has been ingested and is ready for transformation.",
+                        "end_state": "data_transformed",
+                        "end_state_description": "Pet data has been successfully transformed.",
+                        "process": {
+                            "name": "transform_pet_data_process",
+                            "description": "Process to rename fields and add additional attributes to pet data.",
+                            "adds_new_entites": "user_interaction_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_interaction_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "user_interaction_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "notification_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "notification_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "send_no_pets_notification",
+                        "description": "Send notification if no pets match the search criteria.",
+                        "start_state": "data_transformed",
+                        "start_state_description": "Data has been transformed and is ready to check for matches.",
+                        "end_state": "notification_sent",
+                        "end_state_description": "Notification has been sent to the user.",
+                        "process": {
+                            "name": "send_notification_process",
+                            "description": "Process to alert users when no matching pets are found.",
+                            "adds_new_entites": "notification_entity"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,62 @@
+{
+    "trip_id": "trip_001",
+    "trip_name": "Summer Vacation",
+    "trip_owner": "user_123",
+    "participants": [
+        {
+            "user_id": "user_456",
+            "name": "Alice Johnson",
+            "timezone": "America/New_York",
+            "calendar_sync": true,
+            "status": "accepted"
+        },
+        {
+            "user_id": "user_789",
+            "name": "Bob Smith",
+            "timezone": "America/Los_Angeles",
+            "calendar_sync": false,
+            "status": "pending"
+        }
+    ],
+    "events": [
+        {
+            "event_id": "event_001",
+            "event_name": "Beach Day",
+            "event_date": "2023-07-15",
+            "start_time": "10:00",
+            "end_time": "17:00",
+            "location": "Santa Monica Beach",
+            "created_by": "user_123",
+            "participants": [
+                {
+                    "user_id": "user_123",
+                    "status": "confirmed"
+                },
+                {
+                    "user_id": "user_456",
+                    "status": "confirmed"
+                },
+                {
+                    "user_id": "user_789",
+                    "status": "pending"
+                }
+            ]
+        }
+    ],
+    "created_at": "2023-10-01T12:00:00Z",
+    "updated_at": "2023-10-01T12:00:00Z",
+    "request_parameters": {
+        "trip_owner": "user_123",
+        "participants": [
+            "user_456",
+            "user_789"
+        ],
+        "destination": "California",
+        "trip_dates": {
+            "start_date": "2023-07-10",
+            "end_date": "2023-07-20"
+        },
+        "purpose": "vacation"
+    },
+    "status": "active"
+}

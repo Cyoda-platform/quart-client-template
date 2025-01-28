@@ -1,0 +1,64 @@
+{
+    "book_data_ingestion_job": {
+        "job_id": "job_001",
+        "job_name": "Daily Book Data Ingestion",
+        "scheduled_time": "2023-10-01T05:00:00Z",
+        "status": "completed",
+        "start_time": "2023-10-01T05:00:00Z",
+        "end_time": "2023-10-01T05:05:00Z",
+        "total_records_processed": 50,
+        "successful_records": 48,
+        "failed_records": 2,
+        "failure_reason": [
+            "Timeout while fetching data for Book ID 10",
+            "Invalid response format for Book ID 20"
+        ],
+        "request_parameters": {
+            "api_endpoint": "https://fakerestapi.azurewebsites.net/api/v1/Books",
+            "headers": {
+                "accept": "text/plain; v=1.0"
+            }
+        },
+        "raw_data_summary": {
+            "technical_id": "raw_data_entity_001",
+            "records": [
+                {
+                    "id": 1,
+                    "title": "Book 1",
+                    "description": "Lorem ipsum dolor sit amet.",
+                    "pageCount": 300,
+                    "excerpt": "Excerpt of Book 1.",
+                    "publishDate": "2025-01-27T15:29:24.5924733+00:00",
+                    "cover_photo_url": "https://placeholdit.imgix.net/~text?txtsize=33&txt=Book 1&w=250&h=350"
+                },
+                {
+                    "id": 2,
+                    "title": "Book 2",
+                    "description": "Lorem ipsum dolor sit amet.",
+                    "pageCount": 250,
+                    "excerpt": "Excerpt of Book 2.",
+                    "publishDate": "2025-01-28T15:29:24.5924733+00:00",
+                    "cover_photo_url": "https://placeholdit.imgix.net/~text?txtsize=33&txt=Book 2&w=250&h=350"
+                }
+            ]
+        },
+        "aggregated_data_summary": {
+            "technical_id": "aggregated_data_entity_001",
+            "summary": {
+                "total_books": 48,
+                "average_page_count": 275,
+                "most_recent_publish_date": "2025-01-28T15:29:24.5924733+00:00"
+            }
+        },
+        "report_details": {
+            "report_entity_id": "report_entity_001",
+            "notification_status": "Sent",
+            "recipients": [
+                {
+                    "name": "Admin User",
+                    "email": "admin@example.com"
+                }
+            ]
+        }
+    }
+}

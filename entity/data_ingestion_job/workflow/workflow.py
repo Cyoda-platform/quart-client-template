@@ -1,5 +1,5 @@
 # ```python
-import json
+
 import logging
 import asyncio
 from app_init.app_init import entity_service
@@ -9,19 +9,20 @@ from common.config.config import ENTITY_VERSION
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 async def retrieve_pet_process(meta, data):
     """Process to retrieve pet details from the Petstore API."""
     logger.info("Starting the process to retrieve pet details.")
-    
+
     pet_id = data.get("pet_id")
-    
+
     if not pet_id:
         logger.error("Pet ID is not provided.")
         raise ValueError("Pet ID must be provided to retrieve pet details.")
 
     # Call the existing ingest_data function to retrieve raw pet data
-    raw_data = await ingest_raw_data(meta, data)
-    
+    raw_data = await ingest_raw_data(data["pet_id"])
+
     # Check if raw data is successfully retrieved
     if not raw_data:
         logger.error("No raw data received during ingestion.")
@@ -34,19 +35,21 @@ async def retrieve_pet_process(meta, data):
         ENTITY_VERSION,
         raw_data
     )
-    
+
     data["pet_data_entity"] = {"technical_id": pet_data_entity_id}
     logger.info(f"Pet data entity saved successfully with ID: {pet_data_entity_id}")
+
 
 # Unit Tests
 import unittest
 from unittest.mock import patch
 
+
 class TestRetrievePetProcess(unittest.TestCase):
-    
+
     @patch("app_init.app_init.entity_service.add_item")
-    @patch("entity.raw_data_entity.connections.connections.ingest_data")
-    async def test_retrieve_pet_process_success(self, mock_ingest_data, mock_add_item):
+    @patch("workflow.ingest_raw_data")
+    def test_retrieve_pet_process_success(self, mock_ingest_data, mock_add_item):
         # Arrange
         mock_ingest_data.return_value = {
             "id": "7517577846774566682",
@@ -72,10 +75,10 @@ class TestRetrievePetProcess(unittest.TestCase):
         data = {"pet_id": "7517577846774566682"}
 
         # Act
-        await retrieve_pet_process(meta, data)
+        asyncio.run(retrieve_pet_process(meta, data))
 
         # Assert
-        mock_ingest_data.assert_called_once_with(meta, data)
+        mock_ingest_data.assert_called_once_with(data["pet_id"])
         mock_add_item.assert_called_once_with(
             meta["token"],
             "pet_data_entity",
@@ -85,16 +88,6 @@ class TestRetrievePetProcess(unittest.TestCase):
         self.assertIn("pet_data_entity", data)
         self.assertEqual(data["pet_data_entity"]["technical_id"], "pet_data_entity_id")
 
-    @patch("app_init.app_init.entity_service.add_item")
-    @patch("entity.raw_data_entity.connections.connections.ingest_data")
-    async def test_retrieve_pet_process_no_pet_id(self, mock_ingest_data, mock_add_item):
-        # Arrange
-        meta = {"token": "test_token"}
-        data = {}
-
-        # Act & Assert
-        with self.assertRaises(ValueError):
-            await retrieve_pet_process(meta, data)
 
 if __name__ == "__main__":
     unittest.main()

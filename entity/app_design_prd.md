@@ -24,7 +24,7 @@ The Cyoda design JSON describes a structured approach to managing workflows thro
 
 ```mermaid
 flowchart TD
-   A[Initial State] -->|transition: ingest_pet_details, processor: ingest_pet_process, processor attributes: sync_process=false| B[pet_details_ingested]
+   A[None] -->|transition: ingest_pet_details, processor: ingest_pet_process, processor attributes: sync_process=false| B[pet_details_ingested]
    
    class A,B automated;
 ```
@@ -42,6 +42,20 @@ sequenceDiagram
     Scheduler->>petDetailsJob: Trigger data ingestion job
     petDetailsJob->>petDetailsEntity: Ingest pet details
     petDetailsEntity-->>petDetailsJob: Pet details ingested
+```
+
+```mermaid
+journey
+    title Pet Details Ingestion Process
+    section Scheduling
+      User: 5: Schedule pet details job:
+
+    section Job Triggering
+      Scheduler: 5: Trigger data ingestion job:
+
+    section Data Ingestion
+      petDetailsJob: 5: Ingest pet details:
+      petDetailsEntity: 5: Pet details ingested:
 ```
 
 ### Entity Relationships Diagram

@@ -1,17 +1,78 @@
-The requirement you've provided is clear and sufficient for outlining the entities and their workflows for the Cyoda design related to the trip scheduling project. The necessary functionality includes user authentication, trip management, and calendar synchronization, all of which can be structured into distinct entities and workflows.
-
-Here are the key points that can be derived from the requirements:
-
-1. **Entities**:
-   - Users (with authentication via Gmail)
-   - Trips (each trip can have multiple users)
-   - Events (associated with trips)
-   - Groups (managed by group owners)
-
-2. **Workflows**:
-   - Authentication workflow for users
-   - Trip creation and management workflow (including adding/removing users)
-   - Event creation workflow within trips
-   - Calendar synchronization workflow with Google Calendar
-
-No further details are required at this stage, and I am ready to proceed with creating the Cyoda design JSON as specified.
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "trip_management_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "trip_management_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "manage_trip",
+                        "description": "Manage trip scheduling and user assignments.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before managing trips.",
+                        "end_state": "trip_managed",
+                        "end_state_description": "Trip has been successfully managed.",
+                        "process": {
+                            "name": "manage_trip_process",
+                            "description": "Process to manage trips, add/remove users, and handle events.",
+                            "adds_new_entites": "trip_entity"
+                        }
+                    },
+                    {
+                        "name": "create_event",
+                        "description": "Create an event within a trip.",
+                        "start_state": "trip_managed",
+                        "start_state_description": "Trip management is complete; ready to add events.",
+                        "end_state": "event_created",
+                        "end_state_description": "Event has been successfully created.",
+                        "process": {
+                            "name": "create_event_process",
+                            "description": "Process to create new events associated with trips.",
+                            "adds_new_entites": "event_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "trip_entity",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "trip_management_job",
+            "entity_workflow": {
+                "name": "trip_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "event_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "trip_management_job",
+            "entity_workflow": {
+                "name": "event_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "user_entity",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "trip_management_job",
+            "entity_workflow": {
+                "name": "user_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

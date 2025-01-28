@@ -6,7 +6,7 @@
         {
             "entity_name": "user_details_job",
             "entity_type": "JOB",
-            "entity_source": "SCHEDULED",
+            "entity_source": "API_REQUEST",
             "depends_on_entity": "None",
             "entity_workflow": {
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",

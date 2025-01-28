@@ -6,7 +6,7 @@
 import asyncio
 import logging
 from app_init.app_init import entity_service
-from raw_data_entity.connections.connections import ingest_data as ingest_raw_data
+from entity.book_entity.connections.connections import ingest_data as ingest_raw_data
 from common.config.config import ENTITY_VERSION
 
 logging.basicConfig(level=logging.INFO)

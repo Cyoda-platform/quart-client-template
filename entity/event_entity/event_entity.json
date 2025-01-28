@@ -1,0 +1,41 @@
+{
+    "event_entity": {
+        "event_id": "evt_001",
+        "trip_id": "trip_001",
+        "event_name": "Group Dinner",
+        "event_description": "A casual dinner for all trip participants to relax and discuss plans.",
+        "event_date": "2023-10-15T19:00:00Z",
+        "event_location": {
+            "venue_name": "The Local Bistro",
+            "address": "123 Main St, Cityville, ST 12345",
+            "latitude": 40.712776,
+            "longitude": -74.005974
+        },
+        "participants": [
+            {
+                "user_id": "user_001",
+                "status": "accepted"
+            },
+            {
+                "user_id": "user_002",
+                "status": "declined"
+            },
+            {
+                "user_id": "user_003",
+                "status": "pending"
+            }
+        ],
+        "created_by": "user_001",
+        "created_at": "2023-10-01T10:00:00Z",
+        "updated_at": "2023-10-02T12:00:00Z",
+        "reminder": {
+            "reminder_time": "2023-10-14T12:00:00Z",
+            "reminder_type": "email"
+        },
+        "request_parameters": {
+            "calendar_sync": true,
+            "notify_participants": true,
+            "time_zone": "America/New_York"
+        }
+    }
+}

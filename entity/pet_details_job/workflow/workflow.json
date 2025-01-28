@@ -1,0 +1,60 @@
+{
+    "name": "pet_details_workflow",
+    "description": "Workflow for ingesting pet details based on their status.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "pet_details_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "pet_details_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "ingest_pet_details",
+            "description": "Ingest pet details based on their status.",
+            "start_state": "None",
+            "start_state_description": "Initial state before ingestion.",
+            "end_state": "pet_details_ingested",
+            "end_state_description": "Pet details have been successfully ingested.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "ingest_pet_process",
+                        "description": "Process to ingest pet details from the API.",
+                        "calculation_nodes_tags": "d3c4a4d2-ddb7-11ef-a287-eac462a7cb9f",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

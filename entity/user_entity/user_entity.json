@@ -1,0 +1,67 @@
+{
+    "user_id": "user_123",
+    "name": "John Doe",
+    "email": "john.doe@gmail.com",
+    "timezone": "America/New_York",
+    "trip_groups": [
+        {
+            "group_id": "group_001",
+            "group_name": "Summer Vacation",
+            "members": [
+                {
+                    "user_id": "user_123",
+                    "role": "owner"
+                },
+                {
+                    "user_id": "user_456",
+                    "role": "member"
+                },
+                {
+                    "user_id": "user_789",
+                    "role": "member"
+                }
+            ],
+            "events": [
+                {
+                    "event_id": "event_001",
+                    "event_name": "Flight to Miami",
+                    "event_date": "2023-06-15T10:00:00Z",
+                    "location": "JFK Airport",
+                    "status": "confirmed"
+                },
+                {
+                    "event_id": "event_002",
+                    "event_name": "Hotel Check-in",
+                    "event_date": "2023-06-15T15:00:00Z",
+                    "location": "Miami Beach Hotel",
+                    "status": "pending"
+                }
+            ]
+        },
+        {
+            "group_id": "group_002",
+            "group_name": "Weekend Getaway",
+            "members": [
+                {
+                    "user_id": "user_123",
+                    "role": "owner"
+                },
+                {
+                    "user_id": "user_321",
+                    "role": "member"
+                }
+            ],
+            "events": []
+        }
+    ],
+    "calendar_sync": {
+        "google_calendar_id": "primary",
+        "last_synced": "2023-10-01T12:00:00Z",
+        "sync_status": "successful"
+    },
+    "notification_preferences": {
+        "email_notifications": true,
+        "event_reminders": "1 hour before",
+        "group_updates": true
+    }
+}

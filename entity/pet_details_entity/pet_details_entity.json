@@ -1,1 +1,20 @@
-😊 Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!
+[
+  {
+    "pet_id": 0,
+    "category": {
+      "category_id": 0,
+      "category_name": "string"
+    },
+    "pet_name": "doggie",
+    "photoUrls": [
+      "string"
+    ],
+    "tags": [
+      {
+        "id": 0,
+        "name": "string"
+      }
+    ],
+    "status": "available"
+  }
+]

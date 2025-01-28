@@ -1,0 +1,60 @@
+{
+    "name": "user_details_workflow",
+    "description": "Workflow to retrieve user details from ReqRes API based on user ID.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "user_details_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "user_details_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "retrieve_user_details",
+            "description": "Retrieve user details from ReqRes API based on provided user ID.",
+            "start_state": "None",
+            "start_state_description": "Initial state before processing.",
+            "end_state": "user_details_retrieved",
+            "end_state_description": "User details have been successfully retrieved.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "get_user_details",
+                        "description": "Process to send GET request to ReqRes API and retrieve user information.",
+                        "calculation_nodes_tags": "534ab7a2-ddc5-11ef-a287-eac462a7cb9f",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

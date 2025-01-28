@@ -1,7 +1,4 @@
-three parameters:
-1 - available
-2 - pending
-3 - sold
+add three status parameters: available, pending, sold
 
 
 curl -X 'GET' \

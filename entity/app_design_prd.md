@@ -67,6 +67,23 @@ sequenceDiagram
     User Details Job->>User: Display user details
 ```
 
+```mermaid
+journey
+    title User Details Retrieval Process
+    section User Input
+      User: 5: Input user ID:
+
+    section Job Triggering
+      Scheduler: 5: Trigger user details retrieval:
+
+    section Data Retrieval
+      User Details Job: 5: Send GET request to ReqRes API:
+      User Data Entity: 5: User details retrieved:
+
+    section Display
+      User: 5: Display user details:
+```
+
 ## Event-Driven Approach
 
 The event-driven architecture ensures that actions are automatically triggered based on the state changes of entities:

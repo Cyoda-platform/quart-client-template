@@ -22,7 +22,7 @@ The JSON structure contains three primary entities:
 
 1. **Data Ingestion Job (`data_ingestion_job`)**:
    - **Type**: JOB
-   - **Source**: SCHEDULED
+   - **Source**: API_REQUEST
    - **Workflow**:
      - Starts the data ingestion process from an API to fetch pet details based on status.
 
@@ -62,13 +62,13 @@ graph TD;
 ```mermaid
 sequenceDiagram
     participant User
-    participant Scheduler
+    participant API
     participant Data Ingestion Job
     participant Raw Pet Data Entity
     participant Transformed Pet Data Entity
 
-    User->>Scheduler: Schedule data ingestion job
-    Scheduler->>Data Ingestion Job: Trigger scheduled data ingestion
+    User->>API: Request pet details
+    API->>Data Ingestion Job: Trigger data ingestion
     Data Ingestion Job->>Raw Pet Data Entity: Fetch pet details
     Raw Pet Data Entity-->>Data Ingestion Job: Data ingested
     Data Ingestion Job->>Transformed Pet Data Entity: Transform data
@@ -82,7 +82,7 @@ journey
     title User Flow for Fetching Pet Details
     section Start
       User initiates the process: 5: User
-      User schedules the data ingestion job: 5: User
+      User requests pet details via API: 5: User
     section Data Processing
       Data ingestion job fetches pet data: 5: System
       Raw pet data is transformed: 5: System

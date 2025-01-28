@@ -1,0 +1,27 @@
+{
+    "user_details_job": {
+        "job_id": "job_001",
+        "user_id": 2,
+        "request_parameters": {
+            "user_id": 2
+        },
+        "status": "completed",
+        "start_time": "2025-01-01T10:00:00Z",
+        "end_time": "2025-01-01T10:01:00Z",
+        "total_records_processed": 1,
+        "success_records": 1,
+        "failed_records": 0,
+        "failure_reason": [],
+        "retrieved_data": {
+            "id": 2,
+            "email": "janet.weaver@reqres.in",
+            "first_name": "Janet",
+            "last_name": "Weaver",
+            "avatar": "https://reqres.in/img/faces/2-image.jpg"
+        },
+        "support": {
+            "url": "https://reqres.in/#support-heading",
+            "text": "To keep ReqRes free, contributions towards server costs are appreciated!"
+        }
+    }
+}

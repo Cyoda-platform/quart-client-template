@@ -25,7 +25,7 @@ The workflows define the processes tied to each job entity, focusing on how each
 #### Data Ingestion Workflow
 ```mermaid
 flowchart TD
-    A[Start State] -->|transition: scheduled_ingestion, processor: ingest_pet_data, processor attributes: sync_process=true| B[data_ingested]
+    A[None] -->|transition: scheduled_ingestion, processor: ingest_pet_data, processor attributes: sync_process=true| B[data_ingested]
     B --> C[End State]
 
     class A,B,C automated;

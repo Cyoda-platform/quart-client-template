@@ -7,12 +7,12 @@ import unittest
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-API_URL = "https://petstore3.swagger.io/api/v3/pet/7517577846774566682"
+API_URL = "https://petstore3.swagger.io/api/v3/pet"
 
-async def fetch_data():
+async def fetch_data(pet_id):
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get(API_URL, headers={"accept": "application/xml"}) as response:
+            async with session.get(f"{API_URL}/{pet_id}", headers={"accept": "application/xml"}) as response:
                 if response.status == 200:
                     return await response.text()
                 else:
@@ -22,8 +22,8 @@ async def fetch_data():
             logger.error(f"Exception occurred: {str(e)}")
             return None
 
-async def ingest_data() -> dict:
-    raw_data = await fetch_data()
+async def ingest_data(pet_id) -> dict:
+    raw_data = await fetch_data(pet_id)
     if raw_data is None:
         logger.error("No data received for ingestion.")
         return {}
@@ -56,7 +56,7 @@ async def ingest_data() -> dict:
 class TestDataIngestion(unittest.TestCase):
 
     def test_ingest_data_success(self):
-        result = asyncio.run(ingest_data())
+        result = asyncio.run(ingest_data("7517577846774566682"))
 
         self.assertTrue("id" in result)
         self.assertEqual(result["id"], "7517577846774566682")

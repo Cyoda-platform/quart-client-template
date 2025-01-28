@@ -39,7 +39,7 @@ The workflow for the `user_details_job` consists of a single transition that ret
 
 ```mermaid
 flowchart TD
-    A[Start State] -->|transition: retrieve_user_details, processor: get_user_details| B[user_details_retrieved]
+    A[None] -->|transition: retrieve_user_details, processor: get_user_details| B[user_details_retrieved]
     B -->|criteria: user id is valid| C[User Details Retrieved]
     C --> D[End State]
 

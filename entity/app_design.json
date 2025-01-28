@@ -1,5 +1,43 @@
-The requirement you've provided is clear and sufficient for creating the Cyoda design. It specifies that there will be a single book entity, with the orchestration of data ingestion managed through a job. Additionally, it mentions triggering the saving of entities through an API call.
-
-At this stage, I understand that we will focus on defining the book entity and its associated workflows without delving into unnecessary details or implementation specifics.
-
-I am ready to proceed with developing the Cyoda design JSON based on this requirement. Please let me know if there are any specific aspects you would like to highlight or if you have additional instructions!
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "book_data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "book_data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Triggered by an API call to fetch book data.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Book data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_book_data",
+                            "description": "Process to ingest book data from the specified API.",
+                            "adds_new_entites": "book_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "book_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "book_data_ingestion_job",
+            "entity_workflow": {
+                "name": "book_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

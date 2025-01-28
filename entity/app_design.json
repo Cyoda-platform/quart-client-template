@@ -1,8 +1,68 @@
-The requirement you've provided is clear and sufficient for creating the Cyoda design. It outlines the necessary entities and workflows for data ingestion, transformation, and display of pet details. Here’s a brief validation of the key components:
-
-1. **Data Ingestion**: The application will need an entity to handle fetching pet details based on the specified statuses (available, sold, pending).
-2. **Data Transformation**: There should be a defined process to convert the raw data into a user-friendly format.
-3. **Data Display**: An entity is necessary to present the transformed data to the users.
-4. **User Interaction**: The application should allow customization of search parameters, indicating a need for user input handling.
-
-Since the requirements are sufficient for outlining the entities and their workflows, I am ready to proceed with creating the Cyoda design JSON. Please confirm if you'd like me to continue with that.
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Fetch pet details by status.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "fetch_pet_data",
+                            "description": "Process to fetch pet details based on the specified status.",
+                            "adds_new_entites": "raw_pet_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_pet_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_pet_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "transform_pet_data",
+                        "description": "Transform the retrieved raw pet data into a user-friendly format.",
+                        "start_state": "data_ingested",
+                        "start_state_description": "Raw pet data has been ingested and is ready for transformation.",
+                        "end_state": "pet_data_transformed",
+                        "end_state_description": "Pet data has been successfully transformed.",
+                        "process": {
+                            "name": "transform_pet_data_process",
+                            "description": "Process to convert raw pet data into a user-friendly format.",
+                            "adds_new_entites": "transformed_pet_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "transformed_pet_data_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "raw_pet_data_entity",
+            "entity_workflow": {
+                "name": "transformed_pet_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

@@ -14,7 +14,7 @@ The Cyoda design JSON consists of two main entities:
 
 1. **User Details Job (`user_details_job`)**: 
    - **Entity Type**: JOB
-   - **Source**: SCHEDULED
+   - **Source**: API_REQUEST
    - **Description**: This job is responsible for managing the retrieval of user details from the ReqRes API based on the provided user ID.
 
 2. **User Data Entity (`user_data_entity`)**:

@@ -1,0 +1,71 @@
+{
+    "pet_details_job": {
+        "job_id": "job_001",
+        "job_name": "Daily Pet Details Ingestion Job",
+        "scheduled_time": "2023-10-01T05:00:00Z",
+        "status": "completed",
+        "start_time": "2023-10-01T05:00:00Z",
+        "end_time": "2023-10-01T05:15:00Z",
+        "total_requests": {
+            "available": {
+                "request_count": 10,
+                "status": "success"
+            },
+            "pending": {
+                "request_count": 5,
+                "status": "success"
+            },
+            "sold": {
+                "request_count": 8,
+                "status": "success"
+            }
+        },
+        "pet_details": [
+            {
+                "pet_id": 9223372036854776000,
+                "category": {
+                    "category_id": 1,
+                    "category_name": "cats"
+                },
+                "pet_name": "Fluffy",
+                "photoUrls": [
+                    "http://example.com/cat.png"
+                ],
+                "tags": [
+                    {
+                        "id": 1,
+                        "name": "cute"
+                    }
+                ],
+                "status": "available"
+            },
+            {
+                "pet_id": 50366267417,
+                "pet_name": "CfcTHzsSQmzezcrKyMJidBFNZATeohuworpZRPebpjpLiFXZEqKkSCFtUVxaIlcLHjpmEquiLnVwpzEcQfUfUm",
+                "photoUrls": [
+                    "OZpvcj"
+                ],
+                "tags": [],
+                "status": "pending"
+            },
+            {
+                "pet_id": 201393731033398340,
+                "category": {
+                    "category_id": 7612786423,
+                    "category_name": "mOgBHmxNKUsIbiucPodIMzUVJvAOdeswwwvQjWQZjFSzZYPyiOcEtRIqGOsadXSVDOEGOoZhXAkmEaHdUUkErQQLTCKUAOq"
+                },
+                "pet_name": "111",
+                "photoUrls": [
+                    "GGlUhP"
+                ],
+                "tags": [
+                    {
+                        "id": 9280721785,
+                        "name": "qwgbnrDAjJNcnHzxkPyGaZpQVFhNAbmTH"
+                    }
+                ],
+                "status": "sold"
+            }
+        ]
+    }
+}

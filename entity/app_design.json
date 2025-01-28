@@ -6,7 +6,7 @@
         {
             "entity_name": "book_data_ingestion_job",
             "entity_type": "JOB",
-            "entity_source": "SCHEDULED",
+            "entity_source": "API_REQUEST",
             "depends_on_entity": "None",
             "entity_workflow": {
                 "name": "book_data_ingestion_workflow",

@@ -7,7 +7,7 @@ from entity.pet_details_entity.connections.connections import ingest_data as ing
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def ingest_pet_process(meta):
+async def ingest_pet_process(meta, data):
     """
     Process to ingest pet details from the API and save to pet_details_entity.
     """
@@ -20,14 +20,14 @@ def ingest_pet_process(meta):
 
         for status in statuses:
             # Ingest data for each status using the existing ingest_data function
-            pet_data = asyncio.run(ingest_raw_data(meta))
+            pet_data = await ingest_raw_data(status)
 
             if pet_data:
                 all_pet_details.extend(pet_data)
 
         # Save the pet details to the pet_details_entity
         if all_pet_details:
-            pet_details_entity_id = asyncio.run(entity_service).add_item(
+            pet_details_entity_id = await entity_service.add_item(
                 meta["token"], "pet_details_entity", "1.0", all_pet_details
             )
             logger.info(f"Pet details entity saved successfully with ID: {pet_details_entity_id}")

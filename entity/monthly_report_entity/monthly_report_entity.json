@@ -1,0 +1,44 @@
+{
+    "reportID": "monthly_report_2023_10",
+    "generatedDate": "2023-10-01T10:00:00Z",
+    "reportData": {
+        "categoryReports": [
+            {
+                "categoryID": "01JJSPYR8X0BZY2WJNE5R6TAA5",
+                "categoryName": "Hand Tools",
+                "stockLevel": 120,
+                "totalSales": 1500.75,
+                "popularItems": [
+                    {
+                        "itemID": "01JJSPYR90NQWABCB82MA08K4G",
+                        "itemName": "Hammer",
+                        "unitsSold": 300,
+                        "revenue": 600.0
+                    },
+                    {
+                        "itemID": "01JJSPYR90NQWABCB82MA08K4H",
+                        "itemName": "Hand Saw",
+                        "unitsSold": 250,
+                        "revenue": 500.0
+                    }
+                ]
+            },
+            {
+                "categoryID": "01JJSPYR90NQWABCB82MA08K4K",
+                "categoryName": "Screwdrivers",
+                "stockLevel": 80,
+                "totalSales": 600.5,
+                "popularItems": [
+                    {
+                        "itemID": "01JJSPYR90NQWABCB82MA08K4K",
+                        "itemName": "Screwdriver",
+                        "unitsSold": 150,
+                        "revenue": 300.0
+                    }
+                ]
+            }
+        ]
+    },
+    "createdAt": "2023-10-01T10:15:00Z",
+    "updatedAt": "2023-10-01T10:15:00Z"
+}

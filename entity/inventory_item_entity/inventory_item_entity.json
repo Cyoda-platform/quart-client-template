@@ -1,9 +1,16 @@
-{
-  "itemID": "string",
-  "itemName": "string",
-  "categoryID": "string",
-  "stockLevel": "integer",
-  "salesTrend": "float",
-  "createdAt": "string",
-  "updatedAt": "string"
-}
+[
+  {
+    "id": "string",
+    "parent_id": 0,
+    "name": "new category",
+    "slug": "new-category",
+    "sub_categories": [
+      {
+        "id": "string",
+        "parent_id": "string",
+        "name": "new category",
+        "slug": "new-category"
+      }
+    ]
+  }
+]

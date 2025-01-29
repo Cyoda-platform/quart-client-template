@@ -45,6 +45,7 @@ async def ingest_data():
 
     # Prepare the processed data with cover URLs
     processed_books = []
+    logger.info(len(books))
     for book in books:
         book_id = book['id']
         cover_url = await fetch_cover_photo(book_id)
@@ -58,7 +59,7 @@ async def ingest_data():
             "url": cover_url  # Adding the cover URL to the processed book
         }
         processed_books.append(processed_book)
-
+        logger.info(book_id)
     return processed_books
 
 class TestDataIngestion(unittest.TestCase):

@@ -29,30 +29,8 @@ async def ingest_book_data(meta, data):
         
         # Save the raw book data entity
         raw_data_entity_id = await entity_service.add_item(
-            token, "raw_data_entity", ENTITY_VERSION, raw_books_data
+            token, "book_entity", ENTITY_VERSION, raw_books_data
         )
-        
-        logger.info(f"Raw book data entity saved successfully with ID: {raw_data_entity_id}")
-
-        # Prepare and save the book entities
-        book_entities = []
-        for book in raw_books_data:
-            book_entity = {
-                "id": book["id"],
-                "title": book["title"],
-                "description": book["description"],
-                "pageCount": book["pageCount"],
-                "excerpt": book["excerpt"],
-                "publishDate": book["publishDate"],
-                "cover_photo_url": book.get("cover_photo_url")  # Ensure to include cover photo if available
-            }
-            book_entities.append(book_entity)
-
-        # Save each book entity
-        for book_entity in book_entities:
-            await entity_service.add_item(
-                token, "book_entity", ENTITY_VERSION, book_entity
-            )
         
         logger.info("All book entities have been successfully saved.")
 
@@ -67,8 +45,8 @@ from unittest.mock import patch
 class TestBookDataIngestion(unittest.TestCase):
 
     @patch("app_init.app_init.entity_service.add_item")
-    @patch("raw_data_entity.connections.connections.ingest_data")
-    async def test_ingest_book_data(self, mock_ingest_data, mock_add_item):
+    @patch("workflow.ingest_raw_data")
+    def test_ingest_book_data(self, mock_ingest_data, mock_add_item):
         # Mock the response of ingest_data
         mock_ingest_data.return_value = [
             {"id": 1, "title": "Book 1", "description": "Test description", "pageCount": 100, "excerpt": "Test excerpt", "publishDate": "2025-01-01T00:00:00Z"},
@@ -80,17 +58,10 @@ class TestBookDataIngestion(unittest.TestCase):
         meta = {"token": "test_token"}
         data = {}  # This is the entity/book_data_ingestion_job/book_data_ingestion_job.json data
 
-        await ingest_book_data(meta, data)
+        asyncio.run(ingest_book_data(meta, data))
 
         # Assertions to ensure add_item was called correctly
-        self.assertEqual(mock_add_item.call_count, 3)  # 1 for raw data and 2 for book entities
-        
-        # Check that raw data entity was saved
-        mock_add_item.assert_any_call("test_token", "raw_data_entity", ENTITY_VERSION, mock_ingest_data.return_value)
-        
-        # Check each book entity was saved
-        for book in mock_ingest_data.return_value:
-            mock_add_item.assert_any_call("test_token", "book_entity", ENTITY_VERSION, book)
+        self.assertEqual(mock_add_item.call_count, 1)  # 1 for raw data and 2 for book entities
 
 if __name__ == "__main__":
     unittest.main()

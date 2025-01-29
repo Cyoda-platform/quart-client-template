@@ -1,0 +1,60 @@
+{
+    "name": "report_generation_workflow",
+    "description": "Workflow to generate reports based on the analyzed data.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "report_entity",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "report_entity",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "generate_report",
+            "description": "Generate a report based on the analyzed data.",
+            "start_state": "data_analyzed",
+            "start_state_description": "Data has been analyzed and is ready for report generation.",
+            "end_state": "report_generated",
+            "end_state_description": "Report has been successfully generated.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "generate_report",
+                        "description": "Process to create and store the report.",
+                        "calculation_nodes_tags": "b4cfb8da-de8b-11ef-9967-0642a92bd86c",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

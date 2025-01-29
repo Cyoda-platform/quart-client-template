@@ -1,0 +1,104 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "activity_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "activity_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "processed_data_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "activity_data_entity",
+            "entity_workflow": {
+                "name": "processed_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "daily_report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "processed_data_entity",
+            "entity_workflow": {
+                "name": "daily_report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "fetch_activity_data",
+                        "description": "Fetch activity data from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before fetching data.",
+                        "end_state": "data_fetched",
+                        "end_state_description": "Activity data has been successfully fetched.",
+                        "process": {
+                            "name": "fetch_activity_data_process",
+                            "description": "Process to fetch activity data from the Fakerest API.",
+                            "adds_new_entites": "activity_data_entity"
+                        }
+                    },
+                    {
+                        "name": "process_activity_data",
+                        "description": "Process the fetched activity data to analyze patterns.",
+                        "start_state": "data_fetched",
+                        "start_state_description": "Data has been fetched and is ready for processing.",
+                        "end_state": "data_processed",
+                        "end_state_description": "Activity data has been successfully processed.",
+                        "process": {
+                            "name": "process_activity_data_process",
+                            "description": "Process to analyze and identify patterns from the fetched activity data.",
+                            "adds_new_entites": "processed_data_entity"
+                        }
+                    },
+                    {
+                        "name": "generate_daily_report",
+                        "description": "Generate a daily report summarizing user activities.",
+                        "start_state": "data_processed",
+                        "start_state_description": "Activity data has been processed and is ready for reporting.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Daily report has been successfully generated.",
+                        "process": {
+                            "name": "generate_daily_report_process",
+                            "description": "Process to create a daily report based on the processed activity data.",
+                            "adds_new_entites": "daily_report_entity"
+                        }
+                    },
+                    {
+                        "name": "send_report",
+                        "description": "Send the generated report to admin via email.",
+                        "start_state": "report_generated",
+                        "start_state_description": "Daily report has been generated and is ready to be sent.",
+                        "end_state": "report_sent",
+                        "end_state_description": "Report has been successfully sent to admin.",
+                        "process": {
+                            "name": "send_report_process",
+                            "description": "Process to send the daily report to the configured admin email.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

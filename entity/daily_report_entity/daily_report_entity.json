@@ -1,0 +1,28 @@
+{
+    "report_id": "report_2023_10_01",
+    "generated_at": "2023-10-01T10:05:00Z",
+    "total_activities": 3,
+    "completed_activities": 1,
+    "pending_activities": 2,
+    "activity_summary": [
+        {
+            "activity_id": "1",
+            "title": "Activity 1",
+            "due_date": "2025-01-29T14:32:51.4152486+00:00",
+            "status": "Pending"
+        },
+        {
+            "activity_id": "2",
+            "title": "Activity 2",
+            "due_date": "2025-01-29T15:32:51.4152516+00:00",
+            "status": "Completed"
+        },
+        {
+            "activity_id": "3",
+            "title": "Activity 3",
+            "due_date": "2025-01-29T16:32:51.415252+00:00",
+            "status": "Pending"
+        }
+    ],
+    "comments": "This report provides a summary of user activities for the day, highlighting that 1 out of 3 activities was completed."
+}

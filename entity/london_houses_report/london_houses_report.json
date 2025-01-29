@@ -1,0 +1,35 @@
+{
+    "report_id": "report_2023_10_01",
+    "report_title": "London Houses Market Analysis - October 2023",
+    "generated_at": "2023-10-01T10:05:00Z",
+    "total_houses_analyzed": 50,
+    "average_price": 950000.0,
+    "highest_price": 1200000.0,
+    "lowest_price": 600000.0,
+    "summary": "This report provides an overview of the London housing market as of October 2023, highlighting key statistics and trends.",
+    "detailed_analysis": [
+        {
+            "location": "Central London",
+            "average_price": 1150000.0,
+            "total_houses": 20,
+            "price_trend": "Increasing"
+        },
+        {
+            "location": "North London",
+            "average_price": 800000.0,
+            "total_houses": 15,
+            "price_trend": "Stable"
+        },
+        {
+            "location": "South London",
+            "average_price": 700000.0,
+            "total_houses": 15,
+            "price_trend": "Decreasing"
+        }
+    ],
+    "request_parameters": {
+        "date_range": "2023-09-01 to 2023-09-30",
+        "location_filter": "London",
+        "analysis_type": "market_trends"
+    }
+}

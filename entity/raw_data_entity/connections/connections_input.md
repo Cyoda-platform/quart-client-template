@@ -1,1 +1,5 @@
-😊 Could you please provide more details for the connection documentation? It would be super helpful! Please provide raw data for each endpoint if the final entity structure is different. You can paste all your data right here. Thanks so much!
+API 1: Get All Products List
+API URL: https://automationexercise.com/api/productsList
+Request Method: GET
+Response Code: 200
+Response JSON: All products list

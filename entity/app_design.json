@@ -1,0 +1,91 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_orchestration",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Initiate the process to fetch inventory data from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion starts.",
+                        "end_state": "data_fetching",
+                        "end_state_description": "Data is being fetched from the API.",
+                        "process": {
+                            "name": "fetch_data",
+                            "description": "Process to fetch data from the provided API endpoint.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "data_fetch_success",
+                        "description": "Handle successful data fetching.",
+                        "start_state": "data_fetching",
+                        "start_state_description": "Data is currently being fetched.",
+                        "end_state": "process_data",
+                        "end_state_description": "Data has been successfully fetched and is ready for processing.",
+                        "process": {
+                            "name": "save_data",
+                            "description": "Process to save fetched data to the inventory items and categories.",
+                            "adds_new_entites": "category_entity, inventory_item_entity"
+                        }
+                    },
+                    {
+                        "name": "data_fetch_failure",
+                        "description": "Handle failure when fetching data from the API.",
+                        "start_state": "data_fetching",
+                        "start_state_description": "Data is currently being fetched.",
+                        "end_state": "error_fetch_failed",
+                        "end_state_description": "An error occurred while fetching data.",
+                        "process": {
+                            "name": "handle_error",
+                            "description": "Process to handle errors during data fetching.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "category_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_orchestration",
+            "entity_workflow": {
+                "name": "category_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "inventory_item_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_orchestration",
+            "entity_workflow": {
+                "name": "inventory_item_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "monthly_report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_orchestration",
+            "entity_workflow": {
+                "name": "monthly_report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

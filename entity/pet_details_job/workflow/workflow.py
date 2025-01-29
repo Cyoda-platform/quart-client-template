@@ -7,7 +7,7 @@ from entity.pet_details_entity.connections.connections import ingest_data as ing
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def ingest_pet_process(meta):
+def ingest_pet_process(meta):
     """
     Process to ingest pet details from the API and save to pet_details_entity.
     """
@@ -20,14 +20,14 @@ async def ingest_pet_process(meta):
 
         for status in statuses:
             # Ingest data for each status using the existing ingest_data function
-            pet_data = await ingest_raw_data(meta)
+            pet_data = asyncio.run(ingest_raw_data(meta))
 
             if pet_data:
                 all_pet_details.extend(pet_data)
 
         # Save the pet details to the pet_details_entity
         if all_pet_details:
-            pet_details_entity_id = await entity_service.add_item(
+            pet_details_entity_id = asyncio.run(entity_service).add_item(
                 meta["token"], "pet_details_entity", "1.0", all_pet_details
             )
             logger.info(f"Pet details entity saved successfully with ID: {pet_details_entity_id}")
@@ -45,10 +45,10 @@ from unittest.mock import patch
 class TestPetDetailsJob(unittest.TestCase):
 
     @patch("app_init.app_init.entity_service.add_item")
-    @patch("entity.pet_details_entity.connections.connections.ingest_data")
-    def test_ingest_pet_process(self, mock_ingest_data, mock_add_item):
+    @patch("workflow.ingest_raw_data")
+    def test_ingest_pet_process(self, mock_ingest_raw_data, mock_add_item):
         # Mocking the ingest_data function to return dummy data
-        mock_ingest_data.side_effect = [
+        mock_ingest_raw_data.side_effect = [
             [{"id": 1, "status": "available"}],  # For available
             [{"id": 2, "status": "pending"}],    # For pending
             [{"id": 3, "status": "sold"}]        # For sold

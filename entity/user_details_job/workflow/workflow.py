@@ -2,7 +2,7 @@
 import asyncio
 import logging
 from app_init.app_init import entity_service
-from common.service.user_data_entity.connections.connections import ingest_data as ingest_user_data
+from entity.user_data_entity.connections.connections import ingest_data as ingest_user_data
 import unittest
 from unittest.mock import patch
 
@@ -47,7 +47,7 @@ async def get_user_details(meta, data):
 class TestGetUserDetails(unittest.TestCase):
 
     @patch("app_init.app_init.entity_service.add_item")
-    @patch("common.service.user_data_entity.connections.connections.ingest_data")
+    @patch("workflow.ingest_user_data")
     def test_get_user_details_success(self, mock_ingest_data, mock_add_item):
         # Arrange: set up mock return values
         mock_ingest_data.return_value = {
@@ -81,7 +81,7 @@ class TestGetUserDetails(unittest.TestCase):
         self.assertEqual(result["id"], 2)
         self.assertEqual(result["email"], "janet.weaver@reqres.in")
 
-    @patch("common.service.user_data_entity.connections.connections.ingest_data")
+    @patch("workflow.ingest_user_data")
     def test_get_user_details_no_user_id(self, mock_ingest_data):
         # Arrange
         meta = {"token": "test_token"}

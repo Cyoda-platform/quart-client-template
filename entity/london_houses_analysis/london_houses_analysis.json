@@ -1,0 +1,34 @@
+{
+    "analysis_id": "analysis_2023_10_01",
+    "summary": "The average price of houses in Central London has increased by 15% compared to the previous year, indicating a strong market demand.",
+    "average_price": 950000.0,
+    "total_houses": 50,
+    "price_distribution": {
+        "below_500k": 10,
+        "between_500k_and_1M": 20,
+        "between_1M_and_2M": 15,
+        "above_2M": 5
+    },
+    "trends": [
+        {
+            "year": 2022,
+            "average_price": 826087.0,
+            "percentage_change": 15.0
+        },
+        {
+            "year": 2021,
+            "average_price": 721000.0,
+            "percentage_change": 14.6
+        }
+    ],
+    "key_insights": [
+        "High demand in Central London has led to rising property prices.",
+        "Investment opportunities exist in areas below 500k, which are projected to appreciate.",
+        "New developments are favoring luxury apartments, indicating a shift in buyer preference."
+    ],
+    "request_parameters": {
+        "date_range": "2023-01-01 to 2023-10-01",
+        "location": "Central London",
+        "criteria": "properties sold"
+    }
+}

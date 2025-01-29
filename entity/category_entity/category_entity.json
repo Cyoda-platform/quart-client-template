@@ -1,8 +1,14 @@
 {
-  "categoryID": "string",
-  "categoryName": "string",
-  "parentCategory": "string",
-  "stockLevel": "integer",
-  "createdAt": "string",
-  "updatedAt": "string"
+  "id": "string",
+  "parent_id": 0,
+  "name": "new category",
+  "slug": "new-category",
+  "sub_categories": [
+    {
+      "id": "string",
+      "parent_id": "string",
+      "name": "new category",
+      "slug": "new-category"
+    }
+  ]
 }

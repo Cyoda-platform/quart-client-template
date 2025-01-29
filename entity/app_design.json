@@ -1,0 +1,115 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "game_session",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "game_session_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_game_session",
+                        "description": "Initiate a new game session for the player.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before the game starts.",
+                        "end_state": "session_initialized",
+                        "end_state_description": "Game session has been initialized.",
+                        "process": {
+                            "name": "init_game_session",
+                            "description": "Process to initialize the game session.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "generate_dungeon",
+                        "description": "Generate a dungeon for the player to explore.",
+                        "start_state": "session_initialized",
+                        "start_state_description": "Game session is initialized, ready to generate dungeon.",
+                        "end_state": "dungeon_generated",
+                        "end_state_description": "Dungeon has been successfully generated.",
+                        "process": {
+                            "name": "create_dungeon",
+                            "description": "Process to create a new dungeon.",
+                            "adds_new_entites": "dungeon_entity"
+                        }
+                    },
+                    {
+                        "name": "update_session_state",
+                        "description": "Update the current state of the game session based on player actions.",
+                        "start_state": "dungeon_generated",
+                        "start_state_description": "Dungeon has been generated, the game is running.",
+                        "end_state": "game_running",
+                        "end_state_description": "Game session is in progress.",
+                        "process": {
+                            "name": "update_game_state",
+                            "description": "Process to update the game session state.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "end_game_session",
+                        "description": "End the game session once completed.",
+                        "start_state": "game_running",
+                        "start_state_description": "Game session is in progress.",
+                        "end_state": "session_ended",
+                        "end_state_description": "Game session has ended.",
+                        "process": {
+                            "name": "close_game_session",
+                            "description": "Process to close the game session.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "dungeon_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "game_session",
+            "entity_workflow": {
+                "name": "dungeon_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "enemy_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "dungeon_entity",
+            "entity_workflow": {
+                "name": "enemy_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "loot_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "dungeon_entity",
+            "entity_workflow": {
+                "name": "loot_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "player_entity",
+            "entity_type": "EXTERNAL_SOURCES_PUSH_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "game_session",
+            "entity_workflow": {
+                "name": "player_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

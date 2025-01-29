@@ -1,0 +1,49 @@
+{
+    "report_id": "report_2023_10_01",
+    "generated_at": "2023-10-01T10:05:00Z",
+    "report_title": "Monthly London Houses Analysis",
+    "total_entries": 150,
+    "successful_ingests": 145,
+    "failed_ingests": 5,
+    "percentage_success": 96.67,
+    "average_price": 625000,
+    "price_distribution": {
+        "under_300k": 20,
+        "between_300k_and_600k": 70,
+        "between_600k_and_900k": 40,
+        "above_900k": 20
+    },
+    "activity_summary": [
+        {
+            "activity_id": 1,
+            "title": "Activity 1 Description",
+            "due_date": "2023-10-15T21:36:27.6587562+00:00",
+            "status": "Completed"
+        },
+        {
+            "activity_id": 2,
+            "title": "Activity 2 Description",
+            "due_date": "2023-10-20T22:36:27.6587592+00:00",
+            "status": "Pending"
+        }
+    ],
+    "comments": "This report summarizes the data ingestion activities for the month. It highlights the number of successful and failed ingests, along with details on specific activities processed.",
+    "distribution_info": {
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            },
+            {
+                "name": "Data Analyst",
+                "email": "analyst@example.com"
+            }
+        ],
+        "sent_at": "2023-10-01T10:10:00Z"
+    },
+    "request_parameters": {
+        "ingestion_timeframe": "monthly",
+        "data_source": "external_api",
+        "ingestion_method": "automated"
+    }
+}

@@ -1,3 +1,11 @@
+curl -X 'GET' \
+  'https://api.practicesoftwaretesting.com/categories/tree' \
+  -H 'accept: application/json'
+Request URL
+https://api.practicesoftwaretesting.com/categories/tree
+Server response
+Code	Details
+200	
 Response body
 Download
 [

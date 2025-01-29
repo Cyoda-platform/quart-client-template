@@ -1,0 +1,117 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "scheduled_ingestion",
+                        "description": "Triggered by a scheduled job to ingest data.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw data from the specified API.",
+                            "adds_new_entites": "raw_data_entity"
+                        }
+                    },
+                    {
+                        "name": "save_raw_data",
+                        "description": "Store the downloaded raw data.",
+                        "start_state": "data_ingested",
+                        "start_state_description": "Raw data has been downloaded.",
+                        "end_state": "raw_data_saved",
+                        "end_state_description": "Raw data has been saved in the entity.",
+                        "process": {
+                            "name": "save_raw_data_entity",
+                            "description": "Process to save the raw data entity.",
+                            "adds_new_entites": "analysis_result_entity"
+                        }
+                    },
+                    {
+                        "name": "analyze_data",
+                        "description": "Analyze the saved raw data using Pandas.",
+                        "start_state": "raw_data_saved",
+                        "start_state_description": "Raw data has been saved and is ready for analysis.",
+                        "end_state": "data_analyzed",
+                        "end_state_description": "Data has been successfully analyzed.",
+                        "process": {
+                            "name": "analyze_data",
+                            "description": "Process to analyze the raw data.",
+                            "adds_new_entites": "analysis_result_entity"
+                        }
+                    },
+                    {
+                        "name": "save_analysis_result",
+                        "description": "Save the results of the data analysis.",
+                        "start_state": "data_analyzed",
+                        "start_state_description": "Data analysis is complete.",
+                        "end_state": "analysis_result_saved",
+                        "end_state_description": "Analysis results have been saved.",
+                        "process": {
+                            "name": "save_analysis_result_entity",
+                            "description": "Process to save analysis results.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    },
+                    {
+                        "name": "generate_report",
+                        "description": "Generate a report from the analysis results.",
+                        "start_state": "analysis_result_saved",
+                        "start_state_description": "Analysis results have been saved.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been successfully generated.",
+                        "process": {
+                            "name": "generate_report",
+                            "description": "Process to create a report from analysis results.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_data_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "analysis_result_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "analysis_result_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "report_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

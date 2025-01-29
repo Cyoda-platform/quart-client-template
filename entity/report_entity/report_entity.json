@@ -1,0 +1,51 @@
+{
+    "report_id": "report_2023_10_01",
+    "generated_at": "2023-10-01T10:05:00Z",
+    "report_title": "Daily Product Sales Summary",
+    "total_entries": 150,
+    "successful_ingests": 145,
+    "failed_ingests": 5,
+    "percentage_success": 96.67,
+    "category_summary": [
+        {
+            "category": "Tops",
+            "total_sales": 15000,
+            "number_of_products": 20
+        },
+        {
+            "category": "Tshirts",
+            "total_sales": 12000,
+            "number_of_products": 15
+        },
+        {
+            "category": "Dresses",
+            "total_sales": 18000,
+            "number_of_products": 30
+        },
+        {
+            "category": "Sarees",
+            "total_sales": 20000,
+            "number_of_products": 10
+        }
+    ],
+    "overall_status": "Partially Completed",
+    "comments": "This report summarizes the daily performance of product sales across various categories. Success metrics reflect high performance with a few ingestion failures.",
+    "distribution_info": {
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            },
+            {
+                "name": "Data Analyst",
+                "email": "analyst@example.com"
+            }
+        ],
+        "sent_at": "2023-10-01T10:10:00Z"
+    },
+    "request_parameters": {
+        "data_source": "Automation Exercise API",
+        "schedule": "daily",
+        "notification_email": "admin@example.com"
+    }
+}

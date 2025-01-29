@@ -1,0 +1,31 @@
+{
+    "job_id": "job_001",
+    "job_name": "Daily London Houses Data Ingestion",
+    "description": "Automated job to ingest data of houses in London from an external API.",
+    "status": "scheduled",
+    "request_parameters": {
+        "endpoint": "https://api.example.com/london_houses",
+        "headers": {
+            "Authorization": "Bearer YOUR_API_TOKEN",
+            "Accept": "application/json"
+        },
+        "query_parameters": {
+            "location": "London",
+            "property_type": "house",
+            "min_price": 300000,
+            "max_price": 2000000,
+            "bedrooms": 3
+        }
+    },
+    "scheduled_time": "2023-10-01T05:00:00Z",
+    "next_run": "2023-10-02T05:00:00Z",
+    "total_records_processed": 0,
+    "successful_records": 0,
+    "failed_records": 0,
+    "failure_reason": [],
+    "last_run": {
+        "start_time": "2023-10-01T05:00:00Z",
+        "end_time": "2023-10-01T05:05:00Z",
+        "status": "completed"
+    }
+}

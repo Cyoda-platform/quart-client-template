@@ -1,0 +1,91 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "london_houses_workflow",
+            "entity_type": "JOB",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "london_houses_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "download_data",
+                        "description": "Download data about London houses from the external source.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before downloading data.",
+                        "end_state": "data_downloaded",
+                        "end_state_description": "Data has been successfully downloaded.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw data from the specified external source.",
+                            "adds_new_entites": "london_houses_data"
+                        }
+                    },
+                    {
+                        "name": "analyze_data",
+                        "description": "Analyze the downloaded data using pandas.",
+                        "start_state": "data_downloaded",
+                        "start_state_description": "Data has been downloaded and is ready for analysis.",
+                        "end_state": "data_analyzed",
+                        "end_state_description": "Data has been successfully analyzed.",
+                        "process": {
+                            "name": "analyze_data_process",
+                            "description": "Process to analyze the raw data using pandas.",
+                            "adds_new_entites": "london_houses_analysis"
+                        }
+                    },
+                    {
+                        "name": "generate_report",
+                        "description": "Generate a report based on the analysis results.",
+                        "start_state": "data_analyzed",
+                        "start_state_description": "Data has been analyzed and is ready for reporting.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been generated successfully.",
+                        "process": {
+                            "name": "generate_report_process",
+                            "description": "Process to create a report from the analysis results.",
+                            "adds_new_entites": "london_houses_report"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "london_houses_data",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "london_houses_workflow",
+            "entity_workflow": {
+                "name": "london_houses_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "london_houses_analysis",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "london_houses_workflow",
+            "entity_workflow": {
+                "name": "london_houses_analysis_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "london_houses_report",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "london_houses_workflow",
+            "entity_workflow": {
+                "name": "london_houses_report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

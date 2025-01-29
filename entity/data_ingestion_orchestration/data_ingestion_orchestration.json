@@ -1,0 +1,20 @@
+{
+    "orchestrationID": "ingestion_job_001",
+    "apiEndpoint": "https://api.practicesoftwaretesting.com/categories/tree",
+    "requestParams": {
+        "headers": {
+            "accept": "application/json"
+        }
+    },
+    "scheduledTime": "2023-10-10T10:00:00Z",
+    "lastFetchTime": null,
+    "status": "pending",
+    "createdAt": "2023-10-01T09:00:00Z",
+    "updatedAt": "2023-10-01T09:00:00Z",
+    "businessLogic": {
+        "fetchLatestCategories": true,
+        "processCategories": true,
+        "updateInventory": true,
+        "reportGeneration": false
+    }
+}

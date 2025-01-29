@@ -1,0 +1,159 @@
+{
+    "name": "data_ingestion_workflow",
+    "description": "A workflow for ingesting, processing, and reporting activity data.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "data_ingestion_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "data_ingestion_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "fetch_activity_data",
+            "description": "Fetch activity data from the API.",
+            "start_state": "None",
+            "start_state_description": "Initial state before fetching data.",
+            "end_state": "data_fetched",
+            "end_state_description": "Activity data has been successfully fetched.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "fetch_activity_data_process",
+                        "description": "Process to fetch activity data from the Fakerest API.",
+                        "calculation_nodes_tags": "e38d3ed6-de45-11ef-a4ad-f660bd21d726",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "process_activity_data",
+            "description": "Process the fetched activity data to analyze patterns.",
+            "start_state": "data_fetched",
+            "start_state_description": "Data has been fetched and is ready for processing.",
+            "end_state": "data_processed",
+            "end_state_description": "Activity data has been successfully processed.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "process_activity_data_process",
+                        "description": "Process to analyze and identify patterns from the fetched activity data.",
+                        "calculation_nodes_tags": "e38d3ed6-de45-11ef-a4ad-f660bd21d726",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "generate_daily_report",
+            "description": "Generate a daily report summarizing user activities.",
+            "start_state": "data_processed",
+            "start_state_description": "Activity data has been processed and is ready for reporting.",
+            "end_state": "report_generated",
+            "end_state_description": "Daily report has been successfully generated.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "generate_daily_report_process",
+                        "description": "Process to create a daily report based on the processed activity data.",
+                        "calculation_nodes_tags": "e38d3ed6-de45-11ef-a4ad-f660bd21d726",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "send_report",
+            "description": "Send the generated report to admin via email.",
+            "start_state": "report_generated",
+            "start_state_description": "Daily report has been generated and is ready to be sent.",
+            "end_state": "report_sent",
+            "end_state_description": "Report has been successfully sent to admin.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "send_report_process",
+                        "description": "Process to send the daily report to the configured admin email.",
+                        "calculation_nodes_tags": "e38d3ed6-de45-11ef-a4ad-f660bd21d726",
+                        "attach_entity": false,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

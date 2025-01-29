@@ -1,0 +1,71 @@
+{
+    "transformed_data_id": "transformed_data_001",
+    "raw_data_id": "raw_data_001",
+    "cleaned_data": [
+        {
+            "product_id": 1,
+            "name": "Blue Top",
+            "formatted_price": "Rs. 500",
+            "brand": "Polo",
+            "category": "Tops",
+            "usertype": "Women",
+            "in_stock": true,
+            "price_numeric": 500
+        },
+        {
+            "product_id": 2,
+            "name": "Men Tshirt",
+            "formatted_price": "Rs. 400",
+            "brand": "H&M",
+            "category": "Tshirts",
+            "usertype": "Men",
+            "in_stock": true,
+            "price_numeric": 400
+        },
+        {
+            "product_id": 3,
+            "name": "Sleeveless Dress",
+            "formatted_price": "Rs. 1000",
+            "brand": "Madame",
+            "category": "Dress",
+            "usertype": "Women",
+            "in_stock": true,
+            "price_numeric": 1000
+        },
+        {
+            "product_id": 4,
+            "name": "Stylish Dress",
+            "formatted_price": "Rs. 1500",
+            "brand": "Madame",
+            "category": "Dress",
+            "usertype": "Women",
+            "in_stock": true,
+            "price_numeric": 1500
+        }
+    ],
+    "transformed_at": "2023-10-01T05:10:00Z",
+    "total_products_transformed": 4,
+    "summary": {
+        "total_value": 3400,
+        "average_price": 850,
+        "category_distribution": {
+            "Tops": 1,
+            "Tshirts": 1,
+            "Dress": 2
+        }
+    },
+    "orchestration_parameters": {
+        "data_source": "Automation Exercise API",
+        "request_parameters": {
+            "endpoint": "productsList",
+            "filter": {
+                "in_stock": true,
+                "category": [
+                    "Tops",
+                    "Tshirts",
+                    "Dress"
+                ]
+            }
+        }
+    }
+}

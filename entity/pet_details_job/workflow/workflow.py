@@ -2,12 +2,12 @@
 import logging
 import asyncio
 from app_init.app_init import entity_service
-from entity.raw_data_entity.connections.connections import ingest_data as ingest_raw_data  # Reusing existing ingest_data function
+from entity.pet_details_entity.connections.connections import ingest_data as ingest_raw_data  # Reusing existing ingest_data function
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def ingest_pet_process(meta, data):
+async def ingest_pet_process(meta):
     """
     Process to ingest pet details from the API and save to pet_details_entity.
     """
@@ -20,7 +20,7 @@ async def ingest_pet_process(meta, data):
 
         for status in statuses:
             # Ingest data for each status using the existing ingest_data function
-            pet_data = await ingest_raw_data(meta["token"], status)
+            pet_data = await ingest_raw_data(meta)
 
             if pet_data:
                 all_pet_details.extend(pet_data)
@@ -45,7 +45,7 @@ from unittest.mock import patch
 class TestPetDetailsJob(unittest.TestCase):
 
     @patch("app_init.app_init.entity_service.add_item")
-    @patch("entity.raw_data_entity.connections.connections.ingest_data")
+    @patch("entity.pet_details_entity.connections.connections.ingest_data")
     def test_ingest_pet_process(self, mock_ingest_data, mock_add_item):
         # Mocking the ingest_data function to return dummy data
         mock_ingest_data.side_effect = [

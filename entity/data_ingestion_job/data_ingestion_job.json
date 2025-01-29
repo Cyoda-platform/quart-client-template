@@ -1,0 +1,22 @@
+{
+    "job_id": "job_001",
+    "job_name": "Daily Data Ingestion Job",
+    "description": "Job to ingest product data from the Automation Exercise API.",
+    "status": "completed",
+    "scheduled_time": "2023-10-01T05:00:00Z",
+    "start_time": "2023-10-01T05:00:00Z",
+    "end_time": "2023-10-01T05:05:00Z",
+    "total_records_processed": 100,
+    "successful_records": 95,
+    "failed_records": 5,
+    "failure_reason": [
+        "Timeout while fetching data",
+        "API limit reached"
+    ],
+    "request_parameters": {
+        "data_source": "Automation Exercise API",
+        "endpoint": "/api/productsList",
+        "request_method": "GET",
+        "expected_response_code": 200
+    }
+}

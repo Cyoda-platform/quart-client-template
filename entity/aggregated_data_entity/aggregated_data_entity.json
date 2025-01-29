@@ -1,0 +1,39 @@
+{
+    "aggregated_data_id": "aggregated_data_001",
+    "report_period": "2023-10",
+    "total_sales": 45000,
+    "total_products": 150,
+    "category_summary": {
+        "Women": {
+            "total_sales": 23000,
+            "number_of_products": 80
+        },
+        "Men": {
+            "total_sales": 12000,
+            "number_of_products": 50
+        },
+        "Kids": {
+            "total_sales": 10000,
+            "number_of_products": 20
+        }
+    },
+    "top_selling_products": [
+        {
+            "product_id": 2,
+            "name": "Men Tshirt",
+            "sales": 4000
+        },
+        {
+            "product_id": 1,
+            "name": "Blue Top",
+            "sales": 5000
+        },
+        {
+            "product_id": 6,
+            "name": "Summer White Top",
+            "sales": 3000
+        }
+    ],
+    "aggregation_timestamp": "2023-10-01T10:00:00Z",
+    "comments": "This aggregated data provides an overview of sales performance by category and highlights top-selling products."
+}

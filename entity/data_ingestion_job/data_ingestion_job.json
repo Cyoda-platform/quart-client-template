@@ -1,0 +1,35 @@
+{
+    "job_id": "job_2023_10_01",
+    "start_time": "2023-10-01T00:00:00Z",
+    "status": "Scheduled",
+    "activities_fetched": 0,
+    "error_message": "",
+    "metadata": {
+        "api_url": "https://fakerestapi.azurewebsites.net/api/v1/Activities",
+        "ingestion_at": "2023-10-01T00:00:00Z",
+        "request_parameters": {
+            "headers": {
+                "accept": "text/plain; v=1.0"
+            },
+            "method": "GET"
+        }
+    },
+    "execution_log": [
+        {
+            "timestamp": "2023-10-01T00:00:00Z",
+            "message": "Data ingestion job started."
+        },
+        {
+            "timestamp": "2023-10-01T00:00:05Z",
+            "message": "Fetching activity data from API."
+        },
+        {
+            "timestamp": "2023-10-01T00:00:10Z",
+            "message": "Successfully fetched 3 activities."
+        },
+        {
+            "timestamp": "2023-10-01T00:00:15Z",
+            "message": "Data ingestion process completed successfully."
+        }
+    ]
+}

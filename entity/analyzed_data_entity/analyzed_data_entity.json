@@ -1,0 +1,26 @@
+{
+    "id": 1,
+    "analysis_date": "2023-10-01T14:00:00Z",
+    "total_properties": 100,
+    "average_price": 650000,
+    "median_price": 620000,
+    "price_distribution": {
+        "less_than_500k": 25,
+        "between_500k_and_700k": 45,
+        "between_700k_and_900k": 20,
+        "above_900k": 10
+    },
+    "bedroom_distribution": {
+        "one_bedroom": 15,
+        "two_bedrooms": 40,
+        "three_bedrooms": 30,
+        "four_or_more_bedrooms": 15
+    },
+    "analysis_summary": "The analysis indicates that the majority of the properties are priced between \u00a3500,000 and \u00a3700,000, with a significant number of two-bedroom apartments available in the market.",
+    "data_source": "external_api",
+    "request_parameters": {
+        "location": "London",
+        "property_type": "house",
+        "date_range": "2023-01-01_to_2023-10-01"
+    }
+}

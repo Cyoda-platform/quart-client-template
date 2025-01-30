@@ -1,0 +1,50 @@
+{
+    "report_id": "report_2023_10_01",
+    "generated_at": "2023-10-01T10:05:00Z",
+    "report_title": "Daily Data Processing Report",
+    "total_entries": 150,
+    "successful_ingests": 145,
+    "failed_ingests": 5,
+    "percentage_success": 96.67,
+    "activities_summary": [
+        {
+            "activity_id": 1,
+            "title": "Data Ingestion",
+            "status": "Completed",
+            "description": "Successfully ingested data from the external source.",
+            "parameters": {
+                "source": "https://fakerestapi.azurewebsites.net/api/v1/Authors",
+                "request_method": "GET",
+                "headers": {
+                    "accept": "text/plain; v=1.0"
+                }
+            }
+        },
+        {
+            "activity_id": 2,
+            "title": "Data Aggregation",
+            "status": "Completed",
+            "description": "Aggregated data for reporting.",
+            "parameters": {
+                "aggregation_method": "sum",
+                "fields_aggregated": [
+                    "idBook",
+                    "firstName",
+                    "lastName"
+                ]
+            }
+        },
+        {
+            "activity_id": 3,
+            "title": "Report Generation",
+            "status": "Completed",
+            "description": "Generated report summarizing daily data processing.",
+            "parameters": {
+                "recipient_email": "admin@example.com",
+                "notification_method": "email"
+            }
+        }
+    ],
+    "overall_status": "Partially Completed",
+    "comments": "This report summarizes the data ingestion and processing activities for the day. It highlights successful ingests and any failures encountered."
+}

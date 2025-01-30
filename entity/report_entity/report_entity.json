@@ -1,0 +1,31 @@
+{
+    "report_id": "report_2023_10_02",
+    "generated_at": "2023-10-02T10:05:00Z",
+    "report_title": "Daily Author Data Report",
+    "total_authors": 4,
+    "aggregated_books": [
+        {
+            "idBook": 1,
+            "author_count": 2,
+            "author_names": [
+                "First Name 1 Last Name 1",
+                "First Name 2 Last Name 2"
+            ]
+        },
+        {
+            "idBook": 2,
+            "author_count": 2,
+            "author_names": [
+                "First Name 3 Last Name 3",
+                "First Name 4 Last Name 4"
+            ]
+        }
+    ],
+    "report_summary": "This report summarizes the data ingested from the API for authors, showing the total number of authors and the breakdown per book.",
+    "comments": "Data ingestion was successful, and the report reflects the latest aggregated information.",
+    "request_parameters": {
+        "ingestion_job_id": "job_001",
+        "data_source": "https://fakerestapi.azurewebsites.net/api/v1/Authors",
+        "ingestion_timestamp": "2023-10-02T10:00:00Z"
+    }
+}

@@ -1,0 +1,80 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "fetch_bitcoin_usdt_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "fetch_bitcoin_usdt_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_fetching",
+                        "description": "Begin fetching the Bitcoin/USDT exchange rate from Binance API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before fetching.",
+                        "end_state": "rate_fetched",
+                        "end_state_description": "Rate has been successfully fetched.",
+                        "process": {
+                            "name": "fetch_rate_processor",
+                            "description": "Process to fetch the Bitcoin/USDT rate from Binance API.",
+                            "adds_new_entites": "bitcoin_usdt_rate_entity"
+                        }
+                    },
+                    {
+                        "name": "update_rate_entity",
+                        "description": "Update the bitcoin_usdt_rate_entity with the fetched rate.",
+                        "start_state": "rate_fetched",
+                        "start_state_description": "Rate has been fetched and is ready to be updated.",
+                        "end_state": "rate_updated",
+                        "end_state_description": "bitcoin_usdt_rate_entity has been updated.",
+                        "process": {
+                            "name": "update_entity_processor",
+                            "description": "Process to update the bitcoin_usdt_rate_entity.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "log_rate_history",
+                        "description": "Log the fetched rate into the rate_history_entity.",
+                        "start_state": "rate_updated",
+                        "start_state_description": "Rate has been updated and is ready to be logged.",
+                        "end_state": "rate_logged",
+                        "end_state_description": "Rate has been logged into the rate_history_entity.",
+                        "process": {
+                            "name": "log_history_processor",
+                            "description": "Process to log the Bitcoin/USDT rate into history.",
+                            "adds_new_entites": "rate_history_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "bitcoin_usdt_rate_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "fetch_bitcoin_usdt_job",
+            "entity_workflow": {
+                "name": "bitcoin_usdt_rate_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "rate_history_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "fetch_bitcoin_usdt_job",
+            "entity_workflow": {
+                "name": "rate_history_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

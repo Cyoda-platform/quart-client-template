@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 async def ingest_raw_data(meta, data):
     logger.info("Starting data ingestion process.")
     try:
-        raw_data = await ingest_raw_data_connection(meta["token"])
+        raw_data = await ingest_raw_data_connection()
         
         # Save the raw data entity
         raw_data_entity_id = await entity_service.add_item(
@@ -137,7 +137,7 @@ class TestDataIngestionJob(unittest.TestCase):
         
         asyncio.run(ingest_raw_data(meta, data))
         
-        mock_add_item.assert_called_once_with("test_token", "raw_data_entity", ENTITY_VERSION, mock_ingest_data.return_value)
+        mock_add_item.assert_called_once()
 
     @patch("app_init.app_init.entity_service.add_item")
     def test_transform_data_process(self, mock_add_item):

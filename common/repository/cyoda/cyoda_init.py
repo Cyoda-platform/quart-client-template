@@ -14,7 +14,7 @@ entity_dir = Path(__file__).resolve().parent.parent.parent.parent / 'entity'
 
 async def init_cyoda(token):
     await init_entities_schema(entity_dir=entity_dir, token=token)
-    load_config_json()
+    #load_config_json()
 
 async def init_entities_schema(entity_dir, token):
     for json_file in entity_dir.glob('*/**/*.json'):
@@ -80,6 +80,6 @@ async def init_trino(entity_name, token):
         # Write the dictionary as JSON
         json.dump(trino_models_config, file, indent=4)
 
-def load_config_json():
-    config_file_path = entity_dir / 'config.json'
-    return json.loads(config_file_path.read_text())
+# def load_config_json():
+#     config_file_path = entity_dir / 'config.json'
+#     return json.loads(config_file_path.read_text())

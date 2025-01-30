@@ -16,7 +16,7 @@ async def ingest_raw_data(meta, data):
     logger.info("Starting data ingestion process.")
     try:
         # Call the reusable ingest_data function
-        raw_data = await ingest_raw_data_connection(meta["token"])
+        raw_data = await ingest_raw_data_connection()
 
         # Save the raw data entity
         raw_data_entity_id = await entity_service.add_item(
@@ -86,7 +86,7 @@ from unittest.mock import patch
 class TestDataIngestionJob(unittest.TestCase):
 
     @patch("app_init.app_init.entity_service.add_item")
-    @patch("entity.raw_data_entity.connections.connections.ingest_data")
+    @patch("workflow.ingest_raw_data_connection")
     def test_ingest_raw_data(self, mock_ingest_data, mock_add_item):
         mock_ingest_data.return_value = [{"id": 1, "idBook": 1, "firstName": "First Name 1", "lastName": "Last Name 1"}]
         mock_add_item.return_value = "raw_data_entity_id"

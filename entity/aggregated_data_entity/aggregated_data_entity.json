@@ -1,0 +1,38 @@
+{
+    "id": "aggregated_data_001",
+    "total_authors": 4,
+    "authors_per_book": {
+        "1": {
+            "total_authors": 2,
+            "authors": [
+                {
+                    "id": 1,
+                    "firstName": "First Name 1",
+                    "lastName": "Last Name 1"
+                },
+                {
+                    "id": 2,
+                    "firstName": "First Name 2",
+                    "lastName": "Last Name 2"
+                }
+            ]
+        },
+        "2": {
+            "total_authors": 2,
+            "authors": [
+                {
+                    "id": 3,
+                    "firstName": "First Name 3",
+                    "lastName": "Last Name 3"
+                },
+                {
+                    "id": 4,
+                    "firstName": "First Name 4",
+                    "lastName": "Last Name 4"
+                }
+            ]
+        }
+    },
+    "aggregation_timestamp": "2023-10-02T10:10:00Z",
+    "comments": "This aggregated data reflects the total number of authors and their distribution across books."
+}

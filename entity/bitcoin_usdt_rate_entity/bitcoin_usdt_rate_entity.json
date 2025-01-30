@@ -1,0 +1,26 @@
+{
+    "entity_name": "bitcoin_usdt_rate_entity",
+    "current_rate": 50000.25,
+    "timestamp": "2023-10-01T12:00:00Z",
+    "source": "Binance API",
+    "request_parameters": {
+        "symbol": "BTCUSDT",
+        "interval": "5s",
+        "limit": 1
+    },
+    "rate_history": [
+        {
+            "previous_rate": 50000.0,
+            "previous_timestamp": "2023-10-01T11:59:55Z"
+        },
+        {
+            "previous_rate": 49950.75,
+            "previous_timestamp": "2023-10-01T11:59:50Z"
+        },
+        {
+            "previous_rate": 49875.5,
+            "previous_timestamp": "2023-10-01T11:59:45Z"
+        }
+    ],
+    "notes": "The rate is fetched every 5 seconds for real-time tracking."
+}

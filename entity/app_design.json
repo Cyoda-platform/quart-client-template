@@ -1,0 +1,80 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "exporter_job_entity",
+            "entity_type": "JOB",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "exporter_job_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_job",
+                        "description": "Triggered to start the exporter job.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before the job starts.",
+                        "end_state": "job_started",
+                        "end_state_description": "Job has been successfully started.",
+                        "process": {
+                            "name": "start_exporter_job",
+                            "description": "Process to initiate the exporter job.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "fetch_node_availability",
+                        "description": "Fetches the latest node availability from Cassandra.",
+                        "start_state": "job_started",
+                        "start_state_description": "Job has started and is ready to fetch data.",
+                        "end_state": "data_fetched",
+                        "end_state_description": "Node availability data has been successfully fetched.",
+                        "process": {
+                            "name": "fetch_availability_data",
+                            "description": "Process to retrieve node availability from Cassandra.",
+                            "adds_new_entites": "availability_status_entity"
+                        }
+                    },
+                    {
+                        "name": "process_and_export_data",
+                        "description": "Processes the fetched data and exports it to Prometheus.",
+                        "start_state": "data_fetched",
+                        "start_state_description": "Data has been fetched and is ready for processing.",
+                        "end_state": "data_exported",
+                        "end_state_description": "Data has been successfully exported to Prometheus.",
+                        "process": {
+                            "name": "export_to_prometheus",
+                            "description": "Process to format and send availability data to Prometheus.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "node_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "exporter_job_entity",
+            "entity_workflow": {
+                "name": "node_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "availability_status_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "exporter_job_entity",
+            "entity_workflow": {
+                "name": "availability_status_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

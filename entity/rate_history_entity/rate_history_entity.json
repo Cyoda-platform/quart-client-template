@@ -1,0 +1,32 @@
+{
+    "entity_name": "rate_history_entity",
+    "historical_rates": [
+        {
+            "rate": 50000.0,
+            "timestamp": "2023-10-01T11:59:55Z",
+            "request_parameters": {
+                "api_key": "YOUR_API_KEY",
+                "symbol": "BTCUSDT",
+                "timestamp": "2023-10-01T11:59:55Z"
+            }
+        },
+        {
+            "rate": 50000.25,
+            "timestamp": "2023-10-01T12:00:00Z",
+            "request_parameters": {
+                "api_key": "YOUR_API_KEY",
+                "symbol": "BTCUSDT",
+                "timestamp": "2023-10-01T12:00:00Z"
+            }
+        },
+        {
+            "rate": 50001.1,
+            "timestamp": "2023-10-01T12:00:05Z",
+            "request_parameters": {
+                "api_key": "YOUR_API_KEY",
+                "symbol": "BTCUSDT",
+                "timestamp": "2023-10-01T12:00:05Z"
+            }
+        }
+    ]
+}

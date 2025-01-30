@@ -1,0 +1,40 @@
+{
+    "id": 1,
+    "total_activities": 5,
+    "completed_activities": 3,
+    "pending_activities": 2,
+    "activity_summary": [
+        {
+            "activity_id": 1,
+            "title": "Write Blog Post",
+            "due_date": "2025-01-22T21:36:27Z",
+            "status": "Completed"
+        },
+        {
+            "activity_id": 2,
+            "title": "Submit Report",
+            "due_date": "2025-01-23T22:36:27Z",
+            "status": "Completed"
+        },
+        {
+            "activity_id": 3,
+            "title": "Prepare Presentation",
+            "due_date": "2025-01-24T23:36:27Z",
+            "status": "Pending"
+        },
+        {
+            "activity_id": 4,
+            "title": "Attend Team Meeting",
+            "due_date": "2025-01-25T21:36:27Z",
+            "status": "Completed"
+        },
+        {
+            "activity_id": 5,
+            "title": "Update Project Plan",
+            "due_date": "2025-01-26T22:36:27Z",
+            "status": "Pending"
+        }
+    ],
+    "aggregation_timestamp": "2023-10-01T10:00:00Z",
+    "comments": "This aggregated data summarizes the activities processed within the specified period, highlighting the completed and pending tasks."
+}

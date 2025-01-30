@@ -1,0 +1,126 @@
+{
+    "name": "fetch_bitcoin_usdt_workflow",
+    "description": "Workflow to fetch and log the Bitcoin/USDT exchange rate.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "fetch_bitcoin_usdt_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "fetch_bitcoin_usdt_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "start_fetching",
+            "description": "Begin fetching the Bitcoin/USDT exchange rate from Binance API.",
+            "start_state": "None",
+            "start_state_description": "Initial state before fetching.",
+            "end_state": "rate_fetched",
+            "end_state_description": "Rate has been successfully fetched.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "fetch_rate_processor",
+                        "description": "Process to fetch the Bitcoin/USDT rate from Binance API.",
+                        "calculation_nodes_tags": "a4bbd8be-df2d-11ef-b52e-eaae7e15cebc",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "update_rate_entity",
+            "description": "Update the bitcoin_usdt_rate_entity with the fetched rate.",
+            "start_state": "rate_fetched",
+            "start_state_description": "Rate has been fetched and is ready to be updated.",
+            "end_state": "rate_updated",
+            "end_state_description": "bitcoin_usdt_rate_entity has been updated.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "update_entity_processor",
+                        "description": "Process to update the bitcoin_usdt_rate_entity.",
+                        "calculation_nodes_tags": "a4bbd8be-df2d-11ef-b52e-eaae7e15cebc",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "log_rate_history",
+            "description": "Log the fetched rate into the rate_history_entity.",
+            "start_state": "rate_updated",
+            "start_state_description": "Rate has been updated and is ready to be logged.",
+            "end_state": "rate_logged",
+            "end_state_description": "Rate has been logged into the rate_history_entity.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "log_history_processor",
+                        "description": "Process to log the Bitcoin/USDT rate into history.",
+                        "calculation_nodes_tags": "a4bbd8be-df2d-11ef-b52e-eaae7e15cebc",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

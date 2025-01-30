@@ -1,0 +1,40 @@
+{
+    "entity_name": "fetch_bitcoin_usdt_job",
+    "entity_type": "JOB",
+    "entity_source": "API_REQUEST",
+    "request_parameters": {
+        "api_url": "https://api.binance.com/api/v3/ticker/price",
+        "currency_pair": "BTCUSDT",
+        "interval": "5s"
+    },
+    "business_logic": {
+        "description": "This job fetches the current Bitcoin/USDT exchange rate from the Binance API every 5 seconds.",
+        "actions": [
+            {
+                "action": "send_request",
+                "description": "Send a GET request to the Binance API to retrieve the current price of Bitcoin in USDT."
+            },
+            {
+                "action": "handle_response",
+                "description": "Process the API response to extract the current exchange rate."
+            },
+            {
+                "action": "update_entities",
+                "description": "Update the bitcoin_usdt_rate_entity with the fetched exchange rate."
+            },
+            {
+                "action": "log_rate_history",
+                "description": "Log the fetched rate into the rate_history_entity for historical tracking."
+            }
+        ],
+        "error_handling": {
+            "description": "In case of failure to fetch the data, log the error and set a flag to retry on the next interval.",
+            "retry_interval": "5s"
+        }
+    },
+    "last_run": {
+        "timestamp": "2023-10-01T12:00:00Z",
+        "status": "success",
+        "fetched_rate": 50000.25
+    }
+}

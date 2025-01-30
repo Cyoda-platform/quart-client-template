@@ -1,7 +1,7 @@
-from app_init.app_init import entity_service, cyoda_token
 import logging
-from quart import Blueprint, jsonify, request
+from app_init.app_init import entity_service, cyoda_token
 
+from quart import Blueprint, jsonify, request
 from common.config.config import ENTITY_VERSION
 
 logging.basicConfig(level=logging.INFO)

@@ -1,0 +1,50 @@
+{
+    "job_id": "job_001",
+    "job_name": "Daily Author Data Ingestion",
+    "scheduled_time": "2023-10-02T05:00:00Z",
+    "status": "completed",
+    "start_time": "2023-10-02T05:00:00Z",
+    "end_time": "2023-10-02T05:05:00Z",
+    "total_records_processed": 4,
+    "successful_records": 4,
+    "failed_records": 0,
+    "failure_reason": [],
+    "request_parameters": {
+        "api_url": "https://fakerestapi.azurewebsites.net/api/v1/Authors",
+        "headers": {
+            "accept": "text/plain; v=1.0"
+        }
+    },
+    "raw_data_summary": {
+        "records": [
+            {
+                "id": 1,
+                "idBook": 1,
+                "firstName": "First Name 1",
+                "lastName": "Last Name 1"
+            },
+            {
+                "id": 2,
+                "idBook": 1,
+                "firstName": "First Name 2",
+                "lastName": "Last Name 2"
+            },
+            {
+                "id": 3,
+                "idBook": 2,
+                "firstName": "First Name 3",
+                "lastName": "Last Name 3"
+            },
+            {
+                "id": 4,
+                "idBook": 2,
+                "firstName": "First Name 4",
+                "lastName": "Last Name 4"
+            }
+        ]
+    },
+    "aggregated_data_summary": {
+        "total_authors": 4,
+        "last_ingestion_timestamp": "2023-10-02T05:05:00Z"
+    }
+}

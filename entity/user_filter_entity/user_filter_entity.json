@@ -1,0 +1,49 @@
+Here’s a JSON data example for the `user_filter_entity` that reflects the business logic based on the user requirements for filtering crocodile data:
+
+```json
+{
+  "filter_id": "filter_001",
+  "name": "Crocodile Filter 1",
+  "sex": "M", 
+  "age_range": {
+    "min_age": 10,
+    "max_age": 30
+  },
+  "last_updated": "2023-10-01T12:00:00Z"
+}
+```
+
+### Explanation
+- **filter_id**: A unique identifier for the filter, allowing it to be referenced easily.
+- **name**: A descriptive name for the filter, indicating its purpose.
+- **sex**: The filter criterion for the sex of the crocodiles (e.g., "M" for male).
+- **age_range**: Specifies the range of ages for the crocodiles to be filtered, allowing users to find crocodiles that fall within a specific age group.
+- **last_updated**: A timestamp indicating when the filter was last updated, which is helpful for tracking changes.
+
+### Ingestion Request Parameters
+In the application flow, if there’s data ingestion happening through the orchestration entity, you might have parameters for filtering like this:
+
+```json
+{
+  "request_id": "req_001",
+  "api_endpoint": "https://test-api.k6.io/public/crocodiles/",
+  "request_method": "GET",
+  "parameters": {
+    "pagination": 10,
+    "filter_criteria": {
+      "name": "Crocodile Filter 1",
+      "sex": "M",
+      "age_range": {
+        "min_age": 10,
+        "max_age": 30
+      }
+    }
+  },
+  "last_run": "2023-10-01T12:00:00Z",
+  "status": "Pending"
+}
+```
+
+This structure would ensure that the filtering criteria are considered during data ingestion.
+
+Let me know if you need any further modifications or additions! 😊

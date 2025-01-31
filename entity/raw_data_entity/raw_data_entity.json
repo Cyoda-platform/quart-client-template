@@ -1,9 +1,8 @@
-{
-    "name": "string",
-    "legalFormId": 4,
-    "legalFormUid": "0107",
-    "registryOfCommerceId": 36,
-    "legalSeatId": 623,
-    "canton": "BE",
-    "activeOnly": true
-}
+[
+    {
+        "id": 0,
+        "title": "string",
+        "dueDate": "2025-01-31T10:13:17.487Z",
+        "completed": true
+    }
+]

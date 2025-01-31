@@ -129,7 +129,7 @@ if __name__ == "__main__":
 # 
 # 3. **`handle_error(meta, data)`**:
 #    - This function is called in case of an error during the data fetching or saving process. It handles the error logic.
-# 
+#
 # 4. **Unit Tests**:
 #    - The `TestDataIngestionOrchestration` class uses the `unittest` framework.
 #    - It mocks required functions and tests the `save_data` function to ensure that the categories are fetched and added correctly.

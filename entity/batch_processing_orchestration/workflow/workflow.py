@@ -1,6 +1,3 @@
-# Here's the implementation for the processor functions related to the **batch_processing_orchestration** entity, including the necessary logic to save dependent entities. The code also includes unit tests with mocks for external services to allow for isolated testing.
-# 
-# ```python
 import logging
 import asyncio
 from app_init.app_init import entity_service
@@ -13,7 +10,7 @@ logger = logging.getLogger(__name__)
 async def fetch_user_data(meta, data):
     """Fetch user data from the API and save it as raw data."""
     logger.info("Fetching user data from the API.")
-    raw_user_data = await ingest_user_data(meta["token"])
+    raw_user_data = await ingest_user_data()  # Removed token parameter
     
     if not raw_user_data:
         logger.error("No user data fetched.")
@@ -91,20 +88,20 @@ async def email_report(meta, data):
 
 # Unit Tests
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 class TestBatchProcessingOrchestration(unittest.TestCase):
 
     @patch("app_init.app_init.entity_service.add_item")
     @patch("entity.user_data_entity.connections.connections.ingest_data")
-    def test_fetch_user_data(self, mock_ingest_data, mock_add_item):
+    async def test_fetch_user_data(self, mock_ingest_data, mock_add_item):
         mock_ingest_data.return_value = [{"id": 1, "userName": "User 1", "password": "Password1"}]
         mock_add_item.return_value = "user_data_entity_id"
 
         meta = {"token": "test_token"}
         data = {}
 
-        asyncio.run(fetch_user_data(meta, data))
+        await fetch_user_data(meta, data)
 
         mock_add_item.assert_called_once_with(
             meta["token"], "user_data_entity", ENTITY_VERSION, mock_ingest_data.return_value
@@ -130,7 +127,7 @@ class TestBatchProcessingOrchestration(unittest.TestCase):
     @patch("app_init.app_init.entity_service.add_item")
     def test_create_report(self, mock_add_item):
         mock_add_item.return_value = "monthly_report_entity_id"
-        
+
         meta = {"token": "test_token"}
         data = {
             "transformed_user_data_entity": {
@@ -156,19 +153,3 @@ class TestBatchProcessingOrchestration(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-# ```
-# 
-# ### Summary of the Code:
-# 1. **Processor Functions**:
-#    - Each function handles a specific part of the batch processing orchestration:
-#      - `fetch_user_data`: Fetches user data and saves it to `user_data_entity`.
-#      - `process_user_data`: Transforms the fetched data and adds to `transformed_user_data_entity`.
-#      - `save_data`: Placeholder for additional data save logic.
-#      - `create_report`: Generates a monthly report and saves it to `monthly_report_entity`.
-#      - `email_report`: Sends the generated report to the admin.
-# 
-# 2. **Unit Tests**:
-#    - Test cases are provided for each processor function, mocking external service calls to test each function's behavior without actually performing network operations.
-# 
-# This setup ensures that users can test the functions in an isolated environment right away. Let me know if you need any further modifications or explanations! 😊

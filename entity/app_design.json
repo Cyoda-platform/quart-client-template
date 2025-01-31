@@ -6,15 +6,15 @@
         {
             "entity_name": "data_ingestion_job",
             "entity_type": "JOB",
-            "entity_source": "SCHEDULED",
+            "entity_source": "API_REQUEST",
             "depends_on_entity": "None",
             "entity_workflow": {
                 "name": "data_ingestion_workflow",
                 "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
                 "transitions": [
                     {
-                        "name": "scheduled_ingestion",
-                        "description": "Triggered by a scheduled job to ingest crocodile data from the API.",
+                        "name": "api_request_ingestion",
+                        "description": "Triggered by an API request to ingest crocodile data from the API.",
                         "start_state": "None",
                         "start_state_description": "Initial state before data ingestion.",
                         "end_state": "data_ingested",

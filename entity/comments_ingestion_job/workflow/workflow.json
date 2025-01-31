@@ -1,0 +1,159 @@
+{
+    "name": "comments_ingestion_workflow",
+    "description": "Workflow for ingesting, analyzing, and reporting on comments.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "comments_ingestion_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "comments_ingestion_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "start_ingestion",
+            "description": "Start the ingestion process to fetch comments from the API.",
+            "start_state": "None",
+            "start_state_description": "Initial state before fetching comments.",
+            "end_state": "comments_ingested",
+            "end_state_description": "Comments have been successfully ingested.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "ingest_comments",
+                        "description": "Process to ingest comments data from the API.",
+                        "calculation_nodes_tags": "09b5d06c-dff6-11ef-b52e-eaae7e15cebc",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "analyze_comments",
+            "description": "Analyze the ingested comments for sentiment and insights.",
+            "start_state": "comments_ingested",
+            "start_state_description": "Comments have been ingested and are ready for analysis.",
+            "end_state": "comments_analyzed",
+            "end_state_description": "Comments have been successfully analyzed.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "analyze_comments",
+                        "description": "Process to analyze comments data.",
+                        "calculation_nodes_tags": "09b5d06c-dff6-11ef-b52e-eaae7e15cebc",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "generate_report",
+            "description": "Generate a report summarizing the analysis of comments.",
+            "start_state": "comments_analyzed",
+            "start_state_description": "Comments have been analyzed and are ready for reporting.",
+            "end_state": "report_generated",
+            "end_state_description": "Report has been successfully generated.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "create_report",
+                        "description": "Process to create a report from analyzed comments.",
+                        "calculation_nodes_tags": "09b5d06c-dff6-11ef-b52e-eaae7e15cebc",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "send_report",
+            "description": "Send the generated report to the admin's email.",
+            "start_state": "report_generated",
+            "start_state_description": "Report has been generated and is ready to be sent.",
+            "end_state": "report_sent",
+            "end_state_description": "Report has been successfully sent to the admin's email.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "send_email_report",
+                        "description": "Process to send the report via email.",
+                        "calculation_nodes_tags": "09b5d06c-dff6-11ef-b52e-eaae7e15cebc",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

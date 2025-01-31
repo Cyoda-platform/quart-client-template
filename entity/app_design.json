@@ -1,0 +1,70 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "crocodile_data",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "crocodile_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Ingest data from the crocodile API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw data from the specified API.",
+                            "adds_new_entites": "crocodile_data"
+                        }
+                    },
+                    {
+                        "name": "store_data",
+                        "description": "Store the ingested crocodile data.",
+                        "start_state": "data_ingested",
+                        "start_state_description": "Data has been ingested and is ready to be stored.",
+                        "end_state": "data_stored",
+                        "end_state_description": "Crocodile data has been successfully stored.",
+                        "process": {
+                            "name": "store_data_in_db",
+                            "description": "Process to save crocodile data in the database.",
+                            "adds_new_entites": "crocodile_data"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "filtered_crocodile_data",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "crocodile_data",
+            "entity_workflow": {
+                "name": "filtered_crocodile_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "filter_data",
+                        "description": "Filter crocodile data based on user criteria.",
+                        "start_state": "data_stored",
+                        "start_state_description": "Data has been stored and is ready to be filtered.",
+                        "end_state": "data_filtered",
+                        "end_state_description": "Filtered crocodile data is ready for user access.",
+                        "process": {
+                            "name": "apply_filter",
+                            "description": "Process to apply filters to the crocodile data.",
+                            "adds_new_entites": "filtered_crocodile_data"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

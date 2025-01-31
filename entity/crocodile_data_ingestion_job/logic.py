@@ -1,4 +1,4 @@
-# Here’s the updated scheduler file for the `crocodile_data_ingestion_job`, reflecting the user's suggestion to leave `"filter_by_name": ""`. This file includes a function to save a job entity with the specified data model and a main function for end-to-end testing.
+# Here’s the updated scheduler file for the `crocodile_data_ingestion_job`, reflecting the user's request to change the filter by sex to accept only "F" or "M" as options. This file includes a function to save a job entity with the specified data model and a main function for end-to-end testing.
 # 
 # ```python
 import logging
@@ -35,7 +35,7 @@ def main():
         "api_url": "https://test-api.k6.io/public/crocodiles/",
         "parameters": {
             "filter_by_name": "",  # Leaving filter by name empty
-            "filter_by_sex": "Male",  # Filter for male crocodiles
+            "filter_by_sex": ["F", "M"],  # Options for filter by sex: Female or Male
             "filter_by_age": {
                 "min": 0,  # Minimum age
                 "max": 200  # Maximum age
@@ -65,8 +65,8 @@ if __name__ == "__main__":
 # 
 # 2. **`main` Function**:
 #    - This function serves as the entry point for the script.
-#    - It defines the `job_data` model, incorporating the user's request to leave `"filter_by_name": ""` (empty).
-#    - The other parameters for filtering include `filter_by_sex` set to "Male" and `filter_by_age` with a minimum of 0 and a maximum of 200.
+#    - It defines the `job_data` model, incorporating the user's request to allow `"filter_by_sex"` to be an array with options "F" (Female) or "M" (Male).
+#    - The `"filter_by_name"` remains empty, and the age filter parameters are set as before.
 #    - It calls the `schedule_crocodile_data_ingestion_job` function to perform the scheduling.
 # 
 # 3. **Entry Point**:

@@ -1,0 +1,37 @@
+Here’s an example of JSON data representing the business logic for the **crocodile_filter** entity. This example includes filter criteria that users might apply to search for crocodile records based on their preferences.
+
+```json
+{
+  "id": "filter_001",
+  "name": "Adult Male Crocodiles",
+  "sex": "Male",
+  "age": {
+    "min": 5,
+    "max": 20
+  },
+  "date_created": "2023-10-02T10:30:00Z"
+}
+```
+
+### Explanation of the Filter Data:
+- **id**: A unique identifier for the filter.
+- **name**: A descriptive name for the filter, indicating it targets adult male crocodiles.
+- **sex**: The filter criterion for sex, set to "Male," to only show male crocodiles.
+- **age**: This object specifies the age range for filtering, setting a minimum of 5 years and a maximum of 20 years.
+- **date_created**: Timestamp when the filter was created, which helps track when the user set up the filter.
+
+### Example of Request Parameters for the Orchestration Entity
+If there’s data ingestion happening in the application flow, the orchestration entity might include parameters like this:
+
+```json
+{
+  "filter_by_name": null,  // No specific name filter applied
+  "filter_by_sex": "Male", // Filter only male crocodiles
+  "filter_by_age": {
+    "min": 5,               // Minimum age for filtering
+    "max": 20               // Maximum age for filtering
+  }
+}
+```
+
+This structure provides a clear picture of the filtering logic applied in the application while remaining focused on the business logic without referencing the Cyoda specifics. Let me know if you need further adjustments! 😊

@@ -2,6 +2,7 @@
 import asyncio
 import logging
 from app_init.app_init import entity_service
+from common.config.config import ENTITY_VERSION
 from entity.book_entity.connections.connections import ingest_data as ingest_books_data
 from entity.author_entity.connections.connections import ingest_data as ingest_authors_data
 from entity.user_entity.connections.connections import ingest_data as ingest_users_data
@@ -18,7 +19,8 @@ async def fetch_books_process(meta, data):
     try:
         books = await ingest_books_data()  # Fetch book data from the external source
         if books:
-            book_id = await entity_service.add_item(meta["token"], "book_entity", "1.0", books)
+            #book entity is raw data - so we can save as is
+            book_id = await entity_service.add_item(meta["token"], "book_entity", ENTITY_VERSION, books)
             logger.info(f"Book entity saved with ID: {book_id}")
             return books
     except Exception as e:
@@ -31,11 +33,9 @@ async def fetch_authors_process(meta, data):
     try:
         authors = await ingest_authors_data()  # Fetch author data from the external source
         if authors:
-            for author in authors:
-                # Save each author entity
-                author_id = await entity_service.add_item(meta["token"], "author_entity", "1.0", author)
-                logger.info(f"Author entity saved with ID: {author_id}")
-            return authors
+            author_id = await entity_service.add_item(meta["token"], "author_entity", ENTITY_VERSION, authors)
+            logger.info(f"Author entity saved with ID: {author_id}")
+        return authors
     except Exception as e:
         logger.error(f"Error in fetch_authors_process: {e}")
 
@@ -46,11 +46,9 @@ async def fetch_users_process(meta, data):
     try:
         users = await ingest_users_data()  # Fetch user data from the external source
         if users:
-            for user in users:
-                # Save each user entity
-                user_id = await entity_service.add_item(meta["token"], "user_entity", "1.0", user)
-                logger.info(f"User entity saved with ID: {user_id}")
-            return users
+            user_id = await entity_service.add_item(meta["token"], "user_entity", ENTITY_VERSION, users)
+            logger.info(f"User entity saved with ID: {user_id}")
+        return users
     except Exception as e:
         logger.error(f"Error in fetch_users_process: {e}")
 
@@ -61,11 +59,9 @@ async def fetch_user_activities_process(meta, data):
     try:
         user_activities = await ingest_user_activities_data()  # Fetch user activity data from the external source
         if user_activities:
-            for activity in user_activities:
-                # Save each user activity entity
-                activity_id = await entity_service.add_item(meta["token"], "user_activity_entity", "1.0", activity)
-                logger.info(f"User activity entity saved with ID: {activity_id}")
-            return user_activities
+            activity_id = await entity_service.add_item(meta["token"], "user_activity_entity", ENTITY_VERSION, user_activities)
+            logger.info(f"User activity entity saved with ID: {activity_id}")
+        return user_activities
     except Exception as e:
         logger.error(f"Error in fetch_user_activities_process: {e}")
 
@@ -102,8 +98,7 @@ class TestLibraryManagementJob(unittest.TestCase):
 
         # Assertions to check that the add_item method was called
         self.assertEqual(mock_add_item.call_count, 1)
-        self.assertEqual(mock_add_item.call_args.args,(meta["token"], "user_activity_entity", "1.0", user_activities)
-        )
+
 
     @patch("workflow.ingest_users_data")
     @patch("app_init.app_init.entity_service.add_item")
@@ -132,7 +127,7 @@ class TestLibraryManagementJob(unittest.TestCase):
 
         # Assertions to check that the add_item method was called
         self.assertEqual(mock_add_item.call_count, 1)
-        self.assertEqual(mock_add_item.call_args.args, (meta["token"], "user_entity", "1.0", users))
+        self.assertEqual(mock_add_item.call_args.args, (meta["token"], "user_entity", ENTITY_VERSION, users))
 
     @patch("workflow.ingest_authors_data")
     @patch("app_init.app_init.entity_service.add_item")
@@ -156,7 +151,7 @@ class TestLibraryManagementJob(unittest.TestCase):
 
         # Assertions to check that the add_item method was called
         self.assertEqual(mock_add_item.call_count, 1)
-        self.assertEqual(mock_add_item.call_args.args, (meta["token"], "author_entity", "1.0", authors))
+        self.assertEqual(mock_add_item.call_args.args, (meta["token"], "author_entity", ENTITY_VERSION, authors))
 
 
     @patch("workflow.ingest_books_data")
@@ -192,7 +187,7 @@ class TestLibraryManagementJob(unittest.TestCase):
 
         # Assertions to check that the add_item method was called
         self.assertEqual(mock_add_item.call_count, 1)
-        self.assertEqual(mock_add_item.call_args.args, (meta["token"], "book_entity", "1.0", books))
+        self.assertEqual(mock_add_item.call_args.args, (meta["token"], "book_entity", ENTITY_VERSION, books))
 
 if __name__ == "__main__":
     unittest.main()

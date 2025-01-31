@@ -1,0 +1,67 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "crocodile_data_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "crocodile_data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "fetch_crocodile_data",
+                        "description": "Fetch crocodile data from the external API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data fetching.",
+                        "end_state": "data_fetched",
+                        "end_state_description": "Crocodile data has been successfully fetched.",
+                        "process": {
+                            "name": "fetch_and_store_data",
+                            "description": "Process to fetch crocodile data and store it in the database.",
+                            "adds_new_entites": "crocodile_data_entity"
+                        }
+                    },
+                    {
+                        "name": "update_data_status",
+                        "description": "Update the status of the data ingestion request.",
+                        "start_state": "data_fetched",
+                        "start_state_description": "Data has been fetched and is ready for status update.",
+                        "end_state": "ingestion_complete",
+                        "end_state_description": "Data ingestion request has been completed successfully.",
+                        "process": {
+                            "name": "update_ingestion_status",
+                            "description": "Process to update the status of data ingestion.",
+                            "adds_new_entites": ""
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "crocodile_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "crocodile_data_job",
+            "entity_workflow": {
+                "name": "crocodile_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "user_filter_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "crocodile_data_job",
+            "entity_workflow": {
+                "name": "user_filter_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

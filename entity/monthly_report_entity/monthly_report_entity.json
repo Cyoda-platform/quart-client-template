@@ -1,0 +1,34 @@
+{
+    "monthly_report_entity": {
+        "report_id": "report_2023_10",
+        "month": "2023-10",
+        "total_users": 150,
+        "active_users": 120,
+        "inactive_users": 30,
+        "successful_data_ingests": 145,
+        "failed_data_ingests": 5,
+        "ingestion_failure_reasons": [
+            "Timeout while fetching data",
+            "API limit reached"
+        ],
+        "generated_at": "2023-10-01T10:05:00Z",
+        "comments": "This report summarizes the data ingestion activities for October 2023 and highlights the number of successful and failed ingests, along with details on user status.",
+        "data_ingestion_params": {
+            "fetch_limit": 100,
+            "filter_criteria": "active"
+        },
+        "distribution_info": {
+            "recipients": [
+                {
+                    "name": "Admin User",
+                    "email": "admin@example.com"
+                },
+                {
+                    "name": "Data Analyst",
+                    "email": "analyst@example.com"
+                }
+            ],
+            "sent_at": "2023-10-01T10:10:00Z"
+        }
+    }
+}

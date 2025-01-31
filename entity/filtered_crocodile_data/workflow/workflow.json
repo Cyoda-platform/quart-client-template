@@ -1,0 +1,68 @@
+{
+    "name": "filtered_crocodile_data_workflow",
+    "description": "Workflow for filtering stored crocodile data based on user criteria.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "filtered_crocodile_data",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "filtered_crocodile_data",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "filter_data",
+            "description": "Filter crocodile data based on user criteria.",
+            "start_state": "data_stored",
+            "start_state_description": "Data has been stored and is ready to be filtered.",
+            "end_state": "data_filtered",
+            "end_state_description": "Filtered crocodile data is ready for user access.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [
+                    {
+                        "name": "apply_filter",
+                        "description": "Process to apply filters to the crocodile data.",
+                        "delay_ms": "0",
+                        "timeout_ms": "120000",
+                        "transition_name": "None",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [
+                                {
+                                    "name": "filterCrocodileData",
+                                    "description": "External processor to filter crocodile data based on user criteria.",
+                                    "calculation_nodes_tags": "7ff0306e-dff2-11ef-b52e-eaae7e15cebc",
+                                    "attach_entity": true,
+                                    "calculation_response_timeout_ms": "120000",
+                                    "retry_policy": "NONE"
+                                }
+                            ],
+                            "condition_criteria": []
+                        }
+                    }
+                ],
+                "externalized_processors": []
+            }
+        }
+    ]
+}

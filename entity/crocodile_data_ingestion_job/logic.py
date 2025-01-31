@@ -1,4 +1,4 @@
-# Here's the scheduler file for the `crocodile_data_ingestion_job`. This file includes a function to save a job entity with the provided data model and a main function for end-to-end testing. 
+# Here’s the updated scheduler file for the `crocodile_data_ingestion_job`, incorporating the filter suggestions provided by the user. This file includes a function to save a job entity with the specified data model and a main function for end-to-end testing.
 # 
 # ```python
 import logging
@@ -34,11 +34,10 @@ def main():
         "job_name": "Daily Crocodile Data Ingestion",
         "api_url": "https://test-api.k6.io/public/crocodiles/",
         "parameters": {
-            "filter_by_name": "",
-            "filter_by_sex": "Male",
+            "filter_by_name": ["F", "M"],  # Filter by names starting with 'F' or 'M'
             "filter_by_age": {
-                "min": 1,
-                "max": 10
+                "min": 0,  # Minimum age
+                "max": 200  # Maximum age
             }
         },
         "last_run": "2023-10-01T05:00:00Z",
@@ -60,16 +59,17 @@ if __name__ == "__main__":
 # 
 # ### Explanation of the Code:
 # 1. **`schedule_crocodile_data_ingestion_job` Function**:
-#    - This asynchronous function is responsible for scheduling the crocodile data ingestion job.
-#    - It takes a `data` parameter, which contains the job entity's details.
-#    - The function logs the process and saves the job entity to Cyoda using the `entity_service.add_item` method.
+#    - This asynchronous function schedules a crocodile data ingestion job according to the details provided in the `data` parameter.
+#    - It logs the scheduling process and saves the job entity to Cyoda without executing any additional logic.
 # 
 # 2. **`main` Function**:
-#    - This function acts as the entry point for the script.
-#    - It defines an example data model representing the job entity to be saved.
-#    - It calls the `schedule_crocodile_data_ingestion_job` function to perform the job scheduling.
+#    - Acts as the entry point of the script.
+#    - Defines the `job_data` model, which now includes the filtering criteria specified by the user:
+#      - **`filter_by_name`**: A list containing "F" or "M" to filter names accordingly.
+#      - **`filter_by_age`**: A dictionary containing minimum and maximum age values (0 and 200, respectively).
+#    - Calls the `schedule_crocodile_data_ingestion_job` function to perform the scheduling.
 # 
 # 3. **Entry Point**:
-#    - The script checks if it is being run directly and calls the `main` function to initiate the scheduling process.
+#    - The script checks if it is being run directly and invokes the `main` function to initiate the scheduling.
 # 
-# This scheduler file allows for an end-to-end test of the crocodile data ingestion job scheduling, ensuring that the job is saved in the Cyoda system without implementing any additional business logic. Let me know if you have any questions or need adjustments! 😊
+# This scheduler allows users to test the crocodile data ingestion job scheduling and confirm that the job entity is saved in the Cyoda system with the specified filters. If you have more adjustments or questions, let me know! 😊

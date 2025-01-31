@@ -1,0 +1,19 @@
+{
+    "filtered_id": 1,
+    "name": "Bert",
+    "sex": "M",
+    "age": 14,
+    "criteria": {
+        "name": "Bert",
+        "sex": "M",
+        "age_range": {
+            "min": 10,
+            "max": 20
+        }
+    },
+    "request_parameters": {
+        "requested_by": "user123",
+        "request_time": "2023-10-01T10:05:00Z"
+    },
+    "comments": "Filtered data for crocodile 'Bert' based on user input criteria."
+}

@@ -1,0 +1,42 @@
+[
+    {
+        "id": 1,
+        "user_id": 1,
+        "transformed_name": "User One",
+        "transformed_email": "user.one@example.com",
+        "status": "Active",
+        "transformation_timestamp": "2023-10-01T10:00:00Z"
+    },
+    {
+        "id": 2,
+        "user_id": 2,
+        "transformed_name": "User Two",
+        "transformed_email": "user.two@example.com",
+        "status": "Inactive",
+        "transformation_timestamp": "2023-10-01T10:00:00Z"
+    },
+    {
+        "id": 3,
+        "user_id": 3,
+        "transformed_name": "User Three",
+        "transformed_email": "user.three@example.com",
+        "status": "Active",
+        "transformation_timestamp": "2023-10-01T10:00:00Z"
+    },
+    {
+        "id": 4,
+        "user_id": 4,
+        "transformed_name": "User Four",
+        "transformed_email": "user.four@example.com",
+        "status": "Active",
+        "transformation_timestamp": "2023-10-01T10:00:00Z"
+    },
+    {
+        "id": 5,
+        "user_id": 5,
+        "transformed_name": "User Five",
+        "transformed_email": "user.five@example.com",
+        "status": "Inactive",
+        "transformation_timestamp": "2023-10-01T10:00:00Z"
+    }
+]

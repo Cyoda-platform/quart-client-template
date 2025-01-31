@@ -1,0 +1,26 @@
+{
+    "entity_name": "data_ingestion_job",
+    "entity_type": "JOB",
+    "entity_source": "SCHEDULED",
+    "next_run": "2023-10-02T10:00:00Z",
+    "status": "pending",
+    "request_parameters": {
+        "api_url": "https://fakerestapi.azurewebsites.net/api/v1/Activities",
+        "headers": {
+            "accept": "text/plain; v=1.0"
+        },
+        "method": "GET",
+        "parameters": {
+            "activeOnly": true,
+            "canton": "BE"
+        }
+    },
+    "triggered_by": "scheduler",
+    "last_run": "2023-09-30T10:00:00Z",
+    "execution_count": 5,
+    "result": {
+        "success": true,
+        "records_ingested": 2,
+        "errors": []
+    }
+}

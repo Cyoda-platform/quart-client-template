@@ -14,7 +14,7 @@ In the Cyoda ecosystem, entities are fundamental components that represent proce
 
 1. **Data Ingestion Job (`data_ingestion_job`)**:
    - **Type**: JOB
-   - **Source**: SCHEDULED
+   - **Source**: API_REQUEST
    - **Description**: This job ingests crocodile data from the specified API and triggers the creation of raw crocodile entities.
 
 2. **Raw Crocodile Entity (`raw_crocodile_entity`)**:
@@ -33,7 +33,7 @@ The workflows in Cyoda define processes tied to each job entity. The `data_inges
 
 ```mermaid
 flowchart TD
-    A[Start State] -->|transition: scheduled_ingestion, processor: ingest_crocodiles_data| B[data_ingested]
+    A[Start State] -->|transition: api_request_ingestion, processor: ingest_crocodiles_data| B[data_ingested]
     B -->|transition: create_raw_crocodile_entity| C[raw_crocodile_entity]
 
     class A,B,C automated;
@@ -43,7 +43,7 @@ flowchart TD
 
 An event-driven architecture allows the application to respond automatically to changes or triggers. In this specific requirement, the following events occur:
 
-1. **Data Ingestion**: The data ingestion job is triggered on a scheduled basis, automatically initiating the process of fetching data from the specified API.
+1. **Data Ingestion**: The data ingestion job is triggered by an API request, automatically initiating the process of fetching data from the specified API.
 2. **Entity Creation**: Once data ingestion is complete, raw crocodile entities are created based on the ingested data.
 3. **Data Filtering**: Users can filter the raw crocodile data through the filtered crocodile entity.
 
@@ -52,12 +52,12 @@ An event-driven architecture allows the application to respond automatically to 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Scheduler
+    participant API
     participant Data Ingestion Job
     participant Raw Crocodile Entity
 
-    User->>Scheduler: Schedule data ingestion job
-    Scheduler->>Data Ingestion Job: Trigger scheduled data ingestion
+    User->>API: Request crocodile data ingestion
+    API->>Data Ingestion Job: Trigger data ingestion
     Data Ingestion Job->>Raw Crocodile Entity: Ingest crocodile data
     Raw Crocodile Entity-->>Data Ingestion Job: Data ingested
     Data Ingestion Job->>User: Notify user of data availability

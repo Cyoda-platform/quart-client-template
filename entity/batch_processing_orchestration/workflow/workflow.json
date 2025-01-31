@@ -1,0 +1,192 @@
+{
+    "name": "batch_processing_workflow",
+    "description": "A workflow for batch processing user data ingestion, transformation, saving, reporting, and sending notifications.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "batch_processing_orchestration",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "batch_processing_orchestration",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "scheduled_data_ingestion",
+            "description": "Triggered at the scheduled time to fetch user data from the Fakerest API.",
+            "start_state": "None",
+            "start_state_description": "Initial state before data ingestion.",
+            "end_state": "data_ingested",
+            "end_state_description": "User data has been successfully ingested.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "fetch_user_data",
+                        "description": "Process to fetch user data from the Fakerest API.",
+                        "calculation_nodes_tags": "afc9ebb0-df64-11ef-a4ad-f660bd21d726",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "transform_user_data",
+            "description": "Transform the fetched user data into a structured format.",
+            "start_state": "data_ingested",
+            "start_state_description": "User data has been ingested and is ready for transformation.",
+            "end_state": "user_data_transformed",
+            "end_state_description": "User data has been successfully transformed.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "process_user_data",
+                        "description": "Process to transform raw user data.",
+                        "calculation_nodes_tags": "afc9ebb0-df64-11ef-a4ad-f660bd21d726",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "save_transformed_data",
+            "description": "Save the transformed user data in the cloud database.",
+            "start_state": "user_data_transformed",
+            "start_state_description": "Transformed user data is ready to be saved.",
+            "end_state": "data_saved",
+            "end_state_description": "Transformed user data has been successfully saved.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "save_data",
+                        "description": "Process to save transformed user data.",
+                        "calculation_nodes_tags": "afc9ebb0-df64-11ef-a4ad-f660bd21d726",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "generate_monthly_report",
+            "description": "Generate a report based on the transformed user data.",
+            "start_state": "data_saved",
+            "start_state_description": "Transformed user data is available for reporting.",
+            "end_state": "report_generated",
+            "end_state_description": "Monthly report has been successfully generated.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "create_report",
+                        "description": "Process to create a monthly report.",
+                        "calculation_nodes_tags": "afc9ebb0-df64-11ef-a4ad-f660bd21d726",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "send_report_to_admin",
+            "description": "Send the generated monthly report via email to the admin.",
+            "start_state": "report_generated",
+            "start_state_description": "Report has been generated and is ready to be sent.",
+            "end_state": "report_sent",
+            "end_state_description": "Monthly report has been successfully sent to the admin.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "email_report",
+                        "description": "Process to send the report to the admin's email.",
+                        "calculation_nodes_tags": "afc9ebb0-df64-11ef-a4ad-f660bd21d726",
+                        "attach_entity": false,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

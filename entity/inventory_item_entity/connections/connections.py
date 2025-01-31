@@ -1,4 +1,3 @@
-# ```python
 import asyncio
 import logging
 import aiohttp
@@ -56,7 +55,7 @@ class TestDataIngestion(unittest.TestCase):
 
         # Assertions to check that data is mapped correctly
         self.assertTrue(len(result) > 0)
-        self.assertEqual(result[0]["id"], "01JJSPYR8X0BZY2WJNE5R6TAA5")
+        self.assertEqual(result[0]["id"], "01JJYAJV3KJBM6TMK45QK1A8F2")
         self.assertEqual(result[0]["name"], "Hand Tools")
         self.assertEqual(result[0]["slug"], "hand-tools")
         self.assertEqual(result[0]["parent_id"], 0)  # Assuming top-level categories have parent_id as 0
@@ -64,14 +63,3 @@ class TestDataIngestion(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-# ``` 
-# 
-# ### Explanation of the Code
-# 
-# 1. **fetch_data()**: This asynchronous function makes a GET request to the specified API URL to retrieve category data. If the request is successful, it returns the JSON response. If there’s an error, it logs the error message.
-# 
-# 2. **ingest_data()**: This public function retrieves the data using `fetch_data()`. It maps the raw data structure to the required entity format. The `sub_categories` within each category are processed accordingly to maintain the parent-child relationship.
-# 
-# 3. **TestDataIngestion**: The unit test class uses the `unittest` framework. The `test_ingest_data_success` method runs the `ingest_data()` function and verifies that the data is mapped correctly, including checking the properties of the first category in the result.
-# 
-# You can run this code to fetch data from the external API and test the mapping functionality seamlessly. Let me know if you have any questions or need further adjustments! 😊

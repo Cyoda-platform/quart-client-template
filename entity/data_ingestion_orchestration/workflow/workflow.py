@@ -1,23 +1,20 @@
 # Here's the Python code for the processor functions for the `data_ingestion_orchestration` entity, which includes the `fetch_data`, `save_data`, and `handle_error` functions. I will reuse existing functions from the codebase and ensure that tests with mocks are included in the same file for isolated testing.
 # 
 # ```python
-import json
 import logging
-import asyncio
 from app_init.app_init import entity_service
-from common.service.trino_service import run_sql_query  # assuming you may want to use this in the future
-from common.util.utils import read_json_file
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def fetch_data(meta, data):
+async def fetch_data(data):
     try:
         # Assuming fetch_data logic is defined to collect data from the external API
         api_url = data["apiEndpoint"]
         headers = data["requestParams"]["headers"]
 
-        async with aiohttp.ClientSession() as session:
+        from aiohttp import ClientSession
+        async with ClientSession() as session:
             async with session.get(api_url, headers=headers) as response:
                 if response.status == 200:
                     response_data = await response.json()
@@ -68,7 +65,7 @@ async def save_data(meta, data):
         logger.error(f"Error in save_data: {e}")
         handle_error(meta, data)
 
-async def handle_error(meta, data):
+async def handle_error():
     logger.error("Handling error in data ingestion.")
     # Perform error handling actions, like logging or sending notifications
     # Here you could implement retry logic or record the error state if necessary

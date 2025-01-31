@@ -1,0 +1,54 @@
+{
+    "filtered_crocodiles": [
+        {
+            "id": 1,
+            "name": "Bert",
+            "sex": "M",
+            "date_of_birth": "2010-06-27",
+            "age": 14
+        },
+        {
+            "id": 3,
+            "name": "Lyle the Crocodile",
+            "sex": "M",
+            "date_of_birth": "1985-03-03",
+            "age": 39
+        },
+        {
+            "id": 5,
+            "name": "The gharial",
+            "sex": "F",
+            "date_of_birth": "2004-06-28",
+            "age": 20
+        },
+        {
+            "id": 6,
+            "name": "Sang Buaya",
+            "sex": "F",
+            "date_of_birth": "2006-01-28",
+            "age": 19
+        }
+    ],
+    "request_parameters": {
+        "filter_by": {
+            "name": [
+                "Bert",
+                "Lyle the Crocodile",
+                "The gharial",
+                "Sang Buaya"
+            ],
+            "sex": [
+                "M",
+                "F"
+            ],
+            "age_range": {
+                "min": 14,
+                "max": 39
+            }
+        }
+    },
+    "summary": {
+        "total_filtered": 4,
+        "description": "This data reflects the filtered list of crocodiles based on user-defined criteria."
+    }
+}

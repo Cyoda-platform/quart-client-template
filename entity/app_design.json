@@ -1,3 +1,54 @@
-The requirement is clear and sufficient for creating the Cyoda design. It specifies the ingestion of crocodile data from the provided API, outlines the necessary attributes (id, name, sex, date_of_birth, and age), and mentions the need for user filtering capabilities by name, sex, and age.
-
-Since the requirement is sufficiently detailed to outline the necessary entities and their workflows, I am ready to proceed with creating the Cyoda design JSON. If you have any further specifications or changes, please let me know!
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "scheduled_ingestion",
+                        "description": "Triggered by a scheduled job to ingest crocodile data from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_crocodiles_data",
+                            "description": "Process to ingest crocodile data from the specified API.",
+                            "adds_new_entites": "raw_crocodile_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_crocodile_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_crocodile_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "filtered_crocodile_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "filtered_crocodile_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

@@ -1,0 +1,50 @@
+{
+    "crocodiles": [
+        {
+            "id": 1,
+            "name": "Bert",
+            "sex": "M",
+            "date_of_birth": "2010-06-27",
+            "age": 14,
+            "weight": 300,
+            "length": 4.5,
+            "habitat": "wetland",
+            "ingestion_request": {
+                "api_url": "https://test-api.k6.io/public/crocodiles/",
+                "request_parameters": {
+                    "limit": 100,
+                    "filters": {
+                        "sex": "M",
+                        "age_range": {
+                            "min": 0,
+                            "max": 50
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "id": 2,
+            "name": "Lola",
+            "sex": "F",
+            "date_of_birth": "2015-04-15",
+            "age": 8,
+            "weight": 250,
+            "length": 3.8,
+            "habitat": "river",
+            "ingestion_request": {
+                "api_url": "https://test-api.k6.io/public/crocodiles/",
+                "request_parameters": {
+                    "limit": 100,
+                    "filters": {
+                        "sex": "F",
+                        "age_range": {
+                            "min": 0,
+                            "max": 50
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

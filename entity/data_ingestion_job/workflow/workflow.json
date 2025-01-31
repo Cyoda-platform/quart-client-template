@@ -1,0 +1,60 @@
+{
+    "name": "data_ingestion_workflow",
+    "description": "Workflow for ingesting crocodile data from an API.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "data_ingestion_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "data_ingestion_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "api_request_ingestion",
+            "description": "Triggered by an API request to ingest crocodile data from the API.",
+            "start_state": "None",
+            "start_state_description": "Initial state before data ingestion.",
+            "end_state": "data_ingested",
+            "end_state_description": "Data has been successfully ingested.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "ingest_crocodiles_data",
+                        "description": "Process to ingest crocodile data from the specified API.",
+                        "calculation_nodes_tags": "0a6507ea-dfe1-11ef-a287-eac462a7cb9f",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,80 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "crocodile_data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "SCHEDULED",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "crocodile_data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Initiate the process to fetch crocodile data from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before starting data ingestion.",
+                        "end_state": "fetching_data",
+                        "end_state_description": "Data is being fetched from the API.",
+                        "process": {
+                            "name": "fetch_crocodile_data",
+                            "description": "Fetch crocodile data from the defined API endpoint.",
+                            "adds_new_entites": "crocodile_entity"
+                        }
+                    },
+                    {
+                        "name": "data_fetched",
+                        "description": "Data has been fetched from the API.",
+                        "start_state": "fetching_data",
+                        "start_state_description": "Data is currently being fetched.",
+                        "end_state": "storing_data",
+                        "end_state_description": "Crocodile data is being stored in the database.",
+                        "process": {
+                            "name": "store_crocodile_data",
+                            "description": "Store the fetched crocodile data into the database.",
+                            "adds_new_entites": "crocodile_entity"
+                        }
+                    },
+                    {
+                        "name": "ingestion_completed",
+                        "description": "The data ingestion process is complete.",
+                        "start_state": "storing_data",
+                        "start_state_description": "Currently storing crocodile data.",
+                        "end_state": "None",
+                        "end_state_description": "Ingestion process completed.",
+                        "process": {
+                            "name": "complete_ingestion",
+                            "description": "Finalize the data ingestion process.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "crocodile_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "crocodile_data_ingestion_job",
+            "entity_workflow": {
+                "name": "crocodile_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "crocodile_filter",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "crocodile_filter_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

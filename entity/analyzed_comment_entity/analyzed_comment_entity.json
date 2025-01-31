@@ -1,0 +1,12 @@
+{
+    "comment_id": 1,
+    "postId": 1,
+    "sentiment": "positive",
+    "analysis_notes": "The comment contains positive feedback regarding the service quality and user experience.",
+    "keywords": [
+        "positive",
+        "quality",
+        "experience"
+    ],
+    "created_at": "2023-10-01T12:00:00Z"
+}

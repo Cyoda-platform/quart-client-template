@@ -1,8 +1,8 @@
 # ```python
 import asyncio
-import copy
 import logging
 from app_init.app_init import entity_service
+from common.config.config import ENTITY_VERSION
 from entity.flight_results_entity.connections.connections import ingest_data
 
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +17,7 @@ async def search_flights(meta, data):
 
         # Save the flight results to flight_results_entity
         flight_results_id = await entity_service.add_item(
-            meta["token"], "flight_results_entity", "1.0", flight_data
+            meta["token"], "flight_results_entity", ENTITY_VERSION, flight_data
         )
         data["flight_results_entity"] = {"technical_id": flight_results_id}
         logger.info(f"Flight results saved with ID: {flight_results_id}")
@@ -54,7 +54,7 @@ async def notify_no_flights(meta, data):
 
         # Save the no_flight_notification_entity
         no_flight_notification_id = await entity_service.add_item(
-            meta["token"], "no_flight_notification_entity", "1.0", notification_data
+            meta["token"], "no_flight_notification_entity", ENTITY_VERSION, notification_data
         )
         data["no_flight_notification_entity"] = {"technical_id": no_flight_notification_id}
         logger.info(f"No flight notification saved with ID: {no_flight_notification_id}")
@@ -89,7 +89,7 @@ async def handle_api_error(meta, data):
 
         # Save the error_notification_entity
         error_notification_id = await entity_service.add_item(
-            meta["token"], "error_notification_entity", "1.0", error_data
+            meta["token"], "error_notification_entity", ENTITY_VERSION, error_data
         )
         data["error_notification_entity"] = {"technical_id": error_notification_id}
         logger.info(f"Error notification saved with ID: {error_notification_id}")
@@ -199,7 +199,7 @@ class TestFlightSearchJob(unittest.TestCase):
 
         # Assertions
         mock_add_item.assert_called_once_with(
-            meta["token"], "flight_results_entity", "1.0", ingested_data
+            meta["token"], "flight_results_entity", ENTITY_VERSION, ingested_data
         )
 
 
@@ -240,7 +240,7 @@ class TestFlightSearchJob(unittest.TestCase):
             ]
         }
         mock_add_item.assert_called_once_with(
-            meta["token"], "no_flight_notification_entity", "1.0", notification_data
+            meta["token"], "no_flight_notification_entity", ENTITY_VERSION, notification_data
         )
 
 
@@ -254,7 +254,7 @@ class TestFlightSearchJob(unittest.TestCase):
         asyncio.run(handle_api_error(meta, data))
 
         mock_add_item.assert_called_once_with(
-            meta["token"], "error_notification_entity", "1.0", {
+            meta["token"], "error_notification_entity", ENTITY_VERSION, {
                 "notification_id": "error_notification_001",
                 "timestamp": "2023-10-01T12:00:00Z",
                 "status": "error",

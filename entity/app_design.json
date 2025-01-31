@@ -1,0 +1,104 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "comments_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "comments_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_ingestion",
+                        "description": "Start the ingestion process to fetch comments from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before fetching comments.",
+                        "end_state": "comments_ingested",
+                        "end_state_description": "Comments have been successfully ingested.",
+                        "process": {
+                            "name": "ingest_comments",
+                            "description": "Process to ingest comments data from the API.",
+                            "adds_new_entites": "comment_entity"
+                        }
+                    },
+                    {
+                        "name": "analyze_comments",
+                        "description": "Analyze the ingested comments for sentiment and insights.",
+                        "start_state": "comments_ingested",
+                        "start_state_description": "Comments have been ingested and are ready for analysis.",
+                        "end_state": "comments_analyzed",
+                        "end_state_description": "Comments have been successfully analyzed.",
+                        "process": {
+                            "name": "analyze_comments",
+                            "description": "Process to analyze comments data.",
+                            "adds_new_entites": "analyzed_comment_entity"
+                        }
+                    },
+                    {
+                        "name": "generate_report",
+                        "description": "Generate a report summarizing the analysis of comments.",
+                        "start_state": "comments_analyzed",
+                        "start_state_description": "Comments have been analyzed and are ready for reporting.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been successfully generated.",
+                        "process": {
+                            "name": "create_report",
+                            "description": "Process to create a report from analyzed comments.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    },
+                    {
+                        "name": "send_report",
+                        "description": "Send the generated report to the admin's email.",
+                        "start_state": "report_generated",
+                        "start_state_description": "Report has been generated and is ready to be sent.",
+                        "end_state": "report_sent",
+                        "end_state_description": "Report has been successfully sent to the admin's email.",
+                        "process": {
+                            "name": "send_email_report",
+                            "description": "Process to send the report via email.",
+                            "adds_new_entites": ""
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "comment_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "comments_ingestion_job",
+            "entity_workflow": {
+                "name": "comment_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "analyzed_comment_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "comments_ingestion_job",
+            "entity_workflow": {
+                "name": "analyzed_comment_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "comments_ingestion_job",
+            "entity_workflow": {
+                "name": "report_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

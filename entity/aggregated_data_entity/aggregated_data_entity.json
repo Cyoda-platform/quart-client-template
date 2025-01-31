@@ -1,0 +1,45 @@
+{
+    "entity_name": "aggregated_data_entity",
+    "entity_type": "SECONDARY_DATA",
+    "summary": {
+        "total_records": 10,
+        "completed_tasks": 7,
+        "pending_tasks": 3,
+        "aggregation_timestamp": "2023-10-01T12:00:00Z",
+        "average_due_date": "2025-01-31T12:00:00Z",
+        "status": "Partially Completed",
+        "comments": "This aggregated data reflects the current status of activities processed during the specified period."
+    },
+    "details": [
+        {
+            "id": 1,
+            "title": "Activity 1",
+            "due_date": "2025-01-31T11:14:08.5119324+00:00",
+            "status": "Pending"
+        },
+        {
+            "id": 2,
+            "title": "Activity 2",
+            "due_date": "2025-01-31T12:14:08.511935+00:00",
+            "status": "Completed"
+        },
+        {
+            "id": 3,
+            "title": "Activity 3",
+            "due_date": "2025-01-31T13:14:08.511936+00:00",
+            "status": "Completed"
+        }
+    ],
+    "request_parameters": {
+        "data_ingestion_job_id": "data_ingestion_job_123",
+        "requested_at": "2023-10-01T11:55:00Z",
+        "source": "external_api",
+        "filter_criteria": {
+            "status": "active",
+            "date_range": {
+                "start": "2025-01-01T00:00:00Z",
+                "end": "2025-01-31T23:59:59Z"
+            }
+        }
+    }
+}

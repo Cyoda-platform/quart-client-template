@@ -1,0 +1,50 @@
+[
+    {
+        "id": "croc_001",
+        "name": "Chompers",
+        "sex": "Male",
+        "age": 5,
+        "weight": 300.5,
+        "length": 2.5,
+        "date_added": "2023-10-01T12:00:00Z",
+        "habitat": "Swamp",
+        "health_status": "Healthy",
+        "last_seen": "2023-10-10T14:30:00Z"
+    },
+    {
+        "id": "croc_002",
+        "name": "Sally",
+        "sex": "Female",
+        "age": 4,
+        "weight": 250.0,
+        "length": 2.3,
+        "date_added": "2023-10-01T12:00:00Z",
+        "habitat": "River",
+        "health_status": "Injured",
+        "last_seen": "2023-10-09T09:15:00Z"
+    },
+    {
+        "id": "croc_003",
+        "name": "Gator",
+        "sex": "Male",
+        "age": 7,
+        "weight": 400.0,
+        "length": 3.0,
+        "date_added": "2023-10-01T12:00:00Z",
+        "habitat": "Lake",
+        "health_status": "Healthy",
+        "last_seen": "2023-10-10T08:00:00Z"
+    },
+    {
+        "id": "croc_004",
+        "name": "Lizzy",
+        "sex": "Female",
+        "age": 6,
+        "weight": 350.8,
+        "length": 2.8,
+        "date_added": "2023-10-01T12:00:00Z",
+        "habitat": "Swamp",
+        "health_status": "Sick",
+        "last_seen": "2023-10-08T11:45:00Z"
+    }
+]

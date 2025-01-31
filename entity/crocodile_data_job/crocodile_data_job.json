@@ -1,0 +1,38 @@
+{
+    "job_id": "job_001",
+    "job_name": "Daily Crocodile Data Ingestion",
+    "scheduled_time": "2023-10-01T05:00:00Z",
+    "status": "pending",
+    "start_time": null,
+    "end_time": null,
+    "total_records_processed": 0,
+    "successful_records": 0,
+    "failed_records": 0,
+    "failure_reason": [],
+    "request_parameters": {
+        "api_endpoint": "https://test-api.k6.io/public/crocodiles/",
+        "request_method": "GET",
+        "pagination": 50,
+        "filter_criteria": {
+            "sex": "M",
+            "age_range": {
+                "min_age": 5,
+                "max_age": 100
+            }
+        }
+    },
+    "raw_data_summary": {
+        "technical_id": "raw_data_entity_001",
+        "records": []
+    },
+    "report_details": {
+        "report_id": "report_001",
+        "notification_status": "not_sent",
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            }
+        ]
+    }
+}

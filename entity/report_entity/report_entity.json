@@ -1,0 +1,45 @@
+{
+    "report_id": "report_2023_10_01",
+    "generated_at": "2023-10-01T12:05:00Z",
+    "total_comments": 5,
+    "positive_comments": 3,
+    "negative_comments": 1,
+    "neutral_comments": 1,
+    "summary": "Overall sentiment analysis of comments.",
+    "details": [
+        {
+            "comment_id": 1,
+            "post_id": 1,
+            "sentiment": "positive",
+            "analysis_notes": "The comment expresses a positive sentiment."
+        },
+        {
+            "comment_id": 2,
+            "post_id": 1,
+            "sentiment": "positive",
+            "analysis_notes": "The comment has positive feedback."
+        },
+        {
+            "comment_id": 3,
+            "post_id": 1,
+            "sentiment": "negative",
+            "analysis_notes": "The comment indicates some dissatisfaction."
+        },
+        {
+            "comment_id": 4,
+            "post_id": 1,
+            "sentiment": "neutral",
+            "analysis_notes": "The comment is informative but neutral."
+        },
+        {
+            "comment_id": 5,
+            "post_id": 1,
+            "sentiment": "positive",
+            "analysis_notes": "The comment shows appreciation."
+        }
+    ],
+    "request_parameters": {
+        "post_id": 1,
+        "analysis_date": "2023-10-01"
+    }
+}

@@ -1,0 +1,141 @@
+{
+    "name": "crocodile_data_ingestion_workflow",
+    "description": "Workflow for ingesting crocodile data from an API and storing it in the database.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "crocodile_data_ingestion_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "crocodile_data_ingestion_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "start_data_ingestion",
+            "description": "Initiate the process to fetch crocodile data from the API.",
+            "start_state": "None",
+            "start_state_description": "Initial state before starting data ingestion.",
+            "end_state": "fetching_data",
+            "end_state_description": "Data is being fetched from the API.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [
+                    {
+                        "name": "fetch_crocodile_data",
+                        "description": "Fetch crocodile data from the defined API endpoint.",
+                        "delay_ms": "0",
+                        "timeout_ms": "120000",
+                        "transition_name": "data_fetched",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [
+                                {
+                                    "name": "fetch_data",
+                                    "description": "Fetches data from the API.",
+                                    "calculation_nodes_tags": "9d61d342-dfd8-11ef-a4ad-f660bd21d726",
+                                    "attach_entity": true,
+                                    "calculation_response_timeout_ms": "120000",
+                                    "retry_policy": "NONE"
+                                }
+                            ],
+                            "condition_criteria": []
+                        }
+                    }
+                ],
+                "externalized_processors": []
+            }
+        },
+        {
+            "name": "data_fetched",
+            "description": "Data has been fetched from the API.",
+            "start_state": "fetching_data",
+            "start_state_description": "Data is currently being fetched.",
+            "end_state": "storing_data",
+            "end_state_description": "Crocodile data is being stored in the database.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [
+                    {
+                        "name": "store_crocodile_data",
+                        "description": "Store the fetched crocodile data into the database.",
+                        "delay_ms": "0",
+                        "timeout_ms": "120000",
+                        "transition_name": "ingestion_completed",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [
+                                {
+                                    "name": "store_data",
+                                    "description": "Stores the fetched data into the database.",
+                                    "calculation_nodes_tags": "9d61d342-dfd8-11ef-a4ad-f660bd21d726",
+                                    "attach_entity": true,
+                                    "calculation_response_timeout_ms": "120000",
+                                    "retry_policy": "NONE"
+                                }
+                            ],
+                            "condition_criteria": []
+                        }
+                    }
+                ],
+                "externalized_processors": []
+            }
+        },
+        {
+            "name": "ingestion_completed",
+            "description": "The data ingestion process is complete.",
+            "start_state": "storing_data",
+            "start_state_description": "Currently storing crocodile data.",
+            "end_state": "None",
+            "end_state_description": "Ingestion process completed.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [
+                    {
+                        "name": "complete_ingestion",
+                        "description": "Finalize the data ingestion process.",
+                        "delay_ms": "0",
+                        "timeout_ms": "120000",
+                        "transition_name": "None",
+                        "sync_process": true,
+                        "new_transaction_for_async": false,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ],
+                "externalized_processors": []
+            }
+        }
+    ]
+}

@@ -1,0 +1,17 @@
+{
+    "name": "Bert",
+    "sex": "M",
+    "minAge": 5,
+    "maxAge": 20,
+    "request_parameters": {
+        "api_endpoint": "https://test-api.k6.io/public/crocodiles/",
+        "filter_by": {
+            "name": "Bert",
+            "sex": "M",
+            "age_range": {
+                "min": 5,
+                "max": 20
+            }
+        }
+    }
+}

@@ -1,0 +1,126 @@
+{
+    "name": "login_workflow",
+    "description": "A workflow for user login that validates credentials and manages sessions.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "login_workflow",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "login_workflow",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "validate_credentials",
+            "description": "Validate the user credentials against the database.",
+            "start_state": "None",
+            "start_state_description": "Initial state before validation.",
+            "end_state": "credentials_validated",
+            "end_state_description": "User credentials have been successfully validated.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "validate_user",
+                        "description": "Process to validate the user credentials.",
+                        "calculation_nodes_tags": "1e023f60-e212-11ef-a4be-12ba6be13728",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "create_session",
+            "description": "Create a session for the user upon successful login.",
+            "start_state": "credentials_validated",
+            "start_state_description": "User credentials have been validated.",
+            "end_state": "session_created",
+            "end_state_description": "User session has been successfully created.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "create_user_session",
+                        "description": "Process to create a user session.",
+                        "calculation_nodes_tags": "1e023f60-e212-11ef-a4be-12ba6be13728",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "authentication_failed",
+            "description": "Handle the scenario where user authentication fails.",
+            "start_state": "credentials_validated",
+            "start_state_description": "User credentials have been validated.",
+            "end_state": "login_failed",
+            "end_state_description": "User login failed due to invalid credentials.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "handle_failed_login",
+                        "description": "Process to handle failed login attempts.",
+                        "calculation_nodes_tags": "1e023f60-e212-11ef-a4be-12ba6be13728",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

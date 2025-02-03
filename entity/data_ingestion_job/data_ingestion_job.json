@@ -1,0 +1,56 @@
+{
+    "job_id": "ingestion_job_001",
+    "job_name": "Daily Author Data Ingestion",
+    "scheduled_time": "2023-10-01T05:00:00Z",
+    "status": "completed",
+    "start_time": "2023-10-01T05:00:00Z",
+    "end_time": "2023-10-01T05:05:00Z",
+    "total_records_processed": 100,
+    "successful_records": 95,
+    "failed_records": 5,
+    "failure_reason": [
+        "Timeout while fetching data",
+        "API limit reached"
+    ],
+    "raw_data_summary": {
+        "technical_id": "raw_data_entity_001",
+        "records": [
+            {
+                "id": 1,
+                "idBook": 1,
+                "firstName": "First Name 1",
+                "lastName": "Last Name 1"
+            },
+            {
+                "id": 2,
+                "idBook": 1,
+                "firstName": "First Name 2",
+                "lastName": "Last Name 2"
+            }
+        ]
+    },
+    "request_parameters": {
+        "api_endpoint": "https://fakerestapi.azurewebsites.net/api/v1/Authors",
+        "headers": {
+            "accept": "text/plain; v=1.0"
+        },
+        "method": "GET"
+    },
+    "aggregated_data_summary": {
+        "technical_id": "aggregated_data_entity_001",
+        "summary": {
+            "total_authors": 2,
+            "unique_books": 1
+        }
+    },
+    "report_details": {
+        "report_id": "report_2023_10_01",
+        "notification_status": "Sent",
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            }
+        ]
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "login_workflow": {
+        "user_credentials": {
+            "username": "john_doe",
+            "password": "securePassword123"
+        },
+        "request_parameters": {
+            "api_version": "1.0",
+            "request_id": "req_12345",
+            "timestamp": "2023-10-01T12:00:00Z",
+            "ip_address": "192.168.1.1"
+        },
+        "validation_result": {
+            "is_valid": true,
+            "validation_timestamp": "2023-10-01T12:00:01Z",
+            "error_message": null
+        },
+        "session_info": {
+            "session_id": "session_001",
+            "login_timestamp": "2023-10-01T12:00:02Z",
+            "logout_timestamp": null,
+            "session_duration": "N/A"
+        },
+        "status": {
+            "login_success": true,
+            "message": "Login successful, welcome back!"
+        }
+    }
+}

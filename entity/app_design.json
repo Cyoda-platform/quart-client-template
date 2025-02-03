@@ -1,0 +1,117 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Start the data ingestion process from the posts API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "posts_data_fetched",
+                        "end_state_description": "Posts data has been successfully fetched.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw data from the posts API.",
+                            "adds_new_entites": "post_entity"
+                        }
+                    },
+                    {
+                        "name": "fetch_comments_data",
+                        "description": "Fetch comments for each post.",
+                        "start_state": "posts_data_fetched",
+                        "start_state_description": "Posts data has been fetched, ready to fetch comments.",
+                        "end_state": "comments_data_fetched",
+                        "end_state_description": "Comments data has been successfully fetched.",
+                        "process": {
+                            "name": "fetch_comments",
+                            "description": "Process to fetch comments data from the comments API.",
+                            "adds_new_entites": "comment_entity"
+                        }
+                    },
+                    {
+                        "name": "analyze_comments",
+                        "description": "Analyze the comments data to count comments per post.",
+                        "start_state": "comments_data_fetched",
+                        "start_state_description": "Comments data has been fetched, ready for analysis.",
+                        "end_state": "comments_analyzed",
+                        "end_state_description": "Comments have been successfully analyzed.",
+                        "process": {
+                            "name": "analyze_comments_data",
+                            "description": "Process to analyze comments per post.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    },
+                    {
+                        "name": "generate_report",
+                        "description": "Generate a report based on the analyzed comments data.",
+                        "start_state": "comments_analyzed",
+                        "start_state_description": "Comments have been analyzed, ready to generate report.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been successfully generated.",
+                        "process": {
+                            "name": "generate_report_data",
+                            "description": "Process to create a report summarizing comments statistics.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    },
+                    {
+                        "name": "send_email",
+                        "description": "Send the generated report to the specified email.",
+                        "start_state": "report_generated",
+                        "start_state_description": "Report has been generated, ready to send.",
+                        "end_state": "email_sent",
+                        "end_state_description": "Email with the report has been successfully sent.",
+                        "process": {
+                            "name": "send_email_report",
+                            "description": "Process to send report via email.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "post_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "post_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "comment_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "comment_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "report_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

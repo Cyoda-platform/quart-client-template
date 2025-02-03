@@ -1,11 +1,7 @@
-# Sure! Below is the Python code that implements processor functions for the `data_ingestion_job`, reusing existing functions as requested. This code includes the following public functions: `fetch_posts_processor`, `fetch_comments_processor`, `combine_data_processor`, and `generate_report_processor`. I've also included tests with mocks for external services or functions.
-# 
-# ```python
 import asyncio
 import logging
 import aiohttp
 from app_init.app_init import entity_service
-from entity.raw_data_entity.connections.connections import ingest_data as ingest_raw_data
 import unittest
 from unittest.mock import patch
 
@@ -83,21 +79,29 @@ async def generate_report_processor(meta, data):
 # Test Cases
 class TestDataIngestionJob(unittest.TestCase):
 
+    def setUp(self):
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+
+    def tearDown(self):
+        self.loop.close()
+
     @patch("aiohttp.ClientSession.get")
     @patch("app_init.app_init.entity_service.add_item")
     def test_fetch_posts_processor(self, mock_add_item, mock_get):
         # Mock the API response
-        mock_get.return_value.__aenter__.return_value.status = 200
-        mock_get.return_value.__aenter__.return_value.json = asyncio.Future()
-        mock_get.return_value.__aenter__.return_value.json.set_result([
+        mock_response = asyncio.Future(loop=self.loop)
+        mock_response.set_result([
             {"userId": 1, "id": 1, "title": "Post 1", "body": "Content of Post 1"},
             {"userId": 1, "id": 2, "title": "Post 2", "body": "Content of Post 2"},
         ])
+        mock_get.return_value.__aenter__.return_value.status = 200
+        mock_get.return_value.__aenter__.return_value.json = lambda: mock_response
         mock_add_item.return_value = "post_entity_id"
 
         meta = {"token": "test_token"}
         data = {}
-        result = asyncio.run(fetch_posts_processor(meta, data))
+        result = self.loop.run_until_complete(fetch_posts_processor(meta, data))
 
         mock_add_item.assert_called_once()
         self.assertEqual(result["post_entity_id"], "post_entity_id")
@@ -106,36 +110,39 @@ class TestDataIngestionJob(unittest.TestCase):
     @patch("app_init.app_init.entity_service.add_item")
     def test_fetch_comments_processor(self, mock_add_item, mock_get):
         # Mock the API response
-        mock_get.return_value.__aenter__.return_value.status = 200
-        mock_get.return_value.__aenter__.return_value.json = asyncio.Future()
-        mock_get.return_value.__aenter__.return_value.json.set_result([
+        mock_response = asyncio.Future(loop=self.loop)
+        mock_response.set_result([
             {"postId": 1, "id": 1, "name": "Comment 1", "email": "example1@example.com", "body": "Content of Comment 1"},
             {"postId": 1, "id": 2, "name": "Comment 2", "email": "example2@example.com", "body": "Content of Comment 2"},
         ])
+        mock_get.return_value.__aenter__.return_value.status = 200
+        mock_get.return_value.__aenter__.return_value.json = lambda: mock_response
         mock_add_item.return_value = "comment_entity_id"
 
         meta = {"token": "test_token"}
         data = {}
-        result = asyncio.run(fetch_comments_processor(meta, data))
+        result = self.loop.run_until_complete(fetch_comments_processor(meta, data))
 
         mock_add_item.assert_called_once()
         self.assertEqual(result["comment_entity_id"], "comment_entity_id")
 
     @patch("app_init.app_init.entity_service.add_item")
     def test_combine_data_processor(self, mock_add_item):
+        mock_add_item.return_value = "combined_entity_id"
         meta = {"token": "test_token"}
         data = {
             "post_entity": {"records": [{"id": 1, "title": "Post 1"}, {"id": 2, "title": "Post 2"}]},
             "comment_entity": {"records": [{"postId": 1, "id": 1, "name": "Comment 1", "email": "example1@example.com", "body": "Content of Comment 1"}]}
         }
 
-        result = asyncio.run(combine_data_processor(meta, data))
+        result = self.loop.run_until_complete(combine_data_processor(meta, data))
 
         mock_add_item.assert_called_once()
-        self.assertEqual(result["combined_entity_id"], "combined_entity_id")  # Adjust this based on expected output
+        self.assertEqual(result["combined_entity_id"], "combined_entity_id")
 
     @patch("app_init.app_init.entity_service.add_item")
     def test_generate_report_processor(self, mock_add_item):
+        mock_add_item.return_value = "report_entity_id"
         meta = {"token": "test_token"}
         data = {
             "combined_entity": {
@@ -146,25 +153,10 @@ class TestDataIngestionJob(unittest.TestCase):
             }
         }
 
-        result = asyncio.run(generate_report_processor(meta, data))
+        result = self.loop.run_until_complete(generate_report_processor(meta, data))
 
         mock_add_item.assert_called_once()
-        self.assertEqual(result["report_entity_id"], "report_entity_id")  # Adjust this based on expected output
+        self.assertEqual(result["report_entity_id"], "report_entity_id")
 
 if __name__ == "__main__":
     unittest.main()
-# ```
-# 
-# ### Explanation of the Code
-# 
-# 1. **Processor Functions**:
-#    - **fetch_posts_processor**: Fetches posts from the API and saves them to the `post_entity`.
-#    - **fetch_comments_processor**: Fetches comments from the API and saves them to the `comment_entity`.
-#    - **combine_data_processor**: Combines the fetched posts and comments, saving the combined data to the `combined_entity`.
-#    - **generate_report_processor**: Generates a report based on the combined data, saving it to the `report_entity`.
-# 
-# 2. **Testing**:
-#    - Each function has corresponding tests that mock the API responses and check if the data is saved to the appropriate entities.
-#    - The tests ensure that the functions are working correctly by verifying that the correct APIs are being called and that data is processed as expected.
-# 
-# You can run this code as part of your application to test the functionality of these processor functions. If you have any questions or need further adjustments, feel free to ask! 😊

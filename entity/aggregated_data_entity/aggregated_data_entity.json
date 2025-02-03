@@ -1,0 +1,35 @@
+{
+    "aggregated_data_id": "aggregated_data_2023_10_01",
+    "total_authors": 2,
+    "total_books": 1,
+    "authors": [
+        {
+            "id": 1,
+            "first_name": "First Name 1",
+            "last_name": "Last Name 1",
+            "books_contributed": [
+                {
+                    "idBook": 1,
+                    "title": "Book Title 1"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "first_name": "First Name 2",
+            "last_name": "Last Name 2",
+            "books_contributed": [
+                {
+                    "idBook": 1,
+                    "title": "Book Title 1"
+                }
+            ]
+        }
+    ],
+    "summary": "This aggregation reflects the total authors and their contributions to the books.",
+    "aggregation_timestamp": "2023-10-01T10:06:00Z",
+    "request_parameters": {
+        "data_source": "https://fakerestapi.azurewebsites.net/api/v1/Authors",
+        "ingestion_time": "2023-10-01T10:00:00Z"
+    }
+}

@@ -1,5 +1,5 @@
 from quart import Blueprint, jsonify, request
-from app_init.app_init import entity_service
+from app_init.app_init import entity_service, cyoda_token
 from common.config.config import ENTITY_VERSION
 import logging
 
@@ -44,10 +44,11 @@ async def save_data_ingestion_job():
 
         # Save the entity
         saved_entity_id = await entity_service.add_item(
-            request.headers.get("token"), "data_ingestion_job", ENTITY_VERSION, entity_data
+            cyoda_token, "data_ingestion_job", ENTITY_VERSION, entity_data
         )
         return jsonify({"message": "Data ingestion job saved successfully.", "entity_id": saved_entity_id}), 201
 
     except Exception as e:
         logger.error(f"Error saving data ingestion job: {e}")
+        logger.exception(e)
         return jsonify({"error": str(e)}), 500

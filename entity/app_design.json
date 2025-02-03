@@ -1,0 +1,80 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "login_workflow",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "login_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "validate_credentials",
+                        "description": "Validate the user credentials against the database.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before validation.",
+                        "end_state": "credentials_validated",
+                        "end_state_description": "User credentials have been successfully validated.",
+                        "process": {
+                            "name": "validate_user",
+                            "description": "Process to validate the user credentials.",
+                            "adds_new_entites": "session_entity"
+                        }
+                    },
+                    {
+                        "name": "create_session",
+                        "description": "Create a session for the user upon successful login.",
+                        "start_state": "credentials_validated",
+                        "start_state_description": "User credentials have been validated.",
+                        "end_state": "session_created",
+                        "end_state_description": "User session has been successfully created.",
+                        "process": {
+                            "name": "create_user_session",
+                            "description": "Process to create a user session.",
+                            "adds_new_entites": "session_entity"
+                        }
+                    },
+                    {
+                        "name": "authentication_failed",
+                        "description": "Handle the scenario where user authentication fails.",
+                        "start_state": "credentials_validated",
+                        "start_state_description": "User credentials have been validated.",
+                        "end_state": "login_failed",
+                        "end_state_description": "User login failed due to invalid credentials.",
+                        "process": {
+                            "name": "handle_failed_login",
+                            "description": "Process to handle failed login attempts.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_entity",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "login_workflow",
+            "entity_workflow": {
+                "name": "user_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "session_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "login_workflow",
+            "entity_workflow": {
+                "name": "session_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

@@ -2,7 +2,7 @@ import asyncio
 import logging
 
 from quart import Quart
-
+from quart_schema import QuartSchema
 from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token
@@ -12,7 +12,7 @@ from entity.data_ingestion_job.api import api_bp
 logging.basicConfig(level=logging.INFO)
 
 app = Quart(__name__)
-#please update this line to your entity
+QuartSchema(app)
 app.register_blueprint(api_bp, url_prefix='/api')
 
 

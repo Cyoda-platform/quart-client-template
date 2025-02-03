@@ -1,0 +1,21 @@
+{
+    "session_id": "session_001",
+    "user_id": "user_001",
+    "login_timestamp": "2023-10-01T12:00:00Z",
+    "logout_timestamp": null,
+    "ip_address": "192.168.1.1",
+    "browser_info": {
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36",
+        "browser": "Chrome",
+        "version": "94.0.4606.61"
+    },
+    "request_parameters": {
+        "login_endpoint": "/api/login",
+        "request_body": {
+            "username": "john_doe",
+            "password": "user_password"
+        },
+        "response_code": 200,
+        "response_message": "Login successful"
+    }
+}

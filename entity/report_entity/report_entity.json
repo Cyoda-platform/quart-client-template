@@ -1,0 +1,48 @@
+{
+    "reportId": "report_2023_10_01",
+    "generatedAt": "2023-10-01T12:00:00Z",
+    "reportTitle": "Monthly Engagement Report",
+    "totalPosts": 100,
+    "totalComments": 250,
+    "postDetails": [
+        {
+            "postId": 1,
+            "title": "sunt aut facere repellat provident occaecati excepturi optio reprehenderit",
+            "numberOfComments": 5,
+            "commentsDetails": [
+                {
+                    "commentId": 1,
+                    "name": "id labore ex et quam laborum",
+                    "email": "Eliseo@gardner.biz",
+                    "body": "laudantium enim quasi est quidem magnam voluptate ipsam eos..."
+                },
+                {
+                    "commentId": 2,
+                    "name": "quo vero reiciendis velit similique earum",
+                    "email": "Jayne_Kuhic@sydney.com",
+                    "body": "est natus enim nihil est dolore omnis voluptatem numquam..."
+                }
+            ]
+        },
+        {
+            "postId": 2,
+            "title": "qui est esse",
+            "numberOfComments": 3,
+            "commentsDetails": []
+        }
+    ],
+    "commentsSummary": "This report summarizes the engagement for the posts during the month, detailing the total number of posts and comments made, with a breakdown of comments per post.",
+    "distributionInfo": {
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            },
+            {
+                "name": "Data Analyst",
+                "email": "analyst@example.com"
+            }
+        ],
+        "sentAt": "2023-10-01T12:05:00Z"
+    }
+}

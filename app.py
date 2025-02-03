@@ -7,7 +7,7 @@ from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token
 #please update this line to your entity
-from entity.* import api_bp
+from entity.data_ingestion_job.api import api_bp
 
 logging.basicConfig(level=logging.INFO)
 

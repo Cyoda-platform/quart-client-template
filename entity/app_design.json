@@ -1,0 +1,91 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "user_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "user_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Start the data ingestion process from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_fetched",
+                        "end_state_description": "Data has been successfully fetched from the API.",
+                        "process": {
+                            "name": "ingest_user_data",
+                            "description": "Process to ingest user data from the specified API.",
+                            "adds_new_entites": "user_entity"
+                        }
+                    },
+                    {
+                        "name": "save_user_data",
+                        "description": "Save the fetched user data into the database.",
+                        "start_state": "data_fetched",
+                        "start_state_description": "User data has been fetched and is ready to be saved.",
+                        "end_state": "user_saved",
+                        "end_state_description": "User data has been successfully saved.",
+                        "process": {
+                            "name": "save_user",
+                            "description": "Process to save user data into the database.",
+                            "adds_new_entites": "address_entity, company_entity"
+                        }
+                    },
+                    {
+                        "name": "create_related_entities",
+                        "description": "Create address and company entities based on user data.",
+                        "start_state": "user_saved",
+                        "start_state_description": "User data has been saved.",
+                        "end_state": "related_entities_created",
+                        "end_state_description": "Address and company entities have been successfully created.",
+                        "process": {
+                            "name": "create_related_entities",
+                            "description": "Process to create related address and company entities.",
+                            "adds_new_entites": "address_entity, company_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "user_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "user_job",
+            "entity_workflow": {
+                "name": "user_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "address_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "user_job",
+            "entity_workflow": {
+                "name": "address_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "company_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "user_job",
+            "entity_workflow": {
+                "name": "company_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

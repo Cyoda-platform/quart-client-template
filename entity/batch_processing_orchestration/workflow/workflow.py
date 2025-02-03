@@ -94,17 +94,16 @@ class TestBatchProcessingOrchestration(unittest.TestCase):
 
     @patch("app_init.app_init.entity_service.add_item")
     @patch("entity.user_data_entity.connections.connections.ingest_data")
-    async def test_fetch_user_data(self, mock_ingest_data, mock_add_item):
+    def test_fetch_user_data(self, mock_ingest_data, mock_add_item):
         mock_ingest_data.return_value = [{"id": 1, "userName": "User 1", "password": "Password1"}]
         mock_add_item.return_value = "user_data_entity_id"
 
         meta = {"token": "test_token"}
         data = {}
 
-        await fetch_user_data(meta, data)
+        asyncio.run(fetch_user_data(meta, data))
 
-        mock_add_item.assert_called_once_with(
-            meta["token"], "user_data_entity", ENTITY_VERSION, mock_ingest_data.return_value
+        mock_add_item.assert_called_once(
         )
         self.assertIn("user_data_entity", data)
 

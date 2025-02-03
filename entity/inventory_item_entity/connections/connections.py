@@ -55,7 +55,7 @@ class TestDataIngestion(unittest.TestCase):
 
         # Assertions to check that data is mapped correctly
         self.assertTrue(len(result) > 0)
-        self.assertEqual(result[0]["id"], "01JJYAJV3KJBM6TMK45QK1A8F2")
+        self.assertEqual(result[0]["id"], "01JK5TX9EDJBGTZ1B14ZQWQMP8")
         self.assertEqual(result[0]["name"], "Hand Tools")
         self.assertEqual(result[0]["slug"], "hand-tools")
         self.assertEqual(result[0]["parent_id"], 0)  # Assuming top-level categories have parent_id as 0

@@ -1,0 +1,150 @@
+{
+    "name": "user_workflow",
+    "description": "Workflow for ingesting user data from an API and creating related entities.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "user_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "user_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "start_data_ingestion",
+            "description": "Start the data ingestion process from the API.",
+            "start_state": "None",
+            "start_state_description": "Initial state before data ingestion.",
+            "end_state": "data_fetched",
+            "end_state_description": "Data has been successfully fetched from the API.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [
+                    {
+                        "name": "ingest_user_data",
+                        "description": "Process to ingest user data from the specified API.",
+                        "delay_ms": "0",
+                        "timeout_ms": "120000",
+                        "transition_name": "save_user_data",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [
+                                {
+                                    "name": "dataIngested",
+                                    "description": "Checks whether user data has been ingested.",
+                                    "calculation_nodes_tags": "aab4f28e-e223-11ef-a4be-12ba6be13728",
+                                    "attach_entity": true,
+                                    "calculation_response_timeout_ms": "120000",
+                                    "retry_policy": "NONE"
+                                }
+                            ],
+                            "condition_criteria": []
+                        }
+                    }
+                ],
+                "externalized_processors": []
+            }
+        },
+        {
+            "name": "save_user_data",
+            "description": "Save the fetched user data into the database.",
+            "start_state": "data_fetched",
+            "start_state_description": "User data has been fetched and is ready to be saved.",
+            "end_state": "user_saved",
+            "end_state_description": "User data has been successfully saved.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [
+                    {
+                        "name": "save_user",
+                        "description": "Process to save user data into the database.",
+                        "delay_ms": "0",
+                        "timeout_ms": "120000",
+                        "transition_name": "create_related_entities",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [
+                                {
+                                    "name": "userSaved",
+                                    "description": "Checks whether user data has been saved.",
+                                    "calculation_nodes_tags": "aab4f28e-e223-11ef-a4be-12ba6be13728",
+                                    "attach_entity": true,
+                                    "calculation_response_timeout_ms": "120000",
+                                    "retry_policy": "NONE"
+                                }
+                            ],
+                            "condition_criteria": []
+                        }
+                    }
+                ],
+                "externalized_processors": []
+            }
+        },
+        {
+            "name": "create_related_entities",
+            "description": "Create address and company entities based on user data.",
+            "start_state": "user_saved",
+            "start_state_description": "User data has been saved.",
+            "end_state": "related_entities_created",
+            "end_state_description": "Address and company entities have been successfully created.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [
+                    {
+                        "name": "create_related_entities",
+                        "description": "Process to create related address and company entities.",
+                        "delay_ms": "0",
+                        "timeout_ms": "120000",
+                        "transition_name": "related_entities_created",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [
+                                {
+                                    "name": "relatedEntitiesCreated",
+                                    "description": "Checks whether related entities have been created.",
+                                    "calculation_nodes_tags": "aab4f28e-e223-11ef-a4be-12ba6be13728",
+                                    "attach_entity": true,
+                                    "calculation_response_timeout_ms": "120000",
+                                    "retry_policy": "NONE"
+                                }
+                            ],
+                            "condition_criteria": []
+                        }
+                    }
+                ],
+                "externalized_processors": []
+            }
+        }
+    ]
+}

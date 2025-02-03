@@ -1,0 +1,115 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "cyoda_design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "fetch_posts",
+                        "description": "Fetch posts from the posts API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before fetching posts.",
+                        "end_state": "posts_fetched",
+                        "end_state_description": "Posts have been successfully fetched.",
+                        "process": {
+                            "name": "fetch_posts_processor",
+                            "description": "Processor for fetching posts from the API.",
+                            "adds_new_entites": "post_entity"
+                        }
+                    },
+                    {
+                        "name": "fetch_comments",
+                        "description": "Fetch comments from the comments API.",
+                        "start_state": "posts_fetched",
+                        "start_state_description": "Posts have been fetched and ready to fetch comments.",
+                        "end_state": "comments_fetched",
+                        "end_state_description": "Comments have been successfully fetched.",
+                        "process": {
+                            "name": "fetch_comments_processor",
+                            "description": "Processor for fetching comments from the API.",
+                            "adds_new_entites": "comment_entity"
+                        }
+                    },
+                    {
+                        "name": "combine_data",
+                        "description": "Combine posts and comments into a single entity.",
+                        "start_state": "comments_fetched",
+                        "start_state_description": "Comments fetched and ready to combine with posts.",
+                        "end_state": "data_combined",
+                        "end_state_description": "Posts and comments have been successfully combined.",
+                        "process": {
+                            "name": "combine_data_processor",
+                            "description": "Processor for combining posts and comments.",
+                            "adds_new_entites": "combined_entity"
+                        }
+                    },
+                    {
+                        "name": "generate_report",
+                        "description": "Generate a report based on the combined data.",
+                        "start_state": "data_combined",
+                        "start_state_description": "Data has been combined and ready to generate report.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been successfully generated.",
+                        "process": {
+                            "name": "generate_report_processor",
+                            "description": "Processor for generating reports.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "post_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "post_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "comment_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "comment_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "combined_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "combined_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "report_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

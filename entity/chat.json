@@ -1,0 +1,2580 @@
+{
+    "user_id": "demo.user",
+    "date": "2025-02-03T09:34:51.251+00:00",
+    "questions_queue": {
+        "new_questions": [
+            {
+                "notification": "Thank you for your answer! Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0
+            }
+        ],
+        "asked_questions": []
+    },
+    "chat_flow": {
+        "current_flow": [
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! "
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "We can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "Your application is finished! Thank you for collaboration!",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "index": 2,
+                "iteration": 0,
+                "file_name": "entity/chat.json",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            }
+        ],
+        "finished_flow": [
+            {
+                "notification": "\n\ud83c\udf3f\ud83e\udeb7\ud83c\udff5\ufe0f\u269c\ufe0f\ud83c\udf3f\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "info": true,
+                "file_name": "instruction.txt",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "notification": "\n\ud83d\udc4b Welcome to Cyoda Application Builder! We\u2019re excited to build something amazing with you! \ud83d\ude04  \n\nWe\u2019re here to help with building and deploying on Cyoda Cloud! Reach out anytime! \ud83c\udf1f Your branch will be ready soon, and I\u2019ll notify you when I push changes. If you have suggestions, message me or use Canvas! \ud83d\ude0a  \n\nIn Canvas, you can code, edit, and improve around the main app build flow! It\u2019s a great way to collaborate and make changes! \ud83d\udcbb  \n\nIf you\u2019re happy with the progress or want me to pull your changes, just give me a thumbs up! \ud83d\udc4d  (currently approve button in the top panel)\n\nIf something goes wrong, no worries\u2014just roll back! \ud83d\ude2c Your app will be live on Cyoda Platform GitHub soon! \ud83d\ude80 Let\u2019s build your branch together! \ud83c\udf3f\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "info": true,
+                "file_name": "instruction.txt",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "clone_repo"
+                },
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\ud83c\udf89 **Your branch is ready!** Please update the project and check it out when you get a chance. \ud83d\ude0a\n\nTo get started:\n\n1. **Clone the repository** using the following command:  \n   `git clone https://github.com/Cyoda-platform/quart-client-template/` \ud83d\ude80\n\n2. **Checkout your branch** using:  \n   `git checkout 1e023f60-e212-11ef-a4be-12ba6be13728` \ud83d\udd04\n\nYou can access your branch directly on GitHub here: [Cyoda Platform GitHub](https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728) \ud83d\ude04\n\nThis repository is a **starter template** for your app and has two main modules:\n\n- **Common Module**: This is all about integration with Cyoda! You don\u2019t need to edit it unless you want to \u2013 it\u2019s all done for you! \ud83c\udf89  \n- **Entity Module**: This is where your business logic and custom files will go. We'll add your files here, and you can track your progress. \ud83d\udcc8 Feel free to **add or edit** anything in the Entity module. I\u2019ll be pulling changes now and then, so just push your updates to let me know! \ud83d\ude80\n\nYou can ask **questions in the chat** or in your project files anytime. When I make changes, I\u2019ll let you know, and you can simply **pull** to sync with me! \ud83d\udd04\ud83d\udcac\n\nHappy coding! \ud83d\ude04\ud83c\udf89",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "init_chats"
+                },
+                "flow_step": "Gathering requirements",
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "add_instruction"
+                },
+                "file_name": "instruction.txt",
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": "\n\ud83d\udca1 What kind of application would you like to build? I'd love to hear your ideas! Feel free to share them with me! \ud83d\ude0a\n\n***Example answers***:\nHello, I would like to download the following data: [London Houses Data](https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv), analyze it using **pandas**, and save a report. \ud83d\udcca\n\nHello! \ud83d\udc4b\n                              I would like to develop an application that:\n                              1. Ingests data from a specified data source \ud83d\udce5\n                              2. Aggregates the data \ud83e\uddee\n                              3. Saves the aggregated data to a report \ud83d\udcc4\n                              Once the report is generated, the application should send it to the admin's email \ud83d\udce7. \n                              Additionally, the data ingestion process should be scheduled to run **once a day** \u23f0.\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "approve": false,
+                "example_answers": [
+                    "\n                              Hello, I would like to download the following data: [London Houses Data](https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv), analyze it using **pandas**, and save a report. \ud83d\udcca",
+                    "\n                              Hello! \ud83d\udc4b\n                              I would like to develop an application that:\n                              1. Ingests data from a specified data source \ud83d\udce5\n                              2. Aggregates the data \ud83e\uddee\n                              3. Saves the aggregated data to a report \ud83d\udcc4\n                              Once the report is generated, the application should send it to the admin's email \ud83d\udce7. \n                              Additionally, the data ingestion process should be scheduled to run **once a day** \u23f0."
+                ],
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "\ud83d\udca1 What kind of application would you like to build? I'd love to hear your ideas! Feel free to share them with me! \ud83d\ude0a",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "We are in the loop of requirement validation. Talk to me like we are close friends. If I ask you a general question, just return an answer to this question. Start your answer with what you understood from my requirement. Help me improve my requirement, i.e. if any information is missing help me understand why we need it and ask for it very friendly, like api docs, my expectations, if we need ha, persistence, what api will the future application provide. Speak in simple words and remember - we are in a chat loop - so you do not have to ask all questions at once. Guide slowly, suggest to attach relevant doc files and user requirement as files. My requirement: "
+                },
+                "answer": "create a login in ui and save them in db in postgresql using django",
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "I understand that you want to create a login feature in your UI that saves user information in a PostgreSQL database using Django. That\u2019s a solid start! \n\nTo improve your requirement, let\u2019s think about a few more details that could help shape your project better:\n\n1. **User Information**: What specific information do you want to save about the users? Just a username and password, or do you need other details like email, first name, last name, etc.? Knowing this will help us structure your database better.\n\n2. **Authentication Logic**: How do you want to handle authentication? Should it include features like password recovery, email verification, or multi-factor authentication? These can enhance security and user experience.\n\n3. **APIs**: Do you plan to expose any APIs for this login functionality? If yes, what endpoints do you think you might need? For example, an endpoint for logging in and another for logging out.\n\n4. **User Expectations**: What kind of user experience are you aiming for? Should it be straightforward with just a login form, or do you want some additional features like social login (using Google or Facebook)?\n\n5. **Persistence and HA**: Considering the importance of user data, are you thinking about high availability (HA) for your database? This can be crucial if you expect many users to access your application simultaneously.\n\nFeel free to share any relevant documents or your user requirements as files if you have them! Let's build this together, step by step! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 15,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "We are in the loop of requirement validation. Talk to me like we are close friends. If I ask you a general question, just return an answer to this question. Start your answer with what you understood from my requirement. Help me improve my requirement, i.e. if any information is missing help me understand why we need it and ask for it very friendly, like api docs, my expectations, if we need ha, persistence, what api will the future application provide. Speak in simple words and remember - we are in a chat loop - so you do not have to ask all questions at once. Guide slowly, suggest to attach relevant doc files and user requirement as files. My requirement: "
+                },
+                "answer": "approved",
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please validate my requirement and return user requirement doc with user stories, journey diagram and sequence diagram. Use markdown with mermaid dialect (```mermaid). Explain your choice in simple words, but try to keep everything short and friendly. Talk to me like we are close friends. If I ask you a general question, just return an answer to this question. Start your answer with what you understood from my requirement. My requirement: "
+                },
+                "file_name": "entity/user_requirement.md",
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/user_requirement.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/user_requirement.md) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_requirement.md",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "I understand that you want me to validate your requirement for creating a login feature in your UI that saves user information in a PostgreSQL database using Django. You'd like a user requirement document that includes user stories, a journey diagram, and a sequence diagram.\n\nHere\u2019s a simple user requirement document that we can work with:\n\n---\n\n# User Requirement Document for Login Feature\n\n## User Stories\n\n1. **As a User**, I want to create an account so that I can log in to the application.\n2. **As a User**, I want to log in so that I can access my account.\n3. **As a User**, I want to log out to ensure my account stays secure.\n4. **As a User**, I want to recover my password in case I forget it to regain access to my account.\n\n## User Journey Diagram\n\n```mermaid\ngraph TD;\n    A[User visits login page] --> B[User enters credentials];\n    B --> C{Are credentials valid?};\n    C -->|Yes| D[User logs in successfully];\n    C -->|No| E[Show error message];\n    D --> F[User accesses dashboard];\n    D --> G[User logs out];\n    G --> A;\n```\n\n### Explanation:\nThis diagram shows the flow of actions when a user interacts with the login feature. It starts from the login page, goes through credential entry, and checks if the credentials are valid. Depending on the outcome, the user either logs in successfully or sees an error message.\n\n## Sequence Diagram\n\n```mermaid\nsequenceDiagram\n    participant User\n    participant Login UI\n    participant Django Backend\n    participant PostgreSQL DB\n\n    User->>Login UI: Enter credentials\n    Login UI->>Django Backend: Send credentials\n    Django Backend->>PostgreSQL DB: Validate credentials\n    PostgreSQL DB-->>Django Backend: Return validation result\n    Django Backend-->>Login UI: Return login status\n    Login UI-->>User: Show success or error message\n```\n\n### Explanation:\nThis sequence diagram illustrates how the login process works. The user enters their credentials in the UI, which are sent to the Django backend. The backend checks these credentials against the PostgreSQL database and returns the login status back to the UI.\n\n---\n\nThis should give us a solid foundation to build on! If you have any adjustments or additional requirements in mind, let\u2019s chat about them! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_requirement.md",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "approve": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! This is a general question, but remember we are building Cyoda app, and currently we are designing my journey and sequence diagram, so if the user requirement is sufficient it's a nice idea to return these mermaid diagrams. If my question is completely irrelevant - answer it as is , but remind that we are building app here. I say:"
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "\nThanks for the go-ahead!\nThere are many ways to structure systems. We suggest using **event-driven design** with **entities** and **state machines**. This approach has proven to work exceptionally well for **high-availability** and **data-intensive** applications, ensuring scalability and simplicity.\n\n### What are **Entities**? \ud83e\udd14\nEntities are **data units** that represent real-world objects. Each entity has a **lifecycle**, **states**, and **transitions** that define how it evolves over time.\n\n### Our Approach: \ud83d\udca1\n- **Entities** represent things like a **Light Bulb** \ud83d\udca1.\n- **State Machines** visualize the **lifecycle** of entities (states + transitions) \ud83d\udd04.\n- **Event-Driven Architecture** triggers actions based on events, making systems responsive and scalable \u26a1.\n\n### Simple Light Bulb Example \ud83d\udca1:\n- **States**:  \n  - **OFF** \ud83d\udeab  \n  - **ON** \u2705\n\n- **Transitions**:  \n  - **New** \u2192 OFF (initial state)  \n  - **Flip Switch** \u2192 ON  \n  - **Flip Switch Again** \u2192 OFF\n---\n\n### Light Bulb Flowchart:\n\n```mermaid\nstateDiagram-v2\n    [*] --> OFF\n    OFF --> ON : Flip Switch\n    ON --> OFF : Flip Switch Again\n```    \n\ud83c\udf89 Let\u2019s dive into creating your project\u2019s **entities** and **workflow** to build a scalable and data-intensive system! \n\nFor more on entity databases, check out this article by [Paul Schleger](https://medium.com/@paul_42036/whats-an-entity-database-11f8538b631a) \ud83d\udcda.\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please outline entities for this requirement. Return entities diagram (mermaid or plantuml).\nI am new to Cyoda and very new to application building, so please explain your choice for entity source and type in simple words. \nPlease also explain how entities in Cyoda are used to implement event driven pattern (e.g. event is sent when an entity is saved/updated).\nPlease give me some json examples of data models for each entity, based on my requirement. Provide only example data. If I provided entity schemas - just use them, if no - generate yours. \nIf I ask you a general question, just return an answer to this question. \nI say: "
+                },
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "I understand that you want to outline the entities for your login feature and provide a diagram, along with explanations about the sources and types in Cyoda. You're also interested in understanding how entities fit into the event-driven pattern and would like some example JSON data models for each entity.\n\n### Entities Outline\n\nFor your login feature, we can define the following entities:\n\n1. **User Entity**\n   - **Entity Type**: `USER`\n   - **Entity Source**: `ENTITY_EVENT`\n   - **Description**: Represents a user account with relevant information needed for authentication.\n\n2. **Session Entity**\n   - **Entity Type**: `SESSION`\n   - **Entity Source**: `ENTITY_EVENT`\n   - **Description**: Represents a login session for the user, allowing tracking of active sessions.\n\n### Entities Diagram\n\n```mermaid\ngraph TD;\n    A[User Entity] --> B[Session Entity];\n    A -->|has| B;\n```\n\n### Explanation of Entity Sources and Types\n\n- **Entity Type**: This defines what kind of data that entity holds. For example, the `USER` entity holds information about the user, including fields like username and password. The `SESSION` entity tracks the user's active session.\n\n- **Entity Source**: This indicates how the entity gets its data. Since we're using `ENTITY_EVENT` for both entities, it means that these entities will react to events, like when a user logs in or registers. This allows the application to trigger actions or workflows based on these events.\n\n### Event-Driven Pattern with Entities\n\nIn an event-driven architecture, entities play an essential role. For instance, when a user entity is created or updated (like when they register or change their password), an event is emitted. Other parts of the application can listen for these events to take action, such as sending a welcome email or logging the login attempt. This makes the application responsive and scalable.\n\n### Example JSON Data Models\n\nHere are example data models for the `User Entity` and `Session Entity`:\n\n**User Entity:**\n\n```json\n{\n  \"user_id\": \"user_001\",\n  \"username\": \"john_doe\",\n  \"email\": \"john@example.com\",\n  \"password_hash\": \"hashed_password_here\",\n  \"created_at\": \"2023-10-01T10:00:00Z\",\n  \"updated_at\": \"2023-10-01T12:00:00Z\"\n}\n```\n\n**Session Entity:**\n\n```json\n{\n  \"session_id\": \"session_001\",\n  \"user_id\": \"user_001\",\n  \"login_timestamp\": \"2023-10-01T12:00:00Z\",\n  \"logout_timestamp\": null,\n  \"ip_address\": \"192.168.1.1\"\n}\n```\n\nThese examples illustrate how each entity would store information related to users and their sessions. If you have any adjustments or additional details to discuss, just let me know! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "notification": "I'm ready with the entities. Now I need to generate the workflows to give life to our data - I'll be back with it very soon. \u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please propose workflows for this requirement.\n                           If you have an orchestration entity, maybe let's consider adding a workflow only to the orchestration entity. \n                           Please explain the information about how the workflow is launched.\n                           ***For each not empty (has transitions) entity workflow let's provide a flowchart***\n                           Example:\n                            ```mermaid\n                            flowchart TD\n                               A[Start State] -->|transition: transition_name_1, processor: processor_name_1, processor attributes: sync_process=true/false, new_transaction_for_async=true/false, none_transactional_for_async=true/false| B[State 1]\n                               B -->|transition: transition_name_2, processor: processor_name_2, processor attributes: sync_process=true/false, new_transaction_for_async=true/false, none_transactional_for_async=true/false| C[State 2]\n                               C --> D[End State]\n\n                               %% Decision point for criteria\n                               B -->|criteria: criteria_name, entityModelName equals some_value| D1{Decision: Check Criteria}\n                               D1 -->|true| C\n                               D1 -->|false| E[Error: Criteria not met]\n\n                               class A,B,C,D,D1 automated;\n                               ``` \n                                If I ask you a general question, just return an answer to this question.\n                               "
+                },
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "I understand that you want to propose workflows for your login feature, particularly focusing on an orchestration entity. You\u2019d like information on how the workflows are launched, along with flowcharts for each workflow with transitions.\n\n### Proposed Workflows\n\nGiven your requirement, we can define a single orchestration entity called **Login Workflow**. This workflow will manage the login process, including user authentication and session management.\n\n1. **Orchestration Entity: Login Workflow**\n   - **Entity Type**: `JOB`\n   - **Entity Source**: `ENTITY_EVENT`\n   - **Description**: This workflow handles the user's login attempt, validating credentials and creating a session if successful.\n\n### Workflow Launch Information\n\nThe workflow is launched when a user attempts to log in via the UI. It will be triggered by an API call that sends the user\u2019s credentials to the server. The orchestration entity will then manage the transitions based on the outcomes of the authentication process.\n\n### Flowchart for Login Workflow\n\n```mermaid\nflowchart TD\n   A[Start State] -->|transition: validate_credentials, processor: validate_user, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| B[Credentials Validated]\n   B -->|transition: create_session, processor: create_user_session, processor attributes: sync_process=true, new_transaction_for_async=true, none_transactional_for_async=false| C[Session Created]\n   B -->|transition: authentication_failed, processor: handle_failed_login, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| E[Login Failed]\n\n   %% Decision point for criteria\n   B -->|criteria: check if criteria met| D1{Decision: Check Credentials}\n   D1 -->|true| C\n   D1 -->|false| E\n\n   class A,B,C,D,E,D1 automated;\n```\n\n### Explanation of the Flowchart\n\n- **Start State**: The login process begins when the user submits their credentials.\n- **Validate Credentials Transition**: This transition checks if the credentials provided by the user are correct. If they are valid, the workflow moves to the next state.\n- **Session Created Transition**: If the credentials are valid, a session is created for the user, allowing them to access the application.\n- **Login Failed Transition**: If the credentials are not valid, the user is informed of the failure, and the workflow ends in this state.\n- **Decision Point**: The decision node checks whether the credentials are valid before proceeding to create a session.\n\nThis setup will create a clear and effective workflow for handling user logins. If you have more questions or want to dive deeper into any part, just let me know! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "I'm ready with the design - we can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "approve": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "I'm ready with the design - we can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! "
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "We can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "\nAwesome! Let's dive into generating your application code! \ud83d\ude80 \n\nI'll keep you updated with notifications on my progress, and let you know when it's time to discuss any changes.\n \nFeel free to grab a coffee \u2615 while I work\u2014it's going to take about 2 minutes. \n \nJust relax and wait for the update!\n\nIn this process, we will walk through each stage of building an application, from gathering initial requirements to designing, coding, and implementing the final logic.\n\n### The stages of the process are as follows:\n\n1. **Application design**:  \n   Let's design the application using diagrams and chat. You'll receive a text document with the PRD as the output.  \n   *Output documents*: entity/app_design.md\n\n2. **Entities design**:  \n   Let's define the JSON data structure for each entity.\n   *Output documents*: entity/*\n\n3. **Workflow design**:  \n   Let's ensure our entity workflow is correctly defined.\n   *Output documents*: entity/*/workflow.json\n\n4. **Workflow processors code design**:  \n   Let's implement the workflow processors.\n   *Output documents*: entity/*/workflow.py\n\n5. **Additional logic code design**:  \n   Let's develop any additional business logic.\n   *Output documents*: entity/*/api.py or entity/*/logic.py\n\n---\n\n### Process Flow:\n\nGathering requirements --> **Application design** --> **Entities design** --> **Workflow design** --> **Workflow processors code design** --> **Additional logic code design**         \n                          ",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "info": true,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please, return a complete prd."
+                },
+                "file_name": "entity/app_design_prd.md",
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design_prd.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/app_design_prd.md) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design_prd.md",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Sure! Here\u2019s a complete Product Requirements Document (PRD) for your login feature, incorporating all the elements we've discussed:\n\n---\n\n# Product Requirements Document (PRD) for Login Feature\n\n## Introduction\n\nThis document outlines the requirements for implementing a login feature in a web application using Django with PostgreSQL. The feature will enable users to create accounts, log in, manage sessions, and ensure secure authentication.\n\n## User Requirements\n\n### User Stories\n\n1. **As a User**, I want to create an account so that I can log in to the application.\n2. **As a User**, I want to log in so that I can access my account.\n3. **As a User**, I want to log out to ensure my account stays secure.\n4. **As a User**, I want to recover my password in case I forget it to regain access to my account.\n\n### User Journey Diagram\n\n```mermaid\ngraph TD;\n    A[User visits login page] --> B[User enters credentials];\n    B --> C{Are credentials valid?};\n    C -->|Yes| D[User logs in successfully];\n    C -->|No| E[Show error message];\n    D --> F[User accesses dashboard];\n    D --> G[User logs out];\n    G --> A;\n```\n\n## Entities Outline\n\n### 1. User Entity\n- **Entity Type**: `USER`\n- **Entity Source**: `ENTITY_EVENT`\n- **Description**: Represents a user account with relevant information needed for authentication.\n\n### 2. Session Entity\n- **Entity Type**: `SESSION`\n- **Entity Source**: `ENTITY_EVENT`\n- **Description**: Represents a login session for the user, allowing tracking of active sessions.\n\n### Entities Diagram\n\n```mermaid\ngraph TD;\n    A[User Entity] --> B[Session Entity];\n    A -->|has| B;\n```\n\n## Workflows\n\n### 1. Orchestration Entity: Login Workflow\n- **Entity Type**: `JOB`\n- **Entity Source**: `ENTITY_EVENT`\n- **Description**: This workflow handles the user's login attempt, validating credentials and creating a session if successful.\n\n### Workflow Launch Information\n\nThe workflow is launched when a user attempts to log in via the UI. It will be triggered by an API call that sends the user\u2019s credentials to the server.\n\n### Flowchart for Login Workflow\n\n```mermaid\nflowchart TD\n   A[Start State] -->|transition: validate_credentials, processor: validate_user, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| B[Credentials Validated]\n   B -->|transition: create_session, processor: create_user_session, processor attributes: sync_process=true, new_transaction_for_async=true, none_transactional_for_async=false| C[Session Created]\n   B -->|transition: authentication_failed, processor: handle_failed_login, processor attributes: sync_process=true, new_transaction_for_async=false, none_transactional_for_async=false| E[Login Failed]\n\n   %% Decision point for criteria\n   B -->|criteria: check if criteria met| D1{Decision: Check Credentials}\n   D1 -->|true| C\n   D1 -->|false| E\n\n   class A,B,C,D,E,D1 automated;\n```\n\n## Example JSON Data Models\n\n### User Entity\n\n```json\n{\n  \"user_id\": \"user_001\",\n  \"username\": \"john_doe\",\n  \"email\": \"john@example.com\",\n  \"password_hash\": \"hashed_password_here\",\n  \"created_at\": \"2023-10-01T10:00:00Z\",\n  \"updated_at\": \"2023-10-01T12:00:00Z\"\n}\n```\n\n### Session Entity\n\n```json\n{\n  \"session_id\": \"session_001\",\n  \"user_id\": \"user_001\",\n  \"login_timestamp\": \"2023-10-01T12:00:00Z\",\n  \"logout_timestamp\": null,\n  \"ip_address\": \"192.168.1.1\"\n}\n```\n\n## Conclusion\n\nThe proposed login feature is designed to provide a secure and user-friendly experience for users. By leveraging Django and PostgreSQL, the implementation can ensure robust authentication and session management. This PRD outlines the necessary workflows, entities, and user requirements, serving as a comprehensive guide for development.\n\n---\n\nIf you have any more adjustments or additional sections you'd like to include, just let me know! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design_prd.md",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Generate Cyoda design, based on the requirement and the final prd. Use only lowercase underscore for namings. If the entity is saved in the workflow of another entity then its source will be ENTITY_EVENT. The JOB entity_source defaults to API_REQUEST. Prefer entity source/type mentioned in the prd, if it is unclear default to API_REQUEST or ENTITY_EVENT for secondary data. Avoid scheduler unless specified explicitly.",
+                    "schema": {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "title": "Cyoda design",
+                        "type": "object",
+                        "properties": {
+                            "entities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entity_name": {
+                                            "type": "string"
+                                        },
+                                        "entity_type": {
+                                            "type": "string",
+                                            "enum": [
+                                                "JOB",
+                                                "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+                                                "WEB_SCRAPING_PULL_BASED_RAW_DATA",
+                                                "TRANSACTIONAL_PULL_BASED_RAW_DATA",
+                                                "EXTERNAL_SOURCES_PUSH_BASED_RAW_DATA",
+                                                "WEB_SCRAPING_PUSH_BASED_RAW_DATA",
+                                                "TRANSACTIONAL_PUSH_BASED_RAW_DATA",
+                                                "SECONDARY_DATA",
+                                                "UTIL",
+                                                "CONFIG",
+                                                "BUSINESS_ENTITY"
+                                            ]
+                                        },
+                                        "entity_source": {
+                                            "type": "string",
+                                            "enum": [
+                                                "API_REQUEST",
+                                                "SCHEDULED",
+                                                "ENTITY_EVENT"
+                                            ]
+                                        },
+                                        "depends_on_entity": {
+                                            "type": "string"
+                                        },
+                                        "entity_workflow": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "class_name": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "com.cyoda.tdb.model.treenode.TreeNodeEntity"
+                                                    ]
+                                                },
+                                                "transitions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "start_state": {
+                                                                "type": "string"
+                                                            },
+                                                            "start_state_description": {
+                                                                "type": "string"
+                                                            },
+                                                            "end_state": {
+                                                                "type": "string"
+                                                            },
+                                                            "end_state_description": {
+                                                                "type": "string"
+                                                            },
+                                                            "process": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "name": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "description": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "adds_new_entites": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "name",
+                                                                    "description",
+                                                                    "adds_new_entites"
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "name",
+                                                            "start_state",
+                                                            "end_state",
+                                                            "process"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "name",
+                                                "class_name",
+                                                "transitions"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "entity_name",
+                                        "entity_type",
+                                        "entity_source",
+                                        "depends_on_entity",
+                                        "entity_workflow"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "entities"
+                        ]
+                    }
+                },
+                "answer": null,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Application design",
+                "function": null,
+                "iteration": 0,
+                "ui_config": {
+                    "format": "json"
+                },
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/app_design.json) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design.json",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Application design",
+                "ui_config": {
+                    "format": "json"
+                }
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "title": "Cyoda design",
+                    "type": "object",
+                    "entities": [
+                        {
+                            "entity_name": "login_workflow",
+                            "entity_type": "JOB",
+                            "entity_source": "API_REQUEST",
+                            "depends_on_entity": "None",
+                            "entity_workflow": {
+                                "name": "login_workflow",
+                                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                                "transitions": [
+                                    {
+                                        "name": "validate_credentials",
+                                        "description": "Validate the user credentials against the database.",
+                                        "start_state": "None",
+                                        "start_state_description": "Initial state before validation.",
+                                        "end_state": "credentials_validated",
+                                        "end_state_description": "User credentials have been successfully validated.",
+                                        "process": {
+                                            "name": "validate_user",
+                                            "description": "Process to validate the user credentials.",
+                                            "adds_new_entites": "session_entity"
+                                        }
+                                    },
+                                    {
+                                        "name": "create_session",
+                                        "description": "Create a session for the user upon successful login.",
+                                        "start_state": "credentials_validated",
+                                        "start_state_description": "User credentials have been validated.",
+                                        "end_state": "session_created",
+                                        "end_state_description": "User session has been successfully created.",
+                                        "process": {
+                                            "name": "create_user_session",
+                                            "description": "Process to create a user session.",
+                                            "adds_new_entites": "session_entity"
+                                        }
+                                    },
+                                    {
+                                        "name": "authentication_failed",
+                                        "description": "Handle the scenario where user authentication fails.",
+                                        "start_state": "credentials_validated",
+                                        "start_state_description": "User credentials have been validated.",
+                                        "end_state": "login_failed",
+                                        "end_state_description": "User login failed due to invalid credentials.",
+                                        "process": {
+                                            "name": "handle_failed_login",
+                                            "description": "Process to handle failed login attempts.",
+                                            "adds_new_entites": "None"
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "entity_name": "user_entity",
+                            "entity_type": "BUSINESS_ENTITY",
+                            "entity_source": "ENTITY_EVENT",
+                            "depends_on_entity": "login_workflow",
+                            "entity_workflow": {
+                                "name": "user_entity_workflow",
+                                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                                "transitions": []
+                            }
+                        },
+                        {
+                            "entity_name": "session_entity",
+                            "entity_type": "SECONDARY_DATA",
+                            "entity_source": "ENTITY_EVENT",
+                            "depends_on_entity": "login_workflow",
+                            "entity_workflow": {
+                                "name": "session_entity_workflow",
+                                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                                "transitions": []
+                            }
+                        }
+                    ]
+                },
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design.json",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Application design",
+                "ui_config": {
+                    "format": "json"
+                }
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "add_design_stack"
+                },
+                "file_name": "entity/app_design.json",
+                "flow_step": "Application design",
+                "iteration": 0,
+                "fills_stack": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "notification": "Proceeding to Entities design\n\n\nGathering requirements --> Application design --> ***Entities design*** --> Workflow design --> Workflow processors code design --> Additional logic code design",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "info": true,
+                "iteration": 0,
+                "max_iteration": 0,
+                "flow_step": "Entities design",
+                "stack": "entity_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "refresh_context"
+                },
+                "context": {
+                    "files": [
+                        "entity/**"
+                    ],
+                    "excluded_files": [
+                        "entity/workflow.py",
+                        "entity/__init__.py"
+                    ]
+                },
+                "notification_text": "",
+                "iteration": 0,
+                "flow_step": "Entities design",
+                "max_iteration": 0,
+                "stack": "entity_stack"
+            },
+            {
+                "notification": "\nWe are currently generating templates for your entities! \ud83c\udf89 Once I\u2019m done, you\u2019ll find each entity in a separate folder: `entity/{entity_name}/{entity_name}.json`. \ud83d\uddc2\ufe0f\n\nThis file will represent the **entity model** as semi-structured data (think of it as an example). Later, we\u2019ll automatically generate the dynamic entity schema based on this JSON data. \ud83d\udd04\n\nFor now, we just need you to either:\n- **Provide your own data example**, or\n- **Approve our example** if it works for you! \ud83d\udc4d Once you\u2019re happy with it, we\u2019re good to move forward!\n\nIf everything looks good, just give us a thumbs up! \ud83d\udc4d  \nIf you want to make any changes, feel free to edit the file in your IDE and **push the changes** so I can fetch them. Or, you can edit the models directly here, and I\u2019ll save them for you! \u270f\ufe0f\n\nAlso, feel free to use **Canvas** to collaborate and edit the models together! \ud83d\udd8c\ufe0f\ud83d\ude0a\n\nLooking forward to your feedback! \ud83c\udf1f\n",
+                "prompt": {},
+                "info": true,
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Application design",
+                "max_iteration": 0,
+                "stack": "entity_stack"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "generate_entities_template",
+                    "prompts": {
+                        "ai_question": "Based on the data you have in the context and your understanding of the users requirement please generate json data example for entity {entity_name}. This json data should reflect business logic of the entity - it is not related to entity design schema!!!! it should not have any relevance to Cyoda. {user_data}. If there is any data ingestion in the application flow, make sure you add request parameters at least to the orchestration entity. Return json with markdown."
+                    }
+                },
+                "files_notifications": {
+                    "code": {
+                        "text": "\ud83d\udd8c\ufe0f\ud83d\udcac",
+                        "file_name": "entity/{entity_name}/connections/connections.py"
+                    },
+                    "doc": {
+                        "text": "\ud83d\ude0a Could you please provide more details for the connection documentation? It would be super helpful! Please provide raw data for each endpoint if the final entity structure is different. You can paste all your data right here. Thanks so much!",
+                        "file_name": "entity/{entity_name}/connections/connections_input.md"
+                    },
+                    "entity": {
+                        "text": "\ud83d\ude0a Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!",
+                        "file_name": "entity/{entity_name}/{entity_name}.json"
+                    }
+                },
+                "context": {
+                    "files": []
+                },
+                "entities": [
+                    {
+                        "entity_name": "login_workflow",
+                        "entity_type": "JOB",
+                        "entity_source": "API_REQUEST",
+                        "depends_on_entity": "None",
+                        "entity_workflow": {
+                            "name": "login_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": [
+                                {
+                                    "name": "validate_credentials",
+                                    "description": "Validate the user credentials against the database.",
+                                    "start_state": "None",
+                                    "start_state_description": "Initial state before validation.",
+                                    "end_state": "credentials_validated",
+                                    "end_state_description": "User credentials have been successfully validated.",
+                                    "process": {
+                                        "name": "validate_user",
+                                        "description": "Process to validate the user credentials.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "create_session",
+                                    "description": "Create a session for the user upon successful login.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "session_created",
+                                    "end_state_description": "User session has been successfully created.",
+                                    "process": {
+                                        "name": "create_user_session",
+                                        "description": "Process to create a user session.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "authentication_failed",
+                                    "description": "Handle the scenario where user authentication fails.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "login_failed",
+                                    "end_state_description": "User login failed due to invalid credentials.",
+                                    "process": {
+                                        "name": "handle_failed_login",
+                                        "description": "Process to handle failed login attempts.",
+                                        "adds_new_entites": "None"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "entity_name": "session_entity",
+                        "entity_type": "SECONDARY_DATA",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "session_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    },
+                    {
+                        "entity_name": "user_entity",
+                        "entity_type": "BUSINESS_ENTITY",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "user_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    }
+                ],
+                "iteration": 0,
+                "flow_step": "Entities design",
+                "notification_text": "\ud83d\ude0a Could you please take a look at the generated entity examples? If you have a specific structure in mind, feel free to adjust my suggestions and click 'Approve' \ud83d\udc4d. You can also use Canvas to edit the entities together. Thanks so much!",
+                "max_iteration": 0,
+                "stack": "entity_stack"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\ud83d\ude0a Could you please take a look at the generated entity examples? If you have a specific structure in mind, feel free to adjust my suggestions and click 'Approve' \ud83d\udc4d. You can also use Canvas to edit the entities together. Thanks so much!",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {
+                    "files": []
+                },
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "files_notifications": {
+                    "code": {
+                        "text": "\ud83d\udd8c\ufe0f\ud83d\udcac",
+                        "file_name": "entity/{entity_name}/connections/connections.py"
+                    },
+                    "doc": {
+                        "text": "\ud83d\ude0a Could you please provide more details for the connection documentation? It would be super helpful! Please provide raw data for each endpoint if the final entity structure is different. You can paste all your data right here. Thanks so much!",
+                        "file_name": "entity/{entity_name}/connections/connections_input.md"
+                    },
+                    "entity": {
+                        "text": "\ud83d\ude0a Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!",
+                        "file_name": "entity/{entity_name}/{entity_name}.json"
+                    }
+                },
+                "entities": [
+                    {
+                        "entity_name": "login_workflow",
+                        "entity_type": "JOB",
+                        "entity_source": "API_REQUEST",
+                        "depends_on_entity": "None",
+                        "entity_workflow": {
+                            "name": "login_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": [
+                                {
+                                    "name": "validate_credentials",
+                                    "description": "Validate the user credentials against the database.",
+                                    "start_state": "None",
+                                    "start_state_description": "Initial state before validation.",
+                                    "end_state": "credentials_validated",
+                                    "end_state_description": "User credentials have been successfully validated.",
+                                    "process": {
+                                        "name": "validate_user",
+                                        "description": "Process to validate the user credentials.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "create_session",
+                                    "description": "Create a session for the user upon successful login.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "session_created",
+                                    "end_state_description": "User session has been successfully created.",
+                                    "process": {
+                                        "name": "create_user_session",
+                                        "description": "Process to create a user session.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "authentication_failed",
+                                    "description": "Handle the scenario where user authentication fails.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "login_failed",
+                                    "end_state_description": "User login failed due to invalid credentials.",
+                                    "process": {
+                                        "name": "handle_failed_login",
+                                        "description": "Process to handle failed login attempts.",
+                                        "adds_new_entites": "None"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "entity_name": "session_entity",
+                        "entity_type": "SECONDARY_DATA",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "session_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    },
+                    {
+                        "entity_name": "user_entity",
+                        "entity_type": "BUSINESS_ENTITY",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "user_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    }
+                ],
+                "flow_step": "Entities design",
+                "notification_text": "\ud83d\ude0a Could you please take a look at the generated entity examples? If you have a specific structure in mind, feel free to adjust my suggestions and click 'Approve' \ud83d\udc4d. You can also use Canvas to edit the entities together. Thanks so much!"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/login_workflow/login_workflow.json\n\n{\n    \"login_workflow\": {\n        \"user_credentials\": {\n            \"username\": \"john_doe\",\n            \"password\": \"securePassword123\"\n        },\n        \"request_parameters\": {\n            \"api_version\": \"1.0\",\n            \"request_id\": \"req_12345\",\n            \"timestamp\": \"2023-10-01T12:00:00Z\",\n            \"ip_address\": \"192.168.1.1\"\n        },\n        \"validation_result\": {\n            \"is_valid\": true,\n            \"validation_timestamp\": \"2023-10-01T12:00:01Z\",\n            \"error_message\": null\n        },\n        \"session_info\": {\n            \"session_id\": \"session_001\",\n            \"login_timestamp\": \"2023-10-01T12:00:02Z\",\n            \"logout_timestamp\": null,\n            \"session_duration\": \"N/A\"\n        },\n        \"status\": {\n            \"login_success\": true,\n            \"message\": \"Login successful, welcome back!\"\n        }\n    }\n}",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/login_workflow/login_workflow.json",
+                "context": {
+                    "files": []
+                },
+                "approve": true,
+                "editable": true,
+                "publish": {},
+                "files_notifications": {
+                    "code": {
+                        "text": "\ud83d\udd8c\ufe0f\ud83d\udcac",
+                        "file_name": "entity/{entity_name}/connections/connections.py"
+                    },
+                    "doc": {
+                        "text": "\ud83d\ude0a Could you please provide more details for the connection documentation? It would be super helpful! Please provide raw data for each endpoint if the final entity structure is different. You can paste all your data right here. Thanks so much!",
+                        "file_name": "entity/{entity_name}/connections/connections_input.md"
+                    },
+                    "entity": {
+                        "text": "\ud83d\ude0a Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!",
+                        "file_name": "entity/{entity_name}/{entity_name}.json"
+                    }
+                },
+                "entities": [
+                    {
+                        "entity_name": "login_workflow",
+                        "entity_type": "JOB",
+                        "entity_source": "API_REQUEST",
+                        "depends_on_entity": "None",
+                        "entity_workflow": {
+                            "name": "login_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": [
+                                {
+                                    "name": "validate_credentials",
+                                    "description": "Validate the user credentials against the database.",
+                                    "start_state": "None",
+                                    "start_state_description": "Initial state before validation.",
+                                    "end_state": "credentials_validated",
+                                    "end_state_description": "User credentials have been successfully validated.",
+                                    "process": {
+                                        "name": "validate_user",
+                                        "description": "Process to validate the user credentials.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "create_session",
+                                    "description": "Create a session for the user upon successful login.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "session_created",
+                                    "end_state_description": "User session has been successfully created.",
+                                    "process": {
+                                        "name": "create_user_session",
+                                        "description": "Process to create a user session.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "authentication_failed",
+                                    "description": "Handle the scenario where user authentication fails.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "login_failed",
+                                    "end_state_description": "User login failed due to invalid credentials.",
+                                    "process": {
+                                        "name": "handle_failed_login",
+                                        "description": "Process to handle failed login attempts.",
+                                        "adds_new_entites": "None"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "entity_name": "session_entity",
+                        "entity_type": "SECONDARY_DATA",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "session_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    },
+                    {
+                        "entity_name": "user_entity",
+                        "entity_type": "BUSINESS_ENTITY",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "user_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    }
+                ],
+                "flow_step": "Entities design",
+                "notification_text": "\ud83d\ude0a Could you please take a look at the generated entity examples? If you have a specific structure in mind, feel free to adjust my suggestions and click 'Approve' \ud83d\udc4d. You can also use Canvas to edit the entities together. Thanks so much!"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/login_workflow/login_workflow.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/login_workflow/login_workflow.json) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {
+                    "files": []
+                },
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "files_notifications": {
+                    "code": {
+                        "text": "\ud83d\udd8c\ufe0f\ud83d\udcac",
+                        "file_name": "entity/{entity_name}/connections/connections.py"
+                    },
+                    "doc": {
+                        "text": "\ud83d\ude0a Could you please provide more details for the connection documentation? It would be super helpful! Please provide raw data for each endpoint if the final entity structure is different. You can paste all your data right here. Thanks so much!",
+                        "file_name": "entity/{entity_name}/connections/connections_input.md"
+                    },
+                    "entity": {
+                        "text": "\ud83d\ude0a Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!",
+                        "file_name": "entity/{entity_name}/{entity_name}.json"
+                    }
+                },
+                "entities": [
+                    {
+                        "entity_name": "login_workflow",
+                        "entity_type": "JOB",
+                        "entity_source": "API_REQUEST",
+                        "depends_on_entity": "None",
+                        "entity_workflow": {
+                            "name": "login_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": [
+                                {
+                                    "name": "validate_credentials",
+                                    "description": "Validate the user credentials against the database.",
+                                    "start_state": "None",
+                                    "start_state_description": "Initial state before validation.",
+                                    "end_state": "credentials_validated",
+                                    "end_state_description": "User credentials have been successfully validated.",
+                                    "process": {
+                                        "name": "validate_user",
+                                        "description": "Process to validate the user credentials.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "create_session",
+                                    "description": "Create a session for the user upon successful login.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "session_created",
+                                    "end_state_description": "User session has been successfully created.",
+                                    "process": {
+                                        "name": "create_user_session",
+                                        "description": "Process to create a user session.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "authentication_failed",
+                                    "description": "Handle the scenario where user authentication fails.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "login_failed",
+                                    "end_state_description": "User login failed due to invalid credentials.",
+                                    "process": {
+                                        "name": "handle_failed_login",
+                                        "description": "Process to handle failed login attempts.",
+                                        "adds_new_entites": "None"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "entity_name": "session_entity",
+                        "entity_type": "SECONDARY_DATA",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "session_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    },
+                    {
+                        "entity_name": "user_entity",
+                        "entity_type": "BUSINESS_ENTITY",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "user_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    }
+                ],
+                "flow_step": "Entities design",
+                "notification_text": "\ud83d\ude0a Could you please take a look at the generated entity examples? If you have a specific structure in mind, feel free to adjust my suggestions and click 'Approve' \ud83d\udc4d. You can also use Canvas to edit the entities together. Thanks so much!"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/session_entity/session_entity.json\n\n{\n    \"session_id\": \"session_001\",\n    \"user_id\": \"user_001\",\n    \"login_timestamp\": \"2023-10-01T12:00:00Z\",\n    \"logout_timestamp\": null,\n    \"ip_address\": \"192.168.1.1\",\n    \"browser_info\": {\n        \"user_agent\": \"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36\",\n        \"browser\": \"Chrome\",\n        \"version\": \"94.0.4606.61\"\n    },\n    \"request_parameters\": {\n        \"login_endpoint\": \"/api/login\",\n        \"request_body\": {\n            \"username\": \"john_doe\",\n            \"password\": \"user_password\"\n        },\n        \"response_code\": 200,\n        \"response_message\": \"Login successful\"\n    }\n}",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/session_entity/session_entity.json",
+                "context": {
+                    "files": []
+                },
+                "approve": true,
+                "editable": true,
+                "publish": {},
+                "files_notifications": {
+                    "code": {
+                        "text": "\ud83d\udd8c\ufe0f\ud83d\udcac",
+                        "file_name": "entity/{entity_name}/connections/connections.py"
+                    },
+                    "doc": {
+                        "text": "\ud83d\ude0a Could you please provide more details for the connection documentation? It would be super helpful! Please provide raw data for each endpoint if the final entity structure is different. You can paste all your data right here. Thanks so much!",
+                        "file_name": "entity/{entity_name}/connections/connections_input.md"
+                    },
+                    "entity": {
+                        "text": "\ud83d\ude0a Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!",
+                        "file_name": "entity/{entity_name}/{entity_name}.json"
+                    }
+                },
+                "entities": [
+                    {
+                        "entity_name": "login_workflow",
+                        "entity_type": "JOB",
+                        "entity_source": "API_REQUEST",
+                        "depends_on_entity": "None",
+                        "entity_workflow": {
+                            "name": "login_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": [
+                                {
+                                    "name": "validate_credentials",
+                                    "description": "Validate the user credentials against the database.",
+                                    "start_state": "None",
+                                    "start_state_description": "Initial state before validation.",
+                                    "end_state": "credentials_validated",
+                                    "end_state_description": "User credentials have been successfully validated.",
+                                    "process": {
+                                        "name": "validate_user",
+                                        "description": "Process to validate the user credentials.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "create_session",
+                                    "description": "Create a session for the user upon successful login.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "session_created",
+                                    "end_state_description": "User session has been successfully created.",
+                                    "process": {
+                                        "name": "create_user_session",
+                                        "description": "Process to create a user session.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "authentication_failed",
+                                    "description": "Handle the scenario where user authentication fails.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "login_failed",
+                                    "end_state_description": "User login failed due to invalid credentials.",
+                                    "process": {
+                                        "name": "handle_failed_login",
+                                        "description": "Process to handle failed login attempts.",
+                                        "adds_new_entites": "None"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "entity_name": "session_entity",
+                        "entity_type": "SECONDARY_DATA",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "session_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    },
+                    {
+                        "entity_name": "user_entity",
+                        "entity_type": "BUSINESS_ENTITY",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "user_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    }
+                ],
+                "flow_step": "Entities design",
+                "notification_text": "\ud83d\ude0a Could you please take a look at the generated entity examples? If you have a specific structure in mind, feel free to adjust my suggestions and click 'Approve' \ud83d\udc4d. You can also use Canvas to edit the entities together. Thanks so much!"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/session_entity/session_entity.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/session_entity/session_entity.json) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {
+                    "files": []
+                },
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "files_notifications": {
+                    "code": {
+                        "text": "\ud83d\udd8c\ufe0f\ud83d\udcac",
+                        "file_name": "entity/{entity_name}/connections/connections.py"
+                    },
+                    "doc": {
+                        "text": "\ud83d\ude0a Could you please provide more details for the connection documentation? It would be super helpful! Please provide raw data for each endpoint if the final entity structure is different. You can paste all your data right here. Thanks so much!",
+                        "file_name": "entity/{entity_name}/connections/connections_input.md"
+                    },
+                    "entity": {
+                        "text": "\ud83d\ude0a Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!",
+                        "file_name": "entity/{entity_name}/{entity_name}.json"
+                    }
+                },
+                "entities": [
+                    {
+                        "entity_name": "login_workflow",
+                        "entity_type": "JOB",
+                        "entity_source": "API_REQUEST",
+                        "depends_on_entity": "None",
+                        "entity_workflow": {
+                            "name": "login_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": [
+                                {
+                                    "name": "validate_credentials",
+                                    "description": "Validate the user credentials against the database.",
+                                    "start_state": "None",
+                                    "start_state_description": "Initial state before validation.",
+                                    "end_state": "credentials_validated",
+                                    "end_state_description": "User credentials have been successfully validated.",
+                                    "process": {
+                                        "name": "validate_user",
+                                        "description": "Process to validate the user credentials.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "create_session",
+                                    "description": "Create a session for the user upon successful login.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "session_created",
+                                    "end_state_description": "User session has been successfully created.",
+                                    "process": {
+                                        "name": "create_user_session",
+                                        "description": "Process to create a user session.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "authentication_failed",
+                                    "description": "Handle the scenario where user authentication fails.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "login_failed",
+                                    "end_state_description": "User login failed due to invalid credentials.",
+                                    "process": {
+                                        "name": "handle_failed_login",
+                                        "description": "Process to handle failed login attempts.",
+                                        "adds_new_entites": "None"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "entity_name": "session_entity",
+                        "entity_type": "SECONDARY_DATA",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "session_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    },
+                    {
+                        "entity_name": "user_entity",
+                        "entity_type": "BUSINESS_ENTITY",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "user_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    }
+                ],
+                "flow_step": "Entities design",
+                "notification_text": "\ud83d\ude0a Could you please take a look at the generated entity examples? If you have a specific structure in mind, feel free to adjust my suggestions and click 'Approve' \ud83d\udc4d. You can also use Canvas to edit the entities together. Thanks so much!"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/user_entity/user_entity.json\n\n{\n    \"user_id\": \"user_001\",\n    \"username\": \"john_doe\",\n    \"email\": \"john@example.com\",\n    \"password_hash\": \"hashed_password_here\",\n    \"created_at\": \"2023-10-01T10:00:00Z\",\n    \"updated_at\": \"2023-10-01T12:00:00Z\",\n    \"last_login\": \"2023-10-01T12:00:00Z\",\n    \"is_active\": true,\n    \"is_verified\": true,\n    \"login_attempts\": 0,\n    \"preferences\": {\n        \"language\": \"en\",\n        \"theme\": \"dark\"\n    },\n    \"request_parameters\": {\n        \"login_page_url\": \"https://example.com/login\",\n        \"redirect_url\": \"https://example.com/dashboard\",\n        \"auth_method\": \"standard\"\n    }\n}",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_entity/user_entity.json",
+                "context": {
+                    "files": []
+                },
+                "approve": true,
+                "editable": true,
+                "publish": {},
+                "files_notifications": {
+                    "code": {
+                        "text": "\ud83d\udd8c\ufe0f\ud83d\udcac",
+                        "file_name": "entity/{entity_name}/connections/connections.py"
+                    },
+                    "doc": {
+                        "text": "\ud83d\ude0a Could you please provide more details for the connection documentation? It would be super helpful! Please provide raw data for each endpoint if the final entity structure is different. You can paste all your data right here. Thanks so much!",
+                        "file_name": "entity/{entity_name}/connections/connections_input.md"
+                    },
+                    "entity": {
+                        "text": "\ud83d\ude0a Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!",
+                        "file_name": "entity/{entity_name}/{entity_name}.json"
+                    }
+                },
+                "entities": [
+                    {
+                        "entity_name": "login_workflow",
+                        "entity_type": "JOB",
+                        "entity_source": "API_REQUEST",
+                        "depends_on_entity": "None",
+                        "entity_workflow": {
+                            "name": "login_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": [
+                                {
+                                    "name": "validate_credentials",
+                                    "description": "Validate the user credentials against the database.",
+                                    "start_state": "None",
+                                    "start_state_description": "Initial state before validation.",
+                                    "end_state": "credentials_validated",
+                                    "end_state_description": "User credentials have been successfully validated.",
+                                    "process": {
+                                        "name": "validate_user",
+                                        "description": "Process to validate the user credentials.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "create_session",
+                                    "description": "Create a session for the user upon successful login.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "session_created",
+                                    "end_state_description": "User session has been successfully created.",
+                                    "process": {
+                                        "name": "create_user_session",
+                                        "description": "Process to create a user session.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "authentication_failed",
+                                    "description": "Handle the scenario where user authentication fails.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "login_failed",
+                                    "end_state_description": "User login failed due to invalid credentials.",
+                                    "process": {
+                                        "name": "handle_failed_login",
+                                        "description": "Process to handle failed login attempts.",
+                                        "adds_new_entites": "None"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "entity_name": "session_entity",
+                        "entity_type": "SECONDARY_DATA",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "session_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    },
+                    {
+                        "entity_name": "user_entity",
+                        "entity_type": "BUSINESS_ENTITY",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "user_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    }
+                ],
+                "flow_step": "Entities design",
+                "notification_text": "\ud83d\ude0a Could you please take a look at the generated entity examples? If you have a specific structure in mind, feel free to adjust my suggestions and click 'Approve' \ud83d\udc4d. You can also use Canvas to edit the entities together. Thanks so much!"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/user_entity/user_entity.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/user_entity/user_entity.json) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {
+                    "files": []
+                },
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "files_notifications": {
+                    "code": {
+                        "text": "\ud83d\udd8c\ufe0f\ud83d\udcac",
+                        "file_name": "entity/{entity_name}/connections/connections.py"
+                    },
+                    "doc": {
+                        "text": "\ud83d\ude0a Could you please provide more details for the connection documentation? It would be super helpful! Please provide raw data for each endpoint if the final entity structure is different. You can paste all your data right here. Thanks so much!",
+                        "file_name": "entity/{entity_name}/connections/connections_input.md"
+                    },
+                    "entity": {
+                        "text": "\ud83d\ude0a Could you please provide an example of the entity JSON? It will help us map the raw data to the entity or save the raw data as is. You can paste all your data right here. Thanks a lot!",
+                        "file_name": "entity/{entity_name}/{entity_name}.json"
+                    }
+                },
+                "entities": [
+                    {
+                        "entity_name": "login_workflow",
+                        "entity_type": "JOB",
+                        "entity_source": "API_REQUEST",
+                        "depends_on_entity": "None",
+                        "entity_workflow": {
+                            "name": "login_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": [
+                                {
+                                    "name": "validate_credentials",
+                                    "description": "Validate the user credentials against the database.",
+                                    "start_state": "None",
+                                    "start_state_description": "Initial state before validation.",
+                                    "end_state": "credentials_validated",
+                                    "end_state_description": "User credentials have been successfully validated.",
+                                    "process": {
+                                        "name": "validate_user",
+                                        "description": "Process to validate the user credentials.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "create_session",
+                                    "description": "Create a session for the user upon successful login.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "session_created",
+                                    "end_state_description": "User session has been successfully created.",
+                                    "process": {
+                                        "name": "create_user_session",
+                                        "description": "Process to create a user session.",
+                                        "adds_new_entites": "session_entity"
+                                    }
+                                },
+                                {
+                                    "name": "authentication_failed",
+                                    "description": "Handle the scenario where user authentication fails.",
+                                    "start_state": "credentials_validated",
+                                    "start_state_description": "User credentials have been validated.",
+                                    "end_state": "login_failed",
+                                    "end_state_description": "User login failed due to invalid credentials.",
+                                    "process": {
+                                        "name": "handle_failed_login",
+                                        "description": "Process to handle failed login attempts.",
+                                        "adds_new_entites": "None"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "entity_name": "session_entity",
+                        "entity_type": "SECONDARY_DATA",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "session_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    },
+                    {
+                        "entity_name": "user_entity",
+                        "entity_type": "BUSINESS_ENTITY",
+                        "entity_source": "ENTITY_EVENT",
+                        "depends_on_entity": "login_workflow",
+                        "entity_workflow": {
+                            "name": "user_entity_workflow",
+                            "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                            "transitions": []
+                        }
+                    }
+                ],
+                "flow_step": "Entities design",
+                "notification_text": "\ud83d\ude0a Could you please take a look at the generated entity examples? If you have a specific structure in mind, feel free to adjust my suggestions and click 'Approve' \ud83d\udc4d. You can also use Canvas to edit the entities together. Thanks so much!"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! Could you please shortly explain what you've done Also pleas answer my questions if I have any. I say: "
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Entities design",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "entity_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Hi there! \ud83d\ude0a\n\nI\u2019ve generated example JSON data representations for three entities based on the user requirements we've discussed: `user_entity`, `session_entity`, and `login_workflow`. Each JSON example reflects the business logic of the respective entity:\n\n1. **User Entity**: This JSON example encapsulates user information, preferences, and request parameters related to the login process.\n\n2. **Session Entity**: This example illustrates session management details, including login timestamps, the user's IP address, and browser information.\n\n3. **Login Workflow**: This JSON encapsulates the flow of a login attempt, showing user credentials, request parameters, validation results, and session information upon successful login.\n\nIf you have any questions or need further clarifications regarding any part of the JSON data or the process, feel free to ask! I'm here to help! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 15,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Entities design",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! Could you please shortly explain what you've done Also pleas answer my questions if I have any. I say: "
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Entities design",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "entity_stack",
+                "publish": true
+            },
+            {
+                "notification": "Proceeding to Workflow design\n        \n        \nGathering requirements --> Application design --> Entities design --> ***Workflow design*** --> Workflow processors code design --> Additional logic code design",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "info": true,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "workflow_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "refresh_context"
+                },
+                "context": {
+                    "files": [
+                        "common/service/entity_service_interface.py",
+                        "common/service/trino_service.py",
+                        "common/ai/ai_assistant_service.py",
+                        "processor_instruction.txt",
+                        "entity/**"
+                    ],
+                    "excluded_files": [
+                        "entity/workflow.py",
+                        "entity/__init__.py"
+                    ]
+                },
+                "iteration": 0,
+                "flow_step": "Workflow processors code design",
+                "max_iteration": 0,
+                "stack": "processors_stack"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "generate_cyoda_workflow"
+                },
+                "file_name": "entity/login_workflow/workflow/workflow.json",
+                "entity": {
+                    "entity_name": "login_workflow",
+                    "entity_type": "JOB",
+                    "entity_source": "API_REQUEST",
+                    "depends_on_entity": "None",
+                    "entity_workflow": {
+                        "name": "login_workflow",
+                        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                        "transitions": [
+                            {
+                                "name": "validate_credentials",
+                                "description": "Validate the user credentials against the database.",
+                                "start_state": "None",
+                                "start_state_description": "Initial state before validation.",
+                                "end_state": "credentials_validated",
+                                "end_state_description": "User credentials have been successfully validated.",
+                                "process": {
+                                    "name": "validate_user",
+                                    "description": "Process to validate the user credentials.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "create_session",
+                                "description": "Create a session for the user upon successful login.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "session_created",
+                                "end_state_description": "User session has been successfully created.",
+                                "process": {
+                                    "name": "create_user_session",
+                                    "description": "Process to create a user session.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "authentication_failed",
+                                "description": "Handle the scenario where user authentication fails.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "login_failed",
+                                "end_state_description": "User login failed due to invalid credentials.",
+                                "process": {
+                                    "name": "handle_failed_login",
+                                    "description": "Process to handle failed login attempts.",
+                                    "adds_new_entites": "None"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "iteration": 0,
+                "flow_step": "Workflow design",
+                "max_iteration": 0,
+                "stack": "workflow_stack"
+            },
+            {
+                "notification": "Proceeding to Workflow processors code design\n        \n        \nGathering requirements --> Application design --> Entities design --> Workflow design --> ***Workflow processors code design*** --> Additional logic code design",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "info": true,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "processors_stack",
+                "publish": true
+            },
+            {
+                "notification": "\nNow it\u2019s time to give life to login_workflow workflow! \ud83c\udf89\n\nOur workflow will have a set of functions \ud83d\udee0\ufe0f (think of them as isolated functions that will receive your entity as an argument). These functions can perform various actions on your entity. It\u2019s a bit like AWS Lambda's **FaaS** (Function as a Service) in a way \ud83d\udcbb\u26a1\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "info": true,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Application design",
+                "max_iteration": 0,
+                "stack": "processors_stack"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please, generate the processor functions for login_workflow call public functions by the name of each processor: validate_user, create_user_session, handle_failed_login.  Reuse functions that are available in the code base, including logic.app_init import entity_service, connections.py (ingest_data public function) and any other existing function that is related to your purpose. Make sure you include logic to save any dependant entities: session_entity, session_entity, None. Also generate tests with mocks for external services or functions so that the user can try out the functions right away in isolated environment. **Tests should be in the same file with the code**login_workflow. Based on the user suggestions if there are any.  Please make sure you are re-using all raw_data_*/connections/connection.py ingest_data functions. This is very important not to re-implement ingest_data but reuse it. You should import and reuse all ingest_data functions, use 'as' to avoid names duplicates. Make sure the result of data ingestion is saved to the corresponding raw data entity. Please also make sure that you understand that argument 'data' that you pass to each function corresponds to entity/login_workflow/login_workflow.json data and not to any other entity! User says: "
+                },
+                "answer": null,
+                "function": null,
+                "entity": {
+                    "entity_name": "login_workflow",
+                    "entity_type": "JOB",
+                    "entity_source": "API_REQUEST",
+                    "depends_on_entity": "None",
+                    "entity_workflow": {
+                        "name": "login_workflow",
+                        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                        "transitions": [
+                            {
+                                "name": "validate_credentials",
+                                "description": "Validate the user credentials against the database.",
+                                "start_state": "None",
+                                "start_state_description": "Initial state before validation.",
+                                "end_state": "credentials_validated",
+                                "end_state_description": "User credentials have been successfully validated.",
+                                "process": {
+                                    "name": "validate_user",
+                                    "description": "Process to validate the user credentials.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "create_session",
+                                "description": "Create a session for the user upon successful login.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "session_created",
+                                "end_state_description": "User session has been successfully created.",
+                                "process": {
+                                    "name": "create_user_session",
+                                    "description": "Process to create a user session.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "authentication_failed",
+                                "description": "Handle the scenario where user authentication fails.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "login_failed",
+                                "end_state_description": "User login failed due to invalid credentials.",
+                                "process": {
+                                    "name": "handle_failed_login",
+                                    "description": "Process to handle failed login attempts.",
+                                    "adds_new_entites": "None"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "index": 0,
+                "iteration": 0,
+                "file_name": "entity/login_workflow/workflow/workflow.py",
+                "flow_step": "Workflow processors code design",
+                "max_iteration": 0,
+                "stack": "processors_stack"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/login_workflow/workflow/workflow.py` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/login_workflow/workflow/workflow.py) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {
+                    "entity_name": "login_workflow",
+                    "entity_type": "JOB",
+                    "entity_source": "API_REQUEST",
+                    "depends_on_entity": "None",
+                    "entity_workflow": {
+                        "name": "login_workflow",
+                        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                        "transitions": [
+                            {
+                                "name": "validate_credentials",
+                                "description": "Validate the user credentials against the database.",
+                                "start_state": "None",
+                                "start_state_description": "Initial state before validation.",
+                                "end_state": "credentials_validated",
+                                "end_state_description": "User credentials have been successfully validated.",
+                                "process": {
+                                    "name": "validate_user",
+                                    "description": "Process to validate the user credentials.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "create_session",
+                                "description": "Create a session for the user upon successful login.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "session_created",
+                                "end_state_description": "User session has been successfully created.",
+                                "process": {
+                                    "name": "create_user_session",
+                                    "description": "Process to create a user session.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "authentication_failed",
+                                "description": "Handle the scenario where user authentication fails.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "login_failed",
+                                "end_state_description": "User login failed due to invalid credentials.",
+                                "process": {
+                                    "name": "handle_failed_login",
+                                    "description": "Process to handle failed login attempts.",
+                                    "adds_new_entites": "None"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "file_name": "entity/login_workflow/workflow/workflow.py",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Workflow processors code design"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here\u2019s the implementation of the processor functions for the `login_workflow`, which includes the functions `validate_user`, `create_user_session`, and `handle_failed_login`. At the end of the code, I will also provide unit tests with mocks for external services to facilitate testing in an isolated environment.\n\n```python\nimport logging\nimport asyncio\nfrom app_init.app_init import entity_service\nfrom common.config.config import ENTITY_VERSION\nfrom common.service.trino_service import get_trino_schema_id_by_entity_name as get_schema_id\nfrom entity.session_entity.connections import ingest_data as ingest_session_data\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\nasync def validate_user(meta, data):\n    logger.info(\"Validating user credentials.\")\n    try:\n        # Here we would typically retrieve the user from the database\n        user = await entity_service.get_item(meta[\"token\"], \"user_entity\", ENTITY_VERSION, data[\"user_credentials\"][\"username\"])\n        \n        # Validate the password (this is a simplified check)\n        if user and user[\"password_hash\"] == data[\"user_credentials\"][\"password\"]:\n            logger.info(\"User validation successful.\")\n            data[\"validation_result\"] = {\n                \"is_valid\": True,\n                \"validation_timestamp\": \"2023-10-01T12:00:01Z\",\n                \"error_message\": None\n            }\n        else:\n            logger.warning(\"User validation failed.\")\n            data[\"validation_result\"] = {\n                \"is_valid\": False,\n                \"validation_timestamp\": \"2023-10-01T12:00:01Z\",\n                \"error_message\": \"Invalid username or password.\"\n            }\n    except Exception as e:\n        logger.error(f\"Error in validate_user: {e}\")\n        raise\n\nasync def create_user_session(meta, data):\n    logger.info(\"Creating user session.\")\n    try:\n        if data[\"validation_result\"][\"is_valid\"]:\n            session_data = {\n                \"user_id\": data[\"user_credentials\"][\"username\"],\n                \"login_timestamp\": \"2023-10-01T12:00:02Z\",\n                \"logout_timestamp\": None,\n                \"ip_address\": meta[\"ip_address\"]\n            }\n            # Save the session entity\n            session_entity_id = await ingest_session_data(meta[\"token\"], \"session_entity\", ENTITY_VERSION, session_data)\n            data[\"session_info\"] = {\n                \"session_id\": session_entity_id,\n                \"login_timestamp\": session_data[\"login_timestamp\"],\n                \"logout_timestamp\": session_data[\"logout_timestamp\"]\n            }\n            logger.info(f\"Session created with ID: {session_entity_id}\")\n        else:\n            logger.warning(\"Cannot create session: validation failed.\")\n    except Exception as e:\n        logger.error(f\"Error in create_user_session: {e}\")\n        raise\n\nasync def handle_failed_login(meta, data):\n    logger.info(\"Handling failed login.\")\n    try:\n        data[\"status\"] = {\n            \"login_success\": False,\n            \"message\": data[\"validation_result\"][\"error_message\"]\n        }\n        logger.info(\"User login failed, error message set.\")\n    except Exception as e:\n        logger.error(f\"Error in handle_failed_login: {e}\")\n        raise\n\n# Unit Tests\nimport unittest\nfrom unittest.mock import patch\n\nclass TestLoginWorkflow(unittest.TestCase):\n\n    @patch(\"app_init.app_init.entity_service.get_item\")\n    def test_validate_user_success(self, mock_get_item):\n        mock_get_item.return_value = {\n            \"username\": \"john_doe\",\n            \"password_hash\": \"securePassword123\"\n        }\n        meta = {\"token\": \"test_token\"}\n        data = {\n            \"user_credentials\": {\n                \"username\": \"john_doe\",\n                \"password\": \"securePassword123\"\n            }\n        }\n        asyncio.run(validate_user(meta, data))\n        self.assertTrue(data[\"validation_result\"][\"is_valid\"])\n\n    @patch(\"app_init.app_init.entity_service.get_item\")\n    def test_validate_user_failure(self, mock_get_item):\n        mock_get_item.return_value = {\n            \"username\": \"john_doe\",\n            \"password_hash\": \"wrongPassword\"\n        }\n        meta = {\"token\": \"test_token\"}\n        data = {\n            \"user_credentials\": {\n                \"username\": \"john_doe\",\n                \"password\": \"securePassword123\"\n            }\n        }\n        asyncio.run(validate_user(meta, data))\n        self.assertFalse(data[\"validation_result\"][\"is_valid\"])\n        self.assertEqual(data[\"validation_result\"][\"error_message\"], \"Invalid username or password.\")\n\n    @patch(\"entity.session_entity.connections.ingest_data\")\n    def test_create_user_session(self, mock_ingest_data):\n        mock_ingest_data.return_value = \"session_001\"\n        meta = {\"token\": \"test_token\", \"ip_address\": \"192.168.1.1\"}\n        data = {\n            \"validation_result\": {\n                \"is_valid\": True\n            },\n            \"user_credentials\": {\n                \"username\": \"john_doe\"\n            }\n        }\n        asyncio.run(create_user_session(meta, data))\n        self.assertEqual(data[\"session_info\"][\"session_id\"], \"session_001\")\n\n    def test_handle_failed_login(self):\n        data = {\n            \"validation_result\": {\n                \"error_message\": \"Invalid username or password.\"\n            }\n        }\n        asyncio.run(handle_failed_login({}, data))\n        self.assertFalse(data[\"status\"][\"login_success\"])\n        self.assertEqual(data[\"status\"][\"message\"], \"Invalid username or password.\")\n\nif __name__ == \"__main__\":\n    unittest.main()\n```\n\n### Explanation:\n1. **Processor Functions**:\n   - **validate_user**: Validates user credentials against the database and updates the `data` object with the validation result.\n   - **create_user_session**: If validation is successful, it creates a user session and saves it using the `ingest_data` function.\n   - **handle_failed_login**: Updates the `data` object to reflect the failed login attempt.\n\n2. **Unit Tests**:\n   - Tests are provided using the `unittest` framework, including mocked dependencies to isolate the functionality of each processor.\n   - Each test checks the expected outcomes for successful validation, failed validation, session creation, and handling failed login scenarios.\n\nThis implementation allows seamless integration with the existing application logic while making it easy to test the components independently. Let me know if you have any further questions or need modifications! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {
+                    "entity_name": "login_workflow",
+                    "entity_type": "JOB",
+                    "entity_source": "API_REQUEST",
+                    "depends_on_entity": "None",
+                    "entity_workflow": {
+                        "name": "login_workflow",
+                        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                        "transitions": [
+                            {
+                                "name": "validate_credentials",
+                                "description": "Validate the user credentials against the database.",
+                                "start_state": "None",
+                                "start_state_description": "Initial state before validation.",
+                                "end_state": "credentials_validated",
+                                "end_state_description": "User credentials have been successfully validated.",
+                                "process": {
+                                    "name": "validate_user",
+                                    "description": "Process to validate the user credentials.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "create_session",
+                                "description": "Create a session for the user upon successful login.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "session_created",
+                                "end_state_description": "User session has been successfully created.",
+                                "process": {
+                                    "name": "create_user_session",
+                                    "description": "Process to create a user session.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "authentication_failed",
+                                "description": "Handle the scenario where user authentication fails.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "login_failed",
+                                "end_state_description": "User login failed due to invalid credentials.",
+                                "process": {
+                                    "name": "handle_failed_login",
+                                    "description": "Process to handle failed login attempts.",
+                                    "adds_new_entites": "None"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "file_name": "entity/login_workflow/workflow/workflow.py",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Workflow processors code design"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! Could you please explain what processors functions you wrote. Explain that they are isolated functions in a faas way like aws lambda. They will be triggered by Cyoda grpc server when the login_workflow entity state changes. Tell what tests you wrote and how you mocked Cyoda entity service (repository) so that i can test every function in an isolated fashion. Also please answer my questions if I have any. I say: "
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Workflow processors code design",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "processors_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Hi! \ud83d\ude0a\n\nI wrote three processor functions for the `login_workflow`, which are designed to work in an isolated fashion, similar to functions-as-a-service (FaaS) models like AWS Lambda. This means that each function is independent and can be triggered by the Cyoda GRPC server when the state of the `login_workflow` entity changes. Here\u2019s a brief overview of each function:\n\n### Processor Functions:\n\n1. **validate_user**:\n   - This function takes in metadata and user credentials, then validates them against the database through the entity service.\n   - If the credentials are valid, it updates the `data` object to reflect that the validation was successful. If not, it sets an error message.\n   - Isolation: This function's logic can be executed independently, enabling quick testing and debugging without any dependencies.\n\n2. **create_user_session**:\n   - Once the user is validated, this function creates a session for the user and saves it (using the `ingest_data` function).\n   - It updates the `data` object with the session ID and relevant timestamps.\n   - Isolation: Like the previous function, it operates independently, allowing it to be tested in isolation.\n\n3. **handle_failed_login**:\n   - This function is called when the login attempt fails. It updates the `data` object to indicate the login failure and contains an error message.\n   - Isolation: This function can be tested independently as it doesn\u2019t rely on external services.\n\n### Trigger Mechanism:\nThese processor functions will be triggered by the Cyoda GRPC server when the state of the `login_workflow` entity changes. This means they respond to events emitted by the entity, making them suitable for an event-driven architecture.\n\n### Unit Tests:\nI wrote several unit tests for these processor functions, ensuring each one can be tested in isolation:\n\n1. **validate_user Tests**:\n   - Two tests were included: one for successful validation and another for failed validation.\n   - The `entity_service.get_item` method was mocked to return predefined user data, allowing the test to simulate different scenarios without making actual calls to a database.\n\n2. **create_user_session Test**:\n   - I tested the session creation process by mocking the `ingest_data` function.\n   - This ensures that the processor function behaves as expected when creating a session without relying on the actual data ingestion service.\n\n3. **handle_failed_login Test**:\n   - This test checks the handling of a failed login attempt to confirm the status and error message are set correctly. \n   - No external service was mocked here since it simply manipulates the `data` object.\n\n### Mocking Cyoda Entity Service:\nTo enable isolated testing, I used the `unittest.mock.patch` decorator to replace the real `entity_service` methods with mock versions. This means that during testing, calls to these methods are intercepted, and controlled responses can be provided instead of hitting a real database or external service. This makes it possible to test the functionality without side effects or dependencies, ensuring each function behaves correctly in isolation.\n\nIf you have any questions or want to delve deeper into any specific area, just let me know! I'm here to help! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 15,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Workflow processors code design",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! Could you please explain what processors functions you wrote. Explain that they are isolated functions in a faas way like aws lambda. They will be triggered by Cyoda grpc server when the login_workflow entity state changes. Tell what tests you wrote and how you mocked Cyoda entity service (repository) so that i can test every function in an isolated fashion. Also please answer my questions if I have any. I say: "
+                },
+                "answer": " ",
+                "approve": true,
+                "function": null,
+                "iteration": 2,
+                "flow_step": "Workflow processors code design",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "processors_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Hi there! \ud83d\ude0a\n\nSure! Let\u2019s dive into the processor functions I wrote for the `login_workflow`, their design, their isolation as FaaS-like functions, and the testing strategy.\n\n### Processor Functions Overview\n\n1. **validate_user**:\n   - **Purpose**: This function validates user credentials against the database. It checks if the provided username and password match a record in the `user_entity`.\n   - **How it Works**: If the validation is successful, it updates the `data` object to indicate the credentials are valid; otherwise, it sets an error message.\n   - **Isolation**: This function is designed to be independent, which allows it to be invoked separately, similar to how AWS Lambda functions can be called in response to events.\n\n2. **create_user_session**:\n   - **Purpose**: Once the user\u2019s credentials are validated, this function creates a session for the user. It saves the session data (like `login_timestamp` and `user_id`) to the `session_entity`.\n   - **How it Works**: Upon successful validation, it uses the `ingest_data` function to save the session entity and updates the `data` object with the new session ID.\n   - **Isolation**: Like the previous function, it operates independently, making it easy to test without external dependencies.\n\n3. **handle_failed_login**:\n   - **Purpose**: This function manages the scenario when the login attempt fails. It updates the `data` object with a failure status and an appropriate error message.\n   - **How it Works**: When called, it sets flags in the `data` object to indicate the failure and provides user feedback.\n   - **Isolation**: This function too can be tested independently, ensuring that it behaves correctly in the event of a login failure.\n\n### Trigger Mechanism\nThese processor functions are triggered by the Cyoda GRPC server when the state of the `login_workflow` entity changes. This allows them to respond to events in an event-driven architecture, similar to how serverless functions execute in response to specific triggers.\n\n### Unit Tests\nI implemented several unit tests for these processor functions to ensure they behave as expected:\n\n1. **validate_user Tests**:\n   - **Success Test**: Mocks the `entity_service.get_item` method to return a valid user object when the correct username is provided. The test checks if the `data` object reflects that the validation was successful.\n   - **Failure Test**: Mocks the same method to simulate an invalid username/password scenario. It verifies that the `data` object contains the proper error message.\n\n2. **create_user_session Test**:\n   - **Test for Successful Session Creation**: Mocks the `ingest_data` function to simulate the successful creation of a session. It checks if the `data` object is updated with the new session ID.\n\n3. **handle_failed_login Test**:\n   - This test ensures that when a login fails, the `data` object is updated correctly with the failure status and message. It doesn\u2019t require external service mocks, as it directly manipulates the `data` object.\n\n### Mocking Cyoda Entity Service\nTo achieve isolated testing, I used the `unittest.mock.patch` decorator to replace real service calls with mock objects. This means that during the tests:\n- Calls to `entity_service.get_item` and `ingest_data` are intercepted.\n- The mock returns predefined responses, allowing me to test the functions without hitting a real database.\n\nThis strategy ensures that you can validate the logic of each processor function independently, verifying their behavior while preventing any unintended side effects from external dependencies.\n\nIf you have any questions or need further clarification on any part of this, just let me know! I'm here to help! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 2,
+                "max_iteration": 15,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Workflow processors code design",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! Could you please explain what processors functions you wrote. Explain that they are isolated functions in a faas way like aws lambda. They will be triggered by Cyoda grpc server when the login_workflow entity state changes. Tell what tests you wrote and how you mocked Cyoda entity service (repository) so that i can test every function in an isolated fashion. Also please answer my questions if I have any. I say: "
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 2,
+                "flow_step": "Workflow processors code design",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "processors_stack",
+                "publish": true
+            },
+            {
+                "notification": "Proceeding to Additional logic code design\n        \n        \nGathering requirements --> Application design --> Entities design --> Workflow design --> Workflow processors code design --> ***Additional logic code design***",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "info": true,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "api_request_stack",
+                "publish": true
+            },
+            {
+                "notification": "Let's generate the api for processing entity and saving the entity login_workflow",
+                "prompt": {},
+                "answer": null,
+                "approve": false,
+                "function": null,
+                "index": 0,
+                "iteration": 0,
+                "file_name": "entity/login_workflow/logic.py",
+                "flow_step": "Additional logic code design",
+                "max_iteration": 0,
+                "stack": "api_request_stack"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Generate the quart additional api.py file to save the entity login_workflow based on the user suggestions if there are any, if not you can proceed. Also generate tests with mocks for external services or functions so that the user can try out the functions right away in isolated environment. **Tests should be in the same file with the code** User says: "
+                },
+                "answer": null,
+                "function": null,
+                "entity": {
+                    "entity_name": "login_workflow",
+                    "entity_type": "JOB",
+                    "entity_source": "API_REQUEST",
+                    "depends_on_entity": "None",
+                    "entity_workflow": {
+                        "name": "login_workflow",
+                        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                        "transitions": [
+                            {
+                                "name": "validate_credentials",
+                                "description": "Validate the user credentials against the database.",
+                                "start_state": "None",
+                                "start_state_description": "Initial state before validation.",
+                                "end_state": "credentials_validated",
+                                "end_state_description": "User credentials have been successfully validated.",
+                                "process": {
+                                    "name": "validate_user",
+                                    "description": "Process to validate the user credentials.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "create_session",
+                                "description": "Create a session for the user upon successful login.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "session_created",
+                                "end_state_description": "User session has been successfully created.",
+                                "process": {
+                                    "name": "create_user_session",
+                                    "description": "Process to create a user session.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "authentication_failed",
+                                "description": "Handle the scenario where user authentication fails.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "login_failed",
+                                "end_state_description": "User login failed due to invalid credentials.",
+                                "process": {
+                                    "name": "handle_failed_login",
+                                    "description": "Process to handle failed login attempts.",
+                                    "adds_new_entites": "None"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "index": 0,
+                "iteration": 0,
+                "context": {
+                    "prompt": {
+                        "data": [
+                            "login_workflow",
+                            "data"
+                        ]
+                    }
+                },
+                "file_name": "entity/login_workflow/api.py",
+                "flow_step": "Additional logic code design",
+                "max_iteration": 0,
+                "stack": "api_request_stack"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/login_workflow/api.py` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/1e023f60-e212-11ef-a4be-12ba6be13728/entity/login_workflow/api.py) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {
+                    "entity_name": "login_workflow",
+                    "entity_type": "JOB",
+                    "entity_source": "API_REQUEST",
+                    "depends_on_entity": "None",
+                    "entity_workflow": {
+                        "name": "login_workflow",
+                        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                        "transitions": [
+                            {
+                                "name": "validate_credentials",
+                                "description": "Validate the user credentials against the database.",
+                                "start_state": "None",
+                                "start_state_description": "Initial state before validation.",
+                                "end_state": "credentials_validated",
+                                "end_state_description": "User credentials have been successfully validated.",
+                                "process": {
+                                    "name": "validate_user",
+                                    "description": "Process to validate the user credentials.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "create_session",
+                                "description": "Create a session for the user upon successful login.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "session_created",
+                                "end_state_description": "User session has been successfully created.",
+                                "process": {
+                                    "name": "create_user_session",
+                                    "description": "Process to create a user session.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "authentication_failed",
+                                "description": "Handle the scenario where user authentication fails.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "login_failed",
+                                "end_state_description": "User login failed due to invalid credentials.",
+                                "process": {
+                                    "name": "handle_failed_login",
+                                    "description": "Process to handle failed login attempts.",
+                                    "adds_new_entites": "None"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "file_name": "entity/login_workflow/api.py",
+                "context": {
+                    "prompt": {
+                        "data": [
+                            "login_workflow",
+                            "data"
+                        ]
+                    }
+                },
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here\u2019s an additional `api.py` file for your Quart application. This file will include an endpoint to save the `login_workflow` entity. Alongside the code, I\u2019ll include unit tests with mocks for external services so you can test the functionality in an isolated environment.\n\n```python\nfrom quart import Quart, request, jsonify\nfrom common.config.config import ENTITY_VERSION\nfrom app_init.app_init import entity_service\nimport logging\nimport asyncio\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\napp = Quart(__name__)\n\n@app.route('/api/login_workflow', methods=['POST'])\nasync def save_login_workflow():\n    data = await request.json\n    logger.info(\"Received login workflow data: %s\", data)\n\n    try:\n        # Validate incoming data (basic structure check can be added here)\n        if not data.get(\"user_credentials\"):\n            return jsonify({\"error\": \"user_credentials required\"}), 400\n\n        # Save the login workflow entity using the entity service\n        result = await entity_service.add_item(\n            token=request.headers.get(\"Authorization\"),\n            entity_model=\"login_workflow\",\n            entity_version=ENTITY_VERSION,\n            entity=data\n        )\n        \n        logger.info(\"Login workflow saved successfully: %s\", result)\n        return jsonify({\"message\": \"Login workflow saved successfully\", \"id\": result}), 201\n\n    except Exception as e:\n        logger.error(f\"Failed to save login workflow: {e}\")\n        return jsonify({\"error\": str(e)}), 500\n\n\n# Unit Tests\nimport unittest\nfrom unittest.mock import patch\n\nclass TestLoginWorkflowAPI(unittest.TestCase):\n\n    @patch(\"app_init.app_init.entity_service.add_item\")\n    def test_save_login_workflow_success(self, mock_add_item):\n        mock_add_item.return_value = \"workflow_id_001\"\n\n        test_client = app.test_client()\n        test_data = {\n            \"user_credentials\": {\n                \"username\": \"john_doe\",\n                \"password\": \"securePassword123\"\n            },\n            \"request_parameters\": {\n                \"api_version\": \"1.0\",\n                \"request_id\": \"req_12345\",\n                \"timestamp\": \"2023-10-01T12:00:00Z\",\n                \"ip_address\": \"192.168.1.1\"\n            }\n        }\n        \n        response = asyncio.run(test_client.post('/api/login_workflow', json=test_data, headers={\"Authorization\": \"Bearer test_token\"}))\n        self.assertEqual(response.status_code, 201)\n        self.assertEqual(response.json, {\"message\": \"Login workflow saved successfully\", \"id\": \"workflow_id_001\"})\n\n    @patch(\"app_init.app_init.entity_service.add_item\")\n    def test_save_login_workflow_missing_credentials(self, mock_add_item):\n        test_client = app.test_client()\n        response = asyncio.run(test_client.post('/api/login_workflow', json={}, headers={\"Authorization\": \"Bearer test_token\"}))\n        self.assertEqual(response.status_code, 400)\n        self.assertEqual(response.json, {\"error\": \"user_credentials required\"})\n\n    @patch(\"app_init.app_init.entity_service.add_item\")\n    def test_save_login_workflow_failure(self, mock_add_item):\n        mock_add_item.side_effect = Exception(\"Database error\")\n        \n        test_client = app.test_client()\n        test_data = {\n            \"user_credentials\": {\n                \"username\": \"john_doe\",\n                \"password\": \"securePassword123\"\n            }\n        }\n        \n        response = asyncio.run(test_client.post('/api/login_workflow', json=test_data, headers={\"Authorization\": \"Bearer test_token\"}))\n        self.assertEqual(response.status_code, 500)\n        self.assertEqual(response.json, {\"error\": \"Database error\"})\n\nif __name__ == \"__main__\":\n    app.run()\n    unittest.main()\n```\n\n### Explanation:\n1. **API Endpoint**:\n   - A POST endpoint `/api/login_workflow` is created. It accepts JSON data for the login workflow.\n   - The endpoint validates the incoming data and calls the `entity_service.add_item` method to save the workflow.\n   - It returns a success message with the workflow ID on successful saving, or an appropriate error message if something goes wrong.\n\n2. **Unit Tests**:\n   - Three tests have been implemented:\n     - **Success Test**: Mocks the `add_item` method to simulate a successful save and verifies the response.\n     - **Missing Credentials Test**: Checks that the API returns a 400 error if required fields are missing.\n     - **Failure Test**: Mocks the `add_item` method to raise an exception and verifies that the API responds with a 500 error, along with the error message.\n\nThis setup allows you to test the API endpoint thoroughly while ensuring that external calls are mocked to provide an isolated testing environment. If you have any more questions or need further modifications, feel free to ask! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {
+                    "entity_name": "login_workflow",
+                    "entity_type": "JOB",
+                    "entity_source": "API_REQUEST",
+                    "depends_on_entity": "None",
+                    "entity_workflow": {
+                        "name": "login_workflow",
+                        "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                        "transitions": [
+                            {
+                                "name": "validate_credentials",
+                                "description": "Validate the user credentials against the database.",
+                                "start_state": "None",
+                                "start_state_description": "Initial state before validation.",
+                                "end_state": "credentials_validated",
+                                "end_state_description": "User credentials have been successfully validated.",
+                                "process": {
+                                    "name": "validate_user",
+                                    "description": "Process to validate the user credentials.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "create_session",
+                                "description": "Create a session for the user upon successful login.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "session_created",
+                                "end_state_description": "User session has been successfully created.",
+                                "process": {
+                                    "name": "create_user_session",
+                                    "description": "Process to create a user session.",
+                                    "adds_new_entites": "session_entity"
+                                }
+                            },
+                            {
+                                "name": "authentication_failed",
+                                "description": "Handle the scenario where user authentication fails.",
+                                "start_state": "credentials_validated",
+                                "start_state_description": "User credentials have been validated.",
+                                "end_state": "login_failed",
+                                "end_state_description": "User login failed due to invalid credentials.",
+                                "process": {
+                                    "name": "handle_failed_login",
+                                    "description": "Process to handle failed login attempts.",
+                                    "adds_new_entites": "None"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "file_name": "entity/login_workflow/api.py",
+                "context": {
+                    "prompt": {
+                        "data": [
+                            "login_workflow",
+                            "data"
+                        ]
+                    }
+                },
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! Could you please explain what you've done what api you added and why. Also please answer my questions if I have any. I say: "
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Additional logic code design",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "api_request_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Hi there! \ud83d\ude0a\n\nHere's a breakdown of what I've done in the `api.py` file:\n\n### API Endpoint Added\n\n1. **Endpoint**: \n   - **Path**: `/api/login_workflow`\n   - **Method**: `POST`\n\n### Purpose of the API\nThis endpoint is designed to handle the submission of `login_workflow` data. When a user attempts to log in, this API allows the frontend or external clients to send the relevant user credentials and metadata to be processed and stored. \n\n### How It Works:\n- **Input**: The API expects a JSON payload containing user credentials and request parameters. For example, the request might look like this:\n  ```json\n  {\n      \"user_credentials\": {\n          \"username\": \"john_doe\",\n          \"password\": \"securePassword123\"\n      },\n      \"request_parameters\": {\n          \"api_version\": \"1.0\",\n          \"request_id\": \"req_12345\",\n          \"timestamp\": \"2023-10-01T12:00:00Z\",\n          \"ip_address\": \"192.168.1.1\"\n      }\n  }\n  ```\n- **Validation**: Upon receiving the request, the API checks if the required `user_credentials` field is present. If not, it returns a 400 Bad Request error.\n- **Saving the Workflow**: If the data is valid, the API then calls `entity_service.add_item` to save the `login_workflow` entity using the provided data.\n- **Response**: On successful saving, it responds with a 201 Created status and includes the ID of the newly saved workflow. In case of errors (like missing parameters or database issues), it returns appropriate error messages.\n\n### Unit Tests:\nI included unit tests within the same file to validate the functionality of the API:\n- **test_save_login_workflow_success**: This test checks that the API successfully saves a login workflow and returns the expected response.\n- **test_save_login_workflow_missing_credentials**: This test ensures that if the required user credentials are missing, the API responds with a 400 error.\n- **test_save_login_workflow_failure**: This test simulates a database error when trying to save the workflow and verifies that the API returns a 500 error.\n\n### Why This API Is Important:\n- **User Interaction**: It provides a direct way for users (or their applications) to initiate login workflows.\n- **Structured Data Handling**: It centralizes the processing and validation of login data, ensuring consistent handling of user authentication attempts.\n- **Event-Driven Architecture**: By tying the workflow to a POST request, it fits into the broader event-driven architecture of your application, allowing other components to react appropriately to login events.\n\nIf you have any questions or need further clarifications about this implementation or any related topics, just let me know! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 15,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Additional logic code design",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! Could you please explain what you've done what api you added and why. Also please answer my questions if I have any. I say: "
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Additional logic code design",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "api_request_stack",
+                "publish": true
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "approve": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": "approved",
+                "function": {
+                    "name": "finish_flow"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": "entity/chat.json",
+                "notification_text": "\n\ud83c\udf89 **Chat flow has been saved!** \ud83c\udf89\n\nThe chat flow has been successfully saved to `entity/chat.json`. Now you can run `app.py` to start the application. \ud83d\ude80\n\nOnce you run it, both the **workflow** and **entities** will be imported to the Cyoda environment automatically. \ud83c\udf1f\n\nAny updates or changes to the entities will trigger the workflow, so you\u2019re all set to go! \ud83d\udd04\n\nWe are available in the **Google Tech Channel** to support you. If you spot any bugs or need additional features, feel free to submit tickets at [GitHub Issues](https://github.com/Cyoda-platform/ai-assistant). You\u2019re also most welcome to contribute to the project! \ud83d\udcbb \n\nFor any direct inquiries, reach out to **ksenia.lukonina@cyoda.com**. We\u2019re here to help! \ud83d\ude0a\n                       ",
+                "max_iteration": -1,
+                "stack": "app_building_stack",
+                "publish": true
+            }
+        ]
+    },
+    "name": "app_saveform",
+    "description": "",
+    "chat_id": "1e023f60-e212-11ef-a4be-12ba6be13728",
+    "technical_id": "1e023f60-e212-11ef-a4be-12ba6be13728"
+}

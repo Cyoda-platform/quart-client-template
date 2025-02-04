@@ -1,0 +1,30 @@
+{
+    "aggregated_data_entity": {
+        "total_items": 2,
+        "average_price": 25.0,
+        "total_value": 50.0,
+        "aggregation_timestamp": "2023-10-01T10:05:00Z",
+        "comments": "This aggregated data reflects the summary of key metrics derived from the raw data ingested from the SwaggerHub API.",
+        "details": {
+            "items": [
+                {
+                    "id": "item_001",
+                    "title": "Inventory Item 1",
+                    "price": 30.0,
+                    "status": "available"
+                },
+                {
+                    "id": "item_002",
+                    "title": "Inventory Item 2",
+                    "price": 20.0,
+                    "status": "sold out"
+                }
+            ],
+            "metrics": {
+                "count": 2,
+                "average_price": 25.0,
+                "total_value": 50.0
+            }
+        }
+    }
+}

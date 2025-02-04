@@ -1,0 +1,104 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "comment_analysis_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "comment_analysis_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_analysis",
+                        "description": "Begin the analysis of comments.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before analysis starts.",
+                        "end_state": "comments_fetched",
+                        "end_state_description": "Comments have been successfully fetched from the API.",
+                        "process": {
+                            "name": "fetch_comments",
+                            "description": "Process to fetch comments from the API using post_id.",
+                            "adds_new_entites": "comment_entity"
+                        }
+                    },
+                    {
+                        "name": "analyze_comments",
+                        "description": "Analyze the fetched comments for sentiment and keywords.",
+                        "start_state": "comments_fetched",
+                        "start_state_description": "Comments have been fetched and are ready for analysis.",
+                        "end_state": "comments_analyzed",
+                        "end_state_description": "Comments have been successfully analyzed.",
+                        "process": {
+                            "name": "analyze_comments",
+                            "description": "Process to perform sentiment analysis and keyword extraction on the comments.",
+                            "adds_new_entites": "analyzed_comment_entity"
+                        }
+                    },
+                    {
+                        "name": "generate_report",
+                        "description": "Generate a report based on the analysis results.",
+                        "start_state": "comments_analyzed",
+                        "start_state_description": "Comments have been analyzed and report generation can begin.",
+                        "end_state": "report_generated",
+                        "end_state_description": "The report has been successfully generated.",
+                        "process": {
+                            "name": "generate_report",
+                            "description": "Process to create a report summarizing the analysis.",
+                            "adds_new_entites": "report_entity"
+                        }
+                    },
+                    {
+                        "name": "send_report",
+                        "description": "Send the generated report via email.",
+                        "start_state": "report_generated",
+                        "start_state_description": "Report has been generated and is ready to be sent.",
+                        "end_state": "report_sent",
+                        "end_state_description": "The report has been successfully sent to the user.",
+                        "process": {
+                            "name": "send_email",
+                            "description": "Process to send the report via email to the user.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "comment_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "comment_analysis_job",
+            "entity_workflow": {
+                "name": "comment_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "analyzed_comment_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "comment_analysis_job",
+            "entity_workflow": {
+                "name": "analyzed_comment_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "comment_analysis_job",
+            "entity_workflow": {
+                "name": "report_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

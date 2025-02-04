@@ -1,0 +1,27 @@
+{
+    "comment_id": 1,
+    "post_id": 1,
+    "sentiment": "positive",
+    "keywords": [
+        "magnam",
+        "voluptate",
+        "ipsam",
+        "laudantium",
+        "quasi"
+    ],
+    "analysis_date": "2023-10-01T12:34:56Z",
+    "analysis_summary": {
+        "total_comments": 5,
+        "positive_count": 3,
+        "negative_count": 1,
+        "neutral_count": 1,
+        "most_common_keywords": [
+            "magnam",
+            "voluptate",
+            "ipsam"
+        ]
+    },
+    "request_parameters": {
+        "post_id": 1
+    }
+}

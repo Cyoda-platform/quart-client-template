@@ -1,0 +1,30 @@
+{
+    "job_id": "job_2023_10_01",
+    "scheduled_time": "2023-10-01T10:00:00Z",
+    "status": "completed",
+    "description": "Daily job to ingest data from the SwaggerHub API for inventory activities.",
+    "request_parameters": {
+        "accept": "text/plain; v=1.0"
+    },
+    "ingested_data_summary": {
+        "total_items_ingested": 2,
+        "items": [
+            {
+                "id": 1,
+                "title": "Activity 1",
+                "dueDate": "2025-01-22T21:36:27.6587562+00:00",
+                "completed": false
+            },
+            {
+                "id": 2,
+                "title": "Activity 2",
+                "dueDate": "2025-01-22T22:36:27.6587592+00:00",
+                "completed": true
+            }
+        ]
+    },
+    "reporting": {
+        "generated_at": "2023-10-01T10:05:00Z",
+        "summary": "This report summarizes the data ingested from the SwaggerHub API during the scheduled job."
+    }
+}

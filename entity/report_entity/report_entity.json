@@ -1,0 +1,69 @@
+{
+    "report_id": "report_2023_10_01",
+    "post_id": 1,
+    "generated_at": "2023-10-01T10:05:00Z",
+    "report_title": "Comment Analysis Report for Post ID 1",
+    "total_comments": 5,
+    "sentiment_summary": {
+        "positive": 3,
+        "negative": 1,
+        "neutral": 1
+    },
+    "keywords": [
+        "quality",
+        "experience",
+        "service",
+        "recommendation"
+    ],
+    "comments_summary": [
+        {
+            "id": 1,
+            "name": "id labore ex et quam laborum",
+            "sentiment": "positive",
+            "body": "laudantium enim quasi est quidem magnam voluptate ipsam eos..."
+        },
+        {
+            "id": 2,
+            "name": "quo vero reiciendis velit similique earum",
+            "sentiment": "positive",
+            "body": "est natus enim nihil est dolore omnis voluptatem numquam..."
+        },
+        {
+            "id": 3,
+            "name": "odio adipisci rerum aut animi",
+            "sentiment": "negative",
+            "body": "quia molestiae reprehenderit quasi aspernatur..."
+        },
+        {
+            "id": 4,
+            "name": "alias odio sit",
+            "sentiment": "neutral",
+            "body": "non et atque occaecati deserunt quas accusantium unde odit..."
+        },
+        {
+            "id": 5,
+            "name": "vero eaque aliquid doloribus et culpa",
+            "sentiment": "positive",
+            "body": "harum non quasi et ratione tempore iure ex voluptates..."
+        }
+    ],
+    "distribution_info": {
+        "recipients": [
+            {
+                "name": "Admin User",
+                "email": "admin@example.com"
+            },
+            {
+                "name": "Data Analyst",
+                "email": "analyst@example.com"
+            }
+        ],
+        "email_sent_at": "2023-10-01T10:10:00Z",
+        "status": "Sent"
+    },
+    "comments_analysis": {
+        "analysis_date": "2023-10-01",
+        "analysis_duration": "5 minutes",
+        "notes": "This report summarizes the sentiment analysis and keywords identified from comments."
+    }
+}

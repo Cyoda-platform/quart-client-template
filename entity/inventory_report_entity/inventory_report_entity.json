@@ -1,0 +1,28 @@
+{
+    "report_id": "report_2023-10-10",
+    "generated_at": "2023-10-10T10:15:00Z",
+    "total_items": 100,
+    "average_price": 150.0,
+    "total_value": 15000.0,
+    "metrics": [
+        {
+            "category": "Electronics",
+            "item_count": 50,
+            "average_price": 299.99,
+            "total_value": 14999.5
+        },
+        {
+            "category": "Apparel",
+            "item_count": 50,
+            "average_price": 50.0,
+            "total_value": 2500.0
+        }
+    ],
+    "request_parameters": {
+        "start_date": "2023-10-01",
+        "end_date": "2023-10-10",
+        "category_filter": "All",
+        "include_out_of_stock": false
+    },
+    "summary_comments": "This report summarizes the inventory data processed for the period from 2023-10-01 to 2023-10-10, including key metrics per category."
+}

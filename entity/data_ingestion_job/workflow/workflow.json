@@ -1,0 +1,126 @@
+{
+    "name": "data_ingestion_workflow",
+    "description": "Workflow for downloading, analyzing, and reporting on London Houses data.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "data_ingestion_job",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "data_ingestion_job",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "download_data",
+            "description": "Download London Houses Data from the external source.",
+            "start_state": "None",
+            "start_state_description": "Initial state before data download.",
+            "end_state": "data_downloaded",
+            "end_state_description": "Data has been successfully downloaded.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "download_data_processor",
+                        "description": "Processor to handle data download.",
+                        "calculation_nodes_tags": "60782f9c-e368-11ef-be82-762c2fc03f64",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "analyze_data",
+            "description": "Analyze the downloaded data using pandas.",
+            "start_state": "data_downloaded",
+            "start_state_description": "Data has been downloaded and is ready for analysis.",
+            "end_state": "data_analyzed",
+            "end_state_description": "Data analysis has been successfully completed.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "analyze_data_processor",
+                        "description": "Processor to analyze data using pandas.",
+                        "calculation_nodes_tags": "60782f9c-e368-11ef-be82-762c2fc03f64",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "generate_report",
+            "description": "Generate a report based on the analyzed data.",
+            "start_state": "data_analyzed",
+            "start_state_description": "Data analysis is complete and ready for report generation.",
+            "end_state": "report_generated",
+            "end_state_description": "Report has been successfully generated.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "generate_report_processor",
+                        "description": "Processor to generate report from analyzed data.",
+                        "calculation_nodes_tags": "60782f9c-e368-11ef-be82-762c2fc03f64",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

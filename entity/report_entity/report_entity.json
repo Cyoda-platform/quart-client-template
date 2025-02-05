@@ -1,0 +1,55 @@
+Sure! Here’s an example JSON data structure for the `report_entity` that reflects the business logic of the entity, focusing on summarizing the analysis of the London Houses Data. This JSON is designed to encapsulate insights derived from the data ingestion process.
+
+### Example JSON for `report_entity`
+
+```json
+{
+  "report_id": "report_2023_10_01",
+  "generated_at": "2023-10-02T10:05:00Z",
+  "report_title": "London Houses Data Analysis",
+  "total_properties_analyzed": 150,
+  "average_price": 750000,
+  "median_price": 720000,
+  "price_distribution": {
+    "below_500k": 30,
+    "between_500k_and_1M": 70,
+    "above_1M": 50
+  },
+  "most_common_property_type": "Semi-Detached",
+  "analysis_summary": "The data indicates a strong market in Notting Hill with a healthy number of properties above £1M.",
+  "detailed_analysis": [
+    {
+      "neighborhood": "Notting Hill",
+      "average_price": 950000,
+      "total_properties": 50
+    },
+    {
+      "neighborhood": "Chelsea",
+      "average_price": 1.2M,
+      "total_properties": 40
+    },
+    {
+      "neighborhood": "Greenwich",
+      "average_price": 600000,
+      "total_properties": 60
+    }
+  ],
+  "request_parameters": {
+    "analysis_type": "price_trends",
+    "date_range": "2023-01-01 to 2023-10-01",
+    "filters": {
+      "bedrooms": 2,
+      "bathrooms": 2,
+      "property_type": "Semi-Detached"
+    }
+  },
+  "recipient_email": "user@example.com"
+}
+```
+
+### Explanation
+- The JSON captures essential metrics about the properties analyzed.
+- It includes a breakdown of price distribution, common property types, and neighborhood averages.
+- **Request Parameters**: Documenting what was used for the analysis, including filters and date ranges, ensures clarity for the insights generated.
+
+Let me know if you need any adjustments or further details! 😊

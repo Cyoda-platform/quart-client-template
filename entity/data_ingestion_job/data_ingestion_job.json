@@ -1,0 +1,15 @@
+{
+    "job_id": "job_001",
+    "name": "data_ingestion_job",
+    "status": "completed",
+    "scheduled_time": "2023-10-01T10:00:00Z",
+    "raw_data_entity": {
+        "id": "raw_data_001",
+        "value": 30000,
+        "timestamp": "2023-10-01T10:00:00Z",
+        "job_id": "job_001"
+    },
+    "request_parameters": {
+        "symbol": "BTCUSDT"
+    }
+}

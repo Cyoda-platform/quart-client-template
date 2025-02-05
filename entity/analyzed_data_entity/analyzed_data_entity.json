@@ -1,0 +1,25 @@
+{
+    "id": 1,
+    "average_price": 1250000,
+    "median_price": 1200000,
+    "total_properties": 150,
+    "price_distribution": {
+        "below_500k": 10,
+        "between_500k_and_1m": 40,
+        "between_1m_and_1.5m": 60,
+        "above_1.5m": 40
+    },
+    "most_common_property_type": "Flat",
+    "average_bedrooms": 3,
+    "average_bathrooms": 2,
+    "analyzed_date": "2023-10-02",
+    "request_parameters": {
+        "location": "London",
+        "bedrooms": 3,
+        "property_type": "Flats",
+        "analysis_date_range": {
+            "start": "2023-01-01",
+            "end": "2023-10-01"
+        }
+    }
+}

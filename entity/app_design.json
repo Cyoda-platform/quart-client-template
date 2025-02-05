@@ -1,0 +1,78 @@
+{
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "start_data_ingestion",
+                        "description": "Start the data ingestion process from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_raw_data",
+                            "description": "Process to ingest raw data from the specified API.",
+                            "adds_new_entites": "raw_data_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_data_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "aggregated_data_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "raw_data_entity",
+            "entity_workflow": {
+                "name": "aggregated_data_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "calculate_average",
+                        "description": "Calculate average from the raw data.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before aggregation.",
+                        "end_state": "average_calculated",
+                        "end_state_description": "Average value has been successfully calculated.",
+                        "process": {
+                            "name": "aggregate_data",
+                            "description": "Function to aggregate raw data.",
+                            "adds_new_entites": "aggregated_data_entity"
+                        }
+                    },
+                    {
+                        "name": "store_aggregated_data",
+                        "description": "Store the calculated aggregated data.",
+                        "start_state": "average_calculated",
+                        "start_state_description": "Average calculation is complete.",
+                        "end_state": "data_stored",
+                        "end_state_description": "Aggregated data has been stored successfully.",
+                        "process": {
+                            "name": "save_aggregated_data",
+                            "description": "Process to save aggregated data entity.",
+                            "adds_new_entites": "None"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

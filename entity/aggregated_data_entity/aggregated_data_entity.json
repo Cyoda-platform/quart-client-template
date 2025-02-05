@@ -1,0 +1,14 @@
+{
+    "id": "aggregated_data_001",
+    "average_value": 29500.0,
+    "time_frame": "1 hour",
+    "raw_data_ids": [
+        "raw_data_001",
+        "raw_data_002"
+    ],
+    "calculation_timestamp": "2023-10-01T11:00:00Z",
+    "request_parameters": {
+        "requested_time_frame": "1 hour",
+        "aggregate_function": "average"
+    }
+}

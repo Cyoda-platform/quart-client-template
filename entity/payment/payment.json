@@ -1,0 +1,20 @@
+{
+    "payment": {
+        "payment_id": "P112233",
+        "order_id": "O98765",
+        "customer_id": "C12345",
+        "amount": 29.99,
+        "currency": "USD",
+        "payment_method": "Credit Card",
+        "payment_status": "Pending",
+        "transaction_id": "TXN7890123",
+        "created_at": "2023-10-03T15:30:00Z",
+        "updated_at": "2023-10-03T15:30:00Z",
+        "request_parameters": {
+            "customer_ip": "192.168.1.1",
+            "browser_info": "Chrome/92.0.4515.107",
+            "payment_gateway": "Stripe",
+            "return_url": "https://example.com/payment/confirmation"
+        }
+    }
+}

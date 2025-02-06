@@ -1,0 +1,30 @@
+{
+    "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "name": "Widget Adapter",
+    "release_date": "2016-08-29T09:12:33.001Z",
+    "manufacturer": {
+        "name": "ACME Corporation",
+        "home_page": "https://www.acme-corp.com",
+        "phone": "408-867-5309"
+    },
+    "quantity_available": 150,
+    "price": 29.99,
+    "total_inventory_value": 4498.5,
+    "metrics": {
+        "total_items": 150,
+        "average_price": 29.99
+    },
+    "request_parameters": {
+        "filter": {
+            "category": "Adapters",
+            "min_price": 10,
+            "max_price": 50
+        },
+        "sort": {
+            "by": "price",
+            "order": "asc"
+        }
+    },
+    "report_generated_at": "2023-10-02T05:15:00Z",
+    "summary": "This inventory data reflects the Widget Adapter statistics for the day."
+}

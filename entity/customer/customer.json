@@ -1,0 +1,58 @@
+{
+    "customer": {
+        "customerId": "C123456",
+        "name": "Jane Smith",
+        "address": {
+            "street": "456 Elm St",
+            "city": "Springfield",
+            "state": "IL",
+            "zip": "62704"
+        },
+        "paymentInfo": {
+            "cardType": "Visa",
+            "lastFourDigits": "4321",
+            "expirationDate": "12/24"
+        },
+        "orderHistory": [
+            {
+                "orderId": "O98765",
+                "restaurantId": "R54321",
+                "items": [
+                    {
+                        "itemName": "Cheeseburger",
+                        "quantity": 2,
+                        "price": 10.99
+                    },
+                    {
+                        "itemName": "French Fries",
+                        "quantity": 1,
+                        "price": 3.49
+                    }
+                ],
+                "totalAmount": 25.47,
+                "orderDate": "2023-10-20",
+                "status": "Delivered"
+            },
+            {
+                "orderId": "O87654",
+                "restaurantId": "R12345",
+                "items": [
+                    {
+                        "itemName": "Pizza",
+                        "quantity": 1,
+                        "price": 15.99
+                    }
+                ],
+                "totalAmount": 15.99,
+                "orderDate": "2023-10-15",
+                "status": "Cancelled"
+            }
+        ],
+        "requestParameters": {
+            "requestId": "REQ7890",
+            "timestamp": "2023-10-21T10:00:00Z",
+            "action": "create_or_update_customer",
+            "apiVersion": "v1"
+        }
+    }
+}

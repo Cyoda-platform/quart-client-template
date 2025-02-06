@@ -1,0 +1,39 @@
+{
+    "report_id": "report_2023_10_02",
+    "generated_at": "2023-10-02T05:15:00Z",
+    "metrics": {
+        "total_items": 150,
+        "average_price": 29.99,
+        "total_value": 4498.5,
+        "item_distribution": {
+            "Widget_Adapter": {
+                "quantity": 75,
+                "total_value": 2249.25
+            },
+            "Gadget_Pro": {
+                "quantity": 50,
+                "total_value": 2999.5
+            },
+            "Other_Items": {
+                "quantity": 25,
+                "total_value": 250.0
+            }
+        }
+    },
+    "summary": "This report summarizes the inventory data processed for the day, highlighting key metrics and item distribution.",
+    "request_parameters": {
+        "date_range": {
+            "start": "2023-10-01T00:00:00Z",
+            "end": "2023-10-02T00:00:00Z"
+        },
+        "filter_criteria": {
+            "category": "all",
+            "manufacturer": "ACME Corporation"
+        }
+    },
+    "notifications": {
+        "admin_email": "admin@example.com",
+        "status": "sent",
+        "sent_at": "2023-10-02T05:16:00Z"
+    }
+}

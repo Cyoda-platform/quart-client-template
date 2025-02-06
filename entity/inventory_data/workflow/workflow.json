@@ -1,0 +1,93 @@
+{
+    "name": "inventory_data_workflow",
+    "description": "Workflow to fetch and save inventory data.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "inventory_data",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "inventory_data",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "request_data",
+            "description": "Fetch inventory data from the API.",
+            "start_state": "None",
+            "start_state_description": "Initial state before data retrieval.",
+            "end_state": "data_fetched",
+            "end_state_description": "Inventory data has been successfully fetched.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "fetch_inventory_data",
+                        "description": "Process to retrieve inventory data from the SwaggerHub API.",
+                        "calculation_nodes_tags": "a160e1aa-e48c-11ef-85c7-de815dcfe6e5",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "save_raw_data",
+            "description": "Save the fetched inventory data as raw data.",
+            "start_state": "data_fetched",
+            "start_state_description": "Data has been fetched and is ready to be saved.",
+            "end_state": "raw_data_saved",
+            "end_state_description": "Raw inventory data has been saved.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "save_inventory_data",
+                        "description": "Process to save raw inventory data.",
+                        "calculation_nodes_tags": "a160e1aa-e48c-11ef-85c7-de815dcfe6e5",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

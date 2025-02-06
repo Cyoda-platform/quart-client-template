@@ -1,0 +1,83 @@
+{
+    "can_proceed": true,
+    "entities": [
+        {
+            "depends_on_entity": "None",
+            "entity_name": "data_ingestion_job",
+            "entity_source": "API_REQUEST",
+            "entity_type": "JOB",
+            "entity_workflow": {
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "name": "data_ingestion_workflow",
+                "transitions": [
+                    {
+                        "criteria": {
+                            "description": "Triggered by an API request to fetch user data.",
+                            "name": "api_request"
+                        },
+                        "description": "Initiate the data ingestion process to retrieve users from the API.",
+                        "end_state": "users_retrieved",
+                        "end_state_description": "The user data has been successfully retrieved from the API.",
+                        "name": "start_ingestion",
+                        "process": {
+                            "adds_new_entites": "raw_data_entity",
+                            "description": "Process to ingest raw data from the specified user API.",
+                            "name": "ingest_raw_data"
+                        },
+                        "start_state": "None",
+                        "start_state_description": "Initial state before any data ingestion occurs."
+                    }
+                ]
+            }
+        },
+        {
+            "depends_on_entity": "data_ingestion_job",
+            "entity_name": "raw_data_entity",
+            "entity_source": "ENTITY_EVENT",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_workflow": {
+                "name": "raw_data_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "depends_on_entity": "data_ingestion_job",
+            "entity_name": "directory_entity",
+            "entity_source": "ENTITY_EVENT",
+            "entity_type": "SECONDARY_DATA",
+            "entity_workflow": {
+                "name": "directory_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "add_user",
+                        "description": "Add a new user to the directory after retrieving from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before adding any users.",
+                        "end_state": "user_added",
+                        "end_state_description": "A new user has been successfully added to the directory.",
+                        "process": {
+                            "adds_new_entites": "None",
+                            "description": "Process to handle the addition of a user to the directory.",
+                            "name": "process_user_data"
+                        }
+                    },
+                    {
+                        "name": "update_directory",
+                        "description": "Update the directory with new user data when changes occur.",
+                        "start_state": "user_added",
+                        "start_state_description": "The directory already contains added users.",
+                        "end_state": "directory_updated",
+                        "end_state_description": "The directory has been updated with the latest user information.",
+                        "process": {
+                            "adds_new_entites": "None",
+                            "description": "Process to refresh and update the directory with new data.",
+                            "name": "refresh_data"
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

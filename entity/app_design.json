@@ -1,0 +1,81 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "type": "object",
+    "entities": [
+        {
+            "entity_name": "inventory_data",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "inventory_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "request_data",
+                        "description": "Fetch inventory data from the API.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before data retrieval.",
+                        "end_state": "data_fetched",
+                        "end_state_description": "Inventory data has been successfully fetched.",
+                        "process": {
+                            "name": "fetch_inventory_data",
+                            "description": "Process to retrieve inventory data from the SwaggerHub API.",
+                            "adds_new_entites": "raw_inventory_data"
+                        }
+                    },
+                    {
+                        "name": "save_raw_data",
+                        "description": "Save the fetched inventory data as raw data.",
+                        "start_state": "data_fetched",
+                        "start_state_description": "Data has been fetched and is ready to be saved.",
+                        "end_state": "raw_data_saved",
+                        "end_state_description": "Raw inventory data has been saved.",
+                        "process": {
+                            "name": "save_inventory_data",
+                            "description": "Process to save raw inventory data.",
+                            "adds_new_entites": "raw_inventory_data"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_inventory_data",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "inventory_data",
+            "entity_workflow": {
+                "name": "raw_inventory_data_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "process_raw_data",
+                        "description": "Process the raw inventory data to generate reports.",
+                        "start_state": "raw_data_saved",
+                        "start_state_description": "Raw data has been saved and is ready for processing.",
+                        "end_state": "data_processed",
+                        "end_state_description": "Raw data has been processed to generate metrics.",
+                        "process": {
+                            "name": "generate_report",
+                            "description": "Process to calculate metrics and generate the report.",
+                            "adds_new_entites": "report"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "raw_inventory_data",
+            "entity_workflow": {
+                "name": "report_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

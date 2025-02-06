@@ -1,0 +1,41 @@
+{
+    "deliveryId": "D44556",
+    "orderId": "O98765",
+    "deliveryPersonId": "DP7890",
+    "status": "In Transit",
+    "deliveryAddress": {
+        "street": "123 Main St",
+        "city": "Anytown",
+        "state": "CA",
+        "zipCode": "12345"
+    },
+    "estimatedDeliveryTime": "2023-10-20T12:30:00Z",
+    "pickupLocation": {
+        "restaurantId": "R54321",
+        "restaurantName": "Tasty Bites",
+        "address": "456 Foodie Lane, Anytown, CA"
+    },
+    "customerContact": {
+        "customerId": "C12345",
+        "customerName": "John Doe",
+        "phone": "+1234567890"
+    },
+    "requestParameters": {
+        "orderDetails": {
+            "items": [
+                {
+                    "itemName": "Burger",
+                    "quantity": 1,
+                    "price": 9.99
+                },
+                {
+                    "itemName": "Fries",
+                    "quantity": 1,
+                    "price": 2.99
+                }
+            ],
+            "totalAmount": 12.98
+        },
+        "deliveryInstructions": "Leave at the front door if not home."
+    }
+}

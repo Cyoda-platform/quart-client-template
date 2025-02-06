@@ -1,0 +1,67 @@
+{
+    "restaurant_id": "R54321",
+    "name": "Tasty Bites",
+    "menu": [
+        {
+            "item_id": "I001",
+            "item_name": "Burger",
+            "description": "Juicy beef burger with lettuce, tomato, and cheese.",
+            "price": 8.99,
+            "availability": true
+        },
+        {
+            "item_id": "I002",
+            "item_name": "Pizza",
+            "description": "Large pepperoni pizza with mozzarella cheese.",
+            "price": 12.99,
+            "availability": true
+        },
+        {
+            "item_id": "I003",
+            "item_name": "Salad",
+            "description": "Fresh garden salad with a variety of vegetables.",
+            "price": 6.99,
+            "availability": true
+        }
+    ],
+    "location": {
+        "address": "456 Elm St, Anytown, USA",
+        "latitude": 40.712776,
+        "longitude": -74.005974
+    },
+    "contact_info": {
+        "phone": "555-123-4567",
+        "email": "info@tastybites.com"
+    },
+    "opening_hours": {
+        "monday": "11:00 AM - 10:00 PM",
+        "tuesday": "11:00 AM - 10:00 PM",
+        "wednesday": "11:00 AM - 10:00 PM",
+        "thursday": "11:00 AM - 11:00 PM",
+        "friday": "11:00 AM - 12:00 AM",
+        "saturday": "12:00 PM - 12:00 AM",
+        "sunday": "12:00 PM - 10:00 PM"
+    },
+    "request_parameters": {
+        "api_key": "ABCD1234XYZ",
+        "action": "add_restaurant",
+        "restaurant_data": {
+            "name": "Tasty Bites",
+            "menu": [
+                {
+                    "item_name": "Burger",
+                    "price": 8.99
+                },
+                {
+                    "item_name": "Pizza",
+                    "price": 12.99
+                },
+                {
+                    "item_name": "Salad",
+                    "price": 6.99
+                }
+            ],
+            "location": "456 Elm St, Anytown, USA"
+        }
+    }
+}

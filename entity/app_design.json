@@ -1,0 +1,155 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "entities": [
+        {
+            "entity_name": "customer",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "customer_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "create_customer",
+                        "description": "Create a new customer in the system.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before customer is created.",
+                        "end_state": "customer_created",
+                        "end_state_description": "Customer has been successfully created.",
+                        "process": {
+                            "name": "create_customer_process",
+                            "description": "Process to create a customer using provided information.",
+                            "adds_new_entites": "customer"
+                        }
+                    },
+                    {
+                        "name": "update_customer_info",
+                        "description": "Update existing customer information.",
+                        "start_state": "customer_created",
+                        "start_state_description": "Existing customer information is being updated.",
+                        "end_state": "customer_info_updated",
+                        "end_state_description": "Customer information has been successfully updated.",
+                        "process": {
+                            "name": "update_customer_process",
+                            "description": "Process to update customer information.",
+                            "adds_new_entites": "customer"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "order",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "customer",
+            "entity_workflow": {
+                "name": "order_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "send_order_to_restaurant",
+                        "description": "Send the order to the selected restaurant.",
+                        "start_state": "order_created",
+                        "start_state_description": "The order has been created and is awaiting sending.",
+                        "end_state": "awaiting_restaurant_confirmation",
+                        "end_state_description": "Order has been sent to the restaurant.",
+                        "process": {
+                            "name": "send_order_process",
+                            "description": "Process to send order details to the restaurant.",
+                            "adds_new_entites": "order"
+                        }
+                    },
+                    {
+                        "name": "confirm_order_received",
+                        "description": "Confirm that the restaurant has received the order.",
+                        "start_state": "awaiting_restaurant_confirmation",
+                        "start_state_description": "Waiting for restaurant confirmation.",
+                        "end_state": "order_confirmed",
+                        "end_state_description": "Order has been confirmed by the restaurant.",
+                        "process": {
+                            "name": "confirm_order_process",
+                            "description": "Process to confirm the order with the restaurant.",
+                            "adds_new_entites": "order"
+                        }
+                    },
+                    {
+                        "name": "initiate_payment",
+                        "description": "Initiate the payment process for the order.",
+                        "start_state": "order_confirmed",
+                        "start_state_description": "Order has been confirmed and awaiting payment.",
+                        "end_state": "payment_initiated",
+                        "end_state_description": "Payment process has been initiated.",
+                        "process": {
+                            "name": "initiate_payment_process",
+                            "description": "Process to initiate payment for the order.",
+                            "adds_new_entites": "payment"
+                        }
+                    },
+                    {
+                        "name": "confirm_payment",
+                        "description": "Confirm payment completion.",
+                        "start_state": "payment_initiated",
+                        "start_state_description": "Payment is being processed.",
+                        "end_state": "payment_confirmed",
+                        "end_state_description": "Payment has been confirmed.",
+                        "process": {
+                            "name": "confirm_payment_process",
+                            "description": "Process to confirm payment made by the customer.",
+                            "adds_new_entites": "payment"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "restaurant",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "restaurant_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "add_restaurant",
+                        "description": "Add a new restaurant to the system.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before restaurant is added.",
+                        "end_state": "restaurant_added",
+                        "end_state_description": "Restaurant has been successfully added.",
+                        "process": {
+                            "name": "add_restaurant_process",
+                            "description": "Process to add a restaurant with its menu.",
+                            "adds_new_entites": "restaurant"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "payment",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "order",
+            "entity_workflow": {
+                "name": "payment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "delivery",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "order",
+            "entity_workflow": {
+                "name": "delivery_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

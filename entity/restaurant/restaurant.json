@@ -1,0 +1,59 @@
+{
+    "id": "rest001",
+    "name": "Pizza Place",
+    "location": {
+        "address": "456 Main St",
+        "city": "Springfield",
+        "state": "IL",
+        "zip": "62701"
+    },
+    "contact": {
+        "phone": "+1234567890",
+        "email": "contact@pizzaplace.com"
+    },
+    "opening_hours": {
+        "monday": "11:00 AM - 10:00 PM",
+        "tuesday": "11:00 AM - 10:00 PM",
+        "wednesday": "11:00 AM - 10:00 PM",
+        "thursday": "11:00 AM - 10:00 PM",
+        "friday": "11:00 AM - 11:00 PM",
+        "saturday": "12:00 PM - 11:00 PM",
+        "sunday": "12:00 PM - 9:00 PM"
+    },
+    "menu": [
+        {
+            "id": "item001",
+            "name": "Margherita Pizza",
+            "description": "Classic pizza with tomato sauce, mozzarella cheese, and fresh basil.",
+            "price": 9.99,
+            "availability": true
+        },
+        {
+            "id": "item002",
+            "name": "Pepperoni Pizza",
+            "description": "Delicious pepperoni slices on top of tomato sauce and mozzarella cheese.",
+            "price": 11.99,
+            "availability": true
+        },
+        {
+            "id": "item003",
+            "name": "Vegetarian Pizza",
+            "description": "Loaded with fresh vegetables and mozzarella cheese.",
+            "price": 10.99,
+            "availability": true
+        },
+        {
+            "id": "item004",
+            "name": "BBQ Chicken Pizza",
+            "description": "Grilled chicken with BBQ sauce and red onions.",
+            "price": 12.99,
+            "availability": true
+        }
+    ],
+    "request_parameters": {
+        "query": "pizza",
+        "location": "Springfield, IL",
+        "cuisine": "Italian",
+        "delivery_available": true
+    }
+}

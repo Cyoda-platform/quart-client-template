@@ -1,14 +1,12 @@
-# Sure! Below is the implementation of the processor functions for handling orders: `save_order`, `confirm_order`, `process_payment`, and `notify_delivery`. I've reused existing functions and ensured dependent entities are saved as specified. I've also included test cases using mocks for external services to allow for isolated testing.
-# 
-# ```python
 import json
 import logging
 import unittest
 from unittest.mock import patch, AsyncMock
+import asyncio
+import aiohttp
 
 from app_init.app_init import entity_service
 from common.config.config import ENTITY_VERSION
-from common.service.trino_service import ingest_data as trino_ingest_data
 from common.service.trino_service import run_sql_query
 
 logging.basicConfig(level=logging.INFO)
@@ -51,15 +49,12 @@ async def process_payment(meta, data):
             "currency": "USD",
             "payment_method": "credit_card",  # This could be dynamic based on data
         }
-        
+
         # Save the payment entity
         payment_id = await entity_service.add_item(
             meta["token"], "payment", ENTITY_VERSION, payment_data
         )
-        
-        # Ingest data for payment
-        await trino_ingest_data(meta, payment_data)
-        
+
         logger.info(f"Payment processed successfully with ID: {payment_id}")
         return payment_id
     except Exception as e:
@@ -84,9 +79,6 @@ async def notify_delivery(meta, data):
         delivery_id = await entity_service.add_item(
             meta["token"], "delivery", ENTITY_VERSION, delivery_data
         )
-        
-        # Ingest data for delivery
-        await trino_ingest_data(meta, delivery_data)
 
         logger.info(f"Delivery notified successfully with ID: {delivery_id}")
         return delivery_id
@@ -100,7 +92,7 @@ async def notify_delivery(meta, data):
 class TestOrderProcessors(unittest.TestCase):
 
     @patch("app_init.app_init.entity_service.add_item", new_callable=AsyncMock)
-    async def test_save_order(self, mock_add_item):
+    def test_save_order(self, mock_add_item):
         mock_add_item.return_value = "order001"
         meta = {"token": "test_token"}
         data = {
@@ -110,19 +102,18 @@ class TestOrderProcessors(unittest.TestCase):
             "total_amount": 33.97,
             "items": []
         }
-        result = await save_order(meta, data)
+        result = asyncio.run(save_order(meta, data))
         self.assertEqual(result, "order001")
 
     @patch("app_init.app_init.entity_service.add_item", new_callable=AsyncMock)
-    async def test_confirm_order(self, mock_add_item):
+    def test_confirm_order(self, mock_add_item):
         meta = {"token": "test_token"}
         data = {"id": "order001"}
-        result = await confirm_order(meta, data)
+        result = asyncio.run(confirm_order(meta, data))
         self.assertEqual(result, "order001")
 
     @patch("app_init.app_init.entity_service.add_item", new_callable=AsyncMock)
-    @patch("common.service.trino_service.ingest_data", new_callable=AsyncMock)
-    async def test_process_payment(self, mock_ingest_data, mock_add_item):
+    def test_process_payment(self, mock_add_item):
         mock_add_item.return_value = "pay001"
         meta = {"token": "test_token"}
         data = {
@@ -130,12 +121,11 @@ class TestOrderProcessors(unittest.TestCase):
             "customer_id": "cust123",
             "total_amount": 33.97
         }
-        result = await process_payment(meta, data)
+        result = asyncio.run(process_payment(meta, data))
         self.assertEqual(result, "pay001")
 
     @patch("app_init.app_init.entity_service.add_item", new_callable=AsyncMock)
-    @patch("common.service.trino_service.ingest_data", new_callable=AsyncMock)
-    async def test_notify_delivery(self, mock_ingest_data, mock_add_item):
+    def test_notify_delivery(self, mock_add_item):
         mock_add_item.return_value = "deliv001"
         meta = {"token": "test_token"}
         data = {
@@ -145,17 +135,8 @@ class TestOrderProcessors(unittest.TestCase):
             "delivery_address": "123 Pizza St",
             "items": []
         }
-        result = await notify_delivery(meta, data)
+        result = asyncio.run(notify_delivery(meta, data))
         self.assertEqual(result, "deliv001")
 
-# Uncomment the line below to run the tests when this script is executed directly
 if __name__ == "__main__":
     unittest.main()
-# ```
-# 
-# ### Overview
-# - The code defines four processor functions to handle order-related operations, ensuring they follow the business logic outlined in your requirements.
-# - Each function logs its actions and handles any necessary data ingestion.
-# - Tests are provided for each processor function using mocks for external services to ensure isolated testing.
-# 
-# Let me know if you need any modifications or further assistance!

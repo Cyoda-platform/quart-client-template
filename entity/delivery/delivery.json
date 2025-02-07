@@ -1,0 +1,25 @@
+{
+    "id": "deliv001",
+    "order_id": "order001",
+    "delivery_person_id": "deliv123",
+    "customer_id": "cust123",
+    "restaurant_id": "rest001",
+    "delivery_address": "123 Pizza St",
+    "delivery_status": "Out for delivery",
+    "estimated_arrival_time": "2023-10-01T12:30:00Z",
+    "items": [
+        {
+            "item_id": "item001",
+            "name": "Margherita",
+            "quantity": 1
+        },
+        {
+            "item_id": "item002",
+            "name": "Pepperoni",
+            "quantity": 1
+        }
+    ],
+    "additional_notes": "Please ring the doorbell upon arrival.",
+    "timestamp": "2023-10-01T12:00:00Z",
+    "contact_number": "+123456789"
+}

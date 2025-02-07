@@ -1,0 +1,67 @@
+{
+    "id": "menu001",
+    "restaurant_id": "rest001",
+    "items": [
+        {
+            "id": "item001",
+            "name": "Margherita Pizza",
+            "description": "Classic pizza with tomato sauce, mozzarella cheese, and fresh basil.",
+            "price": 9.99,
+            "category": "Pizza",
+            "ingredients": [
+                "Tomato sauce",
+                "Mozzarella cheese",
+                "Basil"
+            ],
+            "availability": true
+        },
+        {
+            "id": "item002",
+            "name": "Pepperoni Pizza",
+            "description": "Delicious pizza topped with spicy pepperoni and cheese.",
+            "price": 11.99,
+            "category": "Pizza",
+            "ingredients": [
+                "Tomato sauce",
+                "Mozzarella cheese",
+                "Pepperoni"
+            ],
+            "availability": true
+        },
+        {
+            "id": "item003",
+            "name": "Vegetarian Pizza",
+            "description": "A mix of fresh vegetables topped with cheese.",
+            "price": 10.49,
+            "category": "Pizza",
+            "ingredients": [
+                "Tomato sauce",
+                "Mozzarella cheese",
+                "Bell peppers",
+                "Onions",
+                "Olives"
+            ],
+            "availability": true
+        },
+        {
+            "id": "item004",
+            "name": "Caesar Salad",
+            "description": "Crisp romaine lettuce with Caesar dressing, croutons, and parmesan cheese.",
+            "price": 6.99,
+            "category": "Salad",
+            "ingredients": [
+                "Romaine lettuce",
+                "Caesar dressing",
+                "Croutons",
+                "Parmesan cheese"
+            ],
+            "availability": true
+        }
+    ],
+    "last_updated": "2023-10-01T10:00:00Z",
+    "request_parameters": {
+        "restaurant_id": "rest001",
+        "menu_type": "full",
+        "include_availability": true
+    }
+}

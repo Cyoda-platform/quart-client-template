@@ -1,0 +1,35 @@
+{
+    "aggregation_id": "agg_001",
+    "aggregation_time": "2023-10-01T01:00:00Z",
+    "aggregated_results": {
+        "categories": [
+            {
+                "category": "Tops",
+                "count": 5,
+                "average_price": "Rs. 600"
+            },
+            {
+                "category": "Dresses",
+                "count": 3,
+                "average_price": "Rs. 1,000"
+            }
+        ],
+        "brands": [
+            {
+                "brand": "Polo",
+                "count": 2
+            },
+            {
+                "brand": "H&M",
+                "count": 1
+            }
+        ]
+    },
+    "total_products": 8,
+    "report_generated": true,
+    "report_details": {
+        "total_sales": 15000,
+        "average_price": 600,
+        "product_count": 25
+    }
+}

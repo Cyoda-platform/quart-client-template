@@ -11,7 +11,7 @@ from entity.payment.api import api_bp_payment
 from entity.customer.api import api_bp_customer
 from entity.restaurant.api import api_bp_restaurant
 from entity.order.api import api_bp_order
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,7 +21,7 @@ app.register_blueprint(api_bp_payment, url_prefix='/api/payment')
 app.register_blueprint(api_bp_customer, url_prefix='/api/customer')
 app.register_blueprint(api_bp_restaurant, url_prefix='/api/restaurant')
 app.register_blueprint(api_bp_order, url_prefix='/api/order')
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+
 
 @app.before_serving
 async def startup():

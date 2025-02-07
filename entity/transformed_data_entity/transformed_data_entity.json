@@ -1,0 +1,29 @@
+{
+    "id": "1",
+    "renamed_field_1": "Product Name",
+    "renamed_field_2": "Product Price",
+    "average_price": "Rs. 600",
+    "category_count": {
+        "Tops": 5,
+        "Dresses": 3
+    },
+    "brand_count": {
+        "Polo": 2,
+        "Madame": 2,
+        "H&M": 2
+    },
+    "user_type_distribution": {
+        "Women": 3,
+        "Men": 2,
+        "Kids": 5
+    },
+    "aggregation_timestamp": "2023-10-01T01:00:00Z",
+    "request_parameters": {
+        "category_filter": "Tops",
+        "price_range": {
+            "min": 100,
+            "max": 2000
+        },
+        "brand_filter": "Polo"
+    }
+}

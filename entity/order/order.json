@@ -1,0 +1,30 @@
+{
+    "id": "order001",
+    "customer_id": "cust123",
+    "restaurant_id": "rest001",
+    "items": [
+        {
+            "menu_item_id": "item001",
+            "name": "Margherita",
+            "quantity": 1,
+            "price": 9.99
+        },
+        {
+            "menu_item_id": "item002",
+            "name": "Pepperoni",
+            "quantity": 2,
+            "price": 11.99
+        }
+    ],
+    "total_amount": 33.97,
+    "order_status": "Confirmed",
+    "payment_status": "Pending",
+    "delivery_address": "123 Pizza St, Downtown",
+    "order_placed_time": "2023-10-01T12:30:00Z",
+    "expected_delivery_time": "2023-10-01T13:00:00Z",
+    "request_parameters": {
+        "payment_method": "Credit Card",
+        "promo_code": "SAVE10",
+        "special_instructions": "Extra cheese on the Margherita."
+    }
+}

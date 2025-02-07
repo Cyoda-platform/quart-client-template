@@ -1,0 +1,44 @@
+{
+    "customer": {
+        "id": "cust123",
+        "name": "John Doe",
+        "contact": "+123456789",
+        "address": {
+            "street": "123 Pizza St",
+            "city": "Pizza Town",
+            "state": "NY",
+            "zip_code": "12345"
+        },
+        "preferred_restaurant": "Pizza Place",
+        "order_history": [
+            {
+                "order_id": "order001",
+                "restaurant_id": "rest001",
+                "order_date": "2023-10-01T12:00:00Z",
+                "status": "Delivered",
+                "total_amount": 19.99,
+                "items": [
+                    {
+                        "menu_item_id": "item001",
+                        "name": "Margherita",
+                        "quantity": 1,
+                        "price": 9.99
+                    },
+                    {
+                        "menu_item_id": "item002",
+                        "name": "Pepperoni",
+                        "quantity": 1,
+                        "price": 9.99
+                    }
+                ]
+            }
+        ],
+        "request_parameters": {
+            "preferred_language": "en",
+            "notification_preferences": {
+                "email": true,
+                "sms": false
+            }
+        }
+    }
+}

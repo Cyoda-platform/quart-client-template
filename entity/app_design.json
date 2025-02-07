@@ -1,0 +1,125 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Cyoda design",
+    "entities": [
+        {
+            "entity_name": "customer",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "customer_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "restaurant",
+            "entity_type": "BUSINESS_ENTITY",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "restaurant_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "menu",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "restaurant",
+            "entity_workflow": {
+                "name": "menu_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "order",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "customer",
+            "entity_workflow": {
+                "name": "order_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "place_order",
+                        "description": "Save the new order.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before the order is placed.",
+                        "end_state": "order_placed",
+                        "end_state_description": "Order has been successfully placed.",
+                        "process": {
+                            "name": "save_order",
+                            "description": "Process to save the order details.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "confirm_order",
+                        "description": "Confirm the order with the restaurant.",
+                        "start_state": "order_placed",
+                        "start_state_description": "Order is placed and awaiting confirmation.",
+                        "end_state": "order_confirmed",
+                        "end_state_description": "Order has been confirmed by the restaurant.",
+                        "process": {
+                            "name": "confirm_order",
+                            "description": "Process to confirm the order with the restaurant.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "process_payment",
+                        "description": "Process the payment for the confirmed order.",
+                        "start_state": "order_confirmed",
+                        "start_state_description": "Order has been confirmed and ready for payment.",
+                        "end_state": "payment_processed",
+                        "end_state_description": "Payment has been successfully processed.",
+                        "process": {
+                            "name": "process_payment",
+                            "description": "Process to handle payment for the order.",
+                            "adds_new_entites": "payment"
+                        }
+                    },
+                    {
+                        "name": "notify_delivery",
+                        "description": "Notify delivery personnel about the order.",
+                        "start_state": "payment_processed",
+                        "start_state_description": "Payment has been processed and order is ready for delivery.",
+                        "end_state": "order_delivered",
+                        "end_state_description": "Delivery has been notified.",
+                        "process": {
+                            "name": "notify_delivery",
+                            "description": "Process to notify the delivery personnel.",
+                            "adds_new_entites": "delivery"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "payment",
+            "entity_type": "EXTERNAL_SOURCES_PUSH_BASED_RAW_DATA",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "order",
+            "entity_workflow": {
+                "name": "payment_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "delivery",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "order",
+            "entity_workflow": {
+                "name": "delivery_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

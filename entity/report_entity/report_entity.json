@@ -1,0 +1,29 @@
+{
+    "report_id": "report_2023_10_01",
+    "generated_at": "2023-10-01T01:00:00Z",
+    "summary": "Monthly sales report for October.",
+    "details": {
+        "total_sales": 15000,
+        "average_price": 600,
+        "product_count": 25,
+        "top_categories": [
+            {
+                "category": "Tops",
+                "count": 10,
+                "average_price": 500
+            },
+            {
+                "category": "Dresses",
+                "count": 5,
+                "average_price": 800
+            }
+        ],
+        "brand_distribution": {
+            "Polo": 5,
+            "H&M": 7,
+            "Madame": 4,
+            "Babyhug": 3
+        }
+    },
+    "comments": "This report summarizes the product data ingested from the Automation Exercise API. It highlights key metrics such as total sales, average prices, and the distribution of products by category and brand. This information is valuable for analyzing market trends and making informed business decisions."
+}

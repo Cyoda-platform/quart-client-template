@@ -70,8 +70,8 @@ sequenceDiagram
   "price": "Rs. 500",
   "brand": "Polo",
   "category": {
-    "Gender": {
-      "usertype": "Women"
+    "userType": {
+      "gender": "Women"
     },
     "category": "Tops"
   }

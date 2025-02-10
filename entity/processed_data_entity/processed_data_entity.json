@@ -1,0 +1,30 @@
+{
+    "processed_data_id": "processed_data_001",
+    "aggregated_results": {
+        "total_products": 10,
+        "average_price": "Rs. 750",
+        "products": [
+            {
+                "id": 1,
+                "name": "Blue Top",
+                "price": "Rs. 500",
+                "brand": "Polo",
+                "category": "Tops"
+            },
+            {
+                "id": 2,
+                "name": "Men Tshirt",
+                "price": "Rs. 400",
+                "brand": "H&M",
+                "category": "Tshirts"
+            }
+        ]
+    },
+    "metadata": {
+        "retrieval_time": "2023-10-01T01:00:00Z",
+        "request_parameters": {
+            "category": "Tops",
+            "availability": "In stock"
+        }
+    }
+}

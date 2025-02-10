@@ -1,0 +1,35 @@
+{
+    "report_id": "report_001",
+    "report_name": "Daily Product Summary",
+    "generated_at": "2023-10-01T01:00:00Z",
+    "total_products": 10,
+    "average_price": "Rs. 750",
+    "product_details": [
+        {
+            "id": 1,
+            "name": "Blue Top",
+            "price": "Rs. 500",
+            "brand": "Polo",
+            "category": "Tops"
+        },
+        {
+            "id": 2,
+            "name": "Men Tshirt",
+            "price": "Rs. 400",
+            "brand": "H&M",
+            "category": "Tshirts"
+        }
+    ],
+    "summary_statistics": {
+        "count_by_type": {
+            "Tops": 5,
+            "Tshirts": 3,
+            "Dress": 2
+        },
+        "average_price": "Rs. 750"
+    },
+    "request_parameters": {
+        "user_id": 1,
+        "status": "completed"
+    }
+}

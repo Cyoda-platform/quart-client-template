@@ -1,0 +1,29 @@
+{
+    "data_ingestion_job": {
+        "job_id": "job_001",
+        "job_name": "Daily Data Ingestion Job",
+        "scheduled_time": "2023-10-01T00:00:00Z",
+        "status": "completed",
+        "job_description": "This job is responsible for ingesting data from the Automation Exercise API on a daily basis.",
+        "requested_parameters": {
+            "user_id": 1,
+            "status": "pending"
+        },
+        "raw_data_summary": {
+            "total_products": 50,
+            "available_products": 45,
+            "out_of_stock_products": 5
+        },
+        "aggregated_results": {
+            "average_price": "Rs. 750",
+            "most_common_brand": "H&M"
+        },
+        "report_generated": {
+            "report_id": "report_001",
+            "generated_at": "2023-10-01T01:00:00Z",
+            "recipients": [
+                "admin@example.com"
+            ]
+        }
+    }
+}

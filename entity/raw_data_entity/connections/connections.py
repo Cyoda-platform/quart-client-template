@@ -55,10 +55,10 @@ class TestDataIngestion(unittest.TestCase):
     def test_ingest_data(self):
         result = asyncio.run(ingest_data())
         self.assertTrue(len(result) > 0)
-        self.assertEqual(result[0]["id"], "01JKR602ZXDRRXNZ1M5Y1T4496")
+        self.assertEqual(result[0]["id"], "01JKRCVTB7C5C955VNJDVA7CHP")
         self.assertEqual(result[0]["name"], "Hand Tools")
         self.assertTrue(len(result[0]["sub_categories"]) > 0)
-        self.assertEqual(result[0]["sub_categories"][0]["id"], "01JKR60308DYZWDKN07F15F1MS")
+        self.assertEqual(result[0]["sub_categories"][0]["id"], "01JKRCVTBK0MH6TTCM3JMCF4VV")
 
 if __name__ == "__main__":
     unittest.main()

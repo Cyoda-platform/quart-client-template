@@ -1,0 +1,53 @@
+{
+    "visualization_id": "viz_001",
+    "title": "Category Hierarchy Visualization",
+    "data": {
+        "categories": [
+            {
+                "id": "01JKR602ZXDRRXNZ1M5Y1T4496",
+                "name": "Hand Tools",
+                "slug": "hand-tools",
+                "sub_categories": [
+                    {
+                        "id": "01JKR60308DYZWDKN07F15F1MS",
+                        "name": "Hammer",
+                        "slug": "hammer"
+                    },
+                    {
+                        "id": "01JKR60308DYZWDKN07F15F1MT",
+                        "name": "Hand Saw",
+                        "slug": "hand-saw"
+                    },
+                    {
+                        "id": "01JKR60308DYZWDKN07F15F1MV",
+                        "name": "Wrench",
+                        "slug": "wrench"
+                    }
+                ]
+            },
+            {
+                "id": "01JKR602ZXDRRXNZ1M5Y1T4497",
+                "name": "Power Tools",
+                "slug": "power-tools",
+                "sub_categories": [
+                    {
+                        "id": "01JKR60308DYZWDKN07F15F1N0",
+                        "name": "Grinder",
+                        "slug": "grinder"
+                    },
+                    {
+                        "id": "01JKR60308DYZWDKN07F15F1N1",
+                        "name": "Sander",
+                        "slug": "sander"
+                    }
+                ]
+            }
+        ]
+    },
+    "request_parameters": {
+        "api_url": "https://api.practicesoftwaretesting.com/categories/tree",
+        "headers": {
+            "accept": "application/json"
+        }
+    }
+}

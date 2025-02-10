@@ -1,0 +1,37 @@
+{
+    "job_id": "job_001",
+    "name": "data_ingestion_job",
+    "description": "Job responsible for ingesting category data from the Practice Software Testing API.",
+    "scheduled_time": "2023-10-01T10:00:00Z",
+    "status": "completed",
+    "start_time": "2023-10-01T10:00:00Z",
+    "end_time": "2023-10-01T10:05:00Z",
+    "request_parameters": {
+        "api_url": "https://api.practicesoftwaretesting.com/categories/tree",
+        "headers": {
+            "accept": "application/json"
+        }
+    },
+    "raw_data_entity": {
+        "id": "01JKR602ZXDRRXNZ1M5Y1T4496",
+        "name": "Hand Tools",
+        "slug": "hand-tools",
+        "parent_id": null,
+        "sub_categories": [
+            {
+                "id": "01JKR60308DYZWDKN07F15F1MS",
+                "name": "Hammer",
+                "slug": "hammer",
+                "parent_id": "01JKR602ZXDRRXNZ1M5Y1T4496",
+                "sub_categories": []
+            },
+            {
+                "id": "01JKR60308DYZWDKN07F15F1MT",
+                "name": "Hand Saw",
+                "slug": "hand-saw",
+                "parent_id": "01JKR602ZXDRRXNZ1M5Y1T4496",
+                "sub_categories": []
+            }
+        ]
+    }
+}

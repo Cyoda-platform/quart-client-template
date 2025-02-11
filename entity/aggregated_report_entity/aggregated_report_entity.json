@@ -1,0 +1,29 @@
+{
+    "report_id": "report_001",
+    "generated_at": "2025-02-10T23:00:00Z",
+    "admin_email": "admin@example.com",
+    "aggregated_data": [
+        {
+            "data_id": "data_001",
+            "title": "Activity 1",
+            "due_date": "2025-02-10T22:55:28.3667842+00:00",
+            "completed": false
+        },
+        {
+            "data_id": "data_002",
+            "title": "Activity 2",
+            "due_date": "2025-02-10T23:55:28.3667859+00:00",
+            "completed": true
+        },
+        {
+            "data_id": "data_003",
+            "title": "Activity 3",
+            "due_date": "2025-02-10T21:00:00.0000000+00:00",
+            "completed": false
+        }
+    ],
+    "total_activities": 3,
+    "completed_activities": 1,
+    "pending_activities": 2,
+    "summary": "This report summarizes activities due on 2025-02-10, showing the completion status."
+}

@@ -1,0 +1,738 @@
+{
+    "user_id": "demo.user",
+    "date": "2025-02-11T15:16:28.887+00:00",
+    "questions_queue": {
+        "new_questions": [
+            {
+                "notification": "Thank you for your answer! Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0
+            }
+        ],
+        "asked_questions": []
+    },
+    "chat_flow": {
+        "current_flow": [
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! "
+                },
+                "answer": null,
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "Feel free to ask any questions or discuss the design in the chat \ud83d\udcac\ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "Your application is finished! Thank you for collaboration!",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "index": 2,
+                "iteration": 0,
+                "file_name": "entity/chat.json",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "remove_api_registration"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": "app.py",
+                "notification_text": "\n                       ",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "save_env_file"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": ".env.template",
+                "notification_text": "\n### Setup Instructions for Your Application\n\nYour application is ready! Please follow the steps below to configure it:\n\n1. **Move the `.env.template` to `.env`**:\n    Rename the `.env.template` file to `.env`:\n    ```bash\n    mv .env.template .env\n    ```\n\n2. **Update the `.env` file**:\n    Open the `.env` file and replace the placeholder values with your actual environment variables and credentials. For example, replace `CHAT_ID_VAR` with `$chat_id` and fill in other necessary values.\n\n    You might need to specify the path to .env file in your IDE run configurations.\n\n3. **Start Your Application**:\n    Once you've updated the `.env` file, you can start your application by running:\n    ```bash\n    python app.py\n    ```\n    or just run the app.py in your IDE.\nPlease also update your api.py files to use cyoda_token until authentication featute is fully implemented. Sorry for inconvenience!\nYour application should now be up and running! \ud83c\udf89\n\nYou can check the api with http://localhost:5000/scalar\n\n                       ",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            }
+        ],
+        "finished_flow": [
+            {
+                "notification": "\n\ud83c\udf3f\ud83e\udeb7\ud83c\udff5\ufe0f\u269c\ufe0f\ud83c\udf3f\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "info": true,
+                "file_name": "instruction.txt",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "notification": "\n\ud83d\udc4b Welcome to Cyoda Application Builder! We\u2019re excited to build something amazing with you! \ud83d\ude04  \n\nWe\u2019re here to help with building and deploying on Cyoda Cloud! Reach out anytime! \ud83c\udf1f Your branch will be ready soon, and I\u2019ll notify you when I push changes. If you have suggestions, message me or use Canvas! \ud83d\ude0a  \n\nIn Canvas, you can code, edit, and improve around the main app build flow! It\u2019s a great way to collaborate and make changes! \ud83d\udcbb  \n\nIf you\u2019re happy with the progress or want me to pull your changes, just give me a thumbs up! \ud83d\udc4d  (currently approve button in the top panel)\n\nIf something goes wrong, no worries\u2014just roll back! \ud83d\ude2c Your app will be live on Cyoda Platform GitHub soon! \ud83d\ude80 Let\u2019s build your branch together! \ud83c\udf3f\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "info": true,
+                "file_name": "instruction.txt",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "clone_repo"
+                },
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\ud83c\udf89 **Your branch is ready!** Please update the project and check it out when you get a chance. \ud83d\ude0a\n\nTo get started:\n\n1. **Clone the repository** using the following command:  \n   `git clone https://github.com/Cyoda-platform/quart-client-template/` \ud83d\ude80\n\n2. **Checkout your branch** using:  \n   `git checkout 2adb25ce-e88b-11ef-b476-72938f541e4e` \ud83d\udd04\n\nYou can access your branch directly on GitHub here: [Cyoda Platform GitHub](https://github.com/Cyoda-platform/quart-client-template/tree/2adb25ce-e88b-11ef-b476-72938f541e4e) \ud83d\ude04\n\nThis repository is a **starter template** for your app and has two main modules:\n\n- **Common Module**: This is all about integration with Cyoda! You don\u2019t need to edit it unless you want to \u2013 it\u2019s all done for you! \ud83c\udf89  \n- **Entity Module**: This is where your business logic and custom files will go. We'll add your files here, and you can track your progress. \ud83d\udcc8 Feel free to **add or edit** anything in the Entity module. I\u2019ll be pulling changes now and then, so just push your updates to let me know! \ud83d\ude80\n\nYou can ask **questions in the chat** or in your project files anytime. When I make changes, I\u2019ll let you know, and you can simply **pull** to sync with me! \ud83d\udd04\ud83d\udcac\n\nHappy coding! \ud83d\ude04\ud83c\udf89",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "init_chats"
+                },
+                "flow_step": "Gathering requirements",
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "add_instruction"
+                },
+                "file_name": "instruction.txt",
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": "\n\ud83d\udca1 What kind of application would you like to build? I'd love to hear your ideas! Feel free to share them with me! \ud83d\ude0a\n\n***Example answers***:\nHello, I would like to download the following data: [London Houses Data](https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv), analyze it using **pandas**, and save a report. \ud83d\udcca\n\nHello! \ud83d\udc4b\n                              I would like to develop an application that:\n                              1. Ingests data from a specified data source \ud83d\udce5\n                              2. Aggregates the data \ud83e\uddee\n                              3. Saves the aggregated data to a report \ud83d\udcc4\n                              Once the report is generated, the application should send it to the admin's email \ud83d\udce7. \n                              Additionally, the data ingestion process should be scheduled to run **once a day** \u23f0.\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "approve": false,
+                "example_answers": [
+                    "\n                              Hello, I would like to download the following data: [London Houses Data](https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv), analyze it using **pandas**, and save a report. \ud83d\udcca",
+                    "\n                              Hello! \ud83d\udc4b\n                              I would like to develop an application that:\n                              1. Ingests data from a specified data source \ud83d\udce5\n                              2. Aggregates the data \ud83e\uddee\n                              3. Saves the aggregated data to a report \ud83d\udcc4\n                              Once the report is generated, the application should send it to the admin's email \ud83d\udce7. \n                              Additionally, the data ingestion process should be scheduled to run **once a day** \u23f0."
+                ],
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "\ud83d\udca1 What kind of application would you like to build? I'd love to hear your ideas! Feel free to share them with me! \ud83d\ude0a",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "We are in the loop of requirement validation. Talk to me like we are close friends. If I ask you a general question, just return an answer to this question. Start your answer with what you understood from my requirement. Help me improve my requirement, i.e. if any information is missing help me understand why we need it and ask for it very friendly, like api docs, my expectations, if we need ha, persistence, what api will the future application provide. Speak in simple words and remember - we are in a chat loop - so you do not have to ask all questions at once. Guide slowly, suggest to attach relevant doc files and user requirement as files. My requirement: "
+                },
+                "answer": "Main thing is you need also generate workflow, connections and dataset",
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "I understand that you're looking to develop a comprehensive system involving workflows, connections, and datasets for your application. It sounds like you're in the early stages of defining what you need, and that's great! \n\nTo help you improve your requirements, we can break this down into smaller parts. First off, could you tell me a bit more about the specific workflows you envision? \n\nFor example:\n- What kind of connections are you thinking about? Are these connections to APIs, databases, or other services?\n- What types of datasets do you plan to work with? Are there specific formats or structures you have in mind?\n\nAlso, it might be helpful to gather any existing documentation you have, such as API docs or user requirements. This way, we can ensure we cover everything you need. \n\nDon't worry; we can take it one step at a time! What do you think? \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 15,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "We are in the loop of requirement validation. Talk to me like we are close friends. If I ask you a general question, just return an answer to this question. Start your answer with what you understood from my requirement. Help me improve my requirement, i.e. if any information is missing help me understand why we need it and ask for it very friendly, like api docs, my expectations, if we need ha, persistence, what api will the future application provide. Speak in simple words and remember - we are in a chat loop - so you do not have to ask all questions at once. Guide slowly, suggest to attach relevant doc files and user requirement as files. My requirement: "
+                },
+                "answer": "approved",
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please validate my requirement and return user requirement doc with user stories, journey diagram and sequence diagram. Use markdown with mermaid dialect (```mermaid). Explain your choice in simple words, but try to keep everything short and friendly. Talk to me like we are close friends. If I ask you a general question, just return an answer to this question. Start your answer with what you understood from my requirement. My requirement: "
+                },
+                "file_name": "entity/user_requirement.md",
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/user_requirement.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/2adb25ce-e88b-11ef-b476-72938f541e4e/entity/user_requirement.md) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_requirement.md",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "I understand that you're looking for validation of your requirements and you want to create a user requirement document that includes user stories, a journey diagram, and a sequence diagram. This will help you visualize the workflows and interactions in your system.\n\n### User Requirement Document\n\n#### User Stories\n1. **As a user**, I want to trigger data ingestion so that I can gather raw data from external sources.\n2. **As a data analyst**, I want to transform the ingested data into a usable format so that I can analyze it effectively.\n3. **As a user**, I want to enrich the transformed data with additional information to gain further insights.\n4. **As a decision-maker**, I want to generate reports from the aggregated data to facilitate informed decisions.\n\n#### Journey Diagram\nHere's a basic overview of the user journey in a Mermaid format:\n\n```mermaid\ngraph TD;\n    A[User] -->|Triggers Data Ingestion| B[Ingests Raw Data]\n    B -->|Transforms Data| C[Transformed Data]\n    C -->|Enriches Data| D[Enriched Data]\n    D -->|Generates Reports| E[Final Reports]\n```\n\n#### Sequence Diagram\nThis sequence diagram illustrates how data flows through the system:\n\n```mermaid\nsequenceDiagram\n    participant User\n    participant API\n    participant DataService\n    participant ReportService\n\n    User->>API: Trigger Data Ingestion\n    API->>DataService: Ingest Raw Data\n    DataService-->>API: Confirmation of Ingestion\n    API->>DataService: Request Data Transformation\n    DataService->>DataService: Transform Raw Data\n    DataService-->>API: Return Transformed Data\n    API->>DataService: Enrich Transformed Data\n    DataService->>DataService: Enrich Data\n    DataService-->>API: Return Enriched Data\n    API->>ReportService: Generate Reports\n    ReportService-->>API: Return Final Reports\n    API-->>User: Display Reports\n```\n\n### Explanation\n- **User Stories**: They capture the needs of different users interacting with your system, helping ensure you build features that matter.\n- **Journey Diagram**: This gives a high-level view of how users navigate through the workflow, making it easier to spot areas for improvement.\n- **Sequence Diagram**: This breaks down the interactions between various components of your system, showing how data flows and processes are triggered.\n\nWould you like to add or change anything based on this structure? \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/user_requirement.md",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "approve": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! This is a general question, but remember we are building Cyoda app, and currently we are designing my journey and sequence diagram, so if the user requirement is sufficient it's a nice idea to return these mermaid diagrams. If my question is completely irrelevant - answer it as is , but remind that we are building app here. I say:"
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "\nThanks for the go-ahead!\nThere are many ways to structure systems. We suggest using **event-driven design** with **entities** and **state machines**. This approach has proven to work exceptionally well for **high-availability** and **data-intensive** applications, ensuring scalability and simplicity.\n\n### What are **Entities**? \ud83e\udd14\nEntities are **data units** that represent real-world objects. Each entity has a **lifecycle**, **states**, and **transitions** that define how it evolves over time.\n\n### Our Approach: \ud83d\udca1\n- **Entities** represent things like a **Light Bulb** \ud83d\udca1.\n- **State Machines** visualize the **lifecycle** of entities (states + transitions) \ud83d\udd04.\n- **Event-Driven Architecture** triggers actions based on events, making systems responsive and scalable \u26a1.\n\n### Simple Light Bulb Example \ud83d\udca1:\n- **States**:  \n  - **OFF** \ud83d\udeab  \n  - **ON** \u2705\n\n- **Transitions**:  \n  - **New** \u2192 OFF (initial state)  \n  - **Flip Switch** \u2192 ON  \n  - **Flip Switch Again** \u2192 OFF\n---\n\n### Light Bulb Flowchart:\n\n```mermaid\nstateDiagram-v2\n    [*] --> OFF\n    OFF --> ON : Flip Switch\n    ON --> OFF : Flip Switch Again\n```    \n\ud83c\udf89 Let\u2019s dive into creating your project\u2019s **entities** and **workflow** to build a scalable and data-intensive system! \n\nFor more on entity databases, check out this article by [Paul Schleger](https://medium.com/@paul_42036/whats-an-entity-database-11f8538b631a) \ud83d\udcda.\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please outline entities for this requirement. Return entities diagram (mermaid or plantuml).\nPlease give me some json examples of data models for each entity, based on my requirement (you can use abridged json versions substituting excessive text with ...) . Provide only example data. If I provided entity schemas - just use them (abridged), if no - generate yours. \nFor each entity specify how it should be saved - through the workflow of a different entity (ENTITY_EVENT, SECONDARY_DATA) or directly via an API call or maybe via scheduler.\nFor an orchestration entity (if there is any) consider adding a single workflow per app. If there is no orchestration entity - then add workflow to any entity where it makes sense.\n***For each workflow let's provide a flowchart***\nExample:\n```mermaid\nflowchart TD\n  A[Start State] -->|transition: transition_name_1, processor: processor_name_1, processor attributes: sync_process=true/false, new_transaction_for_async=true/false, none_transactional_for_async=true/false| B[State 1]\n  B -->|transition: transition_name_2, processor: processor_name_2, processor attributes: sync_process=true/false, new_transaction_for_async=true/false, none_transactional_for_async=true/false| C[State 2]\n  C --> D[End State]\n  %% Decision point for criteria (only if necessary!)\n  B -->|criteria: criteria_name, entityModelName equals some_value| D1{Decision: Check Criteria}\n  D1 -->|true| C\n  D1 -->|false| E[Error: Criteria not met]\nclass A,B,C,D,D1 automated;\n``` \nIf I ask you a general question, just return an answer to this question.\nIf I ask you a general question, just return an answer to this question. \nI say: "
+                },
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "I understand that you want to outline the entities for your requirement, provide example data models in JSON format, specify how each entity should be saved, and create flowcharts for the workflows involved. This will help structure your application effectively!\n\n### Entities Outline and Diagrams\n\n#### Entities Diagram (Mermaid)\nHere's a simple representation of the entities and their relationships:\n\n```mermaid\nclassDiagram\n    class User {\n      +user_id: string\n      +name: string\n      +email: string\n    }\n    \n    class RawData {\n      +raw_data_id: string\n      +source: string\n      +content: string\n    }\n    \n    class TransformedData {\n      +transformed_data_id: string\n      +raw_data_id: string\n      +transformation_rule: string\n    }\n    \n    class EnrichedData {\n      +enriched_data_id: string\n      +transformed_data_id: string\n      +additional_info: string\n    }\n    \n    class Report {\n      +report_id: string\n      +aggregated_data: string\n      +generated_on: string\n    }\n\n    User --> RawData\n    RawData --> TransformedData\n    TransformedData --> EnrichedData\n    EnrichedData --> Report\n```\n\n### Example JSON Data Models\n\n1. **User Entity**\n```json\n{\n  \"user_id\": \"user_123\",\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\"\n}\n```\n- **Saved via**: API call\n\n2. **RawData Entity**\n```json\n{\n  \"raw_data_id\": \"raw_001\",\n  \"source\": \"API\",\n  \"content\": \"data from external source...\"\n}\n```\n- **Saved via**: ENTITY_EVENT triggered by User\n\n3. **TransformedData Entity**\n```json\n{\n  \"transformed_data_id\": \"transformed_001\",\n  \"raw_data_id\": \"raw_001\",\n  \"transformation_rule\": \"rule_1\"\n}\n```\n- **Saved via**: Workflow triggered by RawData ingestion\n\n4. **EnrichedData Entity**\n```json\n{\n  \"enriched_data_id\": \"enriched_001\",\n  \"transformed_data_id\": \"transformed_001\",\n  \"additional_info\": \"enrichment details...\"\n}\n```\n- **Saved via**: Workflow triggered by TransformedData\n\n5. **Report Entity**\n```json\n{\n  \"report_id\": \"report_001\",\n  \"aggregated_data\": \"aggregated info...\",\n  \"generated_on\": \"2023-10-01T12:00:00Z\"\n}\n```\n- **Saved via**: API call after EnrichedData processing\n\n### Workflows Flowcharts\n\n1. **Ingest Raw Data Workflow**\n```mermaid\nflowchart TD\n  A[Start State] -->|transition: start_data_ingestion, processor: ingest_raw_data, processor attributes: sync_process=true| B[Data Ingested]\n  B -->|transition: transform_data, processor: transform_data_rule, processor attributes: sync_process=true| C[Data Transformed]\n  C --> D[End State]\n```\n\n2. **Transform Data Workflow**\n```mermaid\nflowchart TD\n  A[Start State] -->|transition: transform_data, processor: apply_transformation, processor attributes: sync_process=true| B[Data Transformed]\n  B -->|transition: enrich_data, processor: enrich_transformed_data, processor attributes: sync_process=true| C[Data Enriched]\n  C --> D[End State]\n```\n\n3. **Generate Report Workflow**\n```mermaid\nflowchart TD\n  A[Start State] -->|transition: generate_report, processor: create_report, processor attributes: sync_process=true| B[Report Created]\n  B --> D[End State]\n```\n\n### Summary\nThe diagrams and JSON models provide a clear structure for your entities and how they interact within workflows. Each entity has been assigned a saving mechanism, and flowcharts outline the workflows that will ensure smooth data processing.\n\nLet me know if you'd like to adjust anything or add more details! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "I'm ready with the design - we can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "approve": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "I'm ready with the design - we can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hi! "
+                },
+                "answer": "approved",
+                "approve": true,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "We can discuss our ideas in the chat \ud83d\udcac\ud83d\udcac, when you feel we are ready to start code generation - give me thumbs up \ud83d\udc4d",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "\nAwesome! Let's dive into generating your application code! \ud83d\ude80 \n\nI'll keep you updated with notifications on my progress, and let you know when it's time to discuss any changes.\n \nFeel free to grab a coffee \u2615 while I work\u2014it's going to take about 2 minutes. \n \nJust relax and wait for the update!\n\nIn this process, we will walk through each stage of building an application, from gathering initial requirements to designing, coding, and implementing the final logic.\n\n### The stages of the process are as follows:\n\n1. **Application design**:  \n   Let's design the application using diagrams and chat. You'll receive a text document with the PRD as the output.  \n   *Output documents*: entity/app_design.md\n\n2. **Entities design**:  \n   Let's define the JSON data structure for each entity.\n   *Output documents*: entity/*\n\n3. **Workflow design**:  \n   Let's ensure our entity workflow is correctly defined.\n   *Output documents*: entity/*/workflow.json\n\n4. **Workflow processors code design**:  \n   Let's implement the workflow processors.\n   *Output documents*: entity/*/workflow.py\n\n5. **Additional logic code design**:  \n   Let's develop any additional business logic.\n   *Output documents*: entity/*/api.py or entity/*/logic.py\n\n---\n\n### Process Flow:\n\nGathering requirements --> **Application design** --> **Entities design** --> **Workflow design** --> **Workflow processors code design** --> **Additional logic code design**         \n                          ",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "info": true,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please, return a complete prd."
+                },
+                "file_name": "entity/app_design_prd.md",
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design_prd.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/2adb25ce-e88b-11ef-b476-72938f541e4e/entity/app_design_prd.md) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design_prd.md",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Sure! Here\u2019s a complete Product Requirements Document (PRD) based on our previous discussions. I\u2019ll structure it to include all necessary sections for clarity and organization. \n\n# Product Requirements Document (PRD)\n\n## Project Overview\nThe goal of this project is to develop an event-driven workflow application using Cyoda's architecture. This application will manage workflows that involve data ingestion, transformation, enrichment, and reporting.\n\n## Tools\n- Cyoda Application Builder\n- Event-Driven Architecture\n\n## Requirements\n\n### User Requirements\n1. **As a user**, I want to trigger data ingestion so that I can gather raw data from external sources.\n2. **As a data analyst**, I want to transform the ingested data into a usable format so that I can analyze it effectively.\n3. **As a user**, I want to enrich the transformed data with additional information to gain further insights.\n4. **As a decision-maker**, I want to generate reports from the aggregated data to facilitate informed decisions.\n\n### Entities\n1. **User**\n   - **Attributes**: \n     - user_id: string\n     - name: string\n     - email: string\n   - **Saved via**: API call\n   \n2. **RawData**\n   - **Attributes**: \n     - raw_data_id: string\n     - source: string\n     - content: string\n   - **Saved via**: ENTITY_EVENT triggered by User\n   \n3. **TransformedData**\n   - **Attributes**: \n     - transformed_data_id: string\n     - raw_data_id: string\n     - transformation_rule: string\n   - **Saved via**: Workflow triggered by RawData ingestion\n   \n4. **EnrichedData**\n   - **Attributes**: \n     - enriched_data_id: string\n     - transformed_data_id: string\n     - additional_info: string\n   - **Saved via**: Workflow triggered by TransformedData\n   \n5. **Report**\n   - **Attributes**: \n     - report_id: string\n     - aggregated_data: string\n     - generated_on: string\n   - **Saved via**: API call after EnrichedData processing\n\n### Workflows\n1. **Ingest Raw Data Workflow**\n```mermaid\nflowchart TD\n  A[Start State] -->|transition: start_data_ingestion, processor: ingest_raw_data, processor attributes: sync_process=true| B[Data Ingested]\n  B -->|transition: transform_data, processor: transform_data_rule, processor attributes: sync_process=true| C[Data Transformed]\n  C --> D[End State]\n```\n\n2. **Transform Data Workflow**\n```mermaid\nflowchart TD\n  A[Start State] -->|transition: transform_data, processor: apply_transformation, processor attributes: sync_process=true| B[Data Transformed]\n  B -->|transition: enrich_data, processor: enrich_transformed_data, processor attributes: sync_process=true| C[Data Enriched]\n  C --> D[End State]\n```\n\n3. **Generate Report Workflow**\n```mermaid\nflowchart TD\n  A[Start State] -->|transition: generate_report, processor: create_report, processor attributes: sync_process=true| B[Report Created]\n  B --> D[End State]\n```\n\n### User Journey\n```mermaid\ngraph TD;\n    A[User] -->|Triggers Data Ingestion| B[Ingests Raw Data]\n    B -->|Transforms Data| C[Transformed Data]\n    C -->|Enriches Data| D[Enriched Data]\n    D -->|Generates Reports| E[Final Reports]\n```\n\n### Sequence Diagrams\n1. **Ingest Raw Data Sequence**\n```mermaid\nsequenceDiagram\n    participant User\n    participant API\n    participant DataService\n\n    User->>API: Trigger Data Ingestion\n    API->>DataService: Ingest Raw Data\n    DataService-->>API: Confirmation of Ingestion\n```\n\n2. **Transform Data Sequence**\n```mermaid\nsequenceDiagram\n    participant API\n    participant DataService\n\n    API->>DataService: Request Data Transformation\n    DataService->>DataService: Transform Raw Data\n    DataService-->>API: Return Transformed Data\n```\n\n3. **Generate Report Sequence**\n```mermaid\nsequenceDiagram\n    participant API\n    participant ReportService\n\n    API->>ReportService: Generate Reports\n    ReportService-->>API: Return Final Reports\n```\n\n## Conclusion\nThis PRD outlines the key requirements for building the Cyoda application that manages event-driven workflows for data processing and reporting. The defined entities, workflows, user journeys, and sequence diagrams provide a clear roadmap for development.\n\nFeel free to suggest any changes or additions! \ud83d\ude0a",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design_prd.md",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Generate Cyoda design json, based on the complete prd. Use only lowercase underscore for namings. If the entity is saved in the workflow of another entity then its source will be ENTITY_EVENT. The JOB entity_source defaults to API_REQUEST. Prefer entity source/type mentioned in the prd, if it is unclear default to API_REQUEST or ENTITY_EVENT for secondary data. Avoid scheduler unless specified explicitly. You should not change entities or their workflows. You should not omit or add entities which are not listed in the prd. You should follow the complete prd 100% as it was confirmed.",
+                    "schema": {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "title": "Cyoda design",
+                        "type": "object",
+                        "properties": {
+                            "entities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entity_name": {
+                                            "type": "string"
+                                        },
+                                        "entity_type": {
+                                            "type": "string",
+                                            "enum": [
+                                                "JOB",
+                                                "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+                                                "WEB_SCRAPING_PULL_BASED_RAW_DATA",
+                                                "TRANSACTIONAL_PULL_BASED_RAW_DATA",
+                                                "EXTERNAL_SOURCES_PUSH_BASED_RAW_DATA",
+                                                "WEB_SCRAPING_PUSH_BASED_RAW_DATA",
+                                                "TRANSACTIONAL_PUSH_BASED_RAW_DATA",
+                                                "SECONDARY_DATA",
+                                                "UTIL",
+                                                "CONFIG",
+                                                "BUSINESS_ENTITY"
+                                            ]
+                                        },
+                                        "entity_source": {
+                                            "type": "string",
+                                            "enum": [
+                                                "API_REQUEST",
+                                                "SCHEDULED",
+                                                "ENTITY_EVENT"
+                                            ]
+                                        },
+                                        "depends_on_entity": {
+                                            "type": "string"
+                                        },
+                                        "entity_workflow": {
+                                            "type": "object",
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "class_name": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                        "com.cyoda.tdb.model.treenode.TreeNodeEntity"
+                                                    ]
+                                                },
+                                                "transitions": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "name": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "start_state": {
+                                                                "type": "string"
+                                                            },
+                                                            "start_state_description": {
+                                                                "type": "string"
+                                                            },
+                                                            "end_state": {
+                                                                "type": "string"
+                                                            },
+                                                            "end_state_description": {
+                                                                "type": "string"
+                                                            },
+                                                            "process": {
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "name": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "description": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "adds_new_entites": {
+                                                                        "type": "string"
+                                                                    }
+                                                                },
+                                                                "required": [
+                                                                    "name",
+                                                                    "description",
+                                                                    "adds_new_entites"
+                                                                ]
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "name",
+                                                            "start_state",
+                                                            "end_state",
+                                                            "process"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "name",
+                                                "class_name",
+                                                "transitions"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "entity_name",
+                                        "entity_type",
+                                        "entity_source",
+                                        "depends_on_entity",
+                                        "entity_workflow"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "entities"
+                        ]
+                    }
+                },
+                "answer": null,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Application design",
+                "function": null,
+                "iteration": 0,
+                "ui_config": {
+                    "format": "json"
+                },
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/app_design.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/2adb25ce-e88b-11ef-b476-72938f541e4e/entity/app_design.json) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design.json",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Application design",
+                "ui_config": {
+                    "format": "json"
+                }
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": {
+                    "success": "false",
+                    "error": "JSON validation failed after retries."
+                },
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/app_design.json",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Application design",
+                "ui_config": {
+                    "format": "json"
+                }
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "add_design_stack"
+                },
+                "file_name": "entity/app_design.json",
+                "flow_step": "Application design",
+                "iteration": 0,
+                "fills_stack": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "approve": true,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": "approved",
+                "function": {
+                    "name": "finish_flow"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": "entity/chat.json",
+                "notification_text": "\n\ud83c\udf89 **Chat flow has been saved!** \ud83c\udf89\n\nThe chat flow has been successfully saved to `entity/chat.json`. Now you can run `app.py` to start the application. \ud83d\ude80\n\nOnce you run it, both the **workflow** and **entities** will be imported to the Cyoda environment automatically. \ud83c\udf1f\n\nAny updates or changes to the entities will trigger the workflow, so you\u2019re all set to go! \ud83d\udd04\n\nWe are available in the **Google Tech Channel** to support you. If you spot any bugs or need additional features, feel free to submit tickets at [GitHub Issues](https://github.com/Cyoda-platform/ai-assistant). You\u2019re also most welcome to contribute to the project! \ud83d\udcbb \n\nFor any direct inquiries, reach out to **ksenia.lukonina@cyoda.com**. We\u2019re here to help! \ud83d\ude0a\n                       ",
+                "max_iteration": -1,
+                "stack": "app_building_stack",
+                "publish": true
+            }
+        ]
+    },
+    "name": "Application",
+    "description": "",
+    "chat_id": "2adb25ce-e88b-11ef-b476-72938f541e4e",
+    "technical_id": "2adb25ce-e88b-11ef-b476-72938f541e4e"
+}

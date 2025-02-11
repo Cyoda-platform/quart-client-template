@@ -1,0 +1,26 @@
+{
+    "job_id": "job_2023_10_01",
+    "status": "scheduled",
+    "scheduled_time": "2023-10-25T08:00:00Z",
+    "triggered_by": "admin@example.com",
+    "data_source": {
+        "type": "external_api",
+        "url": "https://fakerestapi.azurewebsites.net/api/v1/Activities",
+        "request_parameters": {
+            "filter": "active",
+            "limit": 100
+        }
+    },
+    "ingestion_settings": {
+        "frequency": "daily",
+        "overwrite_existing_data": false,
+        "data_format": "json"
+    },
+    "created_at": "2023-10-01T10:00:00Z",
+    "last_run": {
+        "status": "success",
+        "timestamp": "2023-10-24T08:01:00Z",
+        "records_ingested": 75
+    },
+    "error_log": []
+}

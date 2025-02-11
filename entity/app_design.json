@@ -1,0 +1,77 @@
+{
+    "entities": [
+        {
+            "entity_name": "data_ingestion_job",
+            "entity_type": "JOB",
+            "entity_source": "API_REQUEST",
+            "depends_on_entity": "None",
+            "entity_workflow": {
+                "name": "data_ingestion_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": [
+                    {
+                        "name": "schedule_job",
+                        "description": "Job is scheduled to run.",
+                        "start_state": "None",
+                        "start_state_description": "Initial state before job scheduling.",
+                        "end_state": "job_scheduled",
+                        "end_state_description": "Job has been scheduled.",
+                        "process": {
+                            "name": "schedule_job_processor",
+                            "description": "Processes scheduling of the job.",
+                            "adds_new_entites": "None"
+                        }
+                    },
+                    {
+                        "name": "trigger_data_ingestion",
+                        "description": "Trigger the data ingestion process.",
+                        "start_state": "job_scheduled",
+                        "start_state_description": "Job has been scheduled and is ready to trigger ingestion.",
+                        "end_state": "data_ingested",
+                        "end_state_description": "Data has been successfully ingested.",
+                        "process": {
+                            "name": "ingest_data_processor",
+                            "description": "Processes data ingestion from the source.",
+                            "adds_new_entites": "raw_data_entity"
+                        }
+                    },
+                    {
+                        "name": "generate_report",
+                        "description": "Generate the report from ingested data.",
+                        "start_state": "data_ingested",
+                        "start_state_description": "Ingesting data is complete, ready for report generation.",
+                        "end_state": "report_generated",
+                        "end_state_description": "Report has been generated and sent.",
+                        "process": {
+                            "name": "report_generation_processor",
+                            "description": "Processes report generation.",
+                            "adds_new_entites": "aggregated_report_entity"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "raw_data_entity",
+            "entity_type": "EXTERNAL_SOURCES_PULL_BASED_RAW_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "raw_data_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        },
+        {
+            "entity_name": "aggregated_report_entity",
+            "entity_type": "SECONDARY_DATA",
+            "entity_source": "ENTITY_EVENT",
+            "depends_on_entity": "data_ingestion_job",
+            "entity_workflow": {
+                "name": "aggregated_report_entity_workflow",
+                "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity",
+                "transitions": []
+            }
+        }
+    ]
+}

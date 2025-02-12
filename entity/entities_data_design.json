@@ -1,0 +1,19 @@
+{
+    "entities": [
+        {
+            "entity_name": "job",
+            "entity_data_example": {
+                "email": "user@example.com"
+            }
+        },
+        {
+            "entity_name": "report",
+            "entity_data_example": {
+                "report_id": "12345",
+                "btc_usd": "50000",
+                "btc_eur": "42000",
+                "timestamp": "2023-10-01T12:00:00Z"
+            }
+        }
+    ]
+}

@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Initiates the report creation process, fetches Bitcoin rates, and simulates sending an email.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "sent",
+                                "action": "create_report",
+                                "complete_code_for_action_derived_from_the_prototype": "reports[report_id] = {\"status\": \"processing\"}\n    btc_rates = await fetch_btc_rates()",
+                                "description": "Create a report and fetch BTC rates.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieves a stored report by its ID."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieves a stored report by its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}

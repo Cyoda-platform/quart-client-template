@@ -14,7 +14,9 @@
                                 "action": "import_crocodiles",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await fetch_crocodile_data()",
                                 "description": "Initiates data import from the external crocodile API.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "crocodiles_filter"
+                                ]
                             }
                         ]
                     }

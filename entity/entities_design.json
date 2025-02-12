@@ -1,0 +1,44 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "crocodiles",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/crocodiles/import",
+                        "description": "Fetches crocodile data from an external API and stores it.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "idle",
+                                "end_state": "data_imported",
+                                "action": "import_crocodiles",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await fetch_crocodile_data()",
+                                "description": "Initiates data import from the external crocodile API.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/api/crocodiles",
+                        "description": "Retrieves all crocodile data stored in the mock database."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "crocodiles_filter",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/crocodiles/filter",
+                        "description": "Filters crocodile data based on specified criteria (name, sex, age)."
+                    }
+                ]
+            }
+        }
+    ]
+}

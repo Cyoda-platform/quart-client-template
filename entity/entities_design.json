@@ -1,0 +1,39 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Initiates the report creation process.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Report creation initiated",
+                                "end_state": "Report is being generated",
+                                "action": "Create report",
+                                "complete_code_for_action_derived_from_the_prototype": "report_id = str(uuid.uuid4())\nrates = await fetch_conversion_rates()\nreport = {\"report_id\": report_id, \"btc_usd_rate\": rates['btc_usd'], \"btc_eur_rate\": rates['btc_eur'], \"timestamp\": datetime.datetime.utcnow().isoformat()}\nreports[report_id] = report",
+                                "description": "This workflow describes the process of creating a report with the latest Bitcoin conversion rates.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report",
+                        "description": "Retrieves the report based on its ID."
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -14,7 +14,9 @@
                                 "action": "create_report",
                                 "complete_code_for_action_derived_from_the_prototype": "report_id = str(uuid.uuid4())\n    rates = await fetch_bitcoin_rates()\n    reports[report_id] = {...}",
                                 "description": "Initiate the report generation process and store the results.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }

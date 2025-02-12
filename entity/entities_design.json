@@ -12,9 +12,11 @@
                                 "start_state": "initial",
                                 "end_state": "sent",
                                 "action": "create_report",
-                                "complete_code_for_action_derived_from_the_prototype": "reports[report_id] = {\"status\": \"processing\"}\n    btc_rates = await fetch_btc_rates()",
+                                "complete_code_for_action_derived_from_the_prototype": "reports[report_id] = {\"status\": \"processing\"}\nbtc_rates = await fetch_btc_rates()",
                                 "description": "Create a report and fetch BTC rates.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }

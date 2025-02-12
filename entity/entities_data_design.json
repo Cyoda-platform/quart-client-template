@@ -1,0 +1,23 @@
+{
+    "entities": [
+        {
+            "entity_name": "crocodiles",
+            "entity_data_example": {
+                "id": 1,
+                "name": "Bert",
+                "sex": "M",
+                "date_of_birth": "2010-06-27",
+                "age": 14
+            }
+        },
+        {
+            "entity_name": "crocodiles_filter",
+            "entity_data_example": {
+                "name": "Bert",
+                "sex": "M",
+                "age_min": 5,
+                "age_max": 15
+            }
+        }
+    ]
+}

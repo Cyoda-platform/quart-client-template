@@ -14,7 +14,9 @@
                                 "action": "create_report",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nemail = data.get('email')  # Extract email from request data\nreport_id = str(uuid.uuid4())  # Generate a unique report ID\nrates = await fetch_bitcoin_rates()\nasyncio.create_task(send_email(report_id, rates, email))  # Send email asynchronously\nreports[report_id] = {...}\nreturn jsonify({...}), 202",
                                 "description": "Initiates the report creation process and sends an email.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }

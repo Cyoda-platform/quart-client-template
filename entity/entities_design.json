@@ -14,7 +14,9 @@
                                 "action": "create_report",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nemail = data.get('email')\nrates = await fetch_btc_rates()\nif rates:\n    report_id = str(uuid.uuid4())\n    reports[report_id] = rates\n    asyncio.create_task(send_email(report_id, email, rates['btc_usd'], rates['btc_eur']))\n    return jsonify({\"report_id\": report_id, \"status\": \"processing\"}), 202",
                                 "description": "Create a report with email notification.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }

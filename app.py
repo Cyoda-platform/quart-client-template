@@ -7,12 +7,28 @@ from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token
 #please update this line to your entity
+from entity.user.api import api_bp_user
+from entity.post.api import api_bp_post
+from entity.comment.api import api_bp_comment
+from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+from entity.comment.api import api_bp_comment
+from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+from entity.post.api import api_bp_post
+from entity.comment.api import api_bp_comment
 from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
 
 logging.basicConfig(level=logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+app.register_blueprint(api_bp_user, url_prefix='/api/user')
+app.register_blueprint(api_bp_post, url_prefix='/api/post')
+app.register_blueprint(api_bp_comment, url_prefix='/api/comment')
+app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+app.register_blueprint(api_bp_comment, url_prefix='/api/comment')
+app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+app.register_blueprint(api_bp_post, url_prefix='/api/post')
+app.register_blueprint(api_bp_comment, url_prefix='/api/comment')
 app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
 
 @app.before_serving

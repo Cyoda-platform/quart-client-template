@@ -1,0 +1,7 @@
+{
+    "comment_id": "string",
+    "post_id": "string",
+    "body": "string",
+    "upvotes": 0,
+    "downvotes": 0
+}

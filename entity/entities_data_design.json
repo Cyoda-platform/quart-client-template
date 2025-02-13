@@ -1,0 +1,58 @@
+{
+    "entities": [
+        {
+            "entity_name": "user",
+            "entity_data_example": {
+                "username": "string",
+                "password": "string",
+                "email": "string"
+            }
+        },
+        {
+            "entity_name": "post",
+            "entity_data_example": {
+                "post_id": "string",
+                "title": "string",
+                "body": "string",
+                "tags": [
+                    "string"
+                ],
+                "upvotes": 0,
+                "downvotes": 0
+            }
+        },
+        {
+            "entity_name": "comment",
+            "entity_data_example": {
+                "comment_id": "string",
+                "post_id": "string",
+                "body": "string",
+                "upvotes": 0,
+                "downvotes": 0
+            }
+        },
+        {
+            "entity_name": "post",
+            "entity_data_example": {
+                "post_id": "string",
+                "title": "string",
+                "body": "string",
+                "tags": [
+                    "string"
+                ],
+                "upvotes": 0,
+                "downvotes": 0
+            }
+        },
+        {
+            "entity_name": "comment",
+            "entity_data_example": {
+                "comment_id": "string",
+                "post_id": "string",
+                "body": "string",
+                "upvotes": 0,
+                "downvotes": 0
+            }
+        }
+    ]
+}

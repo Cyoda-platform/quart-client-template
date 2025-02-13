@@ -36,7 +36,9 @@
                                 "action": "create_post",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\ntitle = data.get('title')\nbody = data.get('body')\ntags = data.get('tags', [])\n\npost_counter += 1\nposts[post_counter] = {\n    'post_id': post_counter,\n    'title': title,\n    'body': body,\n    'tags': tags,\n    'upvotes': 0,\n    'downvotes': 0\n}\nreturn jsonify({'post_id': post_counter, 'message': 'Post created successfully.'}), 201",
                                 "description": "Create a new post with title and body.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "comment"
+                                ]
                             }
                         ]
                     }

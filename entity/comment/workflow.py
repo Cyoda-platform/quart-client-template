@@ -1,4 +1,4 @@
-# Here’s the `workflow.py` file implementing the comment creation workflow, using the relevant information from the provided prototype:
+# Here's the complete `workflow.py` file for implementing the comment creation workflow, using the relevant logic from the provided prototype:
 # 
 # ```python
 import json
@@ -56,6 +56,41 @@ async def add_comment(post_id, data, meta={"token": "cyoda_token"}):
         return {
             'message': 'An error occurred while adding the comment.'
         }, 500
+
+async def get_comments(post_id):
+    """Retrieve comments for a specific post."""
+    try:
+        if post_id not in posts:
+            return {
+                'message': 'Post not found.'
+            }, 404
+        
+        post_comments = [c for c in comments.values() if c['post_id'] == post_id]
+        return {
+            'comments': post_comments
+        }, 200
+    except Exception as e:
+        logger.error(f"Error in get_comments: {e}")
+        return {
+            'message': 'An error occurred while retrieving comments.'
+        }, 500
+
+async def delete_comment(comment_id):
+    """Delete a specific comment by ID."""
+    try:
+        if comment_id in comments:
+            del comments[comment_id]
+            return {
+                'message': 'Comment deleted successfully.'
+            }, 200
+        return {
+            'message': 'Comment not found.'
+        }, 404
+    except Exception as e:
+        logger.error(f"Error in delete_comment: {e}")
+        return {
+            'message': 'An error occurred while deleting the comment.'
+        }, 500
 # ```
 # 
 # ### Explanation:
@@ -73,4 +108,8 @@ async def add_comment(post_id, data, meta={"token": "cyoda_token"}):
 # 
 # 7. **Error Handling**: If an exception is raised during the process, an error message is returned along with a `500 Internal Server Error` status.
 # 
-# This implementation follows the structure and requirements outlined in your request, ensuring that the comment creation workflow is robust and functional.
+# 8. **Retrieve Comments**: The `get_comments` function retrieves comments for a specific post, returning a `404 Not Found` response if the post does not exist.
+# 
+# 9. **Delete Comments**: The `delete_comment` function allows deletion of a specific comment by its ID, handling errors if the comment does not exist.
+# 
+# This complete implementation of `workflow.py` incorporates all necessary logic, following the structure and requirements outlined in the provided prototype.

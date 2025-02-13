@@ -14,7 +14,9 @@
                                 "action": "create_report",
                                 "complete_code_for_action_derived_from_the_prototype": "btc_usd_rate, btc_eur_rate = await fetch_conversion_rates()\\nreport_id = str(uuid.uuid4())\\nawait send_email(report_id, btc_usd_rate, btc_eur_rate)",
                                 "description": "Fetch conversion rates and send an email with the report ID.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
                             }
                         ]
                     }

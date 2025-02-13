@@ -25,11 +25,6 @@ app.register_blueprint(api_bp_user, url_prefix='/api/user')
 app.register_blueprint(api_bp_post, url_prefix='/api/post')
 app.register_blueprint(api_bp_comment, url_prefix='/api/comment')
 
-app.register_blueprint(api_bp_comment, url_prefix='/api/comment')
-
-app.register_blueprint(api_bp_post, url_prefix='/api/post')
-app.register_blueprint(api_bp_comment, url_prefix='/api/comment')
-
 
 @app.before_serving
 async def startup():

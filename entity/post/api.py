@@ -7,30 +7,11 @@ from common.config.config import ENTITY_VERSION
 
 api_bp_post = Blueprint('api/post', __name__)
 
-@api_bp_post.route('/posts', methods=['POST'])
-async def add_post():
-    """API endpoint to create a new post."""
-    data = await request.json
-    if not data:
-        return jsonify({"error": "No data provided"}), 400
-
-    try:
-        # Add the post entity using the entity service
-        post_id = await entity_service.add_item(
-            cyoda_token, 'post', ENTITY_VERSION, data
-        )
-        return jsonify({"post_id": post_id}), 201
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 @api_bp_post.route('/posts', methods=['GET'])
 async def get_posts():
     """API endpoint to get a list of posts."""
     try:
-        # This would typically involve a method to get all posts, 
-        # but since we only have get_item, we will return a placeholder.
-        # Assuming entity_service has a method to get all items.
+        # Get the list of posts using the entity service
         posts = await entity_service.get_item(
             cyoda_token, 'post', ENTITY_VERSION, None  # Placeholder for getting all posts
         )
@@ -54,7 +35,6 @@ async def get_post(post_id):
 # ```
 # 
 # ### Explanation:
-# - The `add_post` function handles the creation of a new post by accepting a JSON payload and using the `add_item` method from `entity_service`.
-# - The `get_posts` function is designed to retrieve a list of posts. Since the `entity_service` only has `get_item`, this function assumes a placeholder for retrieving all posts.
+# - The `get_posts` function retrieves a list of posts. Since the `entity_service` only has `get_item`, this function assumes a placeholder for retrieving all posts. You may need to adjust this based on your actual implementation of `entity_service`.
 # - The `get_post` function retrieves a specific post based on the provided `post_id` using the `get_item` method.
-# - Each function handles exceptions and returns appropriate HTTP status codes and messages.
+# - Both functions handle exceptions and return appropriate HTTP status codes and messages.

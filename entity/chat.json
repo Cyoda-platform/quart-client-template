@@ -1,0 +1,1677 @@
+{
+    "user_id": "demo.user",
+    "date": "2025-02-13T15:46:32.155+00:00",
+    "questions_queue": {
+        "new_questions": [],
+        "asked_questions": []
+    },
+    "chat_flow": {
+        "current_flow": [
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you!",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "answer": null,
+                "approve": false,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 150,
+                "additional_questions": [
+                    {
+                        "question": "Feel free to ask any questions or discuss the design in the chat \ud83d\udcac\ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "Your application is finished! Thank you for collaboration!",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "index": 2,
+                "iteration": 0,
+                "file_name": "entity/chat.json",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "remove_api_registration"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": "app.py",
+                "notification_text": "\n                       ",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "save_env_file"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": ".env.template",
+                "notification_text": "\n### Setup Instructions for Your Application\n\nYour application is ready! Please fetch the changes and follow the steps below to configure it:\n\n1. **Move the `.env.template` to `.env`**:\n    Rename the `.env.template` file to `.env`:\n    ```bash\n    mv .env.template .env\n    ```\n\n2. **Update the `.env` file**:\n    Open the `.env` file and replace the placeholder values with your actual environment variables and credentials. For example, replace `CHAT_ID_VAR` with `$chat_id` and fill in other necessary values.\n\n    You might need to specify the path to .env file in your IDE run configurations.\n\n3. **Start Your Application**:\n    Once you've updated the `.env` file, you can start your application by running:\n    ```bash\n    python app.py\n    ```\n    or just run the app.py in your IDE.\nPlease also update your api.py files to use cyoda_token until authentication featute is fully implemented. Sorry for inconvenience!\nYour application should now be up and running! \ud83c\udf89\n\nYou can check the api with http://localhost:8000/scalar\n\n                       ",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            }
+        ],
+        "finished_flow": [
+            {
+                "notification": "\n\ud83d\udc4b Welcome to Cyoda Application Builder! We\u2019re excited to build something amazing with you! \ud83d\ude04  \n\nWe\u2019re here to help with building and deploying on Cyoda Cloud! Reach out anytime! \ud83c\udf1f Your branch will be ready soon, and I\u2019ll notify you when I push changes. If you have suggestions, message me or use Canvas! \ud83d\ude0a  \n\nIn Canvas, you can code, edit, and improve around the main app build flow! It\u2019s a great way to collaborate and make changes! \ud83d\udcbb  \n\nIf you\u2019re happy with the progress or want me to pull your changes, just give me a thumbs up! \ud83d\udc4d  (currently approve button in the top panel)\n\nIf something goes wrong, no worries\u2014just roll back! \ud83d\ude2c Your app will be live on Cyoda Platform GitHub soon! \ud83d\ude80 Let\u2019s build your branch together! \ud83c\udf3f\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "info": true,
+                "file_name": "instruction.txt",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "clone_repo"
+                },
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\ud83c\udf89 **Your branch is ready!** Please update the project and check it out when you get a chance. \ud83d\ude0a\n\nTo get started:\n\n1. **Clone the repository** using the following command:  \n   `git clone https://github.com/Cyoda-platform/quart-client-template/` \ud83d\ude80\n\n2. **Checkout your branch** using:  \n   `git checkout b283ed7a-ea21-11ef-9eca-96210fb9dc23` \ud83d\udd04\n\nYou can access your branch directly on GitHub here: [Cyoda Platform GitHub](https://github.com/Cyoda-platform/quart-client-template/tree/b283ed7a-ea21-11ef-9eca-96210fb9dc23) \ud83d\ude04\n\nThis repository is a **starter template** for your app and has two main modules:\n\n- **Common Module**: This is all about integration with Cyoda! You don\u2019t need to edit it unless you want to \u2013 it\u2019s all done for you! \ud83c\udf89  \n- **Entity Module**: This is where your business logic and custom files will go. We'll add your files here, and you can track your progress. \ud83d\udcc8 Feel free to **add or edit** anything in the Entity module. I\u2019ll be pulling changes now and then, so just push your updates to let me know! \ud83d\ude80\n\nYou can ask **questions in the chat** or in your project files anytime. When I make changes, I\u2019ll let you know, and you can simply **pull** to sync with me! \ud83d\udd04\ud83d\udcac\n\nHappy coding! \ud83d\ude04\ud83c\udf89",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "init_chats"
+                },
+                "flow_step": "Gathering requirements",
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": "\n\ud83d\udca1 What kind of application would you like to build? I'd love to hear your ideas! Feel free to share them with me! \ud83d\ude0a\n\n***Example answers***:\nHello, I would like to download the following data: [London Houses Data](https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv), analyze it using **pandas**, and save a report. \ud83d\udcca\n\nHello! \ud83d\udc4b\n                              I would like to develop an application that:\n                              1. Ingests data from a specified data source \ud83d\udce5\n                              2. Aggregates the data \ud83e\uddee\n                              3. Saves the aggregated data to a report \ud83d\udcc4\n                              Once the report is generated, the application should send it to the admin's email \ud83d\udce7. \n                              Additionally, the data ingestion process should be scheduled to run **once a day** \u23f0.\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "approve": false,
+                "example_answers": [
+                    "\n                              Hello, I would like to download the following data: [London Houses Data](https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv), analyze it using **pandas**, and save a report. \ud83d\udcca",
+                    "\n                              Hello! \ud83d\udc4b\n                              I would like to develop an application that:\n                              1. Ingests data from a specified data source \ud83d\udce5\n                              2. Aggregates the data \ud83e\uddee\n                              3. Saves the aggregated data to a report \ud83d\udcc4\n                              Once the report is generated, the application should send it to the admin's email \ud83d\udce7. \n                              Additionally, the data ingestion process should be scheduled to run **once a day** \u23f0."
+                ],
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "\ud83d\udca1 What kind of application would you like to build? I'd love to hear your ideas! Feel free to share them with me! \ud83d\ude0a",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hello! You are a python quart developer.\nYou're building a backend application. Currently you are focusing on functional requirements, \nand will cover any non-functional requirement later. \nLet's analyse this request for application building, and clarify any important functional requirements \nthat necessary.\nAsk questions if something is not clear enough and make suggestions that will help us formulate formal specification in the next iterations. \nMake sure your answers are friendly but up-to-the point and do not start with any exclamations, but rather answer the question. \nMax tokens = 300. Here is my requirement: ",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7,
+                        "max_tokens": 300
+                    }
+                },
+                "answer": "System Requirements 1. Functional Requirements User Authentication and Authorization Requirements Criteria: Users can sign up and log in. Authenticated users receive a JWT token for accessing protected resources. The system must validate the token on every request to protected endpoints. Post Management Requirements Criteria: Users can create a new post with the following fields: Title Topic tags (e.g., \"investing\", \"stocks\", \"trading\") Body (text or uploaded images) Users can view individual posts or a list of posts: GET /posts \u2014 Retrieve a paginated list of posts. GET /posts/{post-id} \u2014 Retrieve details of a specific post. Example Response (GET /posts/{post-id}): {   \"post_id\": \"14245bac\",   \"title\": \"How do I make money with stocks?\",   \"user_id\": \"1234acd\",   \"topics\": [\"investing\", \"stocks\", \"trading\"],   \"upvotes\": 5,   \"downvotes\": 1,   \"body\": \".........\" } Requirements Criteria: Users can delete their own posts. Popular posts (top posts in the last 24 hours) must be displayed on the homepage. Popularity Formula: Upvotes \u2212 Downvotes Pagination for posts must be supported using limit and offset parameters. Example: GET /posts?limit=20&offset=0 \u2014 Retrieve the first 20 posts GET /posts?limit=20&offset=1 \u2014 Retrieve posts 20-39 Comment Management Requirements Criteria: Users can add comments to existing posts. Comments are displayed in chronological order (flat list). Users can delete their own comments. Pagination for comments must be supported. Example Response (GET /posts/{post-id}/comments): {   \"post_id\": \"14245bac\",   \"comments\": [     {       \"comment_id\": 1234,       \"body\": \"I agree\",       \"user_id\": \"abd54232\",       \"upvotes\": 50,       \"downvotes\": 3     },     {       \"comment_id\": 4321,       \"body\": \"I don\u2019t think so, because...\",       \"user_id\": \"5423adc\",       \"upvotes\": 7,       \"downvotes\": 6     }   ] } Image Management Requirements Criteria: Users can upload images for posts. Uploaded images can be retrieved by their image-id. POST /posts/{post-id}/images \u2014 Upload an image for a post. GET /posts/{post-id}/images/{image-id} \u2014 Retrieve an image for a specific post. Voting System Requirements Criteria: Users can upvote/downvote posts and comments. The voting score affects the popularity of posts and comments. POST /posts/{post-id}/vote \u2014 Upvote or downvote a post. POST /posts/{post-id}/comments/{comment-id}/vote \u2014 Upvote or downvote a comment. 2. Non-Functional Requirements Performance Requirements Criteria: The system must respond to 95% of requests within 200ms. Support at least 10,000 concurrent users. Security Requirements Criteria: All endpoints must use JWT-based authentication. Protect against common vulnerabilities: SQL Injection Cross-Site Scripting (XSS) Cross-Site Request Forgery (CSRF) Scalability Requirements Criteria: The system must scale horizontally to handle increasing loads. Use caching for popular posts and comments. 3. API Overview Authentication Endpoints Requirements Criteria: POST /users/create \u2014 Create a new user POST /users/login \u2014 Log in and receive an authentication token Post Endpoints Requirements Criteria: POST /posts \u2014 Create a new post GET /posts \u2014 Retrieve a paginated list of posts GET /posts/{post-id} \u2014 Retrieve a specific post DELETE /posts/{post-id} \u2014 Delete a specific post Comment Endpoints Requirements Criteria: POST /posts/{post-id}/comments \u2014 Add a new comment to a post GET /posts/{post-id}/comments \u2014 Retrieve a list of comments for a post DELETE /posts/{post-id}/comments/{comment-id} \u2014 Delete a specific comment Image Endpoints Requirements Criteria: POST /posts/{post-id}/images \u2014 Upload an image for a post GET /posts/{post-id}/images/{image-id} \u2014 Retrieve an image Voting Endpoints Requirements Criteria: POST /posts/{post-id}/vote \u2014 Upvote or downvote a post POST /posts/{post-id}/comments/{comment-id}/vote \u2014 Upvote or downvote a comment 4. High-Level Overview The system is designed to be a scalable public discussion forum, similar to Reddit or Quora. Key Features: Posting questions or news Commenting and voting on posts Displaying popular posts based on votes Image uploads for richer content Infinite scrolling with API pagination",
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "To clarify the functional requirements for your backend application, let's break down the main components and identify any areas that may need more detail or clarification.\n\n1. **User Authentication and Authorization**:\n   - Should there be any user roles or permissions beyond basic authentication? For example, will there be admin users who can manage posts or users?\n   - What information should be stored in the user profile (e.g., username, email, bio)?\n\n2. **Post Management**:\n   - Is there a character limit for the title and body of the posts?\n   - Should there be any moderation features, such as reporting inappropriate posts or comments?\n   - What happens to posts or comments that are reported? Should they be temporarily hidden or reviewed?\n\n3. **Comment Management**:\n   - Should comments have a character limit?\n   - Is there a need for threading or nesting of comments, or will a flat list suffice?\n\n4. **Image Management**:\n   - What are the allowed image formats and size limits for uploads?\n   - Should there be any restrictions on the number of images a user can upload per post?\n\n5. **Voting System**:\n   - Can users change their vote (e.g., from upvote to downvote) after voting?\n   - Is there a limit on how frequently a user can vote on the same post or comment?\n\n6. **Pagination**:\n   - Should there be a maximum limit on the number of posts or comments that can be retrieved per request?\n  ",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you!",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "answer": null,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 15,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you!",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "answer": "approved",
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please, help me define the functional requirements for my project in the form of user stories. Outline the necessary API endpoints, including details on request/response formats. Additionally, provide a visual representation of the user-app interaction using Mermaid diagrams (e.g. journey/sequence).",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.3
+                    }
+                },
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here\u2019s a structured approach to defining the functional requirements for your project in the form of user stories, along with the necessary API endpoints and a visual representation using Mermaid diagrams.\n\n### User Stories\n\n1. **User Authentication**\n   - As a user, I want to create an account so that I can log in and access the platform.\n   - As a user, I want to log in to my account so that I can access protected resources.\n   - As a user, I want to receive a JWT token upon logging in to authenticate my requests.\n\n2. **Post Management**\n   - As a user, I want to create a new post with a title, body, and tags so that I can share my thoughts.\n   - As a user, I want to view a list of posts to discover new content.\n   - As a user, I want to view the details of a specific post to read it in full.\n   - As a user, I want to delete my own posts to manage my content.\n   - As a user, I want to see popular posts on the homepage to engage with trending discussions.\n\n3. **Comment Management**\n   - As a user, I want to add comments to posts to share my opinions.\n   - As a user, I want to view comments on a post to see others' thoughts.\n   - As a user, I want to delete my own comments to manage my contributions.\n\n4. **Image Management**\n   - As a user, I want to upload images to my posts to enhance my content.\n   - As a user, I want to retrieve images associated with a post to view them.\n\n5. **Voting System**\n   - As a user, I want to upvote or downvote posts and comments to express my opinion on their quality.\n\n### API Endpoints\n\n#### Authentication Endpoints\n- **POST /users/create**\n  - Request: `{ \"username\": \"string\", \"password\": \"string\", \"email\": \"string\" }`\n  - Response: `{ \"user_id\": \"string\", \"message\": \"User created successfully.\" }`\n\n- **POST /users/login**\n  - Request: `{ \"username\": \"string\", \"password\": \"string\" }`\n  - Response: `{ \"token\": \"JWT_TOKEN\" }`\n\n#### Post Endpoints\n- **POST /posts**\n  - Request: `{ \"title\": \"string\", \"body\": \"string\", \"tags\": [\"string\"] }`\n  - Response: `{ \"post_id\": \"string\", \"message\": \"Post created successfully.\" }`\n\n- **GET /posts**\n  - Response: `{ \"posts\": [{ \"post_id\": \"string\", \"title\": \"string\", \"upvotes\": number, \"downvotes\": number }], \"total\": number }`\n\n- **GET /posts/{post-id}**\n  - Response: `{ \"post_id\": \"string\", \"title\": \"string\", \"body\": \"string\", \"topics\": [\"string\"], \"upvotes\": number, \"downvotes\": number }`\n\n- **DELETE /posts/{post-id}**\n  - Response: `{ \"message\": \"Post deleted successfully.\" }`\n\n#### Comment Endpoints\n- **POST /posts/{post-id}/comments**\n  - Request: `{ \"body\": \"string\" }`\n  - Response: `{ \"comment_id\": \"number\", \"message\": \"Comment added successfully.\" }`\n\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you!",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "answer": null,
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 15,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 1,
+                "max_iteration": 15,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements",
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ]
+            },
+            {
+                "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "approve": true,
+                "question_key": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you!",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "answer": "approved",
+                "function": null,
+                "iteration": 1,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please return well-formatted final functional requirements.",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "file_name": "entity/functional_requirement.md",
+                "publish": false
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/functional_requirement.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/b283ed7a-ea21-11ef-9eca-96210fb9dc23/entity/functional_requirement.md) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/functional_requirement.md",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here are the well-formatted final functional requirements for your backend application, structured into user stories, API endpoints, and detailed request/response formats.\n\n### Functional Requirements\n\n#### 1. User Authentication\n\n- **User Story**: As a user, I want to create an account so that I can log in and access the platform.\n  - **API Endpoint**: `POST /users/create`\n    - **Request**: \n      ```json\n      {\n        \"username\": \"string\",\n        \"password\": \"string\",\n        \"email\": \"string\"\n      }\n      ```\n    - **Response**: \n      ```json\n      {\n        \"user_id\": \"string\",\n        \"message\": \"User created successfully.\"\n      }\n      ```\n\n- **User Story**: As a user, I want to log in to my account so that I can access protected resources.\n  - **API Endpoint**: `POST /users/login`\n    - **Request**: \n      ```json\n      {\n        \"username\": \"string\",\n        \"password\": \"string\"\n      }\n      ```\n    - **Response**: \n      ```json\n      {\n        \"token\": \"JWT_TOKEN\"\n      }\n      ```\n\n#### 2. Post Management\n\n- **User Story**: As a user, I want to create a new post with a title, body, and tags so that I can share my thoughts.\n  - **API Endpoint**: `POST /posts`\n    - **Request**: \n      ```json\n      {\n        \"title\": \"string\",\n        \"body\": \"string\",\n        \"tags\": [\"string\"]\n      }\n      ```\n    - **Response**: \n      ```json\n      {\n        \"post_id\": \"string\",\n        \"message\": \"Post created successfully.\"\n      }\n      ```\n\n- **User Story**: As a user, I want to view a list of posts to discover new content.\n  - **API Endpoint**: `GET /posts`\n    - **Response**: \n      ```json\n      {\n        \"posts\": [\n          {\n            \"post_id\": \"string\",\n            \"title\": \"string\",\n            \"upvotes\": number,\n            \"downvotes\": number\n          }\n        ],\n        \"total\": number\n      }\n      ```\n\n- **User Story**: As a user, I want to view the details of a specific post to read it in full.\n  - **API Endpoint**: `GET /posts/{post-id}`\n    - **Response**: \n      ```json\n      {\n        \"post_id\": \"string\",\n        \"title\": \"string\",\n        \"body\": \"string\",\n        \"topics\": [\"string\"],\n        \"upvotes\": number,\n        \"downvotes\": number\n      }\n      ```\n\n- **User Story**: As a user, I want to delete my own posts to manage my content.\n  - **API Endpoint**: `DELETE /posts/{post-id}`\n    - **Response**: \n      ```json\n      {\n        \"message\": \"Post deleted successfully.\"\n      }\n      ```\n\n#### 3. Comment Management\n\n- **User Story**: As a user, I want to add comments to posts to share my opinions.\n  - **API Endpoint**: `POST /posts/{post-id}/comments`\n    - **Request**: \n      ```json\n      {\n        \"",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/functional_requirement.md",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": false,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "notification": "Let's proceed to generating the fist prototype. Please, give me a moment to think everything over",
+                "prompt": null,
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 15,
+                "stack": "app_building_stack",
+                "approve": true,
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Now that we\u2019ve finalized the API design, please provide the code for the prototype.py file. The implementation should be a working prototype rather than a fully robust solution. Incorporate any details I\u2019ve already specified\u2014such as external APIs, models, or specific calculations\u2014and use mocks or placeholders only where requirements are unclear or incomplete. Wherever you introduce a mock or placeholder, include a TODO comment to indicate the missing or uncertain parts. The goal is to verify the user experience (UX) and identify any gaps in the requirements before we proceed with a more thorough implementation. Please double-check you are using all the information provided earlier. Use aiohttp.ClientSession for http requests, and Quart api. Use QuartSchema(app) but do not add any @validate_request as our data is dynamic, just add QuartSchema(app) one line. Use this entry point: if __name__ == '__main__':app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7,
+                        "max_tokens": 2000
+                    }
+                },
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "file_name": "entity/prototype.py",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/prototype.py` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/b283ed7a-ea21-11ef-9eca-96210fb9dc23/entity/prototype.py) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/prototype.py",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Here is a prototype implementation of your backend application using Quart and aiohttp. This example covers the specified API design, incorporating the necessary endpoints and using mocks where applicable. \n\n```python\nfrom quart import Quart, request, jsonify\nfrom quart_schema import QuartSchema\nimport aiohttp\nimport asyncio\n\napp = Quart(__name__)\nQuartSchema(app)  # Initialize QuartSchema\n\n# Mock storage (replace with a database connection in production)\nusers = {}\nposts = {}\ncomments = {}\npost_counter = 0\ncomment_counter = 0\n\n# User registration\n@app.route('/users/create', methods=['POST'])\nasync def create_user():\n    data = await request.get_json()\n    username = data.get('username')\n    password = data.get('password')  # TODO: Hash the password before storing\n    email = data.get('email')\n\n    user_id = len(users) + 1\n    users[user_id] = {'username': username, 'password': password, 'email': email}\n    return jsonify({'user_id': user_id, 'message': 'User created successfully.'}), 201\n\n# User login\n@app.route('/users/login', methods=['POST'])\nasync def login_user():\n    data = await request.get_json()\n    username = data.get('username')\n    password = data.get('password')  # TODO: Validate hashed password\n\n    user = next((u for u in users.values() if u['username'] == username and u['password'] == password), None)\n    if user:\n        token = \"JWT_TOKEN\"  # TODO: Generate a real JWT token\n        return jsonify({'token': token}), 200\n    return jsonify({'message': 'Invalid credentials'}), 401\n\n# Create a post\n@app.route('/posts', methods=['POST'])\nasync def create_post():\n    global post_counter\n    data = await request.get_json()\n    title = data.get('title')\n    body = data.get('body')\n    tags = data.get('tags', [])\n\n    post_counter += 1\n    posts[post_counter] = {\n        'post_id': post_counter,\n        'title': title,\n        'body': body,\n        'tags': tags,\n        'upvotes': 0,\n        'downvotes': 0\n    }\n    return jsonify({'post_id': post_counter, 'message': 'Post created successfully.'}), 201\n\n# Get list of posts\n@app.route('/posts', methods=['GET'])\nasync def get_posts():\n    limit = int(request.args.get('limit', 20))\n    offset = int(request.args.get('offset', 0))\n    post_list = list(posts.values())[offset:offset + limit]\n    return jsonify({'posts': post_list, 'total': len(posts)}), 200\n\n# Get a specific post\n@app.route('/posts/<int:post_id>', methods=['GET'])\nasync def get_post(post_id):\n    post = posts.get(post_id)\n    if post:\n        return jsonify(post), 200\n    return jsonify({'message': 'Post not found'}), 404\n\n# Delete a post\n@app.route('/posts/<int:post_id>', methods=['DELETE'])\nasync def delete_post(post_id):\n    if post_id in posts:\n        del posts[post_id]\n        return jsonify({'message': 'Post deleted successfully.'}), 200\n    return jsonify({'message': 'Post not found'}), 404\n\n# Add a comment to a post\n@app.route('/posts/<int:post_id>/comments', methods=['POST'])\nasync def add_comment(post_id):\n    global comment_counter\n    data = await request.get_json()\n    body = data.get('body')\n\n    if post_id not in posts:\n        return jsonify({'message': 'Post not found'}), 404\n\n    comment_counter += 1\n    comments[comment_counter] = {\n        'comment_id': comment_counter,\n        'post_id': post_id,\n        'body': body,\n        'upvotes': 0,\n        'downvotes': 0\n    }\n    return jsonify({'comment_id': comment_counter, 'message': 'Comment added successfully.'}), 201\n\n# Get comments for a post\n@app.route('/posts/<int:post_id>/comments', methods=['GET'])\nasync def get_comments(post_id):\n    if post_id not in posts:\n        return jsonify({'message': 'Post not found'}), 404\n\n    post_comments = [c for c in comments.values() if c['post_id'] == post_id]\n    return jsonify({'comments': post_comments}), 200\n\n# Delete a comment\n@app.route('/posts/<int:post_id>/comments/<int:comment_id>', methods=['DELETE'])\nasync def delete_comment(post_id, comment_id):\n    if comment_id in comments:\n        del comments[comment_id]\n        return jsonify({'message': 'Comment deleted successfully.'}), 200\n    return jsonify({'message': 'Comment not found'}), 404\n\n# Run the application\nif __name__ == '__main__':\n    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)\n```\n\n### Key Points\n- This prototype incorporates the endpoints and data structures required for user authentication, post management, comment management, and basic responses.\n- Mocks are used to simulate user storage and post/comment storage. In a production setting, these should be replaced with a proper database.\n- JWT token generation and password hashing have been noted as TODO items for future implementation.\n- The error handling is basic to keep the prototype lightweight but should be improved in a full implementation. \n\nThis code serves as a prototype to verify the user experience and identify any gaps in requirements before proceeding with a more robust solution.",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/prototype.py",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "First Prototype Ready for Validation\n\nWe have completed the first prototype for your functional requirements. \n\nTo validate the API, please follow the steps below:\n\n**1. Run the Application**\n\nExecute the following command to start the application:\n\n```python \npython entity/prototype.py\n```\n\n2. Validate the API\nOnce the application is running, open your browser and navigate to:\n```\nhttp://localhost:8000/scalar\n```\nRequest and response examples are available in entity/functional_requirement.md\n\nThis will allow you to validate the API response.\n",
+                "prompt": null,
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "approve": true,
+                "stack": "app_building_stack",
+                "publish": true,
+                "question_key": "First Prototype Ready for Validation\n\nWe have completed the first prototype for your functional requirements. \n\nTo validate the API, please follow the steps below:\n\n**1. Run the Application**\n\nExecute the following command to start the application:\n\n```python \npython entity/prototype.py\n```\n\n2. Validate the API\nOnce the application is running, open your browser and navigate to:\n```\nhttp://localhost:8000/scalar\n```\nRequest and response examples are available in entity/functional_requirement.md\n\nThis will allow you to validate the API response.\n",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Please return fully functioning prototype.py code taking into account user suggestions if any.",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7,
+                        "max_tokens": 2000
+                    }
+                },
+                "file_name": "entity/prototype.py",
+                "answer": "approved",
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Give a thumbs up \ud83d\udc4d if you'd like to proceed to the next question. If you'd like to discuss further, let's chat \ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "\n                          \nCongratulations on successfully completing your application prototype!\ud83e\udd73\n \nYou\u2019ve put in a lot of hard work to bring your idea to life, and it\u2019s truly exciting to see it in action. \n\n\ud83e\ude85\ud83e\ude85\ud83e\ude85This is an important milestone\u2014well done!\ud83e\ude85\ud83e\ude85\ud83e\ude85\n\nHowever, as impressive as your prototype is, it\u2019s not yet fully robust. A few critical components are missing:\n\n**Scalability and High Availability**\n\n**Persistence and Data Integrity**\n\n**Production-Ready Features**\n\nTo address these gaps and ensure your application can handle real-world demands, we recommend refactoring your solution using the Cyoda Framework. By deploying to a High Availability (HA) cluster on Cyoda Cloud, you\u2019ll benefit from:\n\n**Enterprise-grade reliability and failover capabilities**\n\n**Seamless data persistence**\n\n**Streamlined deployment and scaling processes**\n\n**A comprehensive set of production-ready tools and services**\n\nWe believe this transformation will empower your application to reach its full potential. Would you like to proceed with refactoring your prototype to make it robust, production-ready, and fully deployable on Cyoda Cloud?\n\nJust give me a thumbs up! \ud83d\udc4d \n                          ",
+                "prompt": null,
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 15,
+                "stack": "app_building_stack",
+                "approve": true,
+                "publish": true,
+                "question_key": "\n                          \nCongratulations on successfully completing your application prototype!\ud83e\udd73\n \nYou\u2019ve put in a lot of hard work to bring your idea to life, and it\u2019s truly exciting to see it in action. \n\n\ud83e\ude85\ud83e\ude85\ud83e\ude85This is an important milestone\u2014well done!\ud83e\ude85\ud83e\ude85\ud83e\ude85\n\nHowever, as impressive as your prototype is, it\u2019s not yet fully robust. A few critical components are missing:\n\n**Scalability and High Availability**\n\n**Persistence and Data Integrity**\n\n**Production-Ready Features**\n\nTo address these gaps and ensure your application can handle real-world demands, we recommend refactoring your solution using the Cyoda Framework. By deploying to a High Availability (HA) cluster on Cyoda Cloud, you\u2019ll benefit from:\n\n**Enterprise-grade reliability and failover capabilities**\n\n**Seamless data persistence**\n\n**Streamlined deployment and scaling processes**\n\n**A comprehensive set of production-ready tools and services**\n\nWe believe this transformation will empower your application to reach its full potential. Would you like to proceed with refactoring your prototype to make it robust, production-ready, and fully deployable on Cyoda Cloud?\n\nJust give me a thumbs up! \ud83d\udc4d \n                          ",
+                "processed": true
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Thank you!",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "answer": "approved",
+                "approve": false,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": -1,
+                "additional_questions": [
+                    {
+                        "question": "Feel free to ask any questions or discuss the design in the chat \ud83d\udcac\ud83d\udcac",
+                        "approve": true
+                    }
+                ],
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "Let's proceed to making your application production-ready!",
+                "prompt": null,
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 15,
+                "stack": "app_building_stack",
+                "approve": true,
+                "publish": true
+            },
+            {
+                "notification": "\nLet's dive into generating your application code! \ud83d\ude80 \n\nI'll keep you updated with notifications on my progress, and let you know when it's time to discuss any changes.\n\nFeel free to grab a coffee \u2615 while I work\u2014it's going to take about 2 minutes. \n\nJust relax and wait for the update!\n\nIn this process, we will walk through each stage of building an application, from gathering initial requirements to designing, coding, and implementing the final logic.\n\n### The stages of the process are as follows:\n\n\n   **Entities design**:  \n   Let's define the JSON data structure for each entity.\n   *Output documents*: entity/*\n\n   **Workflow design**:  \n   Let's ensure our entity workflow is correctly defined.\n   *Output documents*: entity/*/workflow.json\n\n   **Workflow processors code design**:  \n   Let's implement the workflow processors.\n   *Output documents*: entity/*/workflow.py\n\n   **Additional logic code design**:  \n   Let's develop any additional business logic.\n   *Output documents*: entity/*/api.py or entity/*/logic.py\n\n---\n\n### Process Flow:\n\nGathering requirements --> Application design --> **Entities design** --> **Workflow design** --> **Workflow processors code design** --> **Additional logic code design**         \n                          ",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "info": true,
+                "iteration": 0,
+                "file_name": "entity/app_design.json",
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "notification": "\nThanks for the go-ahead! We have fully composed our requirement. Now let's take a look at the architecture design for it.\nThere are many ways to structure systems. We suggest using **event-driven design** with **entities** and **state machines**. This approach has proven to work exceptionally well for **high-availability** and **data-intensive** applications, ensuring scalability and simplicity.\n\n### What are **Entities**? \ud83e\udd14\nEntities are **data units** that represent real-world objects. Each entity has a **lifecycle**, **states**, and **transitions** that define how it evolves over time.\n\n### Our Approach: \ud83d\udca1\n- **Entities** represent things like a **Light Bulb** \ud83d\udca1.\n- **State Machines** visualize the **lifecycle** of entities (states + transitions) \ud83d\udd04.\n- **Event-Driven Architecture** triggers actions based on events, making systems responsive and scalable \u26a1.\n\n### Simple Light Bulb Example \ud83d\udca1:\n- **States**:  \n  - **OFF** \ud83d\udeab  \n  - **ON** \u2705\n\n- **Transitions**:  \n  - **New** \u2192 OFF (initial state)  \n  - **Flip Switch** \u2192 ON  \n  - **Flip Switch Again** \u2192 OFF\n---\n\n### Light Bulb Flowchart:\n\n```mermaid\nstateDiagram-v2\n    [*] --> OFF\n    OFF --> ON : Flip Switch\n    ON --> OFF : Flip Switch Again\n```    \n\ud83c\udf89 Let\u2019s dive into creating your project\u2019s **entities** and **workflow** to build a scalable and data-intensive system! \n\nFor more on entity databases, check out this article by [Paul Schleger](https://medium.com/@paul_42036/whats-an-entity-database-11f8538b631a) \ud83d\udcda.\n",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "refresh_context",
+                    "model_api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "iteration": 0,
+                "flow_step": "Entities design",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "\nYou are given prototype.py with api implementation . Please use only endpoints that are present in api.py - do not add or remove any endpoint.\nFor each resource in the url path we save we need an entity. Entity name equals resource name (transform to lowercase underscore, a-Z)\nFor each resource in the url path we get we need an entity. Entity name equals resource name (transform to lowercase underscore, a-Z)\n\nFor each resource we save with POST we need a workflow. Lets call such entities primary\nFor each resource we GET but do not save with POST we do not need workflow. Let\u2019s call such entities secondary and establish depends on $primary_entity relation\n\nEntity can be either primary or secondary - not both.\nPlease return the response in the following format, \"related_secondary_entities\" is not required but is very important attribute - these are secondary entities that relate to this primary entity:\n{ \"primary_entities\": [ { \"entity_name\": \"\", \"endpoints\": { \"POST\": [ { \"endpoint\": \"\", \"description\": \"\", \"suggested_workflow\": [ { \"start_state\": \"\", \"end_state\": \"\", \"action\": \"\", \"complete_code_for_action_derived_from_the_prototype\": \"\", \"description\": \"\", \"related_secondary_entities\": [] } ] } ], \"GET\": [ { \"endpoint\": \"\", \"description\": \"\" } ] } } ], \"secondary_entities\": [ { \"entity_name\": \"\", \"endpoints\": { \"GET\": [ { \"endpoint\": \"\", \"description\": \"\" } ] } } ] }.\nReturn json without wrapping in the 'properties' attribute.\n\nPlease analyze this prototype code and return the entities:\n",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7,
+                        "max_tokens": 2000
+                    },
+                    "schema": {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "title": "Generated schema for Root",
+                        "type": "object",
+                        "properties": {
+                            "primary_entities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entity_name": {
+                                            "type": "string"
+                                        },
+                                        "endpoints": {
+                                            "type": "object",
+                                            "properties": {
+                                                "POST": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "endpoint": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "suggested_workflow": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "start_state": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "end_state": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "action": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "complete_code_for_action_derived_from_the_prototype": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "description": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "related_secondary_entities": {
+                                                                            "type": "array",
+                                                                            "items": {}
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "start_state",
+                                                                        "end_state",
+                                                                        "description"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "endpoint",
+                                                            "description",
+                                                            "suggested_workflow"
+                                                        ]
+                                                    }
+                                                },
+                                                "GET": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "endpoint": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "endpoint",
+                                                            "description"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "POST",
+                                                "GET"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "entity_name",
+                                        "endpoints"
+                                    ]
+                                }
+                            },
+                            "secondary_entities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entity_name": {
+                                            "type": "string"
+                                        },
+                                        "endpoints": {
+                                            "type": "object",
+                                            "properties": {
+                                                "GET": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "endpoint": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "endpoint",
+                                                            "description"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "GET"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "entity_name",
+                                        "endpoints"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "primary_entities",
+                            "secondary_entities"
+                        ]
+                    },
+                    "attached_files": [
+                        "entity/prototype.py"
+                    ]
+                },
+                "file_name": "entity/entities_design.json",
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": false
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/entities_design.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/b283ed7a-ea21-11ef-9eca-96210fb9dc23/entity/entities_design.json) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/entities_design.json",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": {
+                    "primary_entities": [
+                        {
+                            "entity_name": "user",
+                            "endpoints": {
+                                "POST": [
+                                    {
+                                        "endpoint": "/users/create",
+                                        "description": "Create a new user.",
+                                        "suggested_workflow": [
+                                            {
+                                                "start_state": "user_creation_initiated",
+                                                "end_state": "user_created",
+                                                "action": "create_user",
+                                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nusername = data.get('username')\npassword = data.get('password')\nemail = data.get('email')\n\nuser_id = len(users) + 1\nusers[user_id] = {'username': username, 'password': password, 'email': email}\nreturn jsonify({'user_id': user_id, 'message': 'User created successfully.'}), 201",
+                                                "description": "Create a new user with provided details.",
+                                                "related_secondary_entities": []
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "GET": []
+                            }
+                        },
+                        {
+                            "entity_name": "post",
+                            "endpoints": {
+                                "POST": [
+                                    {
+                                        "endpoint": "/posts",
+                                        "description": "Create a new post.",
+                                        "suggested_workflow": [
+                                            {
+                                                "start_state": "post_creation_initiated",
+                                                "end_state": "post_created",
+                                                "action": "create_post",
+                                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\ntitle = data.get('title')\nbody = data.get('body')\ntags = data.get('tags', [])\n\npost_counter += 1\nposts[post_counter] = {\n    'post_id': post_counter,\n    'title': title,\n    'body': body,\n    'tags': tags,\n    'upvotes': 0,\n    'downvotes': 0\n}\nreturn jsonify({'post_id': post_counter, 'message': 'Post created successfully.'}), 201",
+                                                "description": "Create a new post with title and body.",
+                                                "related_secondary_entities": []
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "GET": [
+                                    {
+                                        "endpoint": "/posts",
+                                        "description": "Get list of posts."
+                                    },
+                                    {
+                                        "endpoint": "/posts/<int:post_id>",
+                                        "description": "Get a specific post."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "entity_name": "comment",
+                            "endpoints": {
+                                "POST": [
+                                    {
+                                        "endpoint": "/posts/<int:post_id>/comments",
+                                        "description": "Add a comment to a specific post.",
+                                        "suggested_workflow": [
+                                            {
+                                                "start_state": "comment_creation_initiated",
+                                                "end_state": "comment_added",
+                                                "action": "add_comment",
+                                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nbody = data.get('body')\n\nif post_id not in posts:\n    return jsonify({'message': 'Post not found'}), 404\n\ncomment_counter += 1\ncomments[comment_counter] = {\n    'comment_id': comment_counter,\n    'post_id': post_id,\n    'body': body,\n    'upvotes': 0,\n    'downvotes': 0\n}\nreturn jsonify({'comment_id': comment_counter, 'message': 'Comment added successfully.'}), 201",
+                                                "description": "Add a new comment to the specified post.",
+                                                "related_secondary_entities": []
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "GET": [
+                                    {
+                                        "endpoint": "/posts/<int:post_id>/comments",
+                                        "description": "Get comments for a specific post."
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "secondary_entities": [
+                        {
+                            "entity_name": "post",
+                            "endpoints": {
+                                "GET": [
+                                    {
+                                        "endpoint": "/posts",
+                                        "description": "Get list of posts."
+                                    },
+                                    {
+                                        "endpoint": "/posts/<int:post_id>",
+                                        "description": "Get a specific post."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "entity_name": "comment",
+                            "endpoints": {
+                                "GET": [
+                                    {
+                                        "endpoint": "/posts/<int:post_id>/comments",
+                                        "description": "Get comments for a specific post."
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/entities_design.json",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": false,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "\n\nPlease analyze entity/entities_design.json and make sure that primary entities contain related secondary entities. Make sure each entity (validate by entity_name) is either primary or secondary - it cannot be both. Return the corrected json if there were errors, if it is ok -return as is.:\n",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7,
+                        "max_tokens": 2000
+                    },
+                    "schema": {
+                        "$schema": "http://json-schema.org/draft-07/schema#",
+                        "title": "Generated schema for Root",
+                        "type": "object",
+                        "properties": {
+                            "primary_entities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entity_name": {
+                                            "type": "string"
+                                        },
+                                        "endpoints": {
+                                            "type": "object",
+                                            "properties": {
+                                                "POST": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "endpoint": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string"
+                                                            },
+                                                            "suggested_workflow": {
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "start_state": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "end_state": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "action": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "complete_code_for_action_derived_from_the_prototype": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "description": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "related_secondary_entities": {
+                                                                            "type": "array",
+                                                                            "items": {}
+                                                                        }
+                                                                    },
+                                                                    "required": [
+                                                                        "start_state",
+                                                                        "end_state",
+                                                                        "description"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "endpoint",
+                                                            "description",
+                                                            "suggested_workflow"
+                                                        ]
+                                                    }
+                                                },
+                                                "GET": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "endpoint": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "endpoint",
+                                                            "description"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "POST",
+                                                "GET"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "entity_name",
+                                        "endpoints"
+                                    ]
+                                }
+                            },
+                            "secondary_entities": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "entity_name": {
+                                            "type": "string"
+                                        },
+                                        "endpoints": {
+                                            "type": "object",
+                                            "properties": {
+                                                "GET": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "properties": {
+                                                            "endpoint": {
+                                                                "type": "string"
+                                                            },
+                                                            "description": {
+                                                                "type": "string"
+                                                            }
+                                                        },
+                                                        "required": [
+                                                            "endpoint",
+                                                            "description"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "required": [
+                                                "GET"
+                                            ]
+                                        }
+                                    },
+                                    "required": [
+                                        "entity_name",
+                                        "endpoints"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "primary_entities",
+                            "secondary_entities"
+                        ]
+                    },
+                    "attached_files": [
+                        "entity/entities_design.json"
+                    ]
+                },
+                "file_name": "entity/entities_design.json",
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": false
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/entities_design.json` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/b283ed7a-ea21-11ef-9eca-96210fb9dc23/entity/entities_design.json) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/entities_design.json",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": {
+                    "primary_entities": [
+                        {
+                            "entity_name": "user",
+                            "endpoints": {
+                                "POST": [
+                                    {
+                                        "endpoint": "/users/create",
+                                        "description": "Create a new user.",
+                                        "suggested_workflow": [
+                                            {
+                                                "start_state": "user_creation_initiated",
+                                                "end_state": "user_created",
+                                                "action": "create_user",
+                                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nusername = data.get('username')\npassword = data.get('password')\nemail = data.get('email')\n\nuser_id = len(users) + 1\nusers[user_id] = {'username': username, 'password': password, 'email': email}\nreturn jsonify({'user_id': user_id, 'message': 'User created successfully.'}), 201",
+                                                "description": "Create a new user with provided details.",
+                                                "related_secondary_entities": []
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "GET": []
+                            }
+                        },
+                        {
+                            "entity_name": "post",
+                            "endpoints": {
+                                "POST": [
+                                    {
+                                        "endpoint": "/posts",
+                                        "description": "Create a new post.",
+                                        "suggested_workflow": [
+                                            {
+                                                "start_state": "post_creation_initiated",
+                                                "end_state": "post_created",
+                                                "action": "create_post",
+                                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\ntitle = data.get('title')\nbody = data.get('body')\ntags = data.get('tags', [])\n\npost_counter += 1\nposts[post_counter] = {\n    'post_id': post_counter,\n    'title': title,\n    'body': body,\n    'tags': tags,\n    'upvotes': 0,\n    'downvotes': 0\n}\nreturn jsonify({'post_id': post_counter, 'message': 'Post created successfully.'}), 201",
+                                                "description": "Create a new post with title and body.",
+                                                "related_secondary_entities": [
+                                                    "comment"
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "GET": [
+                                    {
+                                        "endpoint": "/posts",
+                                        "description": "Get list of posts."
+                                    },
+                                    {
+                                        "endpoint": "/posts/<int:post_id>",
+                                        "description": "Get a specific post."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "entity_name": "comment",
+                            "endpoints": {
+                                "POST": [
+                                    {
+                                        "endpoint": "/posts/<int:post_id>/comments",
+                                        "description": "Add a comment to a specific post.",
+                                        "suggested_workflow": [
+                                            {
+                                                "start_state": "comment_creation_initiated",
+                                                "end_state": "comment_added",
+                                                "action": "add_comment",
+                                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nbody = data.get('body')\n\nif post_id not in posts:\n    return jsonify({'message': 'Post not found'}), 404\n\ncomment_counter += 1\ncomments[comment_counter] = {\n    'comment_id': comment_counter,\n    'post_id': post_id,\n    'body': body,\n    'upvotes': 0,\n    'downvotes': 0\n}\nreturn jsonify({'comment_id': comment_counter, 'message': 'Comment added successfully.'}), 201",
+                                                "description": "Add a new comment to the specified post.",
+                                                "related_secondary_entities": []
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "GET": [
+                                    {
+                                        "endpoint": "/posts/<int:post_id>/comments",
+                                        "description": "Get comments for a specific post."
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "secondary_entities": [
+                        {
+                            "entity_name": "post",
+                            "endpoints": {
+                                "GET": [
+                                    {
+                                        "endpoint": "/posts",
+                                        "description": "Get list of posts."
+                                    },
+                                    {
+                                        "endpoint": "/posts/<int:post_id>",
+                                        "description": "Get a specific post."
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "entity_name": "comment",
+                            "endpoints": {
+                                "GET": [
+                                    {
+                                        "endpoint": "/posts/<int:post_id>/comments",
+                                        "description": "Get comments for a specific post."
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/entities_design.json",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": false,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "refresh_context",
+                    "model_api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "iteration": 0,
+                "flow_step": "Entities design",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": null,
+                "function": {
+                    "name": "generate_entities_template",
+                    "model_api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7,
+                        "max_tokens": 2000
+                    },
+                    "prompt": {
+                        "text": "Please, transform data about entities {entities_list} into the following json: {{ \"entities\": [ {{ \"entity_name\": \"\", //put entity name here, lowercase, underscore \\n \"entity_data_example\": \"\", //put entity data golden json example according to the requirement, list all entity attributes specified by the user or relevant to the request body}} ] }}",
+                        "api": {
+                            "model": "gpt-4o-mini",
+                            "temperature": 0.7
+                        },
+                        "attached_files": [
+                            "entity/prototype.py",
+                            "entity/functional_requirement.md"
+                        ],
+                        "schema": {
+                            "$schema": "http://json-schema.org/draft-07/schema#",
+                            "title": "Generated schema for Root",
+                            "type": "object",
+                            "properties": {
+                                "entities": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "entity_name": {
+                                                "type": "string"
+                                            },
+                                            "entity_data_example": {
+                                                "type": "object",
+                                                "properties": {}
+                                            }
+                                        },
+                                        "required": [
+                                            "entity_name",
+                                            "entity_data_example"
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "entities"
+                            ]
+                        }
+                    }
+                },
+                "file_name": "entity/entities_data_design.json",
+                "answer": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": false
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": null,
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/entities_data_design.json",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": false,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "refresh_context",
+                    "model_api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "iteration": 0,
+                "flow_step": "Entities design",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": null,
+                "prompt": {
+                    "text": "Hello! Please provide mermaid entity ER diagrams and class diagrams for each entity and flow chart for each workflow. Base your answer on the provided json design document. You cannot deviate from them.",
+                    "api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.2
+                    },
+                    "attached_files": [
+                        "entity/entities_data_design.json"
+                    ]
+                },
+                "file_name": "entity/entities_data_design.md",
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "flow_step": "Gathering requirements",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "\n\n\ud83c\udf89 **Changes have been pushed!** \ud83c\udf89\n\nI\u2019ve submitted changes to the file: `entity/entities_data_design.md` in your branch. You can check it out by either:\n\n1. **Pulling or fetching** the changes from the remote repository, or  \n2. **Opening the link** to view the file directly: [View changes here]( https://github.com/Cyoda-platform/quart-client-template/tree/b283ed7a-ea21-11ef-9eca-96210fb9dc23/entity/entities_data_design.md) \ud83d\udd17 (this will open in a new tab).\n\nFeel free to **modify the file** as necessary\n\nI will proceed with my work... I'll let you know when we can discuss the changes and make necessary update.\n",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/entities_data_design.md",
+                "context": {},
+                "approve": true,
+                "editable": true,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": "Based on the provided JSON design document, here are the Mermaid diagrams for the entities and workflows.\n\n### Entity-Relationship Diagram (ERD)\n\n```mermaid\nerDiagram\n    USER {\n        string username\n        string password\n        string email\n    }\n    \n    POST {\n        string post_id\n        string title\n        string body\n        string[] tags\n        int upvotes\n        int downvotes\n    }\n    \n    COMMENT {\n        string comment_id\n        string post_id\n        string body\n        int upvotes\n        int downvotes\n    }\n\n    USER ||--o{ POST : creates\n    POST ||--o{ COMMENT : contains\n```\n\n### Class Diagram\n\n```mermaid\nclassDiagram\n    class User {\n        +string username\n        +string password\n        +string email\n    }\n\n    class Post {\n        +string post_id\n        +string title\n        +string body\n        +string[] tags\n        +int upvotes\n        +int downvotes\n    }\n\n    class Comment {\n        +string comment_id\n        +string post_id\n        +string body\n        +int upvotes\n        +int downvotes\n    }\n\n    User \"1\" -- \"0..*\" Post : creates\n    Post \"1\" -- \"0..*\" Comment : contains\n```\n\n### Flowchart for User Workflow\n\n```mermaid\nflowchart TD\n    A[Start] --> B[User Registration]\n    B --> C[Enter Username, Password, Email]\n    C --> D[Submit Registration]\n    D --> E{Is Registration Successful?}\n    E -- Yes --> F[Welcome User]\n    E -- No --> G[Show Error Message]\n    G --> B\n    F --> H[User Login]\n    H --> I[Enter Username, Password]\n    I --> J[Submit Login]\n    J --> K{Is Login Successful?}\n    K -- Yes --> L[Access Dashboard]\n    K -- No --> M[Show Login Error]\n    M --> H\n    L --> N[End]\n```\n\n### Flowchart for Post Creation Workflow\n\n```mermaid\nflowchart TD\n    A[Start] --> B[User Logged In]\n    B --> C[Create New Post]\n    C --> D[Enter Title, Body, Tags]\n    D --> E[Submit Post]\n    E --> F{Is Post Creation Successful?}\n    F -- Yes --> G[Post Created Successfully]\n    F -- No --> H[Show Error Message]\n    H --> C\n    G --> I[View Post]\n    I --> J[End]\n```\n\n### Flowchart for Commenting on a Post Workflow\n\n```mermaid\nflowchart TD\n    A[Start] --> B[User Logged In]\n    B --> C[View Post]\n    C --> D[Add Comment]\n    D --> E[Enter Comment Body]\n    E --> F[Submit Comment]\n    F --> G{Is Comment Submission Successful?}\n    G -- Yes --> H[Comment Added Successfully]\n    G -- No --> I[Show Error Message]\n    I --> D\n    H --> J[View Updated Post]\n    J --> K[End]\n```\n\nThese diagrams represent the entities, their relationships, and workflows based on the provided JSON design document.",
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "entity/entities_data_design.md",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": true,
+                "flow_step": "Gathering requirements"
+            },
+            {
+                "notification": "Please give me a moment to think everything over \ud83e\udd14\u23f3",
+                "prompt": {},
+                "answer": null,
+                "function": null,
+                "iteration": 0,
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "refresh_context",
+                    "model_api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "iteration": 0,
+                "flow_step": "Entities design",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": null,
+                "function": {
+                    "name": "register_api_with_app",
+                    "model_api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.2
+                    },
+                    "prompt": {
+                        "text": "Generate the quart additional api.py file to implement entity {entity_name} endpoints: {entity_endpoints}. Fill in the template to complete you answer. Make sure you do not deviate from the template imports and used methods! entity_service has only add_item and get_item methods, choose from them.",
+                        "attached_files": [
+                            "api_template.txt"
+                        ]
+                    }
+                },
+                "answer": null,
+                "index": 0,
+                "iteration": 0,
+                "flow_step": "Additional logic code design",
+                "max_iteration": 0,
+                "stack": "api_request_stack"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": null,
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": null,
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": null,
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": null,
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": null,
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "refresh_context",
+                    "model_api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.7
+                    }
+                },
+                "iteration": 0,
+                "flow_step": "Entities design",
+                "max_iteration": 0,
+                "stack": "app_building_stack"
+            },
+            {
+                "question": null,
+                "function": {
+                    "name": "register_workflow_with_app",
+                    "model_api": {
+                        "model": "gpt-4o-mini",
+                        "temperature": 0.2,
+                        "max_tokens": 2000
+                    },
+                    "prompt": {
+                        "text": "Generate the workflow.py file to implement entity {entity_name} workflow functions: {suggested_workflow}. Use the template to complete you answer. Make sure you do not deviate from the template imports and methods signatures!",
+                        "attached_files": [
+                            "workflow_template.txt",
+                            "entity/prototype.py"
+                        ],
+                        "api": {
+                            "model": "gpt-4o-mini",
+                            "temperature": 0.2,
+                            "max_tokens": 2000
+                        }
+                    }
+                },
+                "answer": null,
+                "index": 0,
+                "iteration": 0,
+                "flow_step": "Additional logic code design",
+                "max_iteration": 0,
+                "stack": "api_request_stack"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": null,
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": null,
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": "",
+                "prompt": {},
+                "notification": null,
+                "answer": "",
+                "function": {},
+                "index": 0,
+                "iteration": 0,
+                "max_iteration": 0,
+                "data": {},
+                "entity": {},
+                "file_name": "",
+                "context": {},
+                "approve": true,
+                "editable": false,
+                "publish": {},
+                "flow_step": "Additional logic code design"
+            },
+            {
+                "question": null,
+                "prompt": {},
+                "answer": null,
+                "function": {
+                    "name": "finish_flow"
+                },
+                "index": 2,
+                "iteration": 0,
+                "file_name": "entity/chat.json",
+                "notification_text": "\n\ud83c\udf89 **Chat flow has been saved!** \ud83c\udf89\n\nThe chat flow has been successfully saved to `entity/chat.json`. Now you can run `app.py` to start the application. \ud83d\ude80\n\nOnce you run it, both the **workflow** and **entities** will be imported to the Cyoda environment automatically. \ud83c\udf1f\n\nAny updates or changes to the entities will trigger the workflow, so you\u2019re all set to go! \ud83d\udd04\n\nWe are available in the **Google Tech Channel** to support you. If you spot any bugs or need additional features, feel free to submit tickets at [GitHub Issues](https://github.com/Cyoda-platform/ai-assistant). You\u2019re also most welcome to contribute to the project! \ud83d\udcbb \n\nFor any direct inquiries, reach out to **ksenia.lukonina@cyoda.com**. We\u2019re here to help! \ud83d\ude0a\n                       ",
+                "max_iteration": 0,
+                "stack": "app_building_stack",
+                "publish": true
+            }
+        ]
+    },
+    "name": "Redder",
+    "description": "",
+    "chat_id": "b283ed7a-ea21-11ef-9eca-96210fb9dc23",
+    "technical_id": "b283ed7a-ea21-11ef-9eca-96210fb9dc23"
+}

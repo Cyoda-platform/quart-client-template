@@ -1,0 +1,10 @@
+{
+    "post_id": "string",
+    "title": "string",
+    "body": "string",
+    "tags": [
+        "string"
+    ],
+    "upvotes": 0,
+    "downvotes": 0
+}

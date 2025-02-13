@@ -1,0 +1,112 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "user",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/users/create",
+                        "description": "Create a new user.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "user_creation_initiated",
+                                "end_state": "user_created",
+                                "action": "create_user",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nusername = data.get('username')\npassword = data.get('password')\nemail = data.get('email')\n\nuser_id = len(users) + 1\nusers[user_id] = {'username': username, 'password': password, 'email': email}\nreturn jsonify({'user_id': user_id, 'message': 'User created successfully.'}), 201",
+                                "description": "Create a new user with provided details.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        },
+        {
+            "entity_name": "post",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/posts",
+                        "description": "Create a new post.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "post_creation_initiated",
+                                "end_state": "post_created",
+                                "action": "create_post",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\ntitle = data.get('title')\nbody = data.get('body')\ntags = data.get('tags', [])\n\npost_counter += 1\nposts[post_counter] = {\n    'post_id': post_counter,\n    'title': title,\n    'body': body,\n    'tags': tags,\n    'upvotes': 0,\n    'downvotes': 0\n}\nreturn jsonify({'post_id': post_counter, 'message': 'Post created successfully.'}), 201",
+                                "description": "Create a new post with title and body.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/posts",
+                        "description": "Get list of posts."
+                    },
+                    {
+                        "endpoint": "/posts/<int:post_id>",
+                        "description": "Get a specific post."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "comment",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/posts/<int:post_id>/comments",
+                        "description": "Add a comment to a specific post.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "comment_creation_initiated",
+                                "end_state": "comment_added",
+                                "action": "add_comment",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.get_json()\nbody = data.get('body')\n\nif post_id not in posts:\n    return jsonify({'message': 'Post not found'}), 404\n\ncomment_counter += 1\ncomments[comment_counter] = {\n    'comment_id': comment_counter,\n    'post_id': post_id,\n    'body': body,\n    'upvotes': 0,\n    'downvotes': 0\n}\nreturn jsonify({'comment_id': comment_counter, 'message': 'Comment added successfully.'}), 201",
+                                "description": "Add a new comment to the specified post.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/posts/<int:post_id>/comments",
+                        "description": "Get comments for a specific post."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "post",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/posts",
+                        "description": "Get list of posts."
+                    },
+                    {
+                        "endpoint": "/posts/<int:post_id>",
+                        "description": "Get a specific post."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "comment",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/posts/<int:post_id>/comments",
+                        "description": "Get comments for a specific post."
+                    }
+                ]
+            }
+        }
+    ]
+}

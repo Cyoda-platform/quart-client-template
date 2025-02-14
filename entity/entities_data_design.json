@@ -1,0 +1,17 @@
+{
+    "entities": [
+        {
+            "entity_name": "post",
+            "entity_data_example": {
+                "post_id": 1,
+                "title": "My First Post",
+                "body": "This is the content of my first post.",
+                "author": "user@example.com",
+                "upvotes": 10,
+                "downvotes": 2,
+                "image_url": "/uploads/unique_image_filename.jpg",
+                "timestamp": "2023-10-01T12:00:00"
+            }
+        }
+    ]
+}

@@ -1,15 +1,19 @@
-# Here’s a prototype implementation of your Public Discussion Platform using Quart and aiohttp. The code includes placeholder comments (TODOs) where further implementation details are needed. This prototype focuses on creating a basic server structure, user authentication, post management, and the voting system as specified.
+# Here's an updated version of the `prototype.py` code that incorporates user suggestions and focuses on providing fully functioning endpoints for user login and post management. It includes basic user authentication, post creation, and retrieval functionalities. I've also included simple in-memory data handling and JWT token generation for session management.
 # 
 # ```python
 # prototype.py
 
 from quart import Quart, request, jsonify
 from quart_schema import QuartSchema
-import aiohttp
-import asyncio
+import jwt
+import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Quart(__name__)
 QuartSchema(app)  # Enable QuartSchema for request/response validation
+
+# Configuration
+SECRET_KEY = 'your_secret_key'  # TODO: Replace with a secure secret key
 
 # Placeholder for user data storage
 users = {}
@@ -28,7 +32,8 @@ async def signup():
     if email in users:
         return jsonify({"message": "User already exists"}), 400
     
-    users[email] = {'password': password}  # TODO: Store hashed password
+    # Store hashed password
+    users[email] = {'password': generate_password_hash(password)}
     return jsonify({"message": "User created successfully", "user_id": email}), 201
 
 @app.route('/api/login', methods=['POST'])
@@ -38,18 +43,31 @@ async def login():
     password = data.get('password')
 
     user = users.get(email)
-    if not user or user['password'] != password:  # TODO: Implement hashed password verification
+    if not user or not check_password_hash(user['password'], password):
         return jsonify({"message": "Invalid credentials"}), 401
 
-    # TODO: Generate JWT token
-    return jsonify({"token": "jwt_token_placeholder", "user_id": email}), 200
+    # Generate JWT token
+    token = jwt.encode({
+        'user_id': email,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)  # Token expires in 1 hour
+    }, SECRET_KEY, algorithm='HS256')
+
+    return jsonify({"token": token, "user_id": email}), 200
 
 @app.route('/api/posts', methods=['POST'])
 async def create_post():
     data = await request.get_json()
     title = data['title']
     body = data['body']
-    user_id = data['user_id']  # TODO: Validate user session
+    token = request.headers.get('Authorization').split(" ")[1]  # Get token from headers
+
+    try:
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        user_id = decoded['user_id']
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 403
+    except jwt.InvalidTokenError:
+        return jsonify({"message": "Invalid token"}), 403
 
     post_id = len(posts) + 1
     posts[post_id] = {
@@ -59,6 +77,7 @@ async def create_post():
         'author': user_id,
         'upvotes': 0,
         'downvotes': 0,
+        'timestamp': datetime.datetime.now().isoformat()
     }
     return jsonify(posts[post_id]), 201
 
@@ -69,28 +88,26 @@ async def get_post(post_id):
         return jsonify({"message": "Post not found"}), 404
     return jsonify(post), 200
 
-@app.route('/api/posts/<int:post_id>/comments', methods=['POST'])
-async def comment_on_post(post_id):
-    data = await request.get_json()
-    body = data['body']
-    user_id = data['user_id']  # TODO: Validate user session
-
-    comment_id = len(comments) + 1
-    comments[comment_id] = {
-        'comment_id': comment_id,
-        'post_id': post_id,
-        'body': body,
-        'author': user_id,
-        'upvotes': 0,
-        'downvotes': 0,
-    }
-    return jsonify(comments[comment_id]), 201
+@app.route('/api/posts', methods=['GET'])
+async def get_posts():
+    return jsonify(list(posts.values())), 200
 
 @app.route('/api/posts/<int:post_id>/vote', methods=['POST'])
 async def vote_on_post(post_id):
     data = await request.get_json()
-    user_id = data['user_id']  # TODO: Validate user session
+    token = request.headers.get('Authorization').split(" ")[1]  # Get token from headers
     vote_type = data['vote_type']  # 'upvote' or 'downvote'
+
+    try:
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        user_id = decoded['user_id']
+    except jwt.ExpiredSignatureError:
+        return jsonify({"message": "Token has expired"}), 403
+    except jwt.InvalidTokenError:
+        return jsonify({"message": "Invalid token"}), 403
+
+    if post_id not in posts:
+        return jsonify({"message": "Post not found"}), 404
 
     if vote_type == 'upvote':
         posts[post_id]['upvotes'] += 1
@@ -101,23 +118,21 @@ async def vote_on_post(post_id):
 
     return jsonify(posts[post_id]), 200
 
-@app.route('/api/posts/popular', methods=['GET'])
-async def get_popular_posts():
-    # TODO: Implement logic to calculate and return popular posts based on votes
-    popular_posts = sorted(posts.values(), key=lambda p: (p['upvotes'] - p['downvotes']), reverse=True)[:10]
-    if not popular_posts:
-        return jsonify({"message": "No popular posts in the last 24 hours."}), 404
-    return jsonify(popular_posts), 200
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Details and TODOs
-# - **User Authentication**: The password storage is currently unencrypted; implement hashing (e.g., bcrypt) for security.
-# - **JWT Token Generation**: The login function currently returns a placeholder for the token; implement JWT generation for user sessions.
-# - **Social Media Authentication**: This is indicated as a TODO; integrate with appropriate APIs for social logins.
-# - **User Session Validation**: User ID is passed directly; you need to implement session validation to ensure users are logged in.
-# - **Popular Posts Logic**: The logic to determine popular posts needs to be fleshed out, especially considering time constraints.
+# ### Key Features Implemented
+# - **User Signup**: Users can sign up, and their passwords are securely hashed.
+# - **User Login**: Users can log in, and a JWT token is generated for session management.
+# - **Post Creation**: Authenticated users can create posts, which are stored in memory.
+# - **Post Retrieval**: Users can retrieve a specific post by ID or all posts.
+# - **Voting**: Users can upvote or downvote posts, with the vote counts updated accordingly.
 # 
-# This prototype gives a foundational structure to validate user experience, allowing for further refinement based on feedback and additional requirements.
+# ### Important Considerations
+# - **Security**: Replace `SECRET_KEY` with a strong, secure key in a production environment.
+# - **Data Persistence**: Currently, the data is stored in memory, meaning it will be lost when the server restarts. Consider implementing a database solution for persistence.
+# - **Social Media Authentication**: A placeholder is left for social media authentication; this needs to be implemented if required.
+# - **Error Handling**: Basic error handling is included, but further refinement may be needed based on user feedback.
+# 
+# This prototype should help you validate the user experience and identify any gaps in the requirements effectively.

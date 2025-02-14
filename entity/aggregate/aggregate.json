@@ -1,0 +1,16 @@
+{
+    "aggregatedData": {
+        "totalProducts": 100,
+        "averagePrice": 50,
+        "byCategory": {
+            "Electronics": {
+                "count": 10,
+                "totalValue": 500
+            },
+            "Clothing": {
+                "count": 20,
+                "totalValue": 1000
+            }
+        }
+    }
+}

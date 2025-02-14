@@ -430,21 +430,24 @@ async def send_request(headers, url, method, data, json):
         if method == 'GET':
             async with session.get(url, headers=headers) as response:
                 if response and (response.status == 200 or response.status == 404):
-                    data = await response.json()
+                    response_data = {"status": response.status,
+                                     "json": await response.json() if response.content_type == 'application/json' else await response.text()}
         elif method == 'POST':
             async with session.post(url, headers=headers, data=data, json=json) as response:
                 if response:
-                    data = await response.json()
+                    response_data = {"status": response.status,
+                                     "json": await response.json() if response.content_type == 'application/json' else await response.text()}
         elif method == 'PUT':
             async with session.put(url, headers=headers, data=data, json=json) as response:
                 if response:
-                    data = await response.json()
+                    response_data = {"status": response.status,
+                                     "json": await response.json() if response.content_type == 'application/json' else await response.text()}
         elif method == 'DELETE':
             async with session.delete(url, headers=headers) as response:
                 if response:
-                    data = await response.json()
-
-    return data
+                    response_data = {"status": response.status,
+                                     "json": await response.json() if response.content_type == 'application/json' else await response.text()}
+    return response_data
 
 
 async def send_post_request(token: str, api_url: str, path: str, data=None, json=None) -> Optional[Any]:

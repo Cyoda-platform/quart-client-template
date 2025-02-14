@@ -31,27 +31,27 @@ class AiAssistantService(IAiAssistantService):
     async def init_workflow_chat(self, token, chat_id):
         data = json.dumps({"chat_id": f"{chat_id}"})
         resp = await send_post_request(token, CYODA_AI_URL, "%s/initial" % API_V_WORKFLOWS_, data)
-        return resp.get('message')
+        return resp.get('json').get('message')
 
     async def init_connections_chat(self, token, chat_id):
         data = json.dumps({"chat_id": f"{chat_id}"})
         resp = await send_post_request(token, CYODA_AI_URL, "%s/initial" % API_V_CONNECTIONS_, data)
-        return resp.get('message')
+        return resp.get('json').get('message')
 
     async def init_random_chat(self, token, chat_id):
         data = json.dumps({"chat_id": f"{chat_id}"})
         resp = await send_post_request(token, CYODA_AI_URL, "%s/initial" % API_V_RANDOM_, data)
-        return resp.get('message')
+        return resp.get('json').get('message')
 
     async def init_cyoda_chat(self, token, chat_id):
         data = json.dumps({"chat_id": f"{chat_id}"})
         resp = await send_post_request(token, CYODA_AI_URL, "%s/initial" % API_V_RANDOM_, data)
-        return resp.get('message')
+        return resp.get('json').get('message')
 
     async def init_trino_chat(self, token, chat_id, schema_name):
         data = json.dumps({"chat_id": f"{chat_id}", "schema_name": f"{schema_name}"})
         resp = await send_post_request(token, CYODA_AI_URL, "%s/initial" % API_V_TRINO_, data)
-        return resp
+        return resp.get('json')
 
 
     async def ai_chat(self, token, chat_id, ai_endpoint, ai_question):
@@ -80,7 +80,7 @@ class AiAssistantService(IAiAssistantService):
             return {"error": "Answer size exceeds 1MB limit"}
         data = json.dumps({"chat_id": f"{chat_id}", "question": f"{ai_question}"})
         resp = await send_post_request(token, CYODA_AI_URL, "%s/chat" % API_V_CYODA_, data)
-        return resp.get('message')
+        return resp.get('json').get('message')
 
 
 
@@ -94,7 +94,7 @@ class AiAssistantService(IAiAssistantService):
             "class_name": "com.cyoda.tdb.model.treenode.TreeNodeEntity"
         })
         resp = await send_post_request(token, CYODA_AI_URL, "%s/chat" % API_V_WORKFLOWS_, data)
-        return resp.get('message')
+        return resp.get('json').get('message')
 
     async def export_workflow_to_cyoda_ai(self, token, chat_id, data):
         try:
@@ -105,7 +105,7 @@ class AiAssistantService(IAiAssistantService):
                 "transitions": data["transitions"]
             })
             resp = await send_post_request(token, CYODA_AI_URL, "%s/generate-workflow" % API_V_WORKFLOWS_, data)
-            return resp.get('message')
+            return resp.get('json').get('message')
         except Exception as e:
             logger.error(f"Failed to export workflow: {e}")
 
@@ -149,7 +149,7 @@ class AiAssistantService(IAiAssistantService):
             "chat_id": f"{chat_id}"
         })
         resp = await send_post_request(token, CYODA_AI_URL, "%s/chat" % API_V_CONNECTIONS_, data)
-        return resp.get('message')
+        return resp.get('json').get('message')
 
 
     async def chat_random(self, token, chat_id, ai_question):
@@ -161,7 +161,7 @@ class AiAssistantService(IAiAssistantService):
             "chat_id": f"{chat_id}"
         })
         resp = await send_post_request(token, CYODA_AI_URL, "%s/chat" % API_V_RANDOM_, data)
-        return resp.get('message')
+        return resp.get('json').get('message')
 
 
     async def chat_trino(self, token, chat_id, ai_question):
@@ -170,4 +170,4 @@ class AiAssistantService(IAiAssistantService):
             "return_object": "random",
             "chat_id": f"{chat_id}"})
         resp = await send_post_request(token, CYODA_AI_URL, "%s/chat" % API_V_TRINO_, data)
-        return resp.get('message')
+        return resp.get('json').get('message')

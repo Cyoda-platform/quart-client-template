@@ -197,7 +197,7 @@ class CyodaRepository(CrudRepository):
                 logger.error(
                     f"Failed to save schema for entity '{entity_name}' with version '{version}'. Response: {response}")
 
-            return response
+            return response.get('json')
 
         except Exception as e:
             logger.error(
@@ -218,7 +218,7 @@ class CyodaRepository(CrudRepository):
                 logger.error(
                     f"Failed to lock schema for entity '{entity_name}' with version '{version}'. Response: {response}")
 
-            return response
+            return response.get('json')
         except Exception as e:
             logger.error(
                 f"An error occurred while locking schema for entity '{entity_name}' with version '{version}': {e}")
@@ -241,7 +241,7 @@ class CyodaRepository(CrudRepository):
         response = await send_get_request(token, CYODA_API_URL, export_model_url)
 
         if response:
-            return response
+            return response.get('json')
         else:
             raise Exception(f"Getting the model failed: {response}")
 
@@ -255,7 +255,7 @@ class CyodaRepository(CrudRepository):
 
             if response:
                 logger.info(f"Successfully saved new entity. Response: {response}")
-                return response
+                return response.get('json')
             else:
                 logger.error(f"Failed to save new entity. Response: {response}")
                 raise Exception(f"Failed to save new entity. Response: {response}")
@@ -271,7 +271,7 @@ class CyodaRepository(CrudRepository):
         response = await send_delete_request(token, CYODA_API_URL, delete_entities_url)
 
         if response:
-            return response
+            return response.get('json')
         else:
             raise Exception(f"Deletion failed: {response}")
 
@@ -281,7 +281,7 @@ class CyodaRepository(CrudRepository):
         logger.info(condition)
         response = await send_post_request(token, CYODA_API_URL, search_url, data=json.dumps(condition))
         if response:
-            return response
+            return response.get('json')
         else:
             raise Exception(f"Snapshot search trigger failed: {response}")
 
@@ -291,7 +291,7 @@ class CyodaRepository(CrudRepository):
 
         response = await send_get_request(token, CYODA_API_URL, status_url)
         if response:
-            return response
+            return response.get('json')
         else:
             raise Exception(f"Snapshot search trigger failed: {response}")
 
@@ -327,7 +327,7 @@ class CyodaRepository(CrudRepository):
         response = await send_get_request(token=token, api_url=CYODA_API_URL, path=result_url)
 
         if response:
-            return response
+            return response.get('json')
         else:
             raise Exception(f"Get search result failed: {response}")
 
@@ -365,7 +365,7 @@ class CyodaRepository(CrudRepository):
                                           f"{path}/{_id}/{meta["update_transition"]}",
                                           data=payload_json)
         if response:
-            return response
+            return response.get('json')
         else:
             raise Exception(f"Get search result failed: {response}")
 
@@ -392,15 +392,15 @@ class CyodaRepository(CrudRepository):
         path = f"entity/{_uuid}"
         response = await send_get_request(meta["token"], CYODA_API_URL, path=path)
         logger.info(response)
-        return response.get('tree')
+        return response.get('json').get('tree')
 
     async def _get_all_entities(self, meta):
         path = f"entity/{meta["entity_model"]}/{meta["entity_version"]}"
         response = await send_get_request(meta["token"], CYODA_API_URL, path=path)
         logger.info(response)
-        return response
+        return response.get('json')
 
     async def _launch_transition(self, meta):
         path = f"/platform-api/entity/transition?entityId={meta["technical_id"]}&entityClass=com.cyoda.tdb.model.treenode.TreeNodeEntity&transitionName={meta["update_transition"]}"
         response = await send_put_request(meta["token"], CYODA_API_URL, path)
-        return response
+        return response.get('json')

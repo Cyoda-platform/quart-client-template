@@ -9,7 +9,7 @@ process_dispatch = {}
 def find_and_import_workflows():
     entity_path = entity.__path__[0]
     # Pattern to match 'entity/*/workflow/workflow.py'
-    pattern = os.path.join(entity_path, '*', 'workflow', 'workflow.py')
+    pattern = os.path.join(entity_path, '*', 'workflow.py')
     for module_path in glob.glob(pattern):
         # Compute the module name
         # Example: if module_path is '/path/to/entity/any_name/workflow/workflow.py'

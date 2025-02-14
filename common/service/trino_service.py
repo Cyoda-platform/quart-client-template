@@ -7,4 +7,4 @@ async def get_trino_schema_id_by_entity_name(entity_name: str):
 #runs sql to retrieve data
 async def run_sql_query(token, query):
     resp = await send_post_request(token, CYODA_AI_URL, "api/v1/trino/run-query", query)
-    return resp["message"]
+    return resp.get('json')["message"]

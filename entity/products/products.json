@@ -1,0 +1,16 @@
+{
+    "products": [
+        {
+            "id": 1,
+            "name": "Product Name",
+            "price": "100",
+            "brand": "Brand Name",
+            "category": {
+                "usertype": {
+                    "usertype": "User Type"
+                },
+                "category": "Category Name"
+            }
+        }
+    ]
+}

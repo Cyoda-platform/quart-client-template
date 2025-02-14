@@ -1,0 +1,82 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "transform",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/transform",
+                        "description": "Transforms the data format as specified.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "data_received",
+                                "end_state": "data_transformed",
+                                "action": "transform data",
+                                "complete_code_for_action_derived_from_the_prototype": "transformed_products = []\nfor product in products:\n    transformed_product = {\n        'id': product['id'],\n        'name': product['name'],\n        'price': float(product['price']),\n        'brand': product['brand'],\n        'category': product['category']['category']\n    }\n    transformed_products.append(transformed_product)",
+                                "description": "Transform the received product data into a structured format.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/api/transform",
+                        "description": "No GET endpoint defined for transformation."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/report",
+                        "description": "Sends a report based on the aggregated data.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "report_data_prepared",
+                                "end_state": "report_sent",
+                                "action": "send report",
+                                "complete_code_for_action_derived_from_the_prototype": "print(f'Sending report to {admin_email}')",
+                                "description": "Send the prepared report data to the specified admin email.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/api/report",
+                        "description": "No GET endpoint defined for report."
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "products",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/products",
+                        "description": "Fetches product data from the external API."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "aggregate",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/aggregate",
+                        "description": "Returns mock aggregated data."
+                    }
+                ]
+            }
+        }
+    ]
+}

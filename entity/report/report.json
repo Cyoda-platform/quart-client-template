@@ -1,0 +1,15 @@
+{
+    "reportData": {
+        "aggregatedData": {
+            "totalProducts": 100,
+            "averagePrice": 50,
+            "byCategory": {
+                "Category Name": {
+                    "count": 10,
+                    "totalValue": 500
+                }
+            }
+        }
+    },
+    "adminEmail": "admin@example.com"
+}

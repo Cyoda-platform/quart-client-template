@@ -14,7 +14,9 @@
                                 "action": "transform data",
                                 "complete_code_for_action_derived_from_the_prototype": "transformed_products = []\nfor product in products:\n    transformed_product = {\n        'id': product['id'],\n        'name': product['name'],\n        'price': float(product['price']),\n        'brand': product['brand'],\n        'category': product['category']['category']\n    }\n    transformed_products.append(transformed_product)",
                                 "description": "Transform the received product data into a structured format.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "products"
+                                ]
                             }
                         ]
                     }
@@ -41,7 +43,9 @@
                                 "action": "send report",
                                 "complete_code_for_action_derived_from_the_prototype": "print(f'Sending report to {admin_email}')",
                                 "description": "Send the prepared report data to the specified admin email.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "aggregate"
+                                ]
                             }
                         ]
                     }

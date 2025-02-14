@@ -1,4 +1,6 @@
-# Here's an updated version of the `prototype.py` code that incorporates user suggestions and focuses on providing fully functioning endpoints for user login and post management. It includes basic user authentication, post creation, and retrieval functionalities. I've also included simple in-memory data handling and JWT token generation for session management.
+# Here’s an updated version of the `prototype.py` code that includes image uploading functionality. This prototype allows users to upload images when creating posts. The images will be temporarily stored in a local directory, and their URLs will be returned in the post data.
+# 
+# ### Complete `prototype.py` Code
 # 
 # ```python
 # prototype.py
@@ -8,26 +10,28 @@ from quart_schema import QuartSchema
 import jwt
 import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import os
+from uuid import uuid4
+from PIL import Image
 
 app = Quart(__name__)
 QuartSchema(app)  # Enable QuartSchema for request/response validation
 
 # Configuration
 SECRET_KEY = 'your_secret_key'  # TODO: Replace with a secure secret key
+UPLOAD_FOLDER = 'uploads'  # Directory to store uploaded images
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)  # Create upload folder if it doesn't exist
 
 # Placeholder for user data storage
 users = {}
 posts = {}
-comments = {}
-votes = {}
 
 @app.route('/api/signup', methods=['POST'])
 async def signup():
     data = await request.get_json()
     email = data.get('email')
     password = data.get('password')
-    social_media = data.get('social_media')  # TODO: Implement social media auth
-
+    
     # Simple user creation logic
     if email in users:
         return jsonify({"message": "User already exists"}), 400
@@ -56,7 +60,7 @@ async def login():
 
 @app.route('/api/posts', methods=['POST'])
 async def create_post():
-    data = await request.get_json()
+    data = await request.form  # Use form to handle file uploads
     title = data['title']
     body = data['body']
     token = request.headers.get('Authorization').split(" ")[1]  # Get token from headers
@@ -69,6 +73,17 @@ async def create_post():
     except jwt.InvalidTokenError:
         return jsonify({"message": "Invalid token"}), 403
 
+    # Handle image upload
+    image_url = None
+    if 'image' in request.files:
+        image = request.files['image']
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            unique_filename = f"{uuid4().hex}_{filename}"
+            image_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+            image.save(image_path)
+            image_url = f"/{UPLOAD_FOLDER}/{unique_filename}"  # URL to access the image (adjust as needed)
+
     post_id = len(posts) + 1
     posts[post_id] = {
         'post_id': post_id,
@@ -77,6 +92,7 @@ async def create_post():
         'author': user_id,
         'upvotes': 0,
         'downvotes': 0,
+        'image_url': image_url,
         'timestamp': datetime.datetime.now().isoformat()
     }
     return jsonify(posts[post_id]), 201
@@ -118,21 +134,29 @@ async def vote_on_post(post_id):
 
     return jsonify(posts[post_id]), 200
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'png', 'jpg', 'jpeg', 'gif'}
+
+def secure_filename(filename):
+    return filename.replace(" ", "_")  # Simple filename sanitization (consider using werkzeug.utils.secure_filename)
+
+@app.route('/uploads/<path:filename>', methods=['GET'])
+async def serve_image(filename):
+    return await send_from_directory(UPLOAD_FOLDER, filename)
+
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Features Implemented
-# - **User Signup**: Users can sign up, and their passwords are securely hashed.
-# - **User Login**: Users can log in, and a JWT token is generated for session management.
-# - **Post Creation**: Authenticated users can create posts, which are stored in memory.
-# - **Post Retrieval**: Users can retrieve a specific post by ID or all posts.
-# - **Voting**: Users can upvote or downvote posts, with the vote counts updated accordingly.
+# ### Key Features Added
+# - **Image Uploading**: Users can upload images when creating posts. The images are saved in the `uploads` directory, and their URLs are stored in the post data.
+# - **Allowed File Types**: The application checks that uploaded files are of the allowed types (PNG, JPG, JPEG, GIF).
+# - **Secure Filename Handling**: The uploaded images are renamed to avoid conflicts using UUIDs.
 # 
 # ### Important Considerations
-# - **Security**: Replace `SECRET_KEY` with a strong, secure key in a production environment.
-# - **Data Persistence**: Currently, the data is stored in memory, meaning it will be lost when the server restarts. Consider implementing a database solution for persistence.
-# - **Social Media Authentication**: A placeholder is left for social media authentication; this needs to be implemented if required.
-# - **Error Handling**: Basic error handling is included, but further refinement may be needed based on user feedback.
+# - **Directory Management**: The `uploads` directory is created if it doesn't exist. Ensure the server has permission to write to this directory.
+# - **Security**: Replace `SECRET_KEY` with a strong key for production. Further improvements can be made for file validation and sanitization.
+# - **Data Persistence**: The application currently uses in-memory storage. For production, consider a database for data persistence.
+# - **Serving Images**: The `serve_image` endpoint allows serving images stored in the `uploads` directory. Adjust the path as necessary for your deployment setup.
 # 
-# This prototype should help you validate the user experience and identify any gaps in the requirements effectively.
+# This complete prototype should help you validate the user experience, especially around image uploads, and identify any gaps in the requirements effectively.

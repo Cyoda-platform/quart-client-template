@@ -14,7 +14,9 @@
                                 "action": "create_post",
                                 "complete_code_for_action_derived_from_the_prototype": "data = await request.form  # Use form to handle file uploads\n    title = data['title']\n    body = data['body']\n    # handle image upload logic",
                                 "description": "User creates a post with title, body, and optional image.",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "post"
+                                ]
                             }
                         ]
                     }
@@ -32,21 +34,5 @@
             }
         }
     ],
-    "secondary_entities": [
-        {
-            "entity_name": "post",
-            "endpoints": {
-                "GET": [
-                    {
-                        "endpoint": "/api/posts/<int:post_id>",
-                        "description": "Retrieve a specific post by its ID."
-                    },
-                    {
-                        "endpoint": "/api/posts",
-                        "description": "Retrieve all posts."
-                    }
-                ]
-            }
-        }
-    ]
+    "secondary_entities": []
 }

@@ -1,4 +1,4 @@
-# Here is the `workflow.py` file implementing the entity report workflow functions as specified:
+# Here is the complete `workflow.py` file that implements the entity report workflow functions, incorporating the relevant logic from the provided `prototype.py`:
 # 
 # ```python
 import json
@@ -19,27 +19,31 @@ async def send_report(data, meta={"token": "cyoda_token"}):
         logger.error("Missing report data or admin email.")
         return {"error": "Missing report data or admin email"}, 400
 
-    # Placeholder for sending the report
+    # Here we would implement the logic to send the email
+    # For now, we will just log the action and print a message
+    logger.info(f"Sending report to {admin_email}")
     print(f"Sending report to {admin_email}")  # Mock send
 
-    # You might need to save secondary entities defined in entity_design.json if necessary using entity_service
+    # You might need to save the report as a secondary entity if necessary using entity_service
     # report_id = await entity_service.add_item(
     #         meta["token"], "report", ENTITY_VERSION, report_data
     #     )
 
     return {"message": "Report sent successfully"}, 200
 
+    # Handle exceptions during sending
     except Exception as e:
         logger.error(f"Error in send_report: {e}")
         raise
 # ```
 # 
 # ### Explanation of the Code:
-# 1. **Logging**: The logging module is set up to log messages at the INFO level.
-# 2. **Send Report**: The `send_report` function retrieves `report_data` and `admin_email` from the input `data`.
-# 3. **Validation**: It checks if both `report_data` and `admin_email` are provided. If not, it logs an error and returns a 400 response.
-# 4. **Sending Report**: The function includes a placeholder for sending the report, which currently just prints a message indicating that the report is being sent to the specified email.
-# 5. **Optional Saving**: There is a commented-out section that shows how you might save the report as a secondary entity using `entity_service`.
+# 1. **Logging Setup**: The logging module is configured to log messages at the INFO level.
+# 2. **Send Report Function**: The `send_report` function retrieves `report_data` and `admin_email` from the input `data`.
+# 3. **Validation**: It checks whether both `report_data` and `admin_email` are provided. If either is missing, it logs an error and returns a 400 response.
+# 4. **Sending Logic**: The function includes a placeholder to simulate sending the email by printing the action and logging it.
+# 5. **Optional Saving**: There’s a commented-out section that shows how you might save the report data using `entity_service` if needed.
 # 6. **Return Response**: If everything is successful, it returns a success message.
+# 7. **Exception Handling**: Catches exceptions during the process and logs an error message, then raises the exception.
 # 
-# This implementation follows the specified template and maintains the required structure and functionality.
+# This implementation effectively captures the logic from the prototype while adhering to the required structure and functionality specified in the template.

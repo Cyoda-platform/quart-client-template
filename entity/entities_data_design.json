@@ -1,0 +1,79 @@
+{
+    "entities": [
+        {
+            "entity_name": "transform",
+            "entity_data_example": {
+                "products": [
+                    {
+                        "id": 1,
+                        "name": "Product Name",
+                        "price": "100",
+                        "brand": "Brand Name",
+                        "category": {
+                            "usertype": {
+                                "usertype": "User Type"
+                            },
+                            "category": "Category Name"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report",
+            "entity_data_example": {
+                "reportData": {
+                    "aggregatedData": {
+                        "totalProducts": 100,
+                        "averagePrice": 50,
+                        "byCategory": {
+                            "Category Name": {
+                                "count": 10,
+                                "totalValue": 500
+                            }
+                        }
+                    }
+                },
+                "adminEmail": "admin@example.com"
+            }
+        },
+        {
+            "entity_name": "products",
+            "entity_data_example": {
+                "products": [
+                    {
+                        "id": 1,
+                        "name": "Product Name",
+                        "price": "100",
+                        "brand": "Brand Name",
+                        "category": {
+                            "usertype": {
+                                "usertype": "User Type"
+                            },
+                            "category": "Category Name"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "aggregate",
+            "entity_data_example": {
+                "aggregatedData": {
+                    "totalProducts": 100,
+                    "averagePrice": 50,
+                    "byCategory": {
+                        "Electronics": {
+                            "count": 10,
+                            "totalValue": 500
+                        },
+                        "Clothing": {
+                            "count": 20,
+                            "totalValue": 1000
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

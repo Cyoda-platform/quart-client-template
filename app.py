@@ -7,12 +7,20 @@ from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token
 #please update this line to your entity
+from entity.transform.api import api_bp_transform
+from entity.report.api import api_bp_report
+from entity.products.api import api_bp_products
+from entity.aggregate.api import api_bp_aggregate
 from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
 
 logging.basicConfig(level=logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+app.register_blueprint(api_bp_transform, url_prefix='/api/transform')
+app.register_blueprint(api_bp_report, url_prefix='/api/report')
+app.register_blueprint(api_bp_products, url_prefix='/api/products')
+app.register_blueprint(api_bp_aggregate, url_prefix='/api/aggregate')
 app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
 
 @app.before_serving

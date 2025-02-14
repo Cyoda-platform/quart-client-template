@@ -1,0 +1,10 @@
+{
+    "report": [
+        {
+            "category": "Category 1",
+            "totalStock": 200,
+            "averagePrice": 150
+        }
+    ],
+    "generatedAt": "TODO: Implement timestamp"
+}

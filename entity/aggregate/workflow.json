@@ -1,0 +1,67 @@
+{
+    "name": "product_aggregation_workflow",
+    "description": "Workflow to aggregate products based on fetched data.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "aggregate",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "aggregate",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "1000",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "Aggregate products",
+            "description": "Aggregates products from the fetched data.",
+            "start_state": "Data fetched",
+            "start_state_description": "Data has been successfully fetched.",
+            "end_state": "Aggregation completed",
+            "end_state_description": "The product aggregation process has completed.",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "aggregateProducts",
+                        "description": "Aggregates products using a specified calculation node.",
+                        "calculation_nodes_tags": "3fff4540-eacd-11ef-9eca-96210fb9dc23",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

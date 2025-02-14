@@ -1,0 +1,72 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "aggregate",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/aggregate",
+                        "description": "Aggregates product data based on categories",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Data fetched",
+                                "end_state": "Aggregation completed",
+                                "action": "Aggregate products",
+                                "complete_code_for_action_derived_from_the_prototype": "cleaned_data = clean_and_format_data(products_data['products'])\naggregated_data = aggregate_data(cleaned_data)",
+                                "description": "Clean and aggregate product data",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        },
+        {
+            "entity_name": "send_report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/send-report",
+                        "description": "Sends a report via email",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "Report generated",
+                                "end_state": "Report sent",
+                                "action": "Send report",
+                                "complete_code_for_action_derived_from_the_prototype": "return jsonify({\"status\": \"success\", \"message\": f\"Report sent to {email} in {report_format} format.\"})",
+                                "description": "Send the generated report to the specified email address",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "products",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/products",
+                        "description": "Fetches the list of products"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/report",
+                        "description": "Generates a report based on aggregated product data"
+                    }
+                ]
+            }
+        }
+    ]
+}

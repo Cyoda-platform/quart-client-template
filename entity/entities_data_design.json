@@ -1,0 +1,44 @@
+{
+    "entities": [
+        {
+            "entity_name": "aggregate",
+            "entity_data_example": {
+                "criteria": "category"
+            }
+        },
+        {
+            "entity_name": "send_report",
+            "entity_data_example": {
+                "email": "admin@example.com",
+                "reportFormat": "CSV"
+            }
+        },
+        {
+            "entity_name": "products",
+            "entity_data_example": {
+                "products": [
+                    {
+                        "id": 1,
+                        "name": "Product A",
+                        "category": "Category 1",
+                        "price": 100,
+                        "stock": 50
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "report",
+            "entity_data_example": {
+                "report": [
+                    {
+                        "category": "Category 1",
+                        "totalStock": 200,
+                        "averagePrice": 150
+                    }
+                ],
+                "generatedAt": "TODO: Implement timestamp"
+            }
+        }
+    ]
+}

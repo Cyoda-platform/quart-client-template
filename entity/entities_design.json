@@ -14,7 +14,10 @@
                                 "action": "Aggregate products",
                                 "complete_code_for_action_derived_from_the_prototype": "cleaned_data = clean_and_format_data(products_data['products'])\naggregated_data = aggregate_data(cleaned_data)",
                                 "description": "Clean and aggregate product data",
-                                "related_secondary_entities": []
+                                "related_secondary_entities": [
+                                    "products",
+                                    "report"
+                                ]
                             }
                         ]
                     }

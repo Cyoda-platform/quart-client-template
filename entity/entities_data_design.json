@@ -1,0 +1,41 @@
+{
+    "entities": [
+        {
+            "entity_name": "users",
+            "entity_data_example": {
+                "id": "integer",
+                "username": "string",
+                "password": "string"
+            }
+        },
+        {
+            "entity_name": "posts",
+            "entity_data_example": {
+                "post_id": "integer",
+                "title": "string",
+                "topics": [
+                    "string"
+                ],
+                "body": "string",
+                "upvotes": "integer",
+                "downvotes": "integer"
+            }
+        },
+        {
+            "entity_name": "post",
+            "entity_data_example": {
+                "post_id": "integer",
+                "title": "string",
+                "body": "string",
+                "comments": [
+                    {
+                        "comment_id": "integer",
+                        "body": "string",
+                        "upvotes": "integer",
+                        "downvotes": "integer"
+                    }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,201 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "users",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/users/create",
+                        "description": "Create a new users.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    username = data.get('username')\n    password = data.get('password')\n    # TODO: Add password hashing and validation logic\n    users[username] = {'password': password}\n    return jsonify({\"message\": \"User created successfully.\"}), 201\n",
+                        "action": "create_user"
+                    },
+                    {
+                        "endpoint": "/users/login",
+                        "description": "Create a new users.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    username = data.get('username')\n    password = data.get('password')\n    # TODO: Add validation for username and password\n    if username in users and users[username]['password'] == password:\n        # TODO: Generate JWT token\n        return jsonify({\"token\": \"your_jwt_token\"}), 200\n    return jsonify({\"message\": \"Invalid credentials.\"}), 401\n",
+                        "action": "login_user"
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/users/<id>",
+                        "description": "Retrieve a users by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/user",
+                        "description": "Retrieve all user entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            },
+            "suggested_workflow": []
+        },
+        {
+            "entity_name": "posts",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/posts",
+                        "description": "Create a new posts.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    post_id = str(len(posts) + 1)\n    posts[post_id] = {\n        \"post_id\": post_id,\n        \"title\": data.get('title'),\n        \"topics\": data.get('topics'),\n        \"body\": data.get('body'),\n        \"upvotes\": 0,\n        \"downvotes\": 0\n    }\n    return jsonify({\"post_id\": post_id, \"message\": \"Post created successfully.\"}), 201\n",
+                        "action": "create_post",
+                        "related_secondary_entities": [
+                            "post"
+                        ]
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>/comments",
+                        "description": "Create a new posts.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    comment_id = str(len(comments) + 1)\n    comments[comment_id] = {\n        \"comment_id\": comment_id,\n        \"body\": data.get('body'),\n        \"post_id\": post_id,\n        \"upvotes\": 0,\n        \"downvotes\": 0\n    }\n    return jsonify({\"comment_id\": comment_id, \"message\": \"Comment added successfully.\"}), 201\n",
+                        "action": "add_comment",
+                        "related_secondary_entities": [
+                            "post"
+                        ]
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>/images",
+                        "description": "Create a new posts.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    # TODO: Implement image upload logic (e.g., save to filesystem or cloud storage)\n    image_id = str(len(images) + 1)\n    images[image_id] = {\"post_id\": post_id, \"image_data\": \"mock_image_data\"}\n    return jsonify({\"image_id\": image_id, \"message\": \"Image uploaded successfully.\"}), 201\n",
+                        "action": "upload_image",
+                        "related_secondary_entities": [
+                            "post"
+                        ]
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>/vote",
+                        "description": "Create a new posts.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    vote = data.get('vote')\n    # TODO: Implement vote counting logic\n    if vote not in ['up', 'down']:\n        return jsonify({\"message\": \"Invalid vote.\"}), 400\n    # Mock vote update\n    if vote == 'up':\n        posts[post_id]['upvotes'] += 1\n    else:\n        posts[post_id]['downvotes'] += 1\n    return jsonify({\"message\": \"Vote recorded.\"}), 200\n",
+                        "action": "vote_post",
+                        "related_secondary_entities": [
+                            "post"
+                        ]
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>/comments/<comment_id>/vote",
+                        "description": "Create a new posts.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    vote = data.get('vote')\n    # TODO: Implement vote counting logic for comments\n    if vote not in ['up', 'down']:\n        return jsonify({\"message\": \"Invalid vote.\"}), 400\n    # Mock vote update\n    if vote == 'up':\n        comments[comment_id]['upvotes'] += 1\n    else:\n        comments[comment_id]['downvotes'] += 1\n    return jsonify({\"message\": \"Vote recorded.\"}), 200\n",
+                        "action": "vote_comment",
+                        "related_secondary_entities": [
+                            "post"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/posts",
+                        "description": "Retrieve posts by identifier.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    limit = request.args.get('limit', default=20, type=int)\n    offset = request.args.get('offset', default=0, type=int)\n    # TODO: Implement pagination and sorting by popularity\n    return jsonify({\"posts\": list(posts.values())[offset:offset + limit]}), 200\n"
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>",
+                        "description": "Retrieve posts by identifier.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    post = posts.get(post_id)\n    if post:\n        return jsonify(post), 200\n    return jsonify({\"message\": \"Post not found.\"}), 404\n"
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>/comments",
+                        "description": "Retrieve posts by identifier.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    post_comments = [comment for comment in comments.values() if comment['post_id'] == post_id]\n    return jsonify({\"comments\": post_comments}), 200\n"
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>/images/<image_id>",
+                        "description": "Retrieve posts by identifier.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    # TODO: Implement logic to retrieve actual image data\n    if image_id in images and images[image_id]['post_id'] == post_id:\n        return jsonify(images[image_id]), 200\n    return jsonify({\"message\": \"Image not found.\"}), 404\n"
+                    }
+                ]
+            },
+            "suggested_workflow": [
+                {
+                    "start_state": "posts_not_created",
+                    "end_state": "posts_created",
+                    "action": "create_post",
+                    "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    post_id = str(len(posts) + 1)\n    posts[post_id] = {\n        \"post_id\": post_id,\n        \"title\": data.get('title'),\n        \"topics\": data.get('topics'),\n        \"body\": data.get('body'),\n        \"upvotes\": 0,\n        \"downvotes\": 0\n    }\n    return jsonify({\"post_id\": post_id, \"message\": \"Post created successfully.\"}), 201\n",
+                    "description": "Initiates the creation of posts and links to secondary entities: post.",
+                    "related_secondary_entities": [
+                        "post"
+                    ]
+                },
+                {
+                    "start_state": "posts_not_created",
+                    "end_state": "posts_created",
+                    "action": "add_comment",
+                    "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    comment_id = str(len(comments) + 1)\n    comments[comment_id] = {\n        \"comment_id\": comment_id,\n        \"body\": data.get('body'),\n        \"post_id\": post_id,\n        \"upvotes\": 0,\n        \"downvotes\": 0\n    }\n    return jsonify({\"comment_id\": comment_id, \"message\": \"Comment added successfully.\"}), 201\n",
+                    "description": "Initiates the creation of posts and links to secondary entities: post.",
+                    "related_secondary_entities": [
+                        "post"
+                    ]
+                },
+                {
+                    "start_state": "posts_not_created",
+                    "end_state": "posts_created",
+                    "action": "upload_image",
+                    "complete_code_for_action_derived_from_the_prototype": "\n    # TODO: Implement image upload logic (e.g., save to filesystem or cloud storage)\n    image_id = str(len(images) + 1)\n    images[image_id] = {\"post_id\": post_id, \"image_data\": \"mock_image_data\"}\n    return jsonify({\"image_id\": image_id, \"message\": \"Image uploaded successfully.\"}), 201\n",
+                    "description": "Initiates the creation of posts and links to secondary entities: post.",
+                    "related_secondary_entities": [
+                        "post"
+                    ]
+                },
+                {
+                    "start_state": "posts_not_created",
+                    "end_state": "posts_created",
+                    "action": "vote_post",
+                    "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    vote = data.get('vote')\n    # TODO: Implement vote counting logic\n    if vote not in ['up', 'down']:\n        return jsonify({\"message\": \"Invalid vote.\"}), 400\n    # Mock vote update\n    if vote == 'up':\n        posts[post_id]['upvotes'] += 1\n    else:\n        posts[post_id]['downvotes'] += 1\n    return jsonify({\"message\": \"Vote recorded.\"}), 200\n",
+                    "description": "Initiates the creation of posts and links to secondary entities: post.",
+                    "related_secondary_entities": [
+                        "post"
+                    ]
+                },
+                {
+                    "start_state": "posts_not_created",
+                    "end_state": "posts_created",
+                    "action": "vote_comment",
+                    "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    vote = data.get('vote')\n    # TODO: Implement vote counting logic for comments\n    if vote not in ['up', 'down']:\n        return jsonify({\"message\": \"Invalid vote.\"}), 400\n    # Mock vote update\n    if vote == 'up':\n        comments[comment_id]['upvotes'] += 1\n    else:\n        comments[comment_id]['downvotes'] += 1\n    return jsonify({\"message\": \"Vote recorded.\"}), 200\n",
+                    "description": "Initiates the creation of posts and links to secondary entities: post.",
+                    "related_secondary_entities": [
+                        "post"
+                    ]
+                }
+            ]
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "post",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/posts",
+                        "description": "Retrieve post information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    limit = request.args.get('limit', default=20, type=int)\n    offset = request.args.get('offset', default=0, type=int)\n    # TODO: Implement pagination and sorting by popularity\n    return jsonify({\"posts\": list(posts.values())[offset:offset + limit]}), 200\n"
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>",
+                        "description": "Retrieve post information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    post = posts.get(post_id)\n    if post:\n        return jsonify(post), 200\n    return jsonify({\"message\": \"Post not found.\"}), 404\n"
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>",
+                        "description": "Retrieve post information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    if post_id in posts:\n        del posts[post_id]\n        return jsonify({\"message\": \"Post deleted successfully.\"}), 200\n    return jsonify({\"message\": \"Post not found.\"}), 404\n"
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>/comments",
+                        "description": "Retrieve post information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    post_comments = [comment for comment in comments.values() if comment['post_id'] == post_id]\n    return jsonify({\"comments\": post_comments}), 200\n"
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>/comments/<comment_id>",
+                        "description": "Retrieve post information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    if comment_id in comments and comments[comment_id]['post_id'] == post_id:\n        del comments[comment_id]\n        return jsonify({\"message\": \"Comment deleted successfully.\"}), 200\n    return jsonify({\"message\": \"Comment not found.\"}), 404\n"
+                    },
+                    {
+                        "endpoint": "/posts/<post_id>/images/<image_id>",
+                        "description": "Retrieve post information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    # TODO: Implement logic to retrieve actual image data\n    if image_id in images and images[image_id]['post_id'] == post_id:\n        return jsonify(images[image_id]), 200\n    return jsonify({\"message\": \"Image not found.\"}), 404\n"
+                    }
+                ]
+            }
+        }
+    ]
+}

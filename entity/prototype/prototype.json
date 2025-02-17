@@ -1,0 +1,46 @@
+{
+    "api_base_url": "https://api.airportgap.com/flights",
+    "search_endpoint": {
+        "method": "POST",
+        "url": "/api/flights/search",
+        "request_format": {
+            "departure_airport": "JFK",
+            "arrival_airport": "LAX",
+            "departure_date": "2023-12-01",
+            "return_date": "2023-12-10",
+            "passengers": 1
+        },
+        "response_format": {
+            "flights": [
+                {
+                    "airline": "Delta",
+                    "flight_number": "DL123",
+                    "departure_time": "2023-12-01T08:00:00Z",
+                    "arrival_time": "2023-12-01T11:00:00Z",
+                    "price": 300,
+                    "layovers": 0
+                }
+            ],
+            "error": null
+        }
+    },
+    "filter_endpoint": {
+        "method": "POST",
+        "url": "/api/flights/filter",
+        "request_format": {
+            "flights": [],
+            "filters": {
+                "max_price": 500,
+                "airlines": [
+                    "Delta",
+                    "United"
+                ],
+                "max_layovers": 1
+            }
+        },
+        "response_format": {
+            "filtered_flights": [],
+            "error": null
+        }
+    }
+}

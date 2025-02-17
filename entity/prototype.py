@@ -1,4 +1,4 @@
-# To create a fully functioning `prototype.py` using a real API for fetching Bitcoin conversion rates, we'll utilize the CoinGecko API, which is a popular and free service for cryptocurrency data. Here’s how you can implement the prototype:
+# Here's a fully functioning `prototype.py` that uses the CoinMarketCap API as an alternative for fetching Bitcoin conversion rates. This API provides reliable cryptocurrency data. To use it, you'll need to sign up for an API key from CoinMarketCap.
 # 
 # ### `prototype.py`
 # 
@@ -16,12 +16,22 @@ QuartSchema(app)
 # Placeholder for report storage (in-memory for prototyping)
 reports = {}
 
-# CoinGecko API URL for Bitcoin prices
-RATE_API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur"
+# CoinMarketCap API configuration
+API_KEY = 'YOUR_API_KEY'  # Replace with your CoinMarketCap API key
+RATE_API_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
 
 async def fetch_rates():
+    params = {
+        'symbol': 'BTC',
+        'convert': 'USD,EUR'
+    }
+    headers = {
+        'Accepts': 'application/json',
+        'X-CMC_PRO_API_KEY': API_KEY,
+    }
+
     async with aiohttp.ClientSession() as session:
-        async with session.get(RATE_API_URL) as response:
+        async with session.get(RATE_API_URL, headers=headers, params=params) as response:
             if response.status == 200:
                 return await response.json()
             else:
@@ -39,8 +49,11 @@ async def create_report():
         return jsonify({"error": "Failed to fetch rates."}), 500  # Handle error
 
     # Extracting necessary rates
-    btc_usd = rates.get('bitcoin', {}).get('usd')
-    btc_eur = rates.get('bitcoin', {}).get('eur')
+    try:
+        btc_usd = rates['data']['BTC']['quote']['USD']['price']
+        btc_eur = rates['data']['BTC']['quote']['EUR']['price']
+    except KeyError:
+        return jsonify({"error": "Unexpected response structure."}), 500
 
     # Store the report
     reports[report_id] = {
@@ -68,29 +81,31 @@ if __name__ == '__main__':
 # 
 # ### Key Features of the Implementation:
 # 
-# 1. **Real API Integration**: The `fetch_rates` function uses the CoinGecko API to get the current prices for Bitcoin in USD and EUR. If the API call is successful, it returns the rates; otherwise, it returns a `None` value indicating an error.
+# 1. **CoinMarketCap API Integration**: The `fetch_rates` function retrieves Bitcoin prices in USD and EUR from the CoinMarketCap API. You need to replace `'YOUR_API_KEY'` with your actual API key.
 # 
-# 2. **Report Storage**: Reports are stored in an in-memory dictionary, allowing retrieval by report ID.
+# 2. **Error Handling**: The application checks for errors during the API call and handles unexpected response structures gracefully.
 # 
-# 3. **Dynamic Timestamp**: The timestamp is generated using the `datetime` module to reflect the current UTC time.
+# 3. **Dynamic Timestamp**: The current UTC timestamp is generated using the `datetime` module for accurate reporting.
 # 
-# 4. **Error Handling**: The application handles potential errors when fetching rates, returning appropriate error messages.
+# 4. **Report Storage**: Reports are stored in memory, allowing retrieval by report ID.
 # 
 # 5. **Email Integration Placeholder**: A comment indicates where to integrate email functionality to send the generated report.
 # 
 # ### Testing the Application:
 # 
 # To test the application:
-# 1. Ensure you have Quart and aiohttp installed. You can install them using pip:
+# 1. Ensure you have Quart and aiohttp installed:
 #    ```bash
 #    pip install quart aiohttp quart-schema
 #    ```
-#    
-# 2. Run the script:
+# 
+# 2. Replace `'YOUR_API_KEY'` in the code with your actual CoinMarketCap API key.
+# 
+# 3. Run the script:
 #    ```bash
 #    python prototype.py
 #    ```
 # 
-# 3. Use a tool like Postman or cURL to send a POST request to `http://localhost:8000/job` with a JSON body containing an email, and then retrieve the report using the report ID returned in the response. 
+# 4. Use a tool like Postman or cURL to send a POST request to `http://localhost:8000/job` with a JSON body containing an email, and then retrieve the report using the report ID returned in the response.
 # 
 # This prototype serves as a solid foundation for verifying user experience and allows for further enhancements based on user feedback and requirements.

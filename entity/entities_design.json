@@ -1,0 +1,37 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "api",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/flights/search",
+                        "description": "Create a new api.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    departure_airport = data.get(\"departure_airport\")\n    arrival_airport = data.get(\"arrival_airport\")\n    departure_date = data.get(\"departure_date\")\n    return_date = data.get(\"return_date\")  # Optional\n    passengers = data.get(\"passengers\")\n\n    # Here we would normally call the external API\n    async with ClientSession() as session:\n        try:\n            # TODO: Build the API request URL with query parameters\n            api_url = f\"{API_BASE_URL}?departure={departure_airport}&arrival={arrival_airport}&date={departure_date}\"\n            if return_date:\n                api_url += f\"&return_date={return_date}\"\n            api_url += f\"&passengers={passengers}\"  # TODO: Confirm this parameter format\n\n            async with session.get(api_url) as response:\n                flights_data = await response.json()\n\n                # TODO: Transform the response to match our required format\n                flights = [\n                    {\n                        \"airline\": flight[\"airline\"],  # TODO: Confirm keys based on actual API response\n                        \"flight_number\": flight[\"flight_number\"],\n                        \"departure_time\": flight[\"departure_time\"],\n                        \"arrival_time\": flight[\"arrival_time\"],\n                        \"price\": flight[\"price\"],\n                        \"layovers\": flight.get(\"layovers\", 0)  # Default to 0 if not present\n                    }\n                    for flight in flights_data.get(\"flights\", [])\n                ]\n\n                return jsonify({\"flights\": flights, \"error\": None})\n\n        except Exception as e:\n            # Handle errors (e.g., API call failure)\n            return jsonify({\"flights\": [], \"error\": str(e)})\n",
+                        "action": "search_flights"
+                    },
+                    {
+                        "endpoint": "/api/flights/filter",
+                        "description": "Create a new api.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    flights = data.get(\"flights\", [])\n    filters = data.get(\"filters\", {})\n\n    # Apply filters\n    max_price = filters.get(\"max_price\")\n    filtered_flights = [\n        flight for flight in flights\n        if (max_price is None or flight[\"price\"] <= max_price) and\n           (not filters.get(\"airlines\") or flight[\"airline\"] in filters[\"airlines\"]) and\n           (filters.get(\"max_layovers\") is None or flight[\"layovers\"] <= filters[\"max_layovers\"])\n    ]\n\n    return jsonify({\"filtered_flights\": filtered_flights, \"error\": None})\n",
+                        "action": "filter_flights"
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/api/<id>",
+                        "description": "Retrieve a api by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/apis",
+                        "description": "Retrieve all apis entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            },
+            "suggested_workflow": []
+        }
+    ],
+    "secondary_entities": []
+}

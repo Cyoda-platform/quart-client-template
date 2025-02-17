@@ -1,0 +1,58 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Create a new job.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get('email')  # Extract the email\n    report_id = str(uuid.uuid4())  # Generate a unique report ID\n\n    # Fetch current Bitcoin rates\n    rates = await fetch_rates()\n    if rates is None:\n        return jsonify({\"error\": \"Failed to fetch rates.\"}), 500  # Handle error\n\n    # Extracting necessary rates\n    try:\n        btc_usd = rates['data']['BTC']['quote']['USD']['price']\n        btc_eur = rates['data']['BTC']['quote']['EUR']['price']\n    except KeyError:\n        return jsonify({\"error\": \"Unexpected response structure.\"}), 500\n\n    # Store the report\n    reports[report_id] = {\n        \"id\": report_id,\n        \"btc_usd\": btc_usd,\n        \"btc_eur\": btc_eur,\n        \"timestamp\": datetime.utcnow().isoformat() + 'Z'  # Use actual timestamp\n    }\n\n    # TODO: Integrate email service to send the report (not implemented in this prototype)\n\n    return jsonify({\"report_id\": report_id, \"status\": \"Report is being generated.\"}), 202\n",
+                        "action": "create_report",
+                        "related_secondary_entities": [
+                            "report"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/job/<id>",
+                        "description": "Retrieve a job by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/jobs",
+                        "description": "Retrieve all jobs entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            },
+            "suggested_workflow": [
+                {
+                    "start_state": "job_not_created",
+                    "end_state": "job_created",
+                    "action": "create_report",
+                    "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get('email')  # Extract the email\n    report_id = str(uuid.uuid4())  # Generate a unique report ID\n\n    # Fetch current Bitcoin rates\n    rates = await fetch_rates()\n    if rates is None:\n        return jsonify({\"error\": \"Failed to fetch rates.\"}), 500  # Handle error\n\n    # Extracting necessary rates\n    try:\n        btc_usd = rates['data']['BTC']['quote']['USD']['price']\n        btc_eur = rates['data']['BTC']['quote']['EUR']['price']\n    except KeyError:\n        return jsonify({\"error\": \"Unexpected response structure.\"}), 500\n\n    # Store the report\n    reports[report_id] = {\n        \"id\": report_id,\n        \"btc_usd\": btc_usd,\n        \"btc_eur\": btc_eur,\n        \"timestamp\": datetime.utcnow().isoformat() + 'Z'  # Use actual timestamp\n    }\n\n    # TODO: Integrate email service to send the report (not implemented in this prototype)\n\n    return jsonify({\"report_id\": report_id, \"status\": \"Report is being generated.\"}), 202\n",
+                    "description": "Initiates the creation of job and links to secondary entities: report.",
+                    "related_secondary_entities": [
+                        "report"
+                    ]
+                }
+            ]
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report/<id>",
+                        "description": "Retrieve report information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    report = reports.get(id)\n    if report:\n        return jsonify(report), 200\n    else:\n        return jsonify({\"error\": \"Report not found.\"}), 404\n"
+                    }
+                ]
+            }
+        }
+    ]
+}

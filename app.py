@@ -7,12 +7,18 @@ from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token
 #please update this line to your entity
+from entity.flight_search.api import api_bp_flight_search
+from entity.flight_sort.api import api_bp_flight_sort
+from entity.flight_filter.api import api_bp_flight_filter
 from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
 
 logging.basicConfig(level=logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+app.register_blueprint(api_bp_flight_search, url_prefix='/api/flight_search')
+app.register_blueprint(api_bp_flight_sort, url_prefix='/api/flight_sort')
+app.register_blueprint(api_bp_flight_filter, url_prefix='/api/flight_filter')
 app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
 
 @app.before_serving

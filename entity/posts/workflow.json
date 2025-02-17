@@ -1,0 +1,199 @@
+{
+    "name": "posts_workflow:ENTITY_VERSION_VAR:ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+    "description": "Workflow for managing posts in TreeNodeEntity",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "posts:ENTITY_VERSION_VAR:ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "posts",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "create_post",
+            "description": "Create a post",
+            "start_state": "posts_not_created",
+            "start_state_description": "No posts have been created yet",
+            "end_state": "posts_created",
+            "end_state_description": "A post has been created",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "create_post",
+                        "description": "Processes the creation of a post.",
+                        "calculation_nodes_tags": "ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "add_comment",
+            "description": "Add a comment to a post",
+            "start_state": "posts_not_created",
+            "start_state_description": "No posts have been created yet",
+            "end_state": "posts_created",
+            "end_state_description": "A comment has been added to a post",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "add_comment",
+                        "description": "Processes adding a comment to a post.",
+                        "calculation_nodes_tags": "ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "upload_image",
+            "description": "Upload an image for a post",
+            "start_state": "posts_not_created",
+            "start_state_description": "No posts have been created yet",
+            "end_state": "posts_created",
+            "end_state_description": "An image has been uploaded for a post",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "upload_image",
+                        "description": "Processes the uploading of an image for a post.",
+                        "calculation_nodes_tags": "ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "vote_post",
+            "description": "Vote on a post",
+            "start_state": "posts_not_created",
+            "start_state_description": "No posts have been created yet",
+            "end_state": "posts_created",
+            "end_state_description": "A vote has been cast on a post",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "vote_post",
+                        "description": "Processes voting on a post.",
+                        "calculation_nodes_tags": "ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "vote_comment",
+            "description": "Vote on a comment",
+            "start_state": "posts_not_created",
+            "start_state_description": "No posts have been created yet",
+            "end_state": "posts_created",
+            "end_state_description": "A vote has been cast on a comment",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "vote_comment",
+                        "description": "Processes voting on a comment.",
+                        "calculation_nodes_tags": "ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

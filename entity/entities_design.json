@@ -1,0 +1,58 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/job",
+                        "description": "Create a new job.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    body = await request.get_json()\n    email = body.get('email')  # Get email from request body\n    rates = await fetch_btc_rates()\n    \n    if rates is None:\n        return jsonify({\"error\": \"Failed to fetch BTC rates.\"}), 500\n    \n    report_id = str(uuid.uuid4())\n    reports[report_id] = {\n        \"report_id\": report_id,\n        \"btc_usd_rate\": rates[\"btc_usd_rate\"],\n        \"btc_eur_rate\": rates[\"btc_eur_rate\"],\n        \"timestamp\": datetime.datetime.utcnow().isoformat(),\n        \"email\": email  # Store the email for sending later\n    }\n\n    # TODO: Implement email sending functionality here\n    # For now, just mock the email sending\n    print(f\"Sending email to {email} with report ID {report_id}.\")  # Placeholder for email sending\n\n    return jsonify({\n        \"report_id\": report_id,\n        \"message\": f\"Report is being generated and will be sent to {email}.\"\n    }), 201\n",
+                        "action": "create_report",
+                        "related_secondary_entities": [
+                            "report"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/job/<id>",
+                        "description": "Retrieve a job by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/jobs",
+                        "description": "Retrieve all jobs entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            },
+            "suggested_workflow": [
+                {
+                    "start_state": "job_not_created",
+                    "end_state": "job_created",
+                    "action": "create_report",
+                    "complete_code_for_action_derived_from_the_prototype": "\n    body = await request.get_json()\n    email = body.get('email')  # Get email from request body\n    rates = await fetch_btc_rates()\n    \n    if rates is None:\n        return jsonify({\"error\": \"Failed to fetch BTC rates.\"}), 500\n    \n    report_id = str(uuid.uuid4())\n    reports[report_id] = {\n        \"report_id\": report_id,\n        \"btc_usd_rate\": rates[\"btc_usd_rate\"],\n        \"btc_eur_rate\": rates[\"btc_eur_rate\"],\n        \"timestamp\": datetime.datetime.utcnow().isoformat(),\n        \"email\": email  # Store the email for sending later\n    }\n\n    # TODO: Implement email sending functionality here\n    # For now, just mock the email sending\n    print(f\"Sending email to {email} with report ID {report_id}.\")  # Placeholder for email sending\n\n    return jsonify({\n        \"report_id\": report_id,\n        \"message\": f\"Report is being generated and will be sent to {email}.\"\n    }), 201\n",
+                    "description": "Initiates the creation of job and links to secondary entities: report.",
+                    "related_secondary_entities": [
+                        "report"
+                    ]
+                }
+            ]
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/report/<report_id>",
+                        "description": "Retrieve report information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    report = reports.get(report_id)\n    if not report:\n        return jsonify({\"error\": \"Report not found.\"}), 404\n\n    return jsonify(report), 200\n"
+                    }
+                ]
+            }
+        }
+    ]
+}

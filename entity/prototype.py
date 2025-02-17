@@ -1,4 +1,4 @@
-# Here’s a prototype implementation of your backend application using Quart and aiohttp. This code incorporates the requirements discussed, including API endpoints, and uses placeholders where necessary. 
+# Here's a fully functioning `prototype.py` code that uses a mock API for fetching Bitcoin rates. I have incorporated user suggestions, ensuring that the application can be tested easily with mock data.
 # 
 # ```python
 from quart import Quart, request, jsonify
@@ -13,17 +13,13 @@ QuartSchema(app)
 # Mock database for storing reports
 reports_db = {}
 
-# Constants for external API (TODO: Replace with actual API URL)
-BTC_API_URL = "https://api.example.com/btc"  # Placeholder for Bitcoin API
+# Mock API URL for Bitcoin rates
+MOCK_BTC_API_URL = "https://api.mock.com/btc/rates"  # Placeholder for mock Bitcoin API
 
 async def fetch_btc_rates():
-    async with aiohttp.ClientSession() as session:
-        async with session.get(f"{BTC_API_URL}/rates") as response:  # TODO: Define the actual endpoint
-            if response.status == 200:
-                data = await response.json()
-                return data['btcToUsd'], data['btcToEur']  # Adjust based on actual API response
-            else:
-                return None, None
+    # Simulated response from a mock API
+    # Normally, you would use aiohttp to perform an actual request
+    return 50000, 42000  # Mocked BTC to USD and EUR rates
 
 @app.route('/job', methods=['POST'])
 async def create_report():
@@ -33,16 +29,13 @@ async def create_report():
     # Fetch the latest Bitcoin rates
     btc_to_usd, btc_to_eur = await fetch_btc_rates()
 
-    if btc_to_usd is None or btc_to_eur is None:
-        return jsonify({"status": "error", "message": "Failed to fetch rates."}), 500
-
     # Create a report ID and store the report (mocked)
     report_id = str(uuid.uuid4())
     report_data = {
         "reportId": report_id,
         "btcToUsd": btc_to_usd,
         "btcToEur": btc_to_eur,
-        "timestamp": "2023-10-01T12:00:00Z"  # TODO: Use actual timestamp
+        "timestamp": "2023-10-01T12:00:00Z"  # Placeholder timestamp
     }
     reports_db[report_id] = report_data
 
@@ -63,10 +56,10 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Details:
-# - **External API**: The `fetch_btc_rates` function is designed to fetch Bitcoin rates from a placeholder API. You will need to replace `BTC_API_URL` with the actual API endpoint you wish to use.
-# - **Email Placeholder**: The email sending logic is marked with a TODO comment, indicating that this part needs to be implemented, considering the email service you choose.
-# - **Mock Database**: The reports are stored in a simple dictionary as a mock database. You might want to replace this with a real database in a future implementation.
-# - **Timestamp**: A placeholder timestamp is provided; you may want to generate this dynamically.
+# ### Key Features:
+# - **Mock API for Bitcoin Rates**: The `fetch_btc_rates` function returns hardcoded values for BTC to USD and BTC to EUR rates, simulating a response from an API.
+# - **Report Creation**: The `/job` endpoint creates a report, generates a unique ID, and stores the report in a mock database.
+# - **Report Retrieval**: The `/report/<report_id>` endpoint allows users to retrieve a report using its ID.
+# - **Email Placeholder**: A TODO comment is included where email sending logic can be implemented in the future.
 # 
-# This prototype allows you to verify the user experience (UX) and identify any gaps in the requirements. Feel free to modify or extend the code as needed!
+# This prototype provides a solid foundation for testing the user experience and identifying any gaps in the requirements. You can run the application and test the endpoints using tools like Postman or curl. If you have any further modifications or features to add, feel free to let me know!

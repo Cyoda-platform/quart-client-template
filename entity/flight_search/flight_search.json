@@ -1,0 +1,11 @@
+{
+    "departureAirport": "JFK",
+    "arrivalAirport": "LAX",
+    "departureDate": "2023-12-01",
+    "returnDate": "2023-12-15",
+    "passengers": {
+        "adults": 1,
+        "children": 0,
+        "infants": 0
+    }
+}

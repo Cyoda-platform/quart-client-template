@@ -1,4 +1,4 @@
-# Here’s a prototype implementation for `prototype.py` based on your requirements. This code uses Quart for the API framework and aiohttp for making HTTP requests to an external API for fetching Bitcoin conversion rates. I've included placeholders and TODO comments where details were uncertain.
+# Here’s a fully functioning `prototype.py` code that integrates with a real API to fetch Bitcoin conversion rates. In this example, I will use the CoinGecko API, which provides free access to cryptocurrency data.
 # 
 # ```python
 from quart import Quart, request, jsonify
@@ -6,7 +6,7 @@ from quart_schema import QuartSchema
 import aiohttp
 import asyncio
 import uuid
-import json
+from datetime import datetime
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -16,11 +16,12 @@ reports_db = {}
 
 # Function to fetch Bitcoin conversion rates
 async def fetch_btc_rates():
-    # TODO: Replace with actual API endpoint
-    url = "https://api.example.com/btc-rates"  # Placeholder URL
+    url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
-            # TODO: Handle response errors
+            # Validate response status
+            if response.status != 200:
+                raise Exception("Failed to fetch BTC rates.")
             return await response.json()
 
 @app.route('/job', methods=['POST'])
@@ -31,9 +32,8 @@ async def create_report():
     # Fetch BTC rates
     btc_rates = await fetch_btc_rates()
     
-    # TODO: Extract the specific rates from the response
-    btc_usd = btc_rates.get('usd', 'N/A')  # Placeholder for BTC to USD
-    btc_eur = btc_rates.get('eur', 'N/A')  # Placeholder for BTC to EUR
+    btc_usd = btc_rates['bitcoin']['usd']
+    btc_eur = btc_rates['bitcoin']['eur']
 
     # Create report ID and store it
     report_id = str(uuid.uuid4())
@@ -41,12 +41,11 @@ async def create_report():
         'report_id': report_id,
         'btc_usd': btc_usd,
         'btc_eur': btc_eur,
-        'timestamp': '2023-10-01T12:00:00Z'  # TODO: Replace with actual timestamp
+        'timestamp': datetime.utcnow().isoformat()  # Current UTC timestamp
     }
     reports_db[report_id] = report
 
     # TODO: Integrate with email service to send the report
-    # For now, we'll just simulate sending an email
     print(f"Email sent to {email} with report ID: {report_id}")
 
     return jsonify({'report_id': report_id, 'status': 'Report is being generated.'}), 200
@@ -62,11 +61,28 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Points:
-# - **Database Simulation**: A simple dictionary (`reports_db`) is used to store reports for the purpose of this prototype.
-# - **Fetching BTC Rates**: The `fetch_btc_rates` function is a placeholder that simulates fetching Bitcoin rates; you will need to replace the URL with an actual API endpoint.
-# - **Email Sending**: The email sending functionality is simulated with a print statement. You will need to integrate an actual email service in the future.
-# - **Error Handling**: Basic error handling is noted in the comments. You will need to implement robust error handling for real scenarios.
-# - **Timestamp**: The timestamp is hard-coded; you will need to replace it with the actual creation time.
+# ### Key Features:
+# - **Real API Integration**: The code uses the CoinGecko API to fetch real-time Bitcoin conversion rates in USD and EUR.
+# - **Error Handling**: It checks the response status when fetching rates and raises an exception for any failure.
+# - **Current Timestamp**: The current UTC timestamp is generated using `datetime.utcnow().isoformat()`.
+# - **Placeholder for Email**: The email sending is still simulated with a print statement. You can integrate an actual email service later.
 # 
-# This prototype should help you verify the user experience and identify any gaps in the requirements before moving to a more robust implementation. Let me know if you need further adjustments or additional features!
+# ### How to Run:
+# 1. Make sure you have Quart and aiohttp installed. You can install them via pip:
+#    ```bash
+#    pip install quart aiohttp quart-schema
+#    ```
+# 2. Save the code above in a file named `prototype.py`.
+# 3. Run the file using Python:
+#    ```bash
+#    python prototype.py
+#    ```
+# 4. Make POST requests to `http://localhost:8000/job` with a JSON body like:
+#    ```json
+#    {
+#        "email": "user@example.com"
+#    }
+#    ```
+# 5. Retrieve a report using a GET request to `http://localhost:8000/report/{report_id}`.
+# 
+# This prototype should effectively demonstrate the user experience and allow you to identify any gaps in the requirements. Let me know if you have any further questions or need additional modifications!

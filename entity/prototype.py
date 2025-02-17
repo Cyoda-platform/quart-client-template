@@ -1,4 +1,6 @@
-# Here's a fully functioning `prototype.py` code that uses a mock API for fetching Bitcoin rates. I have incorporated user suggestions, ensuring that the application can be tested easily with mock data.
+# Here’s a fully functioning `prototype.py` code that uses a real API for fetching Bitcoin conversion rates. In this implementation, I'll use the CoinGecko API, which is a popular and free API for cryptocurrency data.
+# 
+# ### Prototype Code (prototype.py)
 # 
 # ```python
 from quart import Quart, request, jsonify
@@ -13,13 +15,19 @@ QuartSchema(app)
 # Mock database for storing reports
 reports_db = {}
 
-# Mock API URL for Bitcoin rates
-MOCK_BTC_API_URL = "https://api.mock.com/btc/rates"  # Placeholder for mock Bitcoin API
+# Real API URL for Bitcoin rates
+COINGECKO_API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,eur"
 
 async def fetch_btc_rates():
-    # Simulated response from a mock API
-    # Normally, you would use aiohttp to perform an actual request
-    return 50000, 42000  # Mocked BTC to USD and EUR rates
+    async with aiohttp.ClientSession() as session:
+        async with session.get(COINGECKO_API_URL) as response:
+            if response.status == 200:
+                data = await response.json()
+                btc_to_usd = data['bitcoin']['usd']
+                btc_to_eur = data['bitcoin']['eur']
+                return btc_to_usd, btc_to_eur
+            else:
+                return None, None
 
 @app.route('/job', methods=['POST'])
 async def create_report():
@@ -28,6 +36,9 @@ async def create_report():
 
     # Fetch the latest Bitcoin rates
     btc_to_usd, btc_to_eur = await fetch_btc_rates()
+
+    if btc_to_usd is None or btc_to_eur is None:
+        return jsonify({"status": "error", "message": "Failed to fetch rates."}), 500
 
     # Create a report ID and store the report (mocked)
     report_id = str(uuid.uuid4())
@@ -57,9 +68,25 @@ if __name__ == '__main__':
 # ```
 # 
 # ### Key Features:
-# - **Mock API for Bitcoin Rates**: The `fetch_btc_rates` function returns hardcoded values for BTC to USD and BTC to EUR rates, simulating a response from an API.
+# - **Real API for Bitcoin Rates**: The `fetch_btc_rates` function fetches the latest Bitcoin conversion rates from the CoinGecko API.
 # - **Report Creation**: The `/job` endpoint creates a report, generates a unique ID, and stores the report in a mock database.
 # - **Report Retrieval**: The `/report/<report_id>` endpoint allows users to retrieve a report using its ID.
 # - **Email Placeholder**: A TODO comment is included where email sending logic can be implemented in the future.
 # 
-# This prototype provides a solid foundation for testing the user experience and identifying any gaps in the requirements. You can run the application and test the endpoints using tools like Postman or curl. If you have any further modifications or features to add, feel free to let me know!
+# ### How to Use:
+# 1. Run the application with `python prototype.py`.
+# 2. Use a tool like Postman or curl to test the endpoints:
+#    - **Create Report**: 
+#      - Method: POST
+#      - URL: `http://localhost:8000/job`
+#      - Body: 
+#        ```json
+#        {
+#          "email": "user@example.com"
+#        }
+#        ```
+#    - **Get Report**: 
+#      - Method: GET
+#      - URL: `http://localhost:8000/report/<report_id>` (replace `<report_id>` with the actual report ID returned from the create report request).
+# 
+# This prototype will help you verify the user experience and identify any gaps in the requirements. If you have any further modifications or features to add, please let me know!

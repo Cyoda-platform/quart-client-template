@@ -1,0 +1,185 @@
+# System Requirements
+
+## 1. Functional Requirements  
+
+### User Authentication and Authorization  
+
+**Requirements Criteria**:  
+- Users can sign up and log in.  
+- Authenticated users receive a JWT token for accessing protected resources.  
+- The system must validate the token on every request to protected endpoints.  
+
+---
+
+### Post Management  
+
+**Requirements Criteria**:  
+- Users can create a new post with the following fields:  
+  - Title  
+  - Topic tags (e.g., "investing", "stocks", "trading")  
+  - Body (text or uploaded images)  
+- Users can view individual posts or a list of posts:  
+  - **GET /posts** — Retrieve a paginated list of posts.  
+  - **GET /posts/{post-id}** — Retrieve details of a specific post.  
+
+Example Response (GET /posts/{post-id}):  
+```json
+{
+  "post_id": "14245bac",
+  "title": "How do I make money with stocks?",
+  "user_id": "1234acd",
+  "topics": ["investing", "stocks", "trading"],
+  "upvotes": 5,
+  "downvotes": 1,
+  "body": "........."
+}
+```
+
+**Requirements Criteria**:  
+- Users can delete their own posts.  
+- Popular posts (top posts in the last 24 hours) must be displayed on the homepage.  
+  - **Popularity Formula**: Upvotes − Downvotes  
+
+- Pagination for posts must be supported using `limit` and `offset` parameters. Example:  
+  - **GET /posts?limit=20&offset=0** — Retrieve the first 20 posts  
+  - **GET /posts?limit=20&offset=1** — Retrieve posts 20-39  
+
+---
+
+### Comment Management  
+
+**Requirements Criteria**:  
+- Users can add comments to existing posts.  
+- Comments are displayed in chronological order (flat list).  
+- Users can delete their own comments.  
+- Pagination for comments must be supported.  
+
+Example Response (GET /posts/{post-id}/comments):  
+```json
+{
+  "post_id": "14245bac",
+  "comments": [
+    {
+      "comment_id": 1234,
+      "body": "I agree",
+      "user_id": "abd54232",
+      "upvotes": 50,
+      "downvotes": 3
+    },
+    {
+      "comment_id": 4321,
+      "body": "I don’t think so, because...",
+      "user_id": "5423adc",
+      "upvotes": 7,
+      "downvotes": 6
+    }
+  ]
+}
+```
+
+---
+
+### Image Management  
+
+**Requirements Criteria**:  
+- Users can upload images for posts.  
+- Uploaded images can be retrieved by their `image-id`.  
+  - **POST /posts/{post-id}/images** — Upload an image for a post.  
+  - **GET /posts/{post-id}/images/{image-id}** — Retrieve an image for a specific post.  
+
+---
+
+### Voting System  
+
+**Requirements Criteria**:  
+- Users can upvote/downvote posts and comments.  
+- The voting score affects the popularity of posts and comments.  
+  - **POST /posts/{post-id}/vote** — Upvote or downvote a post.  
+  - **POST /posts/{post-id}/comments/{comment-id}/vote** — Upvote or downvote a comment.  
+
+---
+
+## 2. Non-Functional Requirements  
+
+### Performance  
+
+**Requirements Criteria**:  
+- The system must respond to 95% of requests within 200ms.  
+- Support at least 10,000 concurrent users.  
+
+---
+
+### Security  
+
+**Requirements Criteria**:  
+- All endpoints must use JWT-based authentication.  
+- Protect against common vulnerabilities:  
+  - SQL Injection  
+  - Cross-Site Scripting (XSS)  
+  - Cross-Site Request Forgery (CSRF)  
+
+---
+
+### Scalability  
+
+**Requirements Criteria**:  
+- The system must scale horizontally to handle increasing loads.  
+- Use caching for popular posts and comments.  
+
+---
+
+## 3. API Overview  
+
+### Authentication Endpoints  
+
+**Requirements Criteria**:  
+- **POST /users/create** — Create a new user  
+- **POST /users/login** — Log in and receive an authentication token  
+
+---
+
+### Post Endpoints  
+
+**Requirements Criteria**:  
+- **POST /posts** — Create a new post  
+- **GET /posts** — Retrieve a paginated list of posts  
+- **GET /posts/{post-id}** — Retrieve a specific post  
+- **DELETE /posts/{post-id}** — Delete a specific post  
+
+---
+
+### Comment Endpoints  
+
+**Requirements Criteria**:  
+- **POST /posts/{post-id}/comments** — Add a new comment to a post  
+- **GET /posts/{post-id}/comments** — Retrieve a list of comments for a post  
+- **DELETE /posts/{post-id}/comments/{comment-id}** — Delete a specific comment  
+
+---
+
+### Image Endpoints  
+
+**Requirements Criteria**:  
+- **POST /posts/{post-id}/images** — Upload an image for a post  
+- **GET /posts/{post-id}/images/{image-id}** — Retrieve an image  
+
+---
+
+### Voting Endpoints  
+
+**Requirements Criteria**:  
+- **POST /posts/{post-id}/vote** — Upvote or downvote a post  
+- **POST /posts/{post-id}/comments/{comment-id}/vote** — Upvote or downvote a comment  
+
+---
+
+## 4. High-Level Overview  
+
+The system is designed to be a scalable public discussion forum, similar to Reddit or Quora.  
+
+### Key Features:  
+- Posting questions or news  
+- Commenting and voting on posts  
+- Displaying popular posts based on votes  
+- Image uploads for richer content  
+- Infinite scrolling with API pagination

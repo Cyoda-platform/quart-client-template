@@ -1,0 +1,33 @@
+{
+    "entities": [
+        {
+            "entity_name": "users",
+            "entity_data_example": {
+                "username": "exampleUser",
+                "password": "securePassword"
+            }
+        },
+        {
+            "entity_name": "posts",
+            "entity_data_example": {
+                "post_id": "14245bac",
+                "title": "Post Title",
+                "topics": [
+                    "investing",
+                    "stocks"
+                ],
+                "body": "Post content here.",
+                "upvotes": 0,
+                "downvotes": 0
+            }
+        },
+        {
+            "entity_name": "post",
+            "entity_data_example": {
+                "post_id": "14245bac",
+                "title": "How do I make money with stocks?",
+                "body": "........."
+            }
+        }
+    ]
+}

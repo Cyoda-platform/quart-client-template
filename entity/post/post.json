@@ -1,0 +1,13 @@
+{
+    "post_id": "integer",
+    "title": "string",
+    "body": "string",
+    "comments": [
+        {
+            "comment_id": "integer",
+            "body": "string",
+            "upvotes": "integer",
+            "downvotes": "integer"
+        }
+    ]
+}

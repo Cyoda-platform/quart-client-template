@@ -1,4 +1,4 @@
-# Here’s a fully functioning `prototype.py` code that uses the **Binance API** to fetch Bitcoin conversion rates. Binance is a well-known cryptocurrency exchange that provides a robust API for accessing market data.
+# Here’s a fully functioning `prototype.py` code that uses the **Kraken API** to fetch Bitcoin conversion rates. Kraken is a well-known cryptocurrency exchange that provides a comprehensive API for accessing market data.
 # 
 # ### Prototype Code (prototype.py)
 # 
@@ -14,19 +14,19 @@ QuartSchema(app)
 # Mock database for storing reports
 reports_db = {}
 
-# Real API URL for Bitcoin rates (Binance)
-BINANCE_API_URL = "https://api.binance.com/api/v3/ticker/price"
+# Real API URL for Bitcoin rates (Kraken)
+KRAKEN_API_URL = "https://api.kraken.com/0/public/Ticker"
 
 async def fetch_btc_rates():
     params = {
-        'symbol': 'BTCUSDT'  # Binance uses USDT for the USD equivalent
+        'pair': 'XXBTZUSD'  # Bitcoin to USD
     }
     
     async with aiohttp.ClientSession() as session:
-        async with session.get(BINANCE_API_URL, params=params) as response:
+        async with session.get(KRAKEN_API_URL, params=params) as response:
             if response.status == 200:
                 data = await response.json()
-                btc_to_usd = float(data['price'])  # Price in USD
+                btc_to_usd = float(data['result']['XXBTZUSD']['c'][0])  # Price in USD
                 btc_to_eur = await fetch_btc_eur_rate()  # Fetch EUR rate separately
                 return btc_to_usd, btc_to_eur
             else:
@@ -34,14 +34,14 @@ async def fetch_btc_rates():
 
 async def fetch_btc_eur_rate():
     params = {
-        'symbol': 'BTCEUR'  # Binance does not directly provide BTC/EUR, so we can calculate it based on BTC/USDT and USDT/EUR rates
+        'pair': 'XXBTZEUR'  # Bitcoin to EUR
     }
     
     async with aiohttp.ClientSession() as session:
-        async with session.get(BINANCE_API_URL, params=params) as response:
+        async with session.get(KRAKEN_API_URL, params=params) as response:
             if response.status == 200:
                 data = await response.json()
-                return float(data['price'])  # Price in EUR
+                return float(data['result']['XXBTZEUR']['c'][0])  # Price in EUR
             else:
                 return None
 
@@ -84,8 +84,8 @@ if __name__ == '__main__':
 # ```
 # 
 # ### Key Features:
-# - **Real API for Bitcoin Rates**: The `fetch_btc_rates` function fetches the latest Bitcoin conversion rates from the Binance API.
-# - **Separate Fetch for EUR Rate**: The `fetch_btc_eur_rate` function retrieves the EUR price for Bitcoin using Binance's ticker endpoint.
+# - **Real API for Bitcoin Rates**: The `fetch_btc_rates` function fetches the latest Bitcoin conversion rates from the Kraken API.
+# - **Separate Fetch for EUR Rate**: The `fetch_btc_eur_rate` function retrieves the EUR price for Bitcoin using Kraken's ticker endpoint.
 # - **Report Creation**: The `/job` endpoint creates a report, generates a unique ID, and stores the report in a mock database.
 # - **Report Retrieval**: The `/report/<report_id>` endpoint allows users to retrieve a report using its ID.
 # - **Email Placeholder**: A TODO comment is included where email sending logic can be implemented in the future.
@@ -106,4 +106,4 @@ if __name__ == '__main__':
 #      - Method: GET
 #      - URL: `http://localhost:8000/report/<report_id>` (replace `<report_id>` with the actual report ID returned from the create report request).
 # 
-# This prototype will help you test the user experience and identify any gaps in the requirements effectively. If you have any further modifications or features to add, please let me know!
+# This prototype allows you to test the user experience and identify any gaps in the requirements effectively. If you have any further modifications or features to add, please let me know!

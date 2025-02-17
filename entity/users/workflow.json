@@ -1,0 +1,67 @@
+{
+    "name": "users_workflow:ENTITY_VERSION_VAR:ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+    "description": "Workflow for managing user transitions in TreeNodeEntity",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "users:ENTITY_VERSION_VAR:ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "users",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "initial_to_final",
+            "description": "Initial transition to final state",
+            "start_state": "None",
+            "start_state_description": "Initial state",
+            "end_state": "Final_state",
+            "end_state_description": "Transitioned to final state",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "calculateUserData",
+                        "description": "Calculates user data and processes it.",
+                        "calculation_nodes_tags": "ce4ae570-ed66-11ef-9b0d-fa2c14a2137e",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "FIXED",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

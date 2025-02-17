@@ -1,0 +1,5 @@
+{
+    "id": "integer",
+    "username": "string",
+    "password": "string"
+}

@@ -1,0 +1,53 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "flight_search",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/api/flights/search",
+                        "description": "Search for flights between two airports.",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "initial",
+                                "end_state": "flights_found",
+                                "action": "search_flights",
+                                "complete_code_for_action_derived_from_the_prototype": "data = await request.json\n    departure_airport = data.get('departureAirport')\n    arrival_airport = data.get('arrivalAirport')\n    departure_date = data.get('departureDate')\n    return_date = data.get('returnDate')\n    passengers = data.get('passengers', {})\n    async with ClientSession() as session:\n        response = await session.get(API_URL, params={\n                'departureAirport': departure_airport,\n                'arrivalAirport': arrival_airport,\n                'departureDate': departure_date,\n                'returnDate': return_date,\n                'passengers': passengers\n            })\n            response_data = await response.json()",
+                                "description": "Initiates a search for flights based on user input.",
+                                "related_secondary_entities": [
+                                    "flight_sort",
+                                    "flight_filter"
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "GET": []
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "flight_sort",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/flights/sort",
+                        "description": "Sort the available flights based on specified criteria."
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "flight_filter",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/api/flights/filter",
+                        "description": "Filter the available flights based on specified criteria."
+                    }
+                ]
+            }
+        }
+    ]
+}

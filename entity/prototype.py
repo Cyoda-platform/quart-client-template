@@ -1,4 +1,4 @@
-# Here’s a working prototype of your application in `prototype.py`, incorporating the specified requirements. This implementation uses Quart and aiohttp for HTTP requests, with placeholders where necessary. 
+# Here’s a fully functioning `prototype.py` code that includes a mocked external API for fetching Bitcoin conversion rates. This prototype is designed to simulate the entire workflow while allowing you to verify user experience without relying on an actual external API.
 # 
 # ```python
 from quart import Quart, request, jsonify
@@ -10,19 +10,19 @@ import uuid
 app = Quart(__name__)
 QuartSchema(app)
 
-# Placeholder for report storage (e.g., in-memory for prototyping)
+# Placeholder for report storage (in-memory for prototyping)
 reports = {}
 
-# Placeholder for the external API URL (TODO: replace with the actual URL)
-RATE_API_URL = "https://api.example.com/btc/rates"  # TODO: Update with actual API endpoint
+# Mocked rates to simulate API response
+MOCKED_RATES = {
+    "BTC/USD": 50000,
+    "BTC/EUR": 45000
+}
 
 async def fetch_rates():
-    async with aiohttp.ClientSession() as session:
-        async with session.get(RATE_API_URL) as response:
-            if response.status == 200:
-                return await response.json()  # TODO: Ensure this returns the expected structure
-            else:
-                return None
+    # Simulating an asynchronous API call with mocked data
+    await asyncio.sleep(1)  # Simulate network delay
+    return MOCKED_RATES
 
 @app.route('/job', methods=['POST'])
 async def create_report():
@@ -32,19 +32,17 @@ async def create_report():
 
     # Fetch current Bitcoin rates
     rates = await fetch_rates()
-    if rates is None:
-        return jsonify({"error": "Failed to fetch rates."}), 500  # Handle error
-
-    # Extracting necessary rates (TODO: adapt based on actual response structure)
-    btc_usd = rates.get('BTC/USD')  # TODO: Adjust according to actual response keys
-    btc_eur = rates.get('BTC/EUR')  # TODO: Adjust according to actual response keys
+    
+    # Extracting necessary rates
+    btc_usd = rates.get('BTC/USD')
+    btc_eur = rates.get('BTC/EUR')
 
     # Store the report
     reports[report_id] = {
         "id": report_id,
         "btc_usd": btc_usd,
         "btc_eur": btc_eur,
-        "timestamp": "2023-10-01T12:00:00Z"  # TODO: Use actual timestamp
+        "timestamp": "2023-10-01T12:00:00Z"  # Placeholder for timestamp
     }
 
     # TODO: Integrate email service to send the report (not implemented in this prototype)
@@ -63,14 +61,16 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Points:
+# ### Key Features of the Prototype:
 # 
-# 1. **External API Call**: The `fetch_rates` function makes an asynchronous HTTP GET request to the specified external API to retrieve the current Bitcoin conversion rates. Replace the `RATE_API_URL` with the actual endpoint.
+# 1. **Mocked API Response**: The `fetch_rates` function simulates an asynchronous API call that returns predefined Bitcoin conversion rates (BTC/USD and BTC/EUR). This allows you to test the application without needing an actual external API.
 # 
-# 2. **Report Storage**: The application uses an in-memory dictionary to store reports. In a production scenario, you would likely use a database.
+# 2. **In-Memory Report Storage**: Reports are stored in a dictionary, which makes it easy to retrieve them by ID.
 # 
-# 3. **Email Sending**: The email sending functionality is noted as a TODO, as it requires further specifications.
+# 3. **Timestamp Placeholder**: The timestamp is hardcoded for simplicity but can be replaced with the current time using Python’s `datetime` module if needed.
 # 
-# 4. **Dynamic Data Handling**: The code is set up to handle dynamic data, which is indicated with TODO comments for clarity.
+# 4. **Error Handling**: Basic error handling is in place for scenarios where a report is not found.
 # 
-# This prototype should help you verify the user experience and identify any gaps in the requirements before proceeding with a more robust implementation.
+# 5. **Email Integration Placeholder**: There’s a TODO comment indicating where to integrate email functionality for sending reports.
+# 
+# This prototype should serve well for verifying the user experience and identifying any gaps in requirements before moving on to a more robust implementation.

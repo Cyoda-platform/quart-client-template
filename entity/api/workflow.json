@@ -1,0 +1,100 @@
+{
+    "name": "api_workflow:ENTITY_VERSION_VAR:77c78c30-ed66-11ef-9b0d-fa2c14a2137e",
+    "description": "Workflow for TreeNodeEntity API",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "api:ENTITY_VERSION_VAR:77c78c30-ed66-11ef-9b0d-fa2c14a2137e",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "api",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "initialize_tree_node",
+            "description": "Initialize Tree Node",
+            "start_state": "None",
+            "start_state_description": "Initial state",
+            "end_state": "TreeNode_Initialized",
+            "end_state_description": "The Tree Node has been initialized",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "calculateInitialization",
+                        "description": "Calculate the initialization process for the tree node.",
+                        "calculation_nodes_tags": "77c78c30-ed66-11ef-9b0d-fa2c14a2137e",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "finalize_tree_node",
+            "description": "Finalize Tree Node",
+            "start_state": "TreeNode_Initialized",
+            "start_state_description": "The Tree Node has been initialized",
+            "end_state": "TreeNode_Finalized",
+            "end_state_description": "The Tree Node has been finalized",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "calculateFinalization",
+                        "description": "Calculate the finalization process for the tree node.",
+                        "calculation_nodes_tags": "77c78c30-ed66-11ef-9b0d-fa2c14a2137e",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

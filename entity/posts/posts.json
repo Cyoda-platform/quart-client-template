@@ -1,0 +1,10 @@
+{
+    "post_id": "integer",
+    "title": "string",
+    "topics": [
+        "string"
+    ],
+    "body": "string",
+    "upvotes": "integer",
+    "downvotes": "integer"
+}

@@ -1,13 +1,8 @@
-# To enhance the provided prototype and incorporate a job configuration from a `job.json` file, we'll make a few adjustments. The `job.json` file will contain predefined settings, such as the email recipient and any other necessary configurations for the report generation. 
-# 
-# Here's how to structure the project:
-# 
-# 1. Create a `job.json` file.
-# 2. Update the `prototype.py` code to read from this JSON file.
+# To create a fully functioning `prototype.py` that incorporates the `job.json` file containing the email configuration, follow the steps outlined below. The `job.json` will be structured to hold the email address, and the `prototype.py` will read from this file when the `/job` endpoint is called.
 # 
 # ### Step 1: Create `job.json`
 # 
-# Create a file named `job.json` in the same directory as your `prototype.py`. Here’s an example of what this file might look like:
+# Create a file named `job.json` in the same directory as your `prototype.py`. Here’s what the content of `job.json` should look like:
 # 
 # ```json
 # {
@@ -17,7 +12,7 @@
 # 
 # ### Step 2: Updated `prototype.py`
 # 
-# Now, here’s the updated `prototype.py` that reads from `job.json`:
+# Here’s the updated `prototype.py` code that utilizes `job.json`:
 # 
 # ```python
 from quart import Quart, request, jsonify
@@ -25,6 +20,7 @@ from aiohttp import ClientSession
 from quart_schema import QuartSchema
 import uuid
 import json
+import os
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -39,17 +35,24 @@ BTC_API_URL = "https://api.coindesk.com/v1/bpi/currentprice.json"  # Example API
 
 # Load job configuration from job.json
 def load_job_config():
+    if not os.path.exists('job.json'):
+        raise FileNotFoundError("The job.json file is missing.")
+    
     with open('job.json', 'r') as file:
         return json.load(file)
 
 @app.route('/job', methods=['POST'])
 async def create_report():
     # Load job configuration from job.json
-    job_config = load_job_config()
+    try:
+        job_config = load_job_config()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
     email = job_config.get('email')
 
     if not email:
-        return jsonify({"error": "Email is required."}), 400
+        return jsonify({"error": "Email is required in job.json."}), 400
 
     async with ClientSession() as session:
         async with session.get(BTC_API_URL) as response:
@@ -87,14 +90,16 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Explanation of Changes:
-# 1. **Loading Configuration**: A new function, `load_job_config`, reads the configuration from `job.json`. This file should contain the email address (and any other configurations you wish to include in the future).
-# 2. **Email Retrieval**: The email is now fetched from the `job.json` file instead of being provided in the request body.
-# 3. **Error Handling**: The application checks that the email is present in the configuration file.
+# ### Explanation of the Code:
+# 1. **`job.json`**: Contains the email address that will be used to send reports.
+# 2. **`load_job_config` Function**: Reads the `job.json` file and raises an error if it's missing.
+# 3. **Error Handling**: The application checks for the existence of the email in `job.json` and returns an error if it’s not found.
+# 4. **Email Sending**: The `send_email` function is still a placeholder, where you need to implement the actual email sending logic.
+# 5. **Report Generation**: The `/job` endpoint fetches the Bitcoin conversion rates and sends the report to the specified email.
 # 
 # ### Testing the Application
-# 1. Create the `job.json` file as shown above.
+# 1. Create the `job.json` file with the specified content.
 # 2. Run the `prototype.py` file.
 # 3. Use a tool like Postman or curl to make a POST request to `http://localhost:8000/job`. You should see a response indicating that the report is being generated.
 # 
-# This setup allows for easier testing and configuration changes by simply editing the `job.json` file. Let me know if you need any further modifications or additional features!
+# This setup allows you to easily configure the email address by simply editing the `job.json` file. Let me know if you need any further modifications or additional features!

@@ -1,0 +1,67 @@
+{
+    "name": "flight_search:ENTITY_VERSION_VAR:77ba042e-edf3-11ef-8f66-7eb0dc4e02b5",
+    "description": "Workflow to search for flights",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "flight_search:ENTITY_VERSION_VAR:77ba042e-edf3-11ef-8f66-7eb0dc4e02b5",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "flight_search",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "search_flights",
+            "description": "Search for flights",
+            "start_state": "flight_search_not_created",
+            "start_state_description": "Initial state, no flight search created",
+            "end_state": "flight_search_created",
+            "end_state_description": "Flight search has been created",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "search_flights",
+                        "description": "External processor to search for flights",
+                        "calculation_nodes_tags": "77ba042e-edf3-11ef-8f66-7eb0dc4e02b5",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

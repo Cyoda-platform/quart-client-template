@@ -1,0 +1,67 @@
+{
+    "name": "Report Creation Workflow:ENTITY_VERSION_VAR:b741c97a-edc5-11ef-8f66-7eb0dc4e02b5",
+    "description": "Workflow for creating reports",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "report:ENTITY_VERSION_VAR:b741c97a-edc5-11ef-8f66-7eb0dc4e02b5",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "report",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "create_report",
+            "description": "Create a new report",
+            "start_state": "report_not_created",
+            "start_state_description": "The report has not been created",
+            "end_state": "report_created",
+            "end_state_description": "The report has been created",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "create_report",
+                        "description": "Externalized processor to create a report",
+                        "calculation_nodes_tags": "b741c97a-edc5-11ef-8f66-7eb0dc4e02b5",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

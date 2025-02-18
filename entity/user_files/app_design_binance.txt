@@ -1,0 +1,10 @@
+Hello! I’d like an application that retrieves the current Bitcoin-to-USD and Bitcoin-to-EUR conversion rates, then sends these rates in an email report. The application should provide two endpoints:
+
+POST /job
+
+Initiates the report creation process and stores the results as a “report.”
+Fetches the latest BTC/USD and BTC/EUR rates and triggers the email send.
+GET /report by id
+
+Retrieves the stored report by its ID.
+Returns the previously generated conversion rate information.

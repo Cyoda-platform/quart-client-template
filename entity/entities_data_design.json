@@ -1,0 +1,30 @@
+{
+    "entities": [
+        {
+            "entity_name": "subscriber",
+            "entity_data_example": {
+                "subscriber_id": 1,
+                "name": "John Doe",
+                "email": "john.doe@example.com"
+            }
+        },
+        {
+            "entity_name": "send_fact",
+            "entity_data_example": {
+                "fact": "Cats sleep for 70% of their lives."
+            }
+        },
+        {
+            "entity_name": "cat_fact",
+            "entity_data_example": {
+                "fact": "Cats have five toes on their front paws, but only four toes on their back paws."
+            }
+        },
+        {
+            "entity_name": "subscriber_count",
+            "entity_data_example": {
+                "total_subscribers": 100
+            }
+        }
+    ]
+}

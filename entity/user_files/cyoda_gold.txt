@@ -1,0 +1,11 @@
+hello, Build a application that compares today's gold rate with yesterday's gold rate and sends the report via email.
+
+POST /job
+Initiates the report creation process and stores the results as a "report."
+Fetches the current (today’s) gold rate and the previous (yesterday’s) gold rate.
+Compares the two rates and generates a report.
+Sends an email with the gold rate comparison to the user.
+
+GET /report by id
+Retrieves the stored report by its ID.
+Returns the previously generated gold rate comparison (today’s and yesterday’s rates).

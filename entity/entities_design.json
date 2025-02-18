@@ -1,0 +1,58 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/jobs",
+                        "description": "Create a new job.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get(\"email\")\n\n    # Fetch the latest BTC rates\n    rates = await fetch_btc_rates()\n\n    # TODO: Implement actual email sending logic\n    # Here we just mock sending an email\n    email_sent = True  # Placeholder for email sending status\n\n    # Create a report ID\n    report_id = str(len(reports) + 1)\n    reports[report_id] = {\n        \"id\": report_id,\n        \"timestamp\": datetime.utcnow().isoformat(),\n        \"btc_usd\": rates[\"btc_usd\"],\n        \"btc_eur\": rates[\"btc_eur\"],\n        \"email_sent\": email_sent\n    }\n\n    return jsonify({\"job_id\": report_id, \"status\": \"processing\"}), 202\n",
+                        "action": "create_job",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "job_not_created",
+                                "end_state": "job_created",
+                                "action": "create_job",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get(\"email\")\n\n    # Fetch the latest BTC rates\n    rates = await fetch_btc_rates()\n\n    # TODO: Implement actual email sending logic\n    # Here we just mock sending an email\n    email_sent = True  # Placeholder for email sending status\n\n    # Create a report ID\n    report_id = str(len(reports) + 1)\n    reports[report_id] = {\n        \"id\": report_id,\n        \"timestamp\": datetime.utcnow().isoformat(),\n        \"btc_usd\": rates[\"btc_usd\"],\n        \"btc_eur\": rates[\"btc_eur\"],\n        \"email_sent\": email_sent\n    }\n\n    return jsonify({\"job_id\": report_id, \"status\": \"processing\"}), 202\n",
+                                "description": "Create a new job.",
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "report"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/job/<id>",
+                        "description": "Retrieve a job by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/jobs",
+                        "description": "Retrieve all jobs entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/reports/<id>",
+                        "description": "Retrieve report information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    report = reports.get(id)\n    if report is None:\n        return jsonify({\"error\": \"Report not found\"}), 404\n    return jsonify(report)\n"
+                    }
+                ]
+            }
+        }
+    ]
+}

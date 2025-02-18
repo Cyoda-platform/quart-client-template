@@ -1,0 +1,105 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "flight_search",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/flights/search",
+                        "description": "Create a new flight_search.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    departure_airport = data.get('departureAirport')\n    arrival_airport = data.get('arrivalAirport')\n    departure_date = data.get('departureDate')\n    return_date = data.get('returnDate')\n    passengers = data.get('passengers')\n\n    # TODO: Implement actual API call to the Airport Gap API\n    async with ClientSession() as session:\n        # Mock API response\n        flights_response = [\n            {\n                \"airline\": \"Airline A\",\n                \"flightNumber\": \"AA123\",\n                \"departureTime\": \"2023-12-01T10:00:00Z\",\n                \"arrivalTime\": \"2023-12-01T15:00:00Z\",\n                \"price\": 200.00,\n                \"layovers\": 0\n            },\n            {\n                \"airline\": \"Airline B\",\n                \"flightNumber\": \"BB456\",\n                \"departureTime\": \"2023-12-01T12:00:00Z\",\n                \"arrivalTime\": \"2023-12-01T17:00:00Z\",\n                \"price\": 250.00,\n                \"layovers\": 1\n            }\n        ]\n        # TODO: Store the flights in the cache for further processing\n        flights_cache.extend(flights_response)\n    \n    return jsonify({\"flights\": flights_response, \"message\": \"Flights retrieved successfully.\"})\n",
+                        "action": "search_flights",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "flight_search_not_created",
+                                "end_state": "flight_search_created",
+                                "action": "search_flights",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    departure_airport = data.get('departureAirport')\n    arrival_airport = data.get('arrivalAirport')\n    departure_date = data.get('departureDate')\n    return_date = data.get('returnDate')\n    passengers = data.get('passengers')\n\n    # TODO: Implement actual API call to the Airport Gap API\n    async with ClientSession() as session:\n        # Mock API response\n        flights_response = [\n            {\n                \"airline\": \"Airline A\",\n                \"flightNumber\": \"AA123\",\n                \"departureTime\": \"2023-12-01T10:00:00Z\",\n                \"arrivalTime\": \"2023-12-01T15:00:00Z\",\n                \"price\": 200.00,\n                \"layovers\": 0\n            },\n            {\n                \"airline\": \"Airline B\",\n                \"flightNumber\": \"BB456\",\n                \"departureTime\": \"2023-12-01T12:00:00Z\",\n                \"arrivalTime\": \"2023-12-01T17:00:00Z\",\n                \"price\": 250.00,\n                \"layovers\": 1\n            }\n        ]\n        # TODO: Store the flights in the cache for further processing\n        flights_cache.extend(flights_response)\n    \n    return jsonify({\"flights\": flights_response, \"message\": \"Flights retrieved successfully.\"})\n",
+                                "description": "Create a new flight_search.",
+                                "related_secondary_entities": [
+                                    "flight"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "flight"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/flight_search/<id>",
+                        "description": "Retrieve a flight_search by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/flight_searches",
+                        "description": "Retrieve all flight_searches entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "flight_favorite",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/flights/favorites",
+                        "description": "Create a new flight_favorite.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    flight_id = data.get('flightId')\n\n    # TODO: Implement proper persistence logic\n    favorites_cache.append(flight_id)\n    return jsonify({\"message\": \"Flight added to favorites.\"})\n",
+                        "action": "save_favorite_flight",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "flight_favorite_not_created",
+                                "end_state": "flight_favorite_created",
+                                "action": "save_favorite_flight",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    flight_id = data.get('flightId')\n\n    # TODO: Implement proper persistence logic\n    favorites_cache.append(flight_id)\n    return jsonify({\"message\": \"Flight added to favorites.\"})\n",
+                                "description": "Create a new flight_favorite.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/flight_favorite/<id>",
+                        "description": "Retrieve a flight_favorite by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/flight_favorites",
+                        "description": "Retrieve all flight_favorites entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "flight",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/flights/<flight_id>",
+                        "description": "Retrieve flight information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    # TODO: Implement a proper lookup in the flights_cache\n    for flight in flights_cache:\n        if flight['flightNumber'] == flight_id:\n            return jsonify({\"flight\": flight})\n    return jsonify({\"message\": \"Flight not found.\"}), 404\n"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "flight_filter",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/flights/filter",
+                        "description": "Retrieve flight_filter information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    # TODO: Implement query parameters for filtering\n    price_min = request.args.get('priceMin', default=0, type=float)\n    price_max = request.args.get('priceMax', default=float('inf'), type=float)\n    filtered_flights = [\n        flight for flight in flights_cache \n        if price_min <= flight['price'] <= price_max\n    ]\n    return jsonify({\"filteredFlights\": filtered_flights, \"message\": \"Filtered flights retrieved successfully.\"})\n"
+                    }
+                ]
+            }
+        }
+    ]
+}

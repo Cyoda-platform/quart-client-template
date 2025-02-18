@@ -1,0 +1,43 @@
+{
+    "entities": [
+        {
+            "entity_name": "flight_search",
+            "entity_data_example": {
+                "departureAirport": "GKA",
+                "arrivalAirport": "LAX",
+                "departureDate": "2023-12-01",
+                "returnDate": "2023-12-10",
+                "passengers": 1
+            }
+        },
+        {
+            "entity_name": "flight_favorite",
+            "entity_data_example": {
+                "flightId": "1234"
+            }
+        },
+        {
+            "entity_name": "flight",
+            "entity_data_example": {
+                "airline": "Airline Name",
+                "flightNumber": "1234",
+                "departureTime": "2023-12-01T10:00:00Z",
+                "arrivalTime": "2023-12-01T15:00:00Z",
+                "price": 200.0,
+                "layovers": 1,
+                "details": "Additional flight details."
+            }
+        },
+        {
+            "entity_name": "flight_filter",
+            "entity_data_example": {
+                "priceRange": {
+                    "min": 100,
+                    "max": 500
+                },
+                "airline": "Airline Name",
+                "layovers": 0
+            }
+        }
+    ]
+}

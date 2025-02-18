@@ -1,12 +1,30 @@
-# Here’s a corrected version of the `prototype.py` file that ensures the `/job` endpoint works correctly. This includes improvements based on typical user feedback and suggestions provided earlier.
+# To enhance the provided prototype and incorporate a job configuration from a `job.json` file, we'll make a few adjustments. The `job.json` file will contain predefined settings, such as the email recipient and any other necessary configurations for the report generation. 
 # 
-# ### Updated `prototype.py`
+# Here's how to structure the project:
+# 
+# 1. Create a `job.json` file.
+# 2. Update the `prototype.py` code to read from this JSON file.
+# 
+# ### Step 1: Create `job.json`
+# 
+# Create a file named `job.json` in the same directory as your `prototype.py`. Here’s an example of what this file might look like:
+# 
+# ```json
+# {
+#     "email": "user@example.com"
+# }
+# ```
+# 
+# ### Step 2: Updated `prototype.py`
+# 
+# Now, here’s the updated `prototype.py` that reads from `job.json`:
 # 
 # ```python
 from quart import Quart, request, jsonify
 from aiohttp import ClientSession
 from quart_schema import QuartSchema
 import uuid
+import json
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -19,10 +37,16 @@ async def send_email(recipient, report_data):
 # Placeholder for the external API URL to fetch BTC rates
 BTC_API_URL = "https://api.coindesk.com/v1/bpi/currentprice.json"  # Example API endpoint
 
+# Load job configuration from job.json
+def load_job_config():
+    with open('job.json', 'r') as file:
+        return json.load(file)
+
 @app.route('/job', methods=['POST'])
 async def create_report():
-    data = await request.json
-    email = data.get('email')
+    # Load job configuration from job.json
+    job_config = load_job_config()
+    email = job_config.get('email')
 
     if not email:
         return jsonify({"error": "Email is required."}), 400
@@ -63,11 +87,14 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Changes and Features:
-# 1. **Email Validation**: The `/job` endpoint now checks if the email is provided in the request body. If not, it returns a 400 error.
-# 2. **Unique Report ID Generation**: The report ID is generated using Python's `uuid` module, ensuring that each report has a unique identifier.
-# 3. **API Endpoint for Bitcoin Rates**: The `BTC_API_URL` is set to an example API endpoint from CoinDesk to retrieve the current Bitcoin rates in USD and EUR.
-# 4. **JSON Parsing**: The response from the Bitcoin rates API is parsed correctly to extract the rates needed for the report.
-# 5. **Placeholder Values in `/report`**: The `/report/<report_id>` endpoint still uses placeholder values for demonstration purposes. You'll need to implement actual retrieval logic in a full application.
+# ### Explanation of Changes:
+# 1. **Loading Configuration**: A new function, `load_job_config`, reads the configuration from `job.json`. This file should contain the email address (and any other configurations you wish to include in the future).
+# 2. **Email Retrieval**: The email is now fetched from the `job.json` file instead of being provided in the request body.
+# 3. **Error Handling**: The application checks that the email is present in the configuration file.
 # 
-# This prototype should now allow you to successfully call the `/job` endpoint, and you can test it using a tool like Postman or curl. If you need further modifications or features, feel free to ask!
+# ### Testing the Application
+# 1. Create the `job.json` file as shown above.
+# 2. Run the `prototype.py` file.
+# 3. Use a tool like Postman or curl to make a POST request to `http://localhost:8000/job`. You should see a response indicating that the report is being generated.
+# 
+# This setup allows for easier testing and configuration changes by simply editing the `job.json` file. Let me know if you need any further modifications or additional features!

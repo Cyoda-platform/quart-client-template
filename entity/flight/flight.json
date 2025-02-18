@@ -1,0 +1,9 @@
+{
+    "airline": "Airline Name",
+    "flightNumber": "1234",
+    "departureTime": "2023-12-01T10:00:00Z",
+    "arrivalTime": "2023-12-01T15:00:00Z",
+    "price": 200.0,
+    "layovers": 1,
+    "details": "Additional flight details."
+}

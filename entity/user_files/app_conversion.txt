@@ -1,0 +1,11 @@
+Hello! I’d like an of a simple application that retrieves the current USD to INR (Indian Rupee) conversion rate and emails it to the user. 
+
+POST /job
+
+Initiates the report creation process and stores the results as a "report."
+Fetches the latest USD to INR conversion rate.
+Triggers an email to send the conversion rate (USD to INR) to the user.
+GET /report by id
+
+Retrieves the stored report by its ID.
+Returns the previously generated conversion rate (USD to INR)

@@ -11,7 +11,7 @@ from entity.flight_search.api import api_bp_flight_search
 from entity.flight_favorite.api import api_bp_flight_favorite
 from entity.flight.api import api_bp_flight
 from entity.flight_filter.api import api_bp_flight_filter
-from entity.ENTITY_NAME_VAR.api import api_bp_ENTITY_NAME_VAR
+
 
 logging.basicConfig(level=logging.INFO)
 
@@ -21,7 +21,7 @@ app.register_blueprint(api_bp_flight_search, url_prefix='/api/flight_search')
 app.register_blueprint(api_bp_flight_favorite, url_prefix='/api/flight_favorite')
 app.register_blueprint(api_bp_flight, url_prefix='/api/flight')
 app.register_blueprint(api_bp_flight_filter, url_prefix='/api/flight_filter')
-app.register_blueprint(api_bp_ENTITY_NAME_VAR, url_prefix='/api/ENTITY_NAME_VAR')
+
 
 @app.before_serving
 async def startup():

@@ -1,0 +1,103 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "subscriber",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/subscribers",
+                        "description": "Create a new subscriber.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    name = data.get('name')\n    email = data.get('email')\n\n    if not name or not email:\n        return jsonify({\"message\": \"Name and email are required\"}), 400\n\n    # Store subscriber in local cache\n    subscriber_id = len(subscribers) + 1\n    subscribers[subscriber_id] = {'name': name, 'email': email}\n\n    return jsonify({\"message\": \"Subscription successful\", \"subscriberId\": subscriber_id}), 201\n",
+                        "action": "register_subscriber",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "subscriber_not_created",
+                                "end_state": "subscriber_created",
+                                "action": "register_subscriber",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    name = data.get('name')\n    email = data.get('email')\n\n    if not name or not email:\n        return jsonify({\"message\": \"Name and email are required\"}), 400\n\n    # Store subscriber in local cache\n    subscriber_id = len(subscribers) + 1\n    subscribers[subscriber_id] = {'name': name, 'email': email}\n\n    return jsonify({\"message\": \"Subscription successful\", \"subscriberId\": subscriber_id}), 201\n",
+                                "description": "Create a new subscriber.",
+                                "related_secondary_entities": [
+                                    "subscriber_count"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "subscriber_count"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/subscribers/<int:subscriber_id>",
+                        "description": "Retrieve subscriber information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    if subscriber_id in subscribers:\n        del subscribers[subscriber_id]\n        return jsonify({\"message\": \"Unsubscription successful\"}), 200\n    return jsonify({\"message\": \"Subscriber not found\"}), 404\n",
+                        "related_secondary_entities": [
+                            "subscriber_count"
+                        ]
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "send_fact",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/send-facts",
+                        "description": "Create a new send_fact.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    if not cat_facts_cache:\n        return jsonify({\"message\": \"No cat facts available\"}), 400\n\n    fact = cat_facts_cache[-1]  # Get the latest cat fact\n\n    for subscriber in subscribers.values():\n        await send_email(subscriber['email'], fact)\n\n    return jsonify({\"message\": \"Emails sent successfully\"}), 200\n",
+                        "action": "send_facts",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "send_fact_not_created",
+                                "end_state": "send_fact_created",
+                                "action": "send_facts",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    if not cat_facts_cache:\n        return jsonify({\"message\": \"No cat facts available\"}), 400\n\n    fact = cat_facts_cache[-1]  # Get the latest cat fact\n\n    for subscriber in subscribers.values():\n        await send_email(subscriber['email'], fact)\n\n    return jsonify({\"message\": \"Emails sent successfully\"}), 200\n",
+                                "description": "Create a new send_fact.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/send_fact/<id>",
+                        "description": "Retrieve a send_fact by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/send_facts",
+                        "description": "Retrieve all send_facts entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "cat_fact",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/cat-facts",
+                        "description": "Retrieve cat_fact information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    async with aiohttp.ClientSession() as session:\n        async with session.get('https://catfact.ninja/fact') as response:\n            if response.status == 200:\n                fact_data = await response.json()\n                fact = fact_data.get('fact')\n                cat_facts_cache.append(fact)\n                return jsonify({\"fact\": fact}), 200\n            else:\n                return jsonify({\"message\": \"Failed to fetch cat fact\"}), 500\n"
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "subscriber_count",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/subscribers/count",
+                        "description": "Retrieve subscriber_count information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    total_subscribers = len(subscribers)\n    return jsonify({\"totalSubscribers\": total_subscribers}), 200\n"
+                    }
+                ]
+            }
+        }
+    ]
+}

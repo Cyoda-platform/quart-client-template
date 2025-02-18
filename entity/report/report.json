@@ -1,0 +1,7 @@
+{
+    "id": "12345",
+    "timestamp": "2023-10-01T12:00:00Z",
+    "btc_usd": "50000",
+    "btc_eur": "42000",
+    "email_sent": true
+}

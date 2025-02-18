@@ -1,0 +1,58 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/jobs",
+                        "description": "Create a new job.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get('email')\n\n    # Fetch conversion rates\n    rates = await fetch_bitcoin_rates()\n\n    # Create a report ID based on the current timestamp\n    report_id = str(int(datetime.now().timestamp()))\n    report = {\n        \"id\": report_id,\n        \"btc_usd\": rates[\"btc_usd\"],\n        \"btc_eur\": rates[\"btc_eur\"],\n        \"timestamp\": datetime.now().isoformat()\n    }\n\n    # Store the report in the mock persistence layer\n    report_cache[report_id] = report\n\n    # TODO: Implement email sending functionality\n    # For now, we print the report to console\n    print(f\"Report sent to {email}: {report}\")\n\n    return jsonify({\"job_id\": report_id, \"status\": \"processing\", \"report_id\": report_id}), 202\n",
+                        "action": "create_job",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "job_not_created",
+                                "end_state": "job_created",
+                                "action": "create_job",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get('email')\n\n    # Fetch conversion rates\n    rates = await fetch_bitcoin_rates()\n\n    # Create a report ID based on the current timestamp\n    report_id = str(int(datetime.now().timestamp()))\n    report = {\n        \"id\": report_id,\n        \"btc_usd\": rates[\"btc_usd\"],\n        \"btc_eur\": rates[\"btc_eur\"],\n        \"timestamp\": datetime.now().isoformat()\n    }\n\n    # Store the report in the mock persistence layer\n    report_cache[report_id] = report\n\n    # TODO: Implement email sending functionality\n    # For now, we print the report to console\n    print(f\"Report sent to {email}: {report}\")\n\n    return jsonify({\"job_id\": report_id, \"status\": \"processing\", \"report_id\": report_id}), 202\n",
+                                "description": "Create a new job.",
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "report"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/job/<id>",
+                        "description": "Retrieve a job by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/jobs",
+                        "description": "Retrieve all jobs entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/reports/<id>",
+                        "description": "Retrieve report information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    report = report_cache.get(id)\n\n    if report:\n        return jsonify(report), 200\n    else:\n        return jsonify({\"error\": \"Report not found\"}), 404\n"
+                    }
+                ]
+            }
+        }
+    ]
+}

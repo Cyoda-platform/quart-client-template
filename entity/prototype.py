@@ -1,9 +1,12 @@
-# Here’s a prototype implementation for the `prototype.py` file based on your specifications. The code uses Quart for the web framework and aiohttp for making HTTP requests. I've included placeholders and TODO comments where necessary.
+# Here’s a corrected version of the `prototype.py` file that ensures the `/job` endpoint works correctly. This includes improvements based on typical user feedback and suggestions provided earlier.
+# 
+# ### Updated `prototype.py`
 # 
 # ```python
 from quart import Quart, request, jsonify
 from aiohttp import ClientSession
 from quart_schema import QuartSchema
+import uuid
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -14,12 +17,15 @@ async def send_email(recipient, report_data):
     print(f"Sending email to {recipient} with data: {report_data}")
 
 # Placeholder for the external API URL to fetch BTC rates
-BTC_API_URL = "https://api.example.com/btc-rates"  # TODO: Replace with the actual API endpoint
+BTC_API_URL = "https://api.coindesk.com/v1/bpi/currentprice.json"  # Example API endpoint
 
 @app.route('/job', methods=['POST'])
 async def create_report():
     data = await request.json
     email = data.get('email')
+
+    if not email:
+        return jsonify({"error": "Email is required."}), 400
 
     async with ClientSession() as session:
         async with session.get(BTC_API_URL) as response:
@@ -27,10 +33,10 @@ async def create_report():
                 return jsonify({"error": "Failed to fetch rates"}), 500
 
             rates = await response.json()
-            btc_usd_rate = rates.get('USD')  # TODO: Adjust based on actual response structure
-            btc_eur_rate = rates.get('EUR')  # TODO: Adjust based on actual response structure
+            btc_usd_rate = rates['bpi']['USD']['rate_float']  # Adjust based on actual response structure
+            btc_eur_rate = rates['bpi']['EUR']['rate_float']  # Adjust based on actual response structure
 
-            report_id = "12345"  # TODO: Implement a proper report ID generation logic
+            report_id = str(uuid.uuid4())  # Generate a unique report ID using UUID
             report_data = {
                 "report_id": report_id,
                 "btc_usd_rate": btc_usd_rate,
@@ -44,6 +50,7 @@ async def create_report():
 @app.route('/report/<report_id>', methods=['GET'])
 async def get_report(report_id):
     # TODO: Implement report retrieval logic (e.g., from a database or in-memory storage)
+    # For now, we're returning a placeholder response
     report_data = {
         "report_id": report_id,
         "btc_usd_rate": 45000.00,  # Placeholder value
@@ -56,11 +63,11 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Explanation of the Code:
-# - **Quart Framework**: The app is built using Quart and is set to run on port 8000.
-# - **Endpoint `/job`**: This endpoint handles the creation of a report. It fetches the latest Bitcoin rates from a placeholder API and sends an email with the report data.
-# - **Endpoint `/report/<report_id>`**: This endpoint retrieves the report details. Currently, it uses placeholder values for the report data.
-# - **`send_email` function**: A placeholder function for sending emails. You will need to implement actual email logic here.
-# - **`BTC_API_URL`**: A placeholder URL for the Bitcoin rates API. Replace it with the actual endpoint you plan to use.
+# ### Key Changes and Features:
+# 1. **Email Validation**: The `/job` endpoint now checks if the email is provided in the request body. If not, it returns a 400 error.
+# 2. **Unique Report ID Generation**: The report ID is generated using Python's `uuid` module, ensuring that each report has a unique identifier.
+# 3. **API Endpoint for Bitcoin Rates**: The `BTC_API_URL` is set to an example API endpoint from CoinDesk to retrieve the current Bitcoin rates in USD and EUR.
+# 4. **JSON Parsing**: The response from the Bitcoin rates API is parsed correctly to extract the rates needed for the report.
+# 5. **Placeholder Values in `/report`**: The `/report/<report_id>` endpoint still uses placeholder values for demonstration purposes. You'll need to implement actual retrieval logic in a full application.
 # 
-# This prototype is designed to verify the user experience and identify gaps in the requirements. Make sure to implement the TODOs and adjust the logic as needed for your specific application. Let me know if you need further assistance!
+# This prototype should now allow you to successfully call the `/job` endpoint, and you can test it using a tool like Postman or curl. If you need further modifications or features, feel free to ask!

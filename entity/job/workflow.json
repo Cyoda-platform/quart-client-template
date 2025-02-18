@@ -1,0 +1,67 @@
+{
+    "name": "Job Workflow:ENTITY_VERSION_VAR:8412c544-ed99-11ef-8f66-7eb0dc4e02b5",
+    "description": "Workflow for creating a job",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "job:ENTITY_VERSION_VAR:8412c544-ed99-11ef-8f66-7eb0dc4e02b5",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "job",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "create_job",
+            "description": "Create a new job",
+            "start_state": "job_not_created",
+            "start_state_description": "The job has not been created yet",
+            "end_state": "job_created",
+            "end_state_description": "The job has been successfully created",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "create_job",
+                        "description": "External processor to create a job",
+                        "calculation_nodes_tags": "8412c544-ed99-11ef-8f66-7eb0dc4e02b5",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

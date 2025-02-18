@@ -1,0 +1,35 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/reports",
+                        "description": "Create a new report.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    email = data.get('email')\n    \n    # TODO: Validate email format (not implemented in this prototype)\n    \n    conversion_rate = await fetch_conversion_rate()\n    \n    report_id = str(len(reports) + 1)  # Simple incremental ID\n    timestamp = datetime.datetime.utcnow().isoformat() + 'Z'\n    \n    # Store report in mock persistence (local cache)\n    reports[report_id] = {\n        'report_id': report_id,\n        'conversion_rate': conversion_rate,\n        'timestamp': timestamp,\n        'email': email  # Storing email for potential future use\n    }\n    \n    # TODO: Implement email sending (currently not implemented)\n    \n    return jsonify({'report_id': report_id, 'status': 'processing'}), 201\n",
+                        "action": "create_report",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "report_not_created",
+                                "end_state": "report_created",
+                                "action": "create_report",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.json\n    email = data.get('email')\n    \n    # TODO: Validate email format (not implemented in this prototype)\n    \n    conversion_rate = await fetch_conversion_rate()\n    \n    report_id = str(len(reports) + 1)  # Simple incremental ID\n    timestamp = datetime.datetime.utcnow().isoformat() + 'Z'\n    \n    # Store report in mock persistence (local cache)\n    reports[report_id] = {\n        'report_id': report_id,\n        'conversion_rate': conversion_rate,\n        'timestamp': timestamp,\n        'email': email  # Storing email for potential future use\n    }\n    \n    # TODO: Implement email sending (currently not implemented)\n    \n    return jsonify({'report_id': report_id, 'status': 'processing'}), 201\n",
+                                "description": "Create a new report.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/reports/<id>",
+                        "description": "Retrieve report information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    report = reports.get(id)\n    \n    if not report:\n        return jsonify({'error': 'Report not found'}), 404\n    \n    return jsonify({\n        'report_id': report['report_id'],\n        'conversion_rate': report['conversion_rate'],\n        'timestamp': report['timestamp']\n    }), 200\n"
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}

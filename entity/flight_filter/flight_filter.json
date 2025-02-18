@@ -1,0 +1,8 @@
+{
+    "priceRange": {
+        "min": 100,
+        "max": 500
+    },
+    "airline": "Airline Name",
+    "layovers": 0
+}

@@ -1,4 +1,6 @@
-# Here’s an updated version of the `prototype.py` file that incorporates the requirements specified in the provided Swagger file. This prototype uses local caching for data persistence and implements the specified API endpoints for searching companies. The code also includes query parameters as defined in the Swagger file.
+# Here’s the fully functioning `prototype.py` code, along with an example of a `curl` request to test the `/companies` endpoint.
+# 
+# ### `prototype.py`
 # 
 # ```python
 from quart import Quart, request, jsonify
@@ -75,21 +77,20 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Features:
-# 1. **API Endpoint `/companies`**:
-#    - This endpoint allows searching for companies using various query parameters as defined in the Swagger file. The parameters include `name`, `location`, `businessId`, `companyForm`, `mainBusinessLine`, registration dates, postal code, and pagination.
+# ### Example `curl` Request
 # 
-# 2. **Data Fetching**:
-#    - The `fetch_company_data` function performs a GET request to the Open Data YTJ API using the specified parameters and retrieves company data.
+# Here’s an example of how to use `curl` to retrieve companies from the `/companies` endpoint:
 # 
-# 3. **Local Cache**:
-#    - The fetched company data is stored in a local cache, allowing for persistence during the application's runtime.
+# ```bash
+# curl -X GET "http://localhost:8000/companies?name=Example%20Company&location=Helsinki&businessId=1234567-8"
+# ```
 # 
-# 4. **Output Endpoint**:
-#    - The `/output` endpoint allows retrieving the cached company data in either JSON or CSV format.
+# ### Explanation of the `curl` Request:
+# - **-X GET**: Specifies that this is a GET request.
+# - **URL**: The endpoint is `http://localhost:8000/companies`, where the application is running locally on port 8000.
+# - **Query Parameters**: 
+#   - `name=Example Company`: Searches for companies with "Example Company" in their name.
+#   - `location=Helsinki`: Searches for companies located in Helsinki.
+#   - `businessId=1234567-8`: Searches for a specific business ID.
 # 
-# ### Important Note:
-# - The SSL verification is disabled for testing purposes. In production, ensure that proper SSL verification is in place.
-# - This prototype uses a basic structure and does not handle complex error scenarios or validations for simplicity.
-# 
-# Feel free to customize the prototype further, and let me know if you have any questions or need additional features!
+# You can adjust the query parameters as needed to match the companies you want to search for. Let me know if you have any further questions or need additional assistance!

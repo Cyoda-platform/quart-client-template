@@ -1,0 +1,8 @@
+{
+    "company_name": "Example Company",
+    "business_id": "1234567-8",
+    "company_type": "Limited",
+    "registration_date": "2020-01-01",
+    "status": "Active",
+    "lei": "LEI123456789"
+}

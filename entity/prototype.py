@@ -1,8 +1,6 @@
-# Since you have requested to focus on posting data to a PostgreSQL database without using SQLAlchemy or any external persistence implementations, I will demonstrate how to create a prototype that simulates a PostgreSQL database interaction using a local cache. 
+# Here’s the updated `prototype.py` code to meet your new functional requirement of using a POST method to store company details via an API. This code will simulate the storage of company details in a local cache without using any external database systems.
 # 
-# To clarify, this prototype will not actually connect to a PostgreSQL database; instead, it will mock the behavior of inserting data into a database using a local dictionary that acts as a cache. This approach allows you to simulate the behavior of posting data without needing an actual database connection.
-# 
-# Here's how you can implement the `prototype.py` code to handle POST requests:
+# ### Updated `prototype.py` Code
 # 
 # ```python
 from quart import Quart, jsonify, request
@@ -35,13 +33,13 @@ if __name__ == '__main__':
 # ```
 # 
 # ### Key Features of This Implementation
-# - **Mock Database**: The `mock_db` dictionary is used to simulate the behavior of a PostgreSQL database where company data is stored.
-# - **POST Endpoint**: The `/companies` endpoint accepts POST requests to create new company entries. It checks for the required fields (`name` and `type`) and returns an error if they are not provided.
+# - **POST Endpoint**: The `/companies` endpoint accepts POST requests to store company details. It requires the `name` and `type` fields in the request body.
 # - **GET Endpoint**: The same endpoint can be used to retrieve all companies stored in the mock database.
+# - **Local Cache**: The `mock_db` dictionary is used to store company details in memory, simulating a database.
 # 
 # ### Example Test Script
 # 
-# To test the prototype, you can use the following script:
+# You can use the following test script to verify the functionality:
 # 
 # ```python
 import httpx
@@ -51,6 +49,10 @@ async def test_prototype():
     async with httpx.AsyncClient() as client:
         # Post new company data
         response = await client.post('http://localhost:8000/companies', json={'name': 'Ryanair', 'type': 'Airline'})
+        print('Create Company:', response.json())
+
+        # Post another company
+        response = await client.post('http://localhost:8000/companies', json={'name': 'Aer Lingus', 'type': 'Airline'})
         print('Create Company:', response.json())
 
         # Fetch all companies
@@ -67,4 +69,4 @@ if __name__ == '__main__':
 # 2. In a separate terminal, run the test script to see the output of the API responses.
 # 
 # ### Summary
-# This implementation allows you to simulate posting and retrieving company data without needing an actual PostgreSQL database. You can expand upon this prototype later to integrate with a real database once you're ready to implement persistent storage.
+# This implementation allows you to store company details using a POST request and retrieve them using a GET request. The local cache simulates the behavior of a database, making it easy to test without external dependencies. You can further enhance this prototype as needed based on your requirements.

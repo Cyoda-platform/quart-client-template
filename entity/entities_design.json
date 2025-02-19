@@ -1,0 +1,75 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "company",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/companies",
+                        "description": "Create a new company.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    request_data = await request.get_json()\n    query_params = {\n        'name': request_data.get('name'),\n        'location': request_data.get('location'),\n        'businessId': request_data.get('businessId'),\n        'companyForm': request_data.get('companyForm'),\n        'mainBusinessLine': request_data.get('mainBusinessLine'),\n        'registrationDateStart': request_data.get('registrationDateStart'),\n        'registrationDateEnd': request_data.get('registrationDateEnd'),\n        'postCode': request_data.get('postCode'),\n        'businessIdRegistrationStart': request_data.get('businessIdRegistrationStart'),\n        'businessIdRegistrationEnd': request_data.get('businessIdRegistrationEnd'),\n        'page': request_data.get('page')\n    }\n    filtered_params = {k: v for k, v in query_params.items() if v is not None}\n    company_data = await fetch_company_data(filtered_params)\n    if not company_data or 'companies' not in company_data:\n        return jsonify({\"error\": \"No companies found\"}), 404\n    for company in company_data['companies']:\n        entity_service.add_item(token=token, entity_model=\"companies\", entity_version=ENTITY_VERSION, entity=company)\n    return jsonify(company_data)\n",
+                        "action": "get_companies",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "company_not_created",
+                                "end_state": "company_created",
+                                "action": "get_companies",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    request_data = await request.get_json()\n    query_params = {\n        'name': request_data.get('name'),\n        'location': request_data.get('location'),\n        'businessId': request_data.get('businessId'),\n        'companyForm': request_data.get('companyForm'),\n        'mainBusinessLine': request_data.get('mainBusinessLine'),\n        'registrationDateStart': request_data.get('registrationDateStart'),\n        'registrationDateEnd': request_data.get('registrationDateEnd'),\n        'postCode': request_data.get('postCode'),\n        'businessIdRegistrationStart': request_data.get('businessIdRegistrationStart'),\n        'businessIdRegistrationEnd': request_data.get('businessIdRegistrationEnd'),\n        'page': request_data.get('page')\n    }\n    filtered_params = {k: v for k, v in query_params.items() if v is not None}\n    company_data = await fetch_company_data(filtered_params)\n    if not company_data or 'companies' not in company_data:\n        return jsonify({\"error\": \"No companies found\"}), 404\n    for company in company_data['companies']:\n        entity_service.add_item(token=token, entity_model=\"companies\", entity_version=ENTITY_VERSION, entity=company)\n    return jsonify(company_data)\n",
+                                "description": "Create a new company.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/company/<id>",
+                        "description": "Retrieve a company by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/companies",
+                        "description": "Retrieve all companies entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        },
+        {
+            "entity_name": "output",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/output",
+                        "description": "Create a new output.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    request_data = await request.get_json()\n    format_type = request_data.get('format')\n    if format_type not in [\"json\", \"csv\"]:\n        return jsonify({\"error\": \"Invalid format. Use 'json' or 'csv'.\"}), 400\n    companies = entity_service.get_items(token=token, entity_model=\"companies\", entity_version=ENTITY_VERSION)\n    if format_type == \"json\":\n        return jsonify(companies)\n    else:\n        csv_data = \"Business ID,Company Name,Trade Register Status,Last Modified\\n\"\n        for company in companies:\n            business_id = company.get('businessId', {}).get('value', 'N/A')\n            company_name = company.get('names', [{}])[0].get('name', 'N/A')\n            trade_register_status = company.get('tradeRegisterStatus', 'N/A')\n            last_modified = company.get('lastModified', 'N/A')\n            csv_data += f\"{business_id},{company_name},{trade_register_status},{last_modified}\\n\"\n        return csv_data, 200, {'Content-Type': 'text/csv'}\n",
+                        "action": "get_output",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "output_not_created",
+                                "end_state": "output_created",
+                                "action": "get_output",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    request_data = await request.get_json()\n    format_type = request_data.get('format')\n    if format_type not in [\"json\", \"csv\"]:\n        return jsonify({\"error\": \"Invalid format. Use 'json' or 'csv'.\"}), 400\n    companies = entity_service.get_items(token=token, entity_model=\"companies\", entity_version=ENTITY_VERSION)\n    if format_type == \"json\":\n        return jsonify(companies)\n    else:\n        csv_data = \"Business ID,Company Name,Trade Register Status,Last Modified\\n\"\n        for company in companies:\n            business_id = company.get('businessId', {}).get('value', 'N/A')\n            company_name = company.get('names', [{}])[0].get('name', 'N/A')\n            trade_register_status = company.get('tradeRegisterStatus', 'N/A')\n            last_modified = company.get('lastModified', 'N/A')\n            csv_data += f\"{business_id},{company_name},{trade_register_status},{last_modified}\\n\"\n        return csv_data, 200, {'Content-Type': 'text/csv'}\n",
+                                "description": "Create a new output.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/output/<id>",
+                        "description": "Retrieve a output by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/outputs",
+                        "description": "Retrieve all outputs entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}

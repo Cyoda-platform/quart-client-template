@@ -1,6 +1,4 @@
-# To ensure that the CSV output is generated correctly from the local cache, we need to make sure that all data used in the CSV generation is properly formatted and that we handle cases where certain fields might be missing or structured differently.
-# 
-# Here's the revised `prototype.py` code that addresses potential issues with the CSV output. It includes checks for the existence of fields and formats the CSV output accordingly:
+# Here's the updated `prototype.py` code that changes the GET requests to POST requests for both the `/companies` and `/output` endpoints. This change requires you to send the necessary parameters in the body of the POST request instead of as query parameters.
 # 
 # ### Updated `prototype.py`
 # 
@@ -26,27 +24,29 @@ async def fetch_company_data(query_params):
     ssl_context.verify_mode = ssl.CERT_NONE
 
     async with aiohttp.ClientSession() as session:
-        async with session.get(COMPANIES_REGISTRY_API_URL, params=query_params, ssl=ssl_context) as response:
+        async with session.post(COMPANIES_REGISTRY_API_URL, json=query_params, ssl=ssl_context) as response:
             if response.status == 200:
                 return await response.json()
             else:
                 return None
 
-@app.route('/companies', methods=['GET'])
+@app.route('/companies', methods=['POST'])
 async def get_companies():
-    # Collect query parameters
+    # Collect JSON body parameters
+    request_data = await request.get_json()
+
     query_params = {
-        'name': request.args.get('name'),
-        'location': request.args.get('location'),
-        'businessId': request.args.get('businessId'),
-        'companyForm': request.args.get('companyForm'),
-        'mainBusinessLine': request.args.get('mainBusinessLine'),
-        'registrationDateStart': request.args.get('registrationDateStart'),
-        'registrationDateEnd': request.args.get('registrationDateEnd'),
-        'postCode': request.args.get('postCode'),
-        'businessIdRegistrationStart': request.args.get('businessIdRegistrationStart'),
-        'businessIdRegistrationEnd': request.args.get('businessIdRegistrationEnd'),
-        'page': request.args.get('page'),
+        'name': request_data.get('name'),
+        'location': request_data.get('location'),
+        'businessId': request_data.get('businessId'),
+        'companyForm': request_data.get('companyForm'),
+        'mainBusinessLine': request_data.get('mainBusinessLine'),
+        'registrationDateStart': request_data.get('registrationDateStart'),
+        'registrationDateEnd': request_data.get('registrationDateEnd'),
+        'postCode': request_data.get('postCode'),
+        'businessIdRegistrationStart': request_data.get('businessIdRegistrationStart'),
+        'businessIdRegistrationEnd': request_data.get('businessIdRegistrationEnd'),
+        'page': request_data.get('page'),
     }
 
     # Filter out None values from query_params
@@ -63,10 +63,11 @@ async def get_companies():
 
     return jsonify(company_data)
 
-@app.route('/output', methods=['GET'])
+@app.route('/output', methods=['POST'])
 async def get_output():
-    format_type = request.args.get('format')
-    
+    request_data = await request.get_json()
+    format_type = request_data.get('format')
+
     if format_type not in ["json", "csv"]:
         return jsonify({"error": "Invalid format. Use 'json' or 'csv'."}), 400
 
@@ -91,18 +92,25 @@ if __name__ == '__main__':
 # ```
 # 
 # ### Key Changes:
-# 1. **CSV Generation**:
-#    - The CSV output has been modified to ensure that it handles the possibility of missing fields gracefully. If a field is not present, it defaults to "N/A".
-#    - The use of `.get()` method allows for safe access to nested data structures without raising exceptions when keys are missing.
+# 1. **POST Requests**:
+#    - Both the `/companies` and `/output` endpoints now accept POST requests. The parameters are expected to be sent in the JSON body of the request.
+#    - The `fetch_company_data` function uses `session.post` to send a POST request to the external API.
 # 
-# ### Testing the CSV Output
+# 2. **Request Body**:
+#    - The parameters for querying companies and the format for output are taken from the JSON body of the request instead of query parameters.
 # 
-# You can test the `/output` endpoint to get the CSV output by using the following `curl` command:
+# ### Testing with `curl`
+# 
+# To test the `/companies` endpoint using `curl` with a POST request, you can use the following command:
 # 
 # ```bash
-# curl -X GET "http://localhost:8000/output?format=csv"
+# curl -X POST "http://localhost:8000/companies" -H "Content-Type: application/json" -d '{"name": "Example Company", "location": "Helsinki"}'
 # ```
 # 
-# This command will fetch the cached company data in CSV format. Make sure the cache has been populated by accessing the `/companies` endpoint first with appropriate query parameters.
+# And to test the `/output` endpoint for CSV format, use this command:
 # 
-# Let me know if you need further assistance or modifications!
+# ```bash
+# curl -X POST "http://localhost:8000/output" -H "Content-Type: application/json" -d '{"format": "csv"}'
+# ```
+# 
+# These commands will allow you to test the API endpoints effectively. Let me know if you need further adjustments or assistance!

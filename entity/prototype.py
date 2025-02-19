@@ -1,6 +1,6 @@
-# The error you are encountering is due to the presence of `None` values in the `query_params` dictionary when making the GET request. When you pass these parameters to the aiohttp request, it raises a `TypeError` because aiohttp expects all query parameter values to be strings, integers, or floats.
+# To ensure that the CSV output is generated correctly from the local cache, we need to make sure that all data used in the CSV generation is properly formatted and that we handle cases where certain fields might be missing or structured differently.
 # 
-# To resolve this issue, you can filter out any query parameters that have `None` values before making the request. Here’s an updated version of the `prototype.py` file with this fix:
+# Here's the revised `prototype.py` code that addresses potential issues with the CSV output. It includes checks for the existence of fields and formats the CSV output accordingly:
 # 
 # ### Updated `prototype.py`
 # 
@@ -66,6 +66,7 @@ async def get_companies():
 @app.route('/output', methods=['GET'])
 async def get_output():
     format_type = request.args.get('format')
+    
     if format_type not in ["json", "csv"]:
         return jsonify({"error": "Invalid format. Use 'json' or 'csv'."}), 400
 
@@ -76,7 +77,13 @@ async def get_output():
         # Generate CSV output
         csv_data = "Business ID,Company Name,Trade Register Status,Last Modified\n"
         for company in local_cache.values():
-            csv_data += f"{company['businessId']['value']},{company['names'][0]['name']},{company['tradeRegisterStatus']},{company['lastModified']}\n"
+            business_id = company.get('businessId', {}).get('value', 'N/A')
+            company_name = company.get('names', [{}])[0].get('name', 'N/A')
+            trade_register_status = company.get('tradeRegisterStatus', 'N/A')
+            last_modified = company.get('lastModified', 'N/A')
+
+            csv_data += f"{business_id},{company_name},{trade_register_status},{last_modified}\n"
+        
         return csv_data, 200, {'Content-Type': 'text/csv'}
 
 if __name__ == '__main__':
@@ -84,17 +91,18 @@ if __name__ == '__main__':
 # ```
 # 
 # ### Key Changes:
-# 1. **Filtering Query Parameters**:
-#    - Added a filtering step using dictionary comprehension to remove any parameters that have `None` values before passing them to the `fetch_company_data` function. This ensures that only valid parameters are included in the request.
+# 1. **CSV Generation**:
+#    - The CSV output has been modified to ensure that it handles the possibility of missing fields gracefully. If a field is not present, it defaults to "N/A".
+#    - The use of `.get()` method allows for safe access to nested data structures without raising exceptions when keys are missing.
 # 
-# ### Testing with `curl`
+# ### Testing the CSV Output
 # 
-# To test the `/companies` endpoint using `curl`, you can use the following command:
+# You can test the `/output` endpoint to get the CSV output by using the following `curl` command:
 # 
 # ```bash
-# curl -X GET "http://localhost:8000/companies?name=Example%20Company&location=Helsinki"
+# curl -X GET "http://localhost:8000/output?format=csv"
 # ```
 # 
-# In this example, you can adjust the parameters (`name`, `location`, etc.) based on the companies you wish to search for. The provided command demonstrates how to search for a company named "Example Company" located in Helsinki.
+# This command will fetch the cached company data in CSV format. Make sure the cache has been populated by accessing the `/companies` endpoint first with appropriate query parameters.
 # 
-# Let me know if you have any further questions or need additional assistance!
+# Let me know if you need further assistance or modifications!

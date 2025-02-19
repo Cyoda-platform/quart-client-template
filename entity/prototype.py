@@ -1,4 +1,4 @@
-# Here’s the finalized `prototype.py` code for your application. This implementation uses a simple in-memory local cache to mimic database functionality, adhering to your specifications. Additionally, I'll provide an example of how to test the prototype using `httpx`.
+# Here’s the modified `prototype.py` code that focuses solely on retrieving data from the specified API. The application will use `aiohttp` to fetch data from the external API, and it will store the results in a local cache for retrieval through the defined endpoints.
 # 
 # ```python
 from quart import Quart, jsonify, request
@@ -17,59 +17,50 @@ async def fetch_company_data(company_name):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
             if response.status == 200:
-                return await response.json()
+                data = await response.json()
+                # Store the fetched data in the local cache
+                mock_db[company_name] = data.get('companies', [])
+                return mock_db[company_name]
             else:
                 # TODO: Handle errors appropriately (e.g., log, raise exception)
                 return []
 
 @app.route('/companies', methods=['GET'])
 async def get_companies():
-    return jsonify(list(mock_db.values()))
+    company_name = request.args.get('company_name', 'ryanair')  # Default to 'ryanair'
+    # Fetch data from the external API
+    companies = await fetch_company_data(company_name)
+    return jsonify(companies)
 
 @app.route('/companies/search', methods=['GET'])
 async def search_companies():
-    company_name = request.args.get('company_name')
-    # Search logic based on company_name
-    result = [company for company in mock_db.values() if company_name.lower() in company['name'].lower()]
+    company_name = request.args.get('company_name', 'ryanair')  # Default to 'ryanair'
+    # Use the cached data or fetch again if necessary
+    if company_name in mock_db:
+        result = mock_db[company_name]
+    else:
+        result = await fetch_company_data(company_name)
+    
     return jsonify(result)
 
 @app.route('/companies/<int:company_id>', methods=['GET'])
 async def get_company(company_id):
-    company = mock_db.get(company_id)
-    if company:
-        return jsonify(company)
-    return jsonify({'error': 'Company not found'}), 404
-
-@app.route('/companies', methods=['POST'])
-async def create_company():
-    company_data = await request.json
-    company_id = len(mock_db) + 1  # Simple ID assignment
-    mock_db[company_id] = {**company_data, 'id': company_id}
-    return jsonify(mock_db[company_id]), 201
-
-@app.route('/companies/<int:company_id>', methods=['PUT'])
-async def update_company(company_id):
-    if company_id not in mock_db:
-        return jsonify({'error': 'Company not found'}), 404
-    
-    company_data = await request.json
-    mock_db[company_id].update(company_data)
-    return jsonify(mock_db[company_id])
-
-@app.route('/companies/<int:company_id>', methods=['DELETE'])
-async def delete_company(company_id):
-    if company_id in mock_db:
-        del mock_db[company_id]
-        return jsonify({'message': 'Company deleted'}), 200
-    return jsonify({'error': 'Company not found'}), 404
+    # This endpoint is not needed for fetching from the API directly, as we are not storing by ID
+    return jsonify({'error': 'This endpoint is not implemented in the current prototype.'}), 404
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Testing the Prototype
+# ### Key Changes Made
+# - The code now exclusively focuses on fetching company data from the specified API using a GET request.
+# - The `fetch_company_data` function is responsible for retrieving data from the external API and storing it in a local cache (`mock_db`) for future requests.
+# - The `/companies` endpoint retrieves company data based on a query parameter (`company_name`) and fetches it from the external API if it's not already cached.
+# - The `/companies/search` endpoint allows searching for companies based on the `company_name` query parameter and utilizes the cached data.
 # 
-# You can test the prototype using the `httpx` library, which is great for making HTTP requests asynchronously. Here’s a simple testing script that covers the main API endpoints:
+# ### Example Test Script
+# 
+# To test the prototype, you can use a simple script as follows:
 # 
 # ```python
 import httpx
@@ -77,46 +68,21 @@ import asyncio
 
 async def test_prototype():
     async with httpx.AsyncClient() as client:
-        # Create a new company
-        response = await client.post('http://localhost:8000/companies', json={'name': 'Ryanair', 'type': 'Airline'})
-        print('Create:', response.json())
-
-        # Get all companies
-        response = await client.get('http://localhost:8000/companies')
+        # Fetch companies data from the API
+        response = await client.get('http://localhost:8000/companies', params={'company_name': 'ryanair'})
         print('Get Companies:', response.json())
 
-        # Search for a specific company
-        response = await client.get('http://localhost:8000/companies/search', params={'company_name': 'Ryanair'})
+        # Search for specific company data
+        response = await client.get('http://localhost:8000/companies/search', params={'company_name': 'ryanair'})
         print('Search:', response.json())
-
-        # Get a specific company by ID
-        company_id = response.json()[0]['id']
-        response = await client.get(f'http://localhost:8000/companies/{company_id}')
-        print('Get Company:', response.json())
-
-        # Update the company information
-        response = await client.put(f'http://localhost:8000/companies/{company_id}', json={'type': 'Low-cost Airline'})
-        print('Update:', response.json())
-
-        # Delete the company
-        response = await client.delete(f'http://localhost:8000/companies/{company_id}')
-        print('Delete:', response.json())
 
 # Run the test
 if __name__ == '__main__':
     asyncio.run(test_prototype())
 # ```
 # 
-# ### Explanation of the Test Script
-# - **Creating a Company**: Sends a POST request to create a new company.
-# - **Getting All Companies**: Sends a GET request to retrieve all companies from the mock database.
-# - **Searching for a Company**: Sends a GET request to search for a specific company by name.
-# - **Getting a Specific Company**: Retrieves details of a specific company using its ID.
-# - **Updating Company Information**: Sends a PUT request to update the company's information.
-# - **Deleting a Company**: Sends a DELETE request to remove the company from the mock database.
-# 
-# ### Running the Test
+# ### Running the Application and Tests
 # 1. Start your Quart application by running `python prototype.py`.
-# 2. In a separate terminal, run the test script.
+# 2. In a separate terminal, run the test script to see the output of the API responses.
 # 
-# This setup allows you to validate the functionality of the prototype and ensures that all API endpoints behave as expected. Adjust the test cases as necessary to cover additional scenarios or requirements.
+# This setup will help you validate that the application correctly fetches and retrieves company data from the specified API endpoint. Adjust any parameters in the test script as needed to test different company names.

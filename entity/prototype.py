@@ -1,4 +1,4 @@
-# Here’s the modified `prototype.py` code that focuses solely on retrieving data from the specified API. The application will use `aiohttp` to fetch data from the external API, and it will store the results in a local cache for retrieval through the defined endpoints.
+# Here’s the corrected `prototype.py` code that directly fetches data from the specified API when a company name is provided. This implementation ensures that data is fetched from the external API whenever the `/companies` endpoint is called with a valid `company_name`.
 # 
 # ```python
 from quart import Quart, jsonify, request
@@ -8,9 +8,6 @@ import aiohttp
 app = Quart(__name__)
 QuartSchema(app)
 
-# Mock database as a local cache
-mock_db = {}
-
 # Function to fetch company data from the external API
 async def fetch_company_data(company_name):
     url = f"https://services.cro.ie/cws/companies?&company_name={company_name}&skip=0&max=5&htmlEnc=1"
@@ -18,49 +15,42 @@ async def fetch_company_data(company_name):
         async with session.get(url) as response:
             if response.status == 200:
                 data = await response.json()
-                # Store the fetched data in the local cache
-                mock_db[company_name] = data.get('companies', [])
-                return mock_db[company_name]
+                return data.get('companies', [])
             else:
                 # TODO: Handle errors appropriately (e.g., log, raise exception)
                 return []
 
 @app.route('/companies', methods=['GET'])
 async def get_companies():
-    company_name = request.args.get('company_name', 'ryanair')  # Default to 'ryanair'
+    company_name = request.args.get('company_name')
+    if not company_name:
+        return jsonify({'error': 'Company name is required'}), 400
+    
     # Fetch data from the external API
     companies = await fetch_company_data(company_name)
     return jsonify(companies)
 
 @app.route('/companies/search', methods=['GET'])
 async def search_companies():
-    company_name = request.args.get('company_name', 'ryanair')  # Default to 'ryanair'
-    # Use the cached data or fetch again if necessary
-    if company_name in mock_db:
-        result = mock_db[company_name]
-    else:
-        result = await fetch_company_data(company_name)
-    
-    return jsonify(result)
+    company_name = request.args.get('company_name')
+    if not company_name:
+        return jsonify({'error': 'Company name is required'}), 400
 
-@app.route('/companies/<int:company_id>', methods=['GET'])
-async def get_company(company_id):
-    # This endpoint is not needed for fetching from the API directly, as we are not storing by ID
-    return jsonify({'error': 'This endpoint is not implemented in the current prototype.'}), 404
+    # Fetch data from the external API
+    companies = await fetch_company_data(company_name)
+    return jsonify(companies)
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Changes Made
-# - The code now exclusively focuses on fetching company data from the specified API using a GET request.
-# - The `fetch_company_data` function is responsible for retrieving data from the external API and storing it in a local cache (`mock_db`) for future requests.
-# - The `/companies` endpoint retrieves company data based on a query parameter (`company_name`) and fetches it from the external API if it's not already cached.
-# - The `/companies/search` endpoint allows searching for companies based on the `company_name` query parameter and utilizes the cached data.
+# ### Key Features of This Implementation
+# - **Company Name Requirement**: The `/companies` and `/companies/search` endpoints now require a `company_name` query parameter. If not provided, they return a 400 error with a message indicating that the company name is required.
+# - **Data Fetching**: The application fetches company data from the specified API endpoint whenever a valid `company_name` is provided, ensuring that the most up-to-date information is retrieved.
 # 
 # ### Example Test Script
 # 
-# To test the prototype, you can use a simple script as follows:
+# You can test this prototype using the following script:
 # 
 # ```python
 import httpx
@@ -68,7 +58,7 @@ import asyncio
 
 async def test_prototype():
     async with httpx.AsyncClient() as client:
-        # Fetch companies data from the API
+        # Fetch companies data for Ryanair
         response = await client.get('http://localhost:8000/companies', params={'company_name': 'ryanair'})
         print('Get Companies:', response.json())
 
@@ -85,4 +75,4 @@ if __name__ == '__main__':
 # 1. Start your Quart application by running `python prototype.py`.
 # 2. In a separate terminal, run the test script to see the output of the API responses.
 # 
-# This setup will help you validate that the application correctly fetches and retrieves company data from the specified API endpoint. Adjust any parameters in the test script as needed to test different company names.
+# This implementation will correctly fetch and return data from the external API based on the provided company name, addressing the requirement for dynamic data retrieval. Adjust the `company_name` parameter in the test script as needed to fetch different companies.

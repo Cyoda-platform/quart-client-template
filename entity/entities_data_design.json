@@ -1,0 +1,29 @@
+{
+    "entities": [
+        {
+            "entity_name": "company",
+            "entity_data_example": {
+                "company_name": "Example Company",
+                "business_id": "1234567-8",
+                "company_type": "Limited",
+                "registration_date": "2020-01-01",
+                "status": "Active",
+                "lei": "LEI123456789"
+            }
+        },
+        {
+            "entity_name": "output",
+            "entity_data_example": {
+                "format": "json",
+                "data": [
+                    {
+                        "business_id": "1234567-8",
+                        "company_name": "Example Company",
+                        "trade_register_status": "Active",
+                        "last_modified": "2020-01-01"
+                    }
+                ]
+            }
+        }
+    ]
+}

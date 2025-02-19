@@ -1,0 +1,11 @@
+{
+    "format": "json",
+    "data": [
+        {
+            "business_id": "1234567-8",
+            "company_name": "Example Company",
+            "trade_register_status": "Active",
+            "last_modified": "2020-01-01"
+        }
+    ]
+}

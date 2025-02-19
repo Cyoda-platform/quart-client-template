@@ -1,6 +1,8 @@
-# Here’s the fully functioning `prototype.py` code, along with an example of a `curl` request to test the `/companies` endpoint.
+# The error you are encountering is due to the presence of `None` values in the `query_params` dictionary when making the GET request. When you pass these parameters to the aiohttp request, it raises a `TypeError` because aiohttp expects all query parameter values to be strings, integers, or floats.
 # 
-# ### `prototype.py`
+# To resolve this issue, you can filter out any query parameters that have `None` values before making the request. Here’s an updated version of the `prototype.py` file with this fix:
+# 
+# ### Updated `prototype.py`
 # 
 # ```python
 from quart import Quart, request, jsonify
@@ -32,6 +34,7 @@ async def fetch_company_data(query_params):
 
 @app.route('/companies', methods=['GET'])
 async def get_companies():
+    # Collect query parameters
     query_params = {
         'name': request.args.get('name'),
         'location': request.args.get('location'),
@@ -46,8 +49,11 @@ async def get_companies():
         'page': request.args.get('page'),
     }
 
+    # Filter out None values from query_params
+    filtered_params = {k: v for k, v in query_params.items() if v is not None}
+
     # Fetch company data
-    company_data = await fetch_company_data(query_params)
+    company_data = await fetch_company_data(filtered_params)
     if not company_data or 'companies' not in company_data:
         return jsonify({"error": "No companies found"}), 404
 
@@ -77,20 +83,18 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Example `curl` Request
+# ### Key Changes:
+# 1. **Filtering Query Parameters**:
+#    - Added a filtering step using dictionary comprehension to remove any parameters that have `None` values before passing them to the `fetch_company_data` function. This ensures that only valid parameters are included in the request.
 # 
-# Here’s an example of how to use `curl` to retrieve companies from the `/companies` endpoint:
+# ### Testing with `curl`
+# 
+# To test the `/companies` endpoint using `curl`, you can use the following command:
 # 
 # ```bash
-# curl -X GET "http://localhost:8000/companies?name=Example%20Company&location=Helsinki&businessId=1234567-8"
+# curl -X GET "http://localhost:8000/companies?name=Example%20Company&location=Helsinki"
 # ```
 # 
-# ### Explanation of the `curl` Request:
-# - **-X GET**: Specifies that this is a GET request.
-# - **URL**: The endpoint is `http://localhost:8000/companies`, where the application is running locally on port 8000.
-# - **Query Parameters**: 
-#   - `name=Example Company`: Searches for companies with "Example Company" in their name.
-#   - `location=Helsinki`: Searches for companies located in Helsinki.
-#   - `businessId=1234567-8`: Searches for a specific business ID.
+# In this example, you can adjust the parameters (`name`, `location`, etc.) based on the companies you wish to search for. The provided command demonstrates how to search for a company named "Example Company" located in Helsinki.
 # 
-# You can adjust the query parameters as needed to match the companies you want to search for. Let me know if you have any further questions or need additional assistance!
+# Let me know if you have any further questions or need additional assistance!

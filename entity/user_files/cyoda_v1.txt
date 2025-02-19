@@ -1,0 +1,7 @@
+build an application that retrieves data from the given API and saves it into a PostgreSQL database using Django or in cyoda based entity based management system which can be retireved
+
+The goal of the app is to:
+
+Fetch company data from the API https://services.cro.ie/cws/companies?&company_name=ryanair&skip=0&max=5&htmlEnc=1.
+Save the retrieved data into a PostgreSQL database.
+Create a Django-based web app for interacting with the database. or if you have alternative solution to save this data using entity based management system ,guide me through it

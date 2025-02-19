@@ -1,0 +1,67 @@
+{
+    "name": "Company Creation Workflow:ENTITY_VERSION_VAR:fe1c4148-ee85-11ef-8f66-7eb0dc4e02b5",
+    "description": "Workflow for creating a company within the TreeNodeEntity model.",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "company:ENTITY_VERSION_VAR:fe1c4148-ee85-11ef-8f66-7eb0dc4e02b5",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "company",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "create_company",
+            "description": "Create a new company",
+            "start_state": "company_not_created",
+            "start_state_description": "The company has not been created yet",
+            "end_state": "company_created",
+            "end_state_description": "The company has been successfully created",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "create_company",
+                        "description": "Externalized processor for creating a company",
+                        "calculation_nodes_tags": "fe1c4148-ee85-11ef-8f66-7eb0dc4e02b5",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

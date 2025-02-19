@@ -1,0 +1,50 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "company",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/companies",
+                        "description": "Create a new company.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    global company_id_counter\n    data = await request.get_json()\n    company_id = company_id_counter\n    company_cache[company_id] = {\n        'name': data.get('name'),\n        'address': data.get('address'),\n        'contact_number': data.get('contact_number')\n    }\n    company_id_counter += 1\n    return jsonify({\"message\": \"Company created successfully\", \"id\": company_id}), 201\n",
+                        "action": "create_company",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "company_not_created",
+                                "end_state": "company_created",
+                                "action": "create_company",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    global company_id_counter\n    data = await request.get_json()\n    company_id = company_id_counter\n    company_cache[company_id] = {\n        'name': data.get('name'),\n        'address': data.get('address'),\n        'contact_number': data.get('contact_number')\n    }\n    company_id_counter += 1\n    return jsonify({\"message\": \"Company created successfully\", \"id\": company_id}), 201\n",
+                                "description": "Create a new company.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/companies",
+                        "description": "Retrieve company information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    return jsonify([{\"id\": cid, **details} for cid, details in company_cache.items()]), 200\n"
+                    },
+                    {
+                        "endpoint": "/companies/<int:id>",
+                        "description": "Retrieve company information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    company = company_cache.get(id)\n    if company:\n        return jsonify({\"id\": id, **company}), 200\n    return jsonify({\"message\": \"Company not found\"}), 404\n"
+                    },
+                    {
+                        "endpoint": "/companies/<int:id>",
+                        "description": "Retrieve company information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    if id in company_cache:\n        company_cache[id] = {\n            'name': data.get('name'),\n            'address': data.get('address'),\n            'contact_number': data.get('contact_number')\n        }\n        return jsonify({\"message\": \"Company updated successfully\"}), 200\n    return jsonify({\"message\": \"Company not found\"}), 404\n"
+                    },
+                    {
+                        "endpoint": "/companies/<int:id>",
+                        "description": "Retrieve company information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    if id in company_cache:\n        del company_cache[id]\n        return jsonify({\"message\": \"Company deleted successfully\"}), 200\n    return jsonify({\"message\": \"Company not found\"}), 404\n"
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}

@@ -1,0 +1,58 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "job",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/jobs",
+                        "description": "Create a new job.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get('email')\n    job_id = str(uuid.uuid4())\n    rates = await fetch_conversion_rates()\n    report = {\n        \"id\": job_id,\n        \"btc_usd\": rates[\"btc_usd\"],\n        \"btc_eur\": rates[\"btc_eur\"],\n        \"timestamp\": \"2023-10-01T12:00:00Z\"\n    }\n    entity_service.add_item(token=token, entity_model=\"report\", entity_version=ENTITY_VERSION, entity=report)\n    return jsonify({\"job_id\": job_id, \"status\": \"processing\"}), 202\n",
+                        "action": "create_report",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "job_not_created",
+                                "end_state": "job_created",
+                                "action": "create_report",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get('email')\n    job_id = str(uuid.uuid4())\n    rates = await fetch_conversion_rates()\n    report = {\n        \"id\": job_id,\n        \"btc_usd\": rates[\"btc_usd\"],\n        \"btc_eur\": rates[\"btc_eur\"],\n        \"timestamp\": \"2023-10-01T12:00:00Z\"\n    }\n    entity_service.add_item(token=token, entity_model=\"report\", entity_version=ENTITY_VERSION, entity=report)\n    return jsonify({\"job_id\": job_id, \"status\": \"processing\"}), 202\n",
+                                "description": "Create a new job.",
+                                "related_secondary_entities": [
+                                    "report"
+                                ]
+                            }
+                        ],
+                        "related_secondary_entities": [
+                            "report"
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/job/<id>",
+                        "description": "Retrieve a job by ID.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    },
+                    {
+                        "endpoint": "/jobs",
+                        "description": "Retrieve all jobs entries.",
+                        "complete_code_for_action_derived_from_the_prototype": ""
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/reports/<id>",
+                        "description": "Retrieve report information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    report = entity_service.get_item(token=token, entity_model=\"report\", entity_version=ENTITY_VERSION, technical_id=id)\n    if report:\n        return jsonify(report), 200\n    return jsonify({\"error\": \"Report not found\"}), 404\n"
+                    }
+                ]
+            }
+        }
+    ]
+}

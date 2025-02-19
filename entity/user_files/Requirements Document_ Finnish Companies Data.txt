@@ -1,0 +1,25 @@
+﻿Requirements Document: Finnish Companies Data Retrieval and Enrichment Application
+1. Overview
+This application will retrieve a subset of data from the Finnish Companies Registry (PRH Avoindata API) based on a given company name, filter out inactive names, and enrich the data by fetching the Legal Entity Identifier (LEI) from the web.
+2. Functional Requirements
+2.1 Data Retrieval
+        •        The application must query the Finnish Companies Registry API (Swagger UI) to retrieve company information.
+        •        The input must be a company name or a partial name.
+        •        The application must return only exact or closest matching companies.
+2.2 Filtering
+        •        After retrieving the data, the application must filter out inactive company names.
+        •        A company is considered active if its business status is marked as active in the registry.
+        •        If multiple names exist for an entity, retain only those marked as active.
+2.3 LEI Data Enrichment
+        •        The application must search the web for the Legal Entity Identifier (LEI) of each active company.
+        •        The LEI should be fetched from official LEI registries or reliable financial data sources.
+        •        If an LEI exists, it should be added to the output data.
+2.4 Output
+        •        The final output should be a structured JSON or CSV format containing:
+        •        Company Name
+        •        Business ID
+        •        Company Type
+        •        Registration Date
+        •        Status (Active/Inactive)
+        •        LEI (if available)
+        •        If no LEI is found, the field should be marked as “Not Available”.

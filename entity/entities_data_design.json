@@ -1,0 +1,12 @@
+{
+    "entities": [
+        {
+            "entity_name": "company",
+            "entity_data_example": {
+                "name": "Company Name",
+                "address": "Company Address",
+                "contact_number": "1234567890"
+            }
+        }
+    ]
+}

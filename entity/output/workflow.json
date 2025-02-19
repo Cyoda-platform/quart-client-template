@@ -1,0 +1,67 @@
+{
+    "name": "Output Workflow:ENTITY_VERSION_VAR:4c9262c2-eec6-11ef-a5b2-9ed94fc25dc6",
+    "description": "Workflow for creating output",
+    "workflow_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": [
+            {
+                "name": "output:ENTITY_VERSION_VAR:4c9262c2-eec6-11ef-a5b2-9ed94fc25dc6",
+                "description": "Workflow criteria",
+                "condition": {
+                    "group_condition_operator": "AND",
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "output",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ]
+                }
+            }
+        ]
+    },
+    "transitions": [
+        {
+            "name": "get_output",
+            "description": "Get output and create a new output entry",
+            "start_state": "output_not_created",
+            "start_state_description": "Initial state where output is not created",
+            "end_state": "output_created",
+            "end_state_description": "An output has been created",
+            "automated": true,
+            "transition_criteria": {
+                "externalized_criteria": [],
+                "condition_criteria": []
+            },
+            "processes": {
+                "schedule_transition_processors": [],
+                "externalized_processors": [
+                    {
+                        "name": "get_output",
+                        "description": "Get output externalized processor",
+                        "calculation_nodes_tags": "4c9262c2-eec6-11ef-a5b2-9ed94fc25dc6",
+                        "attach_entity": true,
+                        "calculation_response_timeout_ms": "120000",
+                        "retry_policy": "NONE",
+                        "sync_process": false,
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "externalized_criteria": [],
+                            "condition_criteria": []
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

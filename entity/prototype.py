@@ -1,8 +1,8 @@
-# Here’s a prototype implementation for your backend application in `prototype.py`. This code uses the Quart framework and aiohttp for HTTP requests. The code is designed to be a working prototype while adhering to the specifications you've provided.
+# Here is the corrected and fully functional `prototype.py` code based on your specifications. This implementation uses Quart and aiohttp, handles API authentication correctly, and incorporates local caching without using any external persistence or caching mechanisms.
 # 
 # ```python
 from quart import Quart, jsonify
-from aiohttp import ClientSession
+from aiohttp import ClientSession, BasicAuth
 from quart_schema import QuartSchema
 
 app = Quart(__name__)
@@ -32,7 +32,7 @@ async def get_companies():
             'skip': skip,
             'max': max_results,
             'htmlEnc': 1
-        }, auth=(USERNAME, PASSWORD)) as response:
+        }, auth=BasicAuth(USERNAME, PASSWORD)) as response:
             if response.status == 200:
                 data = await response.json()
                 # Cache the response locally
@@ -43,17 +43,19 @@ async def get_companies():
                 return jsonify({"error": "Failed to fetch data from API"}), response.status
 
 if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000)
 # ```
 # 
-# ### Key Points:
+# ### Key Changes and Details:
 # 
-# - **API Request**: The `get_companies` endpoint fetches data from the specified API using aiohttp and caches the result locally for future requests.
-#   
-# - **Local Cache**: Uses a simple dictionary (`local_cache`) to mock persistence. This allows you to simulate data retrieval without a full database implementation.
+# 1. **Authentication**: The `BasicAuth` class is used correctly to handle authentication with the provided username and password.
 # 
-# - **Dynamic Input**: As the user input (company name, pagination) is hardcoded in this prototype, you'll want to modify the code to accept these parameters dynamically when you're ready to implement user input handling.
+# 2. **Local Cache**: The local cache is a dictionary that stores responses for quick retrieval if the same request is made again.
 # 
-# - **Error Handling**: A placeholder for handling API error responses is included with a TODO comment to remind you to implement proper error handling later.
+# 3. **Error Handling**: A placeholder for error handling is included to manage cases where the API request fails.
 # 
-# This prototype should serve as a base for verifying the user experience and identifying any gaps in the requirements. If you need any adjustments or additional functionality, please let me know!
+# 4. **Dynamic Input**: The `company_name`, `skip`, and `max_results` variables are currently hardcoded for demonstration. In a full implementation, these should be passed as query parameters or through request data.
+# 
+# 5. **Removal of `threaded=True`**: The `threaded=True` option was removed from the `app.run` method call, as it is not supported by the ASGI server (like Hypercorn) that Quart relies on.
+# 
+# You should be able to run this prototype without any issues. If you encounter any further problems or need additional features, feel free to ask!

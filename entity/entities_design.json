@@ -1,0 +1,17 @@
+{
+    "primary_entities": [],
+    "secondary_entities": [
+        {
+            "entity_name": "company",
+            "endpoints": {
+                "GET": [
+                    {
+                        "endpoint": "/companies",
+                        "description": "Retrieve company information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    company_name = \"ryanair\"  # Placeholder for dynamic input\n    skip = 0  # Placeholder for pagination\n    max_results = 5  # Placeholder for pagination\n\n    # Check local cache first\n    if company_name in local_cache:\n        return jsonify(local_cache[company_name])\n\n    async with ClientSession() as session:\n        async with session.get(API_URL, params={\n            'company_name': company_name,\n            'skip': skip,\n            'max': max_results,\n            'htmlEnc': 1\n        }, auth=BasicAuth(USERNAME, PASSWORD)) as response:\n            if response.status == 200:\n                content_type = response.headers.get('Content-Type', '')\n                if 'application/json' in content_type:\n                    data = await response.json()\n                elif 'application/xml' in content_type:\n                    xml_data = await response.text()\n                    data = xml_to_dict(xml_data)  # Convert XML to a dictionary\n                else:\n                    # TODO: Handle unexpected content types\n                    return jsonify({\"error\": \"Unexpected content type\"}), 500\n\n                # Cache the response locally\n                local_cache[company_name] = data\n                return jsonify(data)\n            else:\n                # Handle API error responses appropriately\n                return jsonify({\"error\": \"Failed to fetch data from API\"}), response.status\n"
+                    }
+                ]
+            }
+        }
+    ]
+}

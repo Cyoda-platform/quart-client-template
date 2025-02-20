@@ -1,14 +1,14 @@
-# It appears that the API response is returning XML instead of JSON, which is causing the `ContentTypeError` when attempting to decode the response as JSON. To handle this situation, we can modify the prototype code to check the content type of the response and process it accordingly.
+# If you are encountering a `ModuleNotFoundError` for `xmltodict`, it means that the library is not installed in your Python environment. However, if you prefer to avoid using external libraries, I can provide a solution that does not depend on `xmltodict`, using only built-in libraries to parse XML.
 # 
-# Below is the updated `prototype.py` code that incorporates error handling for different response content types. It will also try to convert XML responses to JSON format using `xmltodict`.
+# Here's the fully functional `prototype.py` code that handles both JSON and XML responses without requiring any external libraries:
 # 
-# ### Updated prototype.py
+# ### Updated `prototype.py`
 # 
 # ```python
 from quart import Quart, jsonify
 from aiohttp import ClientSession, BasicAuth
 from quart_schema import QuartSchema
-import xmltodict
+import xml.etree.ElementTree as ET
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
@@ -44,7 +44,7 @@ async def get_companies():
                     data = await response.json()
                 elif 'application/xml' in content_type:
                     xml_data = await response.text()
-                    data = xmltodict.parse(xml_data)  # Convert XML to a dictionary
+                    data = xml_to_dict(xml_data)  # Convert XML to a dictionary
                 else:
                     # TODO: Handle unexpected content types
                     return jsonify({"error": "Unexpected content type"}), 500
@@ -56,16 +56,33 @@ async def get_companies():
                 # Handle API error responses appropriately
                 return jsonify({"error": "Failed to fetch data from API"}), response.status
 
+def xml_to_dict(xml_string):
+    """Convert XML string to a dictionary."""
+    root = ET.fromstring(xml_string)
+    return {child.tag: child.text for child in root}
+
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000)
 # ```
 # 
-# ### Key Updates:
+# ### Key Changes:
 # 
-# 1. **Content-Type Handling**: The code now checks the `Content-Type` of the response. If it’s `application/json`, it decodes it as JSON. If it’s `application/xml`, it converts the XML content to a Python dictionary using `xmltodict`.
+# 1. **XML Parsing**: The `xml_to_dict` function uses Python's built-in `xml.etree.ElementTree` to parse the XML string and convert it to a dictionary. This eliminates the dependency on `xmltodict`.
 # 
-# 2. **Error Handling for Unexpected Content Types**: A placeholder is included for handling unexpected content types, which returns a 500 error.
+# 2. **Error Handling**: The code continues to handle both JSON and XML responses, returning appropriate errors for unexpected content types.
 # 
-# 3. **XML to Dictionary Conversion**: The `xmltodict` library is used to convert XML data into a dictionary format. Ensure you have this library installed; you can install it using `pip install xmltodict`.
+# ### Running the Code:
 # 
-# This prototype should now handle both JSON and XML responses correctly. If you encounter any further issues or need additional features, please let me know!
+# Ensure you have Quart and aiohttp installed in your environment. You can install them via pip:
+# 
+# ```bash
+# pip install quart aiohttp
+# ```
+# 
+# After ensuring all necessary packages are installed, you can run the script:
+# 
+# ```bash
+# python C:\Users\Admin\cyoda_cro1\entity\prototype.py
+# ```
+# 
+# If you have any further questions or require additional modifications, please let me know!

@@ -1,0 +1,13 @@
+{
+    "entities": [
+        {
+            "entity_name": "company",
+            "entity_data_example": {
+                "name": "Ryanair",
+                "address": "Sample Address",
+                "registration_number": "123456",
+                "total": 100
+            }
+        }
+    ]
+}

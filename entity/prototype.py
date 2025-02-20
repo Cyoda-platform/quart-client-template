@@ -1,9 +1,14 @@
-# Here is the corrected and fully functional `prototype.py` code based on your specifications. This implementation uses Quart and aiohttp, handles API authentication correctly, and incorporates local caching without using any external persistence or caching mechanisms.
+# It appears that the API response is returning XML instead of JSON, which is causing the `ContentTypeError` when attempting to decode the response as JSON. To handle this situation, we can modify the prototype code to check the content type of the response and process it accordingly.
+# 
+# Below is the updated `prototype.py` code that incorporates error handling for different response content types. It will also try to convert XML responses to JSON format using `xmltodict`.
+# 
+# ### Updated prototype.py
 # 
 # ```python
 from quart import Quart, jsonify
 from aiohttp import ClientSession, BasicAuth
 from quart_schema import QuartSchema
+import xmltodict
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
@@ -34,28 +39,33 @@ async def get_companies():
             'htmlEnc': 1
         }, auth=BasicAuth(USERNAME, PASSWORD)) as response:
             if response.status == 200:
-                data = await response.json()
+                content_type = response.headers.get('Content-Type', '')
+                if 'application/json' in content_type:
+                    data = await response.json()
+                elif 'application/xml' in content_type:
+                    xml_data = await response.text()
+                    data = xmltodict.parse(xml_data)  # Convert XML to a dictionary
+                else:
+                    # TODO: Handle unexpected content types
+                    return jsonify({"error": "Unexpected content type"}), 500
+
                 # Cache the response locally
                 local_cache[company_name] = data
                 return jsonify(data)
             else:
-                # TODO: Handle API error responses appropriately
+                # Handle API error responses appropriately
                 return jsonify({"error": "Failed to fetch data from API"}), response.status
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000)
 # ```
 # 
-# ### Key Changes and Details:
+# ### Key Updates:
 # 
-# 1. **Authentication**: The `BasicAuth` class is used correctly to handle authentication with the provided username and password.
+# 1. **Content-Type Handling**: The code now checks the `Content-Type` of the response. If it’s `application/json`, it decodes it as JSON. If it’s `application/xml`, it converts the XML content to a Python dictionary using `xmltodict`.
 # 
-# 2. **Local Cache**: The local cache is a dictionary that stores responses for quick retrieval if the same request is made again.
+# 2. **Error Handling for Unexpected Content Types**: A placeholder is included for handling unexpected content types, which returns a 500 error.
 # 
-# 3. **Error Handling**: A placeholder for error handling is included to manage cases where the API request fails.
+# 3. **XML to Dictionary Conversion**: The `xmltodict` library is used to convert XML data into a dictionary format. Ensure you have this library installed; you can install it using `pip install xmltodict`.
 # 
-# 4. **Dynamic Input**: The `company_name`, `skip`, and `max_results` variables are currently hardcoded for demonstration. In a full implementation, these should be passed as query parameters or through request data.
-# 
-# 5. **Removal of `threaded=True`**: The `threaded=True` option was removed from the `app.run` method call, as it is not supported by the ASGI server (like Hypercorn) that Quart relies on.
-# 
-# You should be able to run this prototype without any issues. If you encounter any further problems or need additional features, feel free to ask!
+# This prototype should now handle both JSON and XML responses correctly. If you encounter any further issues or need additional features, please let me know!

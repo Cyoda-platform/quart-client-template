@@ -1,0 +1,14 @@
+{
+    "entities": [
+        {
+            "entity_name": "report",
+            "entity_data_example": {
+                "report_id": "12345",
+                "btc_usd_rate": "45000.00",
+                "btc_eur_rate": "38000.00",
+                "timestamp": "2023-10-01T12:00:00Z",
+                "status": "reporting"
+            }
+        }
+    ]
+}

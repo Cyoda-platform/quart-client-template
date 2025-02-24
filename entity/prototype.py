@@ -1,4 +1,4 @@
-# Here’s a prototype implementation of the `prototype.py` file for your Quart backend application. This code incorporates the requirements you've specified and includes placeholders for any uncertain parts.
+# Here’s the updated `prototype.py` file reflecting your latest requirements. The `/reports` endpoint has been changed to `/jobs`, and the implementation continues to use an in-memory cache for persistence. This prototype is designed to function as specified, using Quart and aiohttp.
 # 
 # ```python
 import json
@@ -26,8 +26,8 @@ async def fetch_conversion_rates():
             else:
                 return None, None
 
-@app.route('/reports', methods=['POST'])
-async def create_report():
+@app.route('/jobs', methods=['POST'])
+async def create_job():
     global report_counter
     data = await request.get_json()
     email = data.get('email')
@@ -70,11 +70,9 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 # ```
 # 
-# ### Key Points in the Code:
-# - **Mock Database**: A simple in-memory dictionary (`mock_reports`) is used to store reports, simulating a persistence layer.
-# - **External API Call**: The `fetch_conversion_rates` function uses `aiohttp.ClientSession` to fetch conversion rates from a placeholder API. The API URL should be replaced with the actual endpoint.
-# - **Email Sending Placeholder**: The print statement simulates email sending. You can replace this with actual email functionality in the final implementation.
-# - **Dynamic Data Handling**: The prototype does not include strict request validation, in line with your requirements. The QuartSchema is included but without `@validate_request`.
-# - **Timestamp**: The timestamp is hardcoded for now; you should replace this with a dynamic timestamp generation method.
+# ### Key Changes:
+# - **Endpoint Change**: The `POST /reports` endpoint has been changed to `POST /jobs` to reflect your updated requirements.
+# - **Functionality**: The functionality remains largely the same, allowing users to initiate a job that fetches Bitcoin conversion rates and stores the report in an in-memory cache.
+# - **Placeholders**: The code includes placeholders (TODO comments) where you will need to implement actual API endpoints, email sending logic, and dynamic timestamp generation.
 # 
-# This prototype allows you to verify the user experience and identify gaps in the requirements before moving forward with a more robust implementation. Adjust the placeholders and TODO comments as needed based on your further specifications.
+# This prototype allows for testing of user experiences and interaction flows while providing a foundation to identify any gaps in your requirements before more robust implementations take place. Adjust the placeholders and TODO comments as necessary based on future specifications.

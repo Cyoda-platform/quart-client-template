@@ -1,0 +1,35 @@
+{
+    "primary_entities": [
+        {
+            "entity_name": "report",
+            "endpoints": {
+                "POST": [
+                    {
+                        "endpoint": "/reports",
+                        "description": "Create a new report.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get(\"email\")\n    btc_usd_rate, btc_eur_rate = await fetch_btc_rates()\n    report_id = str(uuid.uuid4())\n    timestamp = datetime.datetime.utcnow().isoformat() + \"Z\"\n    report = {\n        \"report_id\": report_id,\n        \"btc_usd_rate\": btc_usd_rate,\n        \"btc_eur_rate\": btc_eur_rate,\n        \"timestamp\": timestamp,\n        \"status\": \"reporting\"\n    }\n    entity_service.add_item(\n        token=token,\n        entity_model=\"report\",\n        entity_version=ENTITY_VERSION,\n        entity=report\n    )\n    return jsonify({\"report_id\": report_id, \"status\": \"reporting\"}), 202\n",
+                        "action": "create_report",
+                        "suggested_workflow": [
+                            {
+                                "start_state": "report_not_created",
+                                "end_state": "report_created",
+                                "action": "create_report",
+                                "complete_code_for_action_derived_from_the_prototype": "\n    data = await request.get_json()\n    email = data.get(\"email\")\n    btc_usd_rate, btc_eur_rate = await fetch_btc_rates()\n    report_id = str(uuid.uuid4())\n    timestamp = datetime.datetime.utcnow().isoformat() + \"Z\"\n    report = {\n        \"report_id\": report_id,\n        \"btc_usd_rate\": btc_usd_rate,\n        \"btc_eur_rate\": btc_eur_rate,\n        \"timestamp\": timestamp,\n        \"status\": \"reporting\"\n    }\n    entity_service.add_item(\n        token=token,\n        entity_model=\"report\",\n        entity_version=ENTITY_VERSION,\n        entity=report\n    )\n    return jsonify({\"report_id\": report_id, \"status\": \"reporting\"}), 202\n",
+                                "description": "Create a new report.",
+                                "related_secondary_entities": []
+                            }
+                        ]
+                    }
+                ],
+                "GET": [
+                    {
+                        "endpoint": "/reports/<report_id>",
+                        "description": "Retrieve report information.",
+                        "complete_code_for_action_derived_from_the_prototype": "\n    report = entity_service.get_item(\n        token=token,\n        entity_model=\"report\",\n        entity_version=ENTITY_VERSION,\n        technical_id=report_id\n    )\n    if not report:\n        return jsonify({\"error\": \"Report not found\"}), 404\n    return jsonify(report), 200\n"
+                    }
+                ]
+            }
+        }
+    ],
+    "secondary_entities": []
+}

@@ -1,20 +1,30 @@
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)
+
+@dataclass
+class BrandFilter:
+    filter: str = ""  # Optional filter, defaults to empty string
+    limit: int = 0    # Optional limit on results, defaults to 0 (no limit)
+
+@dataclass
+class BrandQuery:
+    job_id: str = ""  # Optional job_id for GET request queries
 
 # In-memory cache to mock persistence
 entity_jobs = {}
 
 async def process_entity(job_id, raw_data, filters):
-    # TODO: Implement any necessary business logic operations
-    # For this prototype, we simulate processing delay and pass through the data.
+    # TODO: Implement any necessary business logic operations, e.g., filtering or transformation.
+    # For this prototype, simulate processing delay and pass through the data.
     await asyncio.sleep(1)  # Simulate processing time
     # TODO: Apply filter logic based on `filters` if provided.
     processed = raw_data  # In a full implementation, modify the data as needed.
@@ -23,9 +33,9 @@ async def process_entity(job_id, raw_data, filters):
     return
 
 @app.route('/brands', methods=['POST'])
-async def create_brands():
-    req_data = await request.get_json()
-    filters = req_data if req_data else {}
+@validate_request(BrandFilter)  # Workaround: For POST requests, validation is applied after the route decorator.
+async def create_brands(data: BrandFilter):
+    filters = {"filter": data.filter, "limit": data.limit} if data else {}
     
     # Generate a unique job identifier and initialize job record.
     job_id = str(uuid.uuid4())
@@ -51,9 +61,10 @@ async def create_brands():
         "data": raw_data  # Return raw data immediately for UX preview; processed data may differ.
     }), 201
 
+@validate_querystring(BrandQuery)  # Workaround: For GET requests, validation is applied before the route decorator.
 @app.route('/brands', methods=['GET'])
 async def get_brands():
-    # Retrieve a specific job result if `job_id` is provided.
+    # Use standard approach to access GET parameters
     job_id = request.args.get("job_id")
     
     if job_id:
@@ -71,7 +82,7 @@ async def get_brands():
         completed_jobs = [job["data"] for job in entity_jobs.values() if job.get("status") == "completed"]
         if not completed_jobs:
             return jsonify({"message": "No completed job data available"}), 404
-        # TODO: In production implement proper pagination and choose appropriate data.
+        # TODO: In production, implement proper pagination and choose appropriate data.
         return jsonify(completed_jobs[0]), 200
 
 if __name__ == '__main__':

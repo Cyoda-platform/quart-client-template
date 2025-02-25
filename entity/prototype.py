@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
 prototype.py
-A working prototype for fetching and serving brand data using Quart and aiohttp.
+A working prototype for fetching and serving brand data using Quart, aiohttp, and quart-schema.
 This prototype demonstrates the basic UX and identifies potential gaps before a full implementation.
 """
 
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Note: For GET requests, validation is applied before @app.route.
 import aiohttp
 
 app = Quart(__name__)
@@ -19,6 +20,11 @@ QuartSchema(app)  # Initialize QuartSchema
 # Global in-memory storage for caching fetched brands and job statuses.
 cached_brands = None  # Will hold the processed brand data.
 jobs = {}  # Example: jobs[job_id] = {"status": "processing", "requestedAt": timestamp}
+
+
+@dataclass
+class FetchBrandsRequest:
+    filter: str  # TODO: Currently not used, optional filter parameter
 
 
 async def process_entity(job_id):
@@ -49,7 +55,8 @@ async def process_entity(job_id):
 
 
 @app.route("/api/brands/fetch", methods=["POST"])
-async def fetch_brands():
+@validate_request(FetchBrandsRequest)  # Workaround: For POST endpoints, place validate_request after route decoration.
+async def fetch_brands(data: FetchBrandsRequest):
     """
     POST endpoint to trigger fetching of brand data from the external API.
     This endpoint starts an asynchronous background task to process the data.
@@ -60,6 +67,7 @@ async def fetch_brands():
     job_id = str(uuid.uuid4())
     jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
 
+    # TODO: Process 'data' if the filter parameter is required in future logic.
     # Fire-and-forget the processing task.
     asyncio.create_task(process_entity(job_id))
 

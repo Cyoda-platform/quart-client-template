@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import asyncio
-import uuid
 from datetime import datetime
 from dataclasses import dataclass
 
@@ -21,22 +20,31 @@ async def startup():
 
 @dataclass
 class BrandFilter:
-    filter: str = ""  # Optional filter, defaults to empty string
-    limit: int = 0    # Optional limit on results, defaults to 0 (no limit)
+    filter: str = ""  # Optional filter; defaults to empty string
+    limit: int = 0    # Optional limit on results; defaults to 0 (no limit)
 
 @dataclass
 class BrandQuery:
     job_id: str = ""  # Optional job_id for GET request queries
 
 # Workflow function applied to the entity asynchronously before persistence.
-# It takes the entity data as the only argument, performs processing, 
-# and returns the updated data.
+# It takes the entity data as the only argument. This function fetches external data,
+# updates the entity state and returns the updated entity.
 async def process_brands(entity):
-    await asyncio.sleep(1)  # Simulate processing time
+    external_url = "https://api.practicesoftwaretesting.com/brands"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(external_url, headers={"accept": "application/json"}) as resp:
+            if resp.status != 200:
+                # Mark entity as failed if external request fails.
+                entity["status"] = "failed"
+                entity["error"] = f"Failed to fetch external data, status {resp.status}"
+                return entity
+            raw_data = await resp.json()
+    # Process and update the entity.
+    entity["raw_data"] = raw_data
+    entity["data"] = raw_data  # Example transformation: promote raw_data to data field.
     entity["status"] = "completed"
     entity["processedAt"] = datetime.utcnow().isoformat()
-    # Here we simulate a transformation: move raw_data to data field.
-    entity["data"] = entity.get("raw_data")
     return entity
 
 @app.route('/brands', methods=['POST'])
@@ -44,22 +52,13 @@ async def process_brands(entity):
 async def create_brands(data: BrandFilter):
     filters = {"filter": data.filter, "limit": data.limit} if data else {}
     
-    external_url = "https://api.practicesoftwaretesting.com/brands"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(external_url, headers={"accept": "application/json"}) as resp:
-            if resp.status != 200:
-                # Enhance error handling for external API failures.
-                return jsonify({"error": "Failed to fetch external data"}), resp.status
-            raw_data = await resp.json()
-    
-    # Create a new entity item via the external service.
+    # Initial entity has minimal data; the workflow function will handle external data fetching.
     initial_data = {
         "status": "processing",
-        "raw_data": raw_data,
         "requestedAt": datetime.utcnow().isoformat(),
         "filters": filters
     }
-    # Pass workflow function process_brands that will be applied before persistence.
+    # The workflow function process_brands is applied to the entity asynchronously before persistence.
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="brands",
@@ -67,8 +66,6 @@ async def create_brands(data: BrandFilter):
         entity=initial_data,
         workflow=process_brands
     )
-    
-    # Return only the job_id; the processed result can be fetched separately.
     return jsonify({
         "job_id": job_id
     }), 201

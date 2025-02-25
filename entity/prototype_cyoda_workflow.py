@@ -29,43 +29,64 @@ class BrandQuery:
 
 # Workflow function applied to the entity asynchronously before persistence.
 # It takes the entity data as the only argument. This function fetches external data,
-# updates the entity state and returns the updated entity.
+# processes it, and updates the entity state. Errors are caught and marked in the entity.
 async def process_brands(entity):
     external_url = "https://api.practicesoftwaretesting.com/brands"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(external_url, headers={"accept": "application/json"}) as resp:
-            if resp.status != 200:
-                # Mark entity as failed if external request fails.
-                entity["status"] = "failed"
-                entity["error"] = f"Failed to fetch external data, status {resp.status}"
-                return entity
-            raw_data = await resp.json()
-    # Process and update the entity.
-    entity["raw_data"] = raw_data
-    entity["data"] = raw_data  # Example transformation: promote raw_data to data field.
-    entity["status"] = "completed"
-    entity["processedAt"] = datetime.utcnow().isoformat()
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(external_url, headers={"accept": "application/json"}) as resp:
+                if resp.status != 200:
+                    # Mark the entity as failed if external request does not succeed.
+                    entity["status"] = "failed"
+                    entity["error"] = f"Failed to fetch external data, HTTP status: {resp.status}"
+                    entity["processedAt"] = datetime.utcnow().isoformat()
+                    return entity
+                raw_data = await resp.json()
+    except Exception as e:
+        # Catch any exception during external API call.
+        entity["status"] = "failed"
+        entity["error"] = f"Exception during external API call: {str(e)}"
+        entity["processedAt"] = datetime.utcnow().isoformat()
+        return entity
+
+    try:
+        # Process and update the entity with fetched data.
+        entity["raw_data"] = raw_data
+        # Example transformation: promote raw_data to data field.
+        entity["data"] = raw_data
+        entity["status"] = "completed"
+        entity["processedAt"] = datetime.utcnow().isoformat()
+    except Exception as e:
+        # Catch exceptions during processing.
+        entity["status"] = "failed"
+        entity["error"] = f"Exception during processing: {str(e)}"
+        entity["processedAt"] = datetime.utcnow().isoformat()
     return entity
 
 @app.route('/brands', methods=['POST'])
 @validate_request(BrandFilter)
 async def create_brands(data: BrandFilter):
+    # Build filter parameters if provided.
     filters = {"filter": data.filter, "limit": data.limit} if data else {}
-    
-    # Initial entity has minimal data; the workflow function will handle external data fetching.
+    # Create initial entity data with minimal details.
     initial_data = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat(),
         "filters": filters
     }
     # The workflow function process_brands is applied to the entity asynchronously before persistence.
-    job_id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="brands",
-        entity_version=ENTITY_VERSION,
-        entity=initial_data,
-        workflow=process_brands
-    )
+    try:
+        job_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="brands",
+            entity_version=ENTITY_VERSION,
+            entity=initial_data,
+            workflow=process_brands
+        )
+    except Exception as e:
+        # In case add_item fails, return a proper error.
+        return jsonify({"error": f"Failed to create brand job: {str(e)}"}), 500
+
     return jsonify({
         "job_id": job_id
     }), 201
@@ -74,14 +95,17 @@ async def create_brands(data: BrandFilter):
 @app.route('/brands', methods=['GET'])
 async def get_brands():
     job_id = request.args.get("job_id")
-    
     if job_id:
-        job = await entity_service.get_item(
-            token=cyoda_token,
-            entity_model="brands",
-            entity_version=ENTITY_VERSION,
-            technical_id=job_id
-        )
+        try:
+            job = await entity_service.get_item(
+                token=cyoda_token,
+                entity_model="brands",
+                entity_version=ENTITY_VERSION,
+                technical_id=job_id
+            )
+        except Exception as e:
+            return jsonify({"error": f"Failed to retrieve job: {str(e)}"}), 500
+
         if job is None:
             return jsonify({"error": "Job not found"}), 404
         if job.get("status") != "completed":
@@ -91,12 +115,16 @@ async def get_brands():
             }), 202
         return jsonify(job.get("data")), 200
     else:
-        # Retrieve all items and filter for completed jobs.
-        items = await entity_service.get_items(
-            token=cyoda_token,
-            entity_model="brands",
-            entity_version=ENTITY_VERSION
-        )
+        try:
+            items = await entity_service.get_items(
+                token=cyoda_token,
+                entity_model="brands",
+                entity_version=ENTITY_VERSION
+            )
+        except Exception as e:
+            return jsonify({"error": f"Failed to retrieve jobs: {str(e)}"}), 500
+
+        # Filter for completed jobs.
         completed_jobs = [item for item in items if item.get("status") == "completed"]
         if not completed_jobs:
             return jsonify({"message": "No completed job data available"}), 404

@@ -2,9 +2,10 @@ import asyncio
 import uuid
 import datetime
 import aiohttp
+from dataclasses import dataclass
 
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
@@ -15,6 +16,10 @@ JOBS = {}        # Dictionary to hold job statuses.
 
 EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/brands"
 
+@dataclass
+class UpdateRequest:
+    fetchTimeout: int = 5000
+    forceUpdate: bool = False
 
 async def process_entity(job, options):
     """
@@ -50,14 +55,13 @@ async def process_entity(job, options):
         # TODO: Add exception logging.
         return None
 
-
+# For POST requests the route decorator comes first, then @validate_request.
 @app.route('/api/brands/update', methods=['POST'])
-async def update_brands():
+@validate_request(UpdateRequest)  # Workaround for POST requests: validate_request placed after route decorator.
+async def update_brands(data: UpdateRequest):
     """
     Initiates fetching data from the external API, processing it, and updating the local cache.
     """
-    # Read optional parameters from the request JSON payload.
-    data = await request.get_json(silent=True) or {}
     # Create a job id and initialize its status.
     job_id = str(uuid.uuid4())
     job = {
@@ -68,9 +72,9 @@ async def update_brands():
     JOBS[job_id] = job
 
     # Fire and forget processing task.
-    # Here we await on the task to return the latest brand data.
+    # Using data.__dict__ to pass the dataclass fields as a dictionary.
     # TODO: Consider running process_entity as a background task without awaiting if UX demands asynchronous updates.
-    result = await asyncio.create_task(process_entity(job, data))
+    result = await asyncio.create_task(process_entity(job, data.__dict__))
     
     if result is not None:
         return jsonify({
@@ -87,7 +91,7 @@ async def update_brands():
             "details": job.get("error", "Unknown error")
         }), 500
 
-
+# GET request does not require validation when no query parameters are used.
 @app.route('/api/brands', methods=['GET'])
 async def get_brands():
     """
@@ -103,7 +107,6 @@ async def get_brands():
             "status": "error",
             "message": "No brand data available. Please update the data by sending a POST request."
         }), 404
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

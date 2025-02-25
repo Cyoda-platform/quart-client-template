@@ -20,11 +20,29 @@ JOBS = {}  # Dictionary to hold job statuses.
 EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/brands"
 
 # Workflow function applied to the entity before persistence.
-# This function takes the entity data as the only argument and can modify it.
+# This function supports asynchronous operations such as firing off auxiliary tasks
+# and modifying the entity state directly. Any async task that does not affect the current
+# entity persistence (e.g. retrieving supplementary data) can be handled here.
 async def process_brands(entity_data):
-    # Example transformation: add a processed timestamp
+    # Fire and forget asynchronous task to fetch supplementary data.
+    async def fetch_supplementary():
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://api.example.com/supplementary_data") as resp:
+                    if resp.status == 200:
+                        supplementary = await resp.json()
+                        # Directly modify the entity state with the supplementary data.
+                        entity_data["supplementary"] = supplementary
+        except Exception as e:
+            # Log error or handle accordingly.
+            entity_data["supplementary_error"] = str(e)
+
+    # Launch the supplementary data fetch without awaiting it.
+    asyncio.create_task(fetch_supplementary())
+
+    # Modify the entity state with additional metadata.
     entity_data["processedAt"] = datetime.datetime.utcnow().isoformat()
-    # You can add more processing logic here if needed.
+    # You may add further transformation or async tasks here.
     return entity_data
 
 # Startup hook to initialize cyoda.
@@ -40,7 +58,7 @@ class UpdateRequest:
 async def process_entity(job, options):
     """
     Process the job: fetch data from the external API, 
-    send the retrieved data to the external entity service using a workflow transformation,
+    send the retrieved data to the external entity service with the workflow transformation,
     and update the job status.
     """
     fetch_timeout_ms = options.get("fetchTimeout", 5000)
@@ -77,9 +95,9 @@ async def process_entity(job, options):
 @validate_request(UpdateRequest)
 async def update_brands(data: UpdateRequest):
     """
-    Initiates fetching data from the external API, 
-    sending it to the external service with a workflow transformation,
-    and updating the job status.
+    Initiates fetching data from the external API,
+    delegating any additional async tasks or entity transformations 
+    to the workflow function before persistence.
     """
     job_id = str(uuid.uuid4())
     job = {

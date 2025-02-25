@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "jobs", "entity_data_example": {"technical_id": "string", "status": "string", "requestedAt": "string"}}, {"entity_name": "brands", "entity_data_example": {"id": "string", "name": "string", "slug": "string"}}]}

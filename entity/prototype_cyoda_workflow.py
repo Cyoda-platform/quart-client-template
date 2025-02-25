@@ -22,16 +22,23 @@ from common.config.config import ENTITY_VERSION
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
-# Workflow function for processing job entities before persistence
-async def process_jobs(entity: dict) -> dict:
-    # Example workflow: Add a processed timestamp to the job entity
-    entity["workflowProcessedAt"] = datetime.utcnow().isoformat()
-    return entity
+# Workflow function for processing job entities before persistence.
+# This workflow will trigger asynchronous tasks to fetch and process brand data.
+async def process_jobs(job: dict) -> dict:
+    # Ensure the job has a unique technical identifier.
+    if "technical_id" not in job:
+        job["technical_id"] = str(uuid.uuid4())
+    # Fire-and-forget the lengthy processing task.
+    asyncio.create_task(process_entity(job["technical_id"]))
+    # Modify the entity state directly.
+    job["workflowProcessedAt"] = datetime.utcnow().isoformat()
+    return job
 
-# Workflow function for processing brands entities before persistence
+# Workflow function for processing brands entities before persistence.
 async def process_brands(entity: dict) -> dict:
-    # Example workflow: Mark the brands entity as processed
+    # Example: Mark the brands entity as processed.
     entity["workflowProcessed"] = True
+    entity["workflowProcessedAt"] = datetime.utcnow().isoformat()
     return entity
 
 # Startup initialization for cyoda.
@@ -43,11 +50,9 @@ async def startup():
 class FetchBrandsRequest:
     filter: str  # TODO: Currently not used, optional filter parameter
 
+# Asynchronous background task to fetch brand data from the external API,
+# process it, store the data via the external entity_service, and update the job status.
 async def process_entity(job_id):
-    """
-    Asynchronous background task to fetch brand data from the external API,
-    process it, store the data via the external entity_service, and update the job status.
-    """
     external_api_url = "https://api.practicesoftwaretesting.com/brands"
     headers = {"accept": "application/json"}
 
@@ -76,7 +81,7 @@ async def process_entity(job_id):
                             entity_model="brands",
                             entity_version=ENTITY_VERSION,
                             entity=data,
-                            workflow=process_brands  # Workflow function applied to brands entity
+                            workflow=process_brands  # Apply workflow before persisting brands entity.
                         )
                     # Update the job status to completed.
                     await entity_service.update_item(
@@ -110,21 +115,17 @@ async def process_entity(job_id):
 async def fetch_brands(data: FetchBrandsRequest):
     """
     POST endpoint to trigger fetching of brand data from the external API.
-    This endpoint starts an asynchronous background task to process the data.
-    It adds a job record via the external entity_service and returns the job identifier.
+    This endpoint adds a job record via the external entity_service.
+    The asynchronous background task is now initiated inside the job workflow function.
     """
     job_data = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
-    # Create a job entry in the external service.
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="jobs",
         entity_version=ENTITY_VERSION,
         entity=job_data,
-        workflow=process_jobs  # Workflow function applied to jobs entity
+        workflow=process_jobs  # Fire async processing via workflow before persisting job entity.
     )
-    # Fire-and-forget the processing task.
-    asyncio.create_task(process_entity(job_id))
-    # Return immediate response; processed data will be available via the GET endpoint.
     return jsonify({
         "status": "success",
         "job_id": job_id,

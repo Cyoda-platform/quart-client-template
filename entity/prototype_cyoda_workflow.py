@@ -29,63 +29,67 @@ class BrandFetchInput:
 JOBS = {}  # Store job status and metadata
 
 # Workflow function applied to the "brands" entity before persistence.
-# It receives the entity data as its only argument and can modify it as needed.
+# It is executed asynchronously by entity_service.add_item.
+# This function takes the entity (a dict) as the only argument,
+# and can modify its state before it is persisted.
 async def process_brands(entity):
-    # Example processing: add a processed timestamp field
-    entity["processed_at"] = datetime.datetime.utcnow().isoformat()
-    # You can perform additional processing or state changes here.
-    return entity
-
-async def process_entity(job, payload):
-    # Fetch data from external API
+    # Fetch external API data and update the entity with the fetched data.
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
                 "https://api.practicesoftwaretesting.com/brands",
                 headers={"accept": "application/json"}
             ) as response:
-                data = await response.json()
+                fetched_data = await response.json()
+        # Modify the entity with external data and additional metadata.
+        entity["data"] = fetched_data
+        entity["processed_at"] = datetime.datetime.utcnow().isoformat()
     except Exception as e:
-        job["status"] = "failed"
-        job["error"] = str(e)
-        return
+        # Since we cannot add/update the current entity using service calls,
+        # we flag the error directly in the entity state.
+        entity["error"] = str(e)
+    return entity
 
-    # Instead of storing in a local cache, add the item using the external service.
-    # The workflow function 'process_brands' is applied to the entity before persistence.
-    new_id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="brands",
-        entity_version=ENTITY_VERSION,  # always use this constant
-        entity=data,  # the validated data object
-        workflow=process_brands  # Workflow function applied to the entity asynchronously before persistence.
-    )
-    job["status"] = "completed"
-    job["completedAt"] = datetime.datetime.utcnow().isoformat()
-    job["entity_id"] = new_id
-
-# Workaround for quart-schema issue:
-# For POST requests, the route decorator must be first, followed by the validation decorator.
+# Endpoint to trigger data fetch and processing.
+# The excessive asynchronous logic is moved to the workflow function.
 @app.route('/api/brands/fetch', methods=['POST'])
-@validate_request(BrandFetchInput)  # Placed after route for POST requests - WORKAROUND for quart-schema issue.
+@validate_request(BrandFetchInput)  # WORKAROUND for quart-schema issue: decorator order matters.
 async def fetch_brands(data: BrandFetchInput):
     # Create a job record to track the processing status.
     job_id = str(uuid.uuid4())
     requested_at = datetime.datetime.utcnow().isoformat()
     JOBS[job_id] = {"status": "processing", "requestedAt": requested_at}
 
-    # Fire and forget the processing task to fetch external API data and store it via entity_service.
-    asyncio.create_task(process_entity(JOBS[job_id], data.__dict__))
+    # Prepare the initial entity. Minimal data from the client is recorded.
+    # All heavy lifting (i.e. external data fetch and modifications) will be done in process_brands.
+    initial_entity = {
+        "trigger": data.trigger,
+        "requestedAt": requested_at,
+    }
 
-    # Return a response indicating that the data fetch was scheduled.
-    # The actual entity data can be retrieved later via GET /api/brands endpoint.
+    # Add the item using the external service.
+    # The workflow function process_brands will be invoked asynchronously before persisting.
+    new_id = await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="brands",
+        entity_version=ENTITY_VERSION,  # always use this constant
+        entity=initial_entity,  # initial entity data
+        workflow=process_brands  # asynchronous workflow function to modify the entity before persistence
+    )
+    JOBS[job_id]["status"] = "completed"
+    JOBS[job_id]["completedAt"] = datetime.datetime.utcnow().isoformat()
+    JOBS[job_id]["entity_id"] = new_id
+
+    # Return a response indicating that the process was scheduled.
     response = {
         "status": "success",
         "message": "Data fetch scheduled. Retrieve stored entity via GET /api/brands once processing is complete.",
-        "job_id": job_id
+        "job_id": job_id,
+        "entity_id": new_id,
     }
     return jsonify(response), 200
 
-# GET endpoint to retrieve stored entities via external service.
+# GET endpoint to retrieve stored entities via the external service.
 @app.route('/api/brands', methods=['GET'])
 async def get_brands():
     # Retrieve the stored brand data using the external service.

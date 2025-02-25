@@ -1,0 +1,109 @@
+# Functional Requirements
+
+## API Endpoints
+
+### 1. POST /api/brands/fetch
+- **Purpose:**  
+  Trigger the process that fetches brand data from the external API (https://api.practicesoftwaretesting.com/brands), perform any necessary transformations or calculations, and store the results internally.
+
+- **Request Format:**  
+  Content-Type: application/json  
+  ```json
+  {
+    "trigger": true
+  }
+  ```
+  *(The body may include additional parameters for filtering or processing options in future iterations.)*
+
+- **Response Format:**  
+  Content-Type: application/json  
+  ```json
+  {
+    "status": "success",
+    "message": "Data fetched and stored successfully.",
+    "data": [
+      {
+        "id": "01JMWZK3N7PT3XMTMXMQTBACRV",
+        "name": "ForgeFlex Tools",
+        "slug": "forgeflex-tools"
+      },
+      {
+        "id": "01JMWZK3N7PT3XMTMXMQTBACRW",
+        "name": "MightyCraft Hardware",
+        "slug": "mightycraft-hardware"
+      }
+    ]
+  }
+  ```
+  
+- **Business Logic:**  
+  - Validate the incoming request.  
+  - Invoke an external HTTP GET request to the external API.  
+  - Process and transform the fetched data as needed.  
+  - Store the processed data in the internal datastore.  
+  - Return a response indicating success along with the fetched data.
+
+### 2. GET /api/brands
+- **Purpose:**  
+  Retrieve the stored brand data from the internal datastore without performing any external API calls.
+
+- **Request Format:**  
+  No body required (HTTP GET)  
+  Optionally, query parameters for pagination or filtering in future enhancements.
+
+- **Response Format:**  
+  Content-Type: application/json  
+  ```json
+  [
+    {
+      "id": "01JMWZK3N7PT3XMTMXMQTBACRV",
+      "name": "ForgeFlex Tools",
+      "slug": "forgeflex-tools"
+    },
+    {
+      "id": "01JMWZK3N7PT3XMTMXMQTBACRW",
+      "name": "MightyCraft Hardware",
+      "slug": "mightycraft-hardware"
+    }
+  ]
+  ```
+
+## Mermaid Diagrams
+
+### User-App Interaction Journey
+```mermaid
+journey
+    title User-App Interaction for Data Retrieval
+    section Trigger Data Fetch
+      User: 5: Initiates POST request to /api/brands/fetch
+      Backend: 4: Validates request and fetches external data
+      External API: 3: Returns brand data
+      Backend: 4: Processes and stores data
+      Backend: 5: Returns success response
+    section Retrieve Data
+      User: 5: Initiates GET request to /api/brands
+      Backend: 5: Fetches stored data and returns response
+```
+
+### Sequence Diagram for Data Fetch Process
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Backend
+    participant ExternalAPI
+    Client->>Backend: POST /api/brands/fetch { "trigger": true }
+    Backend->>ExternalAPI: GET https://api.practicesoftwaretesting.com/brands
+    ExternalAPI-->>Backend: JSON data response
+    Backend->>Backend: Process and store data
+    Backend-->>Client: {"status": "success", "message": "...", "data": [...]}
+```
+
+### Sequence Diagram for Data Retrieval Process
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Backend
+    Client->>Backend: GET /api/brands
+    Backend->>Backend: Retrieve stored data
+    Backend-->>Client: JSON array of brands
+```

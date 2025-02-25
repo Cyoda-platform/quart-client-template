@@ -1,0 +1,26 @@
+create a app to display the data from a given open source api request/job:
+
+curl -X 'GET' \
+  'https://api.practicesoftwaretesting.com/brands' \
+  -H 'accept: application/json'
+Request URL
+https://api.practicesoftwaretesting.com/brands
+Server response
+Code	Details
+200
+Response body
+Download
+[
+  {
+    "id": "01JMWZK3N7PT3XMTMXMQTBACRV",
+    "name": "ForgeFlex Tools",
+    "slug": "forgeflex-tools"
+  },
+  {
+    "id": "01JMWZK3N7PT3XMTMXMQTBACRW",
+    "name": "MightyCraft Hardware",
+    "slug": "mightycraft-hardware"
+  }
+]
+
+company details from the api request in the from of json object

@@ -2,7 +2,8 @@
 """
 prototype.py
 A working prototype for fetching and serving brand data using Quart, aiohttp, and quart‐schema.
-This prototype demonstrates the basic UX and identifies potential gaps before a full implementation.
+This refactored application moves background and processing logic into workflow functions,
+making the controllers lean and ensuring that asynchronous tasks are invoked via workflow functions.
 """
 
 import asyncio
@@ -11,7 +12,7 @@ from datetime import datetime
 from dataclasses import dataclass
 
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request  # Note: For GET requests, validation is applied before @app.route.
+from quart_schema import QuartSchema, validate_request  # For GET endpoints, validation is applied prior to @app.route.
 import aiohttp
 
 # Import external service and configuration constants
@@ -23,22 +24,31 @@ app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
 # Workflow function for processing job entities before persistence.
-# This workflow will trigger asynchronous tasks to fetch and process brand data.
+# This function is invoked before the job entity is stored.
+# It initiates the asynchronous task to fetch and process brand data.
 async def process_jobs(job: dict) -> dict:
-    # Ensure the job has a unique technical identifier.
-    if "technical_id" not in job:
+    # Ensure a unique technical_id exists for the job.
+    if "technical_id" not in job or not job["technical_id"]:
         job["technical_id"] = str(uuid.uuid4())
-    # Fire-and-forget the lengthy processing task.
-    asyncio.create_task(process_entity(job["technical_id"]))
-    # Modify the entity state directly.
+    # Launch the asynchronous background task using fire-and-forget pattern.
+    try:
+        # Wrap in try/except to ensure any exception is caught
+        asyncio.create_task(process_entity(job["technical_id"]))
+    except Exception as e:
+        # If task initiation fails, mark the job as failed.
+        job["status"] = "failed"
+        print(f"Failed to initiate background process for job {job['technical_id']}: {e}")
+    # Add workflow processing metadata.
     job["workflowProcessedAt"] = datetime.utcnow().isoformat()
     return job
 
 # Workflow function for processing brands entities before persistence.
+# This function can add supplementary attributes or perform additional transformations.
 async def process_brands(entity: dict) -> dict:
-    # Example: Mark the brands entity as processed.
+    # Mark the brand data as processed and add processing timestamp.
     entity["workflowProcessed"] = True
     entity["workflowProcessedAt"] = datetime.utcnow().isoformat()
+    # Here you can perform additional transformations or add supplementary data.
     return entity
 
 # Startup initialization for cyoda.
@@ -50,9 +60,9 @@ async def startup():
 class FetchBrandsRequest:
     filter: str  # TODO: Currently not used, optional filter parameter
 
-# Asynchronous background task to fetch brand data from the external API,
-# process it, store the data via the external entity_service, and update the job status.
-async def process_entity(job_id):
+# This asynchronous function runs in background.
+# It fetches the external brands data and updates the brands entity accordingly.
+async def process_entity(job_id: str):
     external_api_url = "https://api.practicesoftwaretesting.com/brands"
     headers = {"accept": "application/json"}
 
@@ -61,13 +71,14 @@ async def process_entity(job_id):
             async with session.get(external_api_url, headers=headers) as response:
                 if response.status == 200:
                     data = await response.json()
-                    # Update the "brands" entity in the external service.
+                    # Check if there is an existing brands entity.
                     existing_brands = await entity_service.get_items(
                         token=cyoda_token,
                         entity_model="brands",
                         entity_version=ENTITY_VERSION,
                     )
                     if existing_brands:
+                        # If brands entity exists, update it.
                         await entity_service.update_item(
                             token=cyoda_token,
                             entity_model="brands",
@@ -76,14 +87,15 @@ async def process_entity(job_id):
                             meta={}
                         )
                     else:
+                        # If no brands entity exists, add a new one applying the workflow.
                         await entity_service.add_item(
                             token=cyoda_token,
                             entity_model="brands",
                             entity_version=ENTITY_VERSION,
                             entity=data,
-                            workflow=process_brands  # Apply workflow before persisting brands entity.
+                            workflow=process_brands  # Apply workflow function before persisting.
                         )
-                    # Update the job status to completed.
+                    # Update the corresponding job status to completed.
                     await entity_service.update_item(
                         token=cyoda_token,
                         entity_model="jobs",
@@ -92,6 +104,7 @@ async def process_entity(job_id):
                         meta={}
                     )
                 else:
+                    # On non-200 response update job as failed.
                     await entity_service.update_item(
                         token=cyoda_token,
                         entity_model="jobs",
@@ -100,6 +113,7 @@ async def process_entity(job_id):
                         meta={}
                     )
     except Exception as e:
+        # On exception, update job as failed and log error.
         await entity_service.update_item(
             token=cyoda_token,
             entity_model="jobs",
@@ -107,24 +121,25 @@ async def process_entity(job_id):
             entity={"technical_id": job_id, "status": "failed"},
             meta={}
         )
-        # Log the error appropriately.
         print(f"Error processing job {job_id}: {e}")
 
 @app.route("/api/brands/fetch", methods=["POST"])
-@validate_request(FetchBrandsRequest)  # Workaround: For POST endpoints, place validate_request after route decoration.
+@validate_request(FetchBrandsRequest)  # For POST endpoints, validation is applied after route decoration.
 async def fetch_brands(data: FetchBrandsRequest):
     """
     POST endpoint to trigger fetching of brand data from the external API.
-    This endpoint adds a job record via the external entity_service.
-    The asynchronous background task is now initiated inside the job workflow function.
+    This endpoint creates a new job entity via entity_service.
+    The workflow function (process_jobs) is applied asynchronously before persistence,
+    which in turn starts the background task for data processing.
     """
     job_data = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
+    # Add a job entity with the workflow function to trigger background processing.
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="jobs",
         entity_version=ENTITY_VERSION,
         entity=job_data,
-        workflow=process_jobs  # Fire async processing via workflow before persisting job entity.
+        workflow=process_jobs  # Workflow function that triggers background processing.
     )
     return jsonify({
         "status": "success",
@@ -135,7 +150,7 @@ async def fetch_brands(data: FetchBrandsRequest):
 @app.route("/api/brands", methods=["GET"])
 async def get_brands():
     """
-    GET endpoint to return the cached brand data stored via the external service.
+    GET endpoint to return cached brand data from the external service.
     If no data is available, informs the user accordingly.
     """
     brands = await entity_service.get_items(
@@ -144,7 +159,7 @@ async def get_brands():
         entity_version=ENTITY_VERSION,
     )
     if brands:
-        # Assuming that the stored brands record is the first entry.
+        # Assuming the stored brands record is the first entry.
         return jsonify({
             "status": "success",
             "data": brands[0]

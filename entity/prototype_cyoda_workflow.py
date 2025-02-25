@@ -18,14 +18,32 @@ async def startup():
 class FetchBrandsRequest:
     fetch_mode: str = None  # Optional parameter for future use
 
+# Asynchronous auxiliary function to log processing activity for the entity.
+async def log_entity_activity(entity):
+    # Prepare supplementary data for activity log.
+    log_data = {
+        "brand_id": entity.get("id"),
+        "message": "Entity processed and stored successfully."
+    }
+    # Add a supplementary entity of a different model to avoid recursion.
+    await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="activity_logs",
+        entity_version=ENTITY_VERSION,
+        entity=log_data,
+        workflow=None  # No additional workflow for logging.
+    )
+
 # Workflow function applied to the 'brands' entity before persistence.
 async def process_brands(entity):
-    # Example processing: mark the entity as processed.
-    entity['processed'] = True
+    # Modify the current entity state.
+    entity["processed"] = True
+    # Perform additional asynchronous tasks (fire and forget).
+    asyncio.create_task(log_entity_activity(entity))
     return entity
 
 @app.route('/fetch-brands', methods=['POST'])
-@validate_request(FetchBrandsRequest)  # Workaround: validation decorator goes after route decorator in POST
+@validate_request(FetchBrandsRequest)  # Workaround for quart-schema: validation decorator goes after route decorator in POST
 async def fetch_brands(data: FetchBrandsRequest):
     # Fetch data from the external API.
     async with aiohttp.ClientSession() as session:

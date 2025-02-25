@@ -1,10 +1,13 @@
 # Functional Requirements
 
+## Overview
+The application is designed to display data from a given open-source API. It will fetch company details from the API request and present them in a structured format. The application will adhere to RESTful principles, ensuring clear and consistent API design.
+
 ## API Endpoints
 
 ### 1. POST /api/brands/fetch
 - **Purpose:**  
-  Trigger the process that fetches brand data from the external API (https://api.practicesoftwaretesting.com/brands), perform any necessary transformations or calculations, and store the results internally.
+  This endpoint triggers the fetching of brand data from the external API (https://api.practicesoftwaretesting.com/brands) and processes the data for internal storage.
 
 - **Request Format:**  
   Content-Type: application/json  
@@ -13,7 +16,6 @@
     "trigger": true
   }
   ```
-  *(The body may include additional parameters for filtering or processing options in future iterations.)*
 
 - **Response Format:**  
   Content-Type: application/json  
@@ -35,21 +37,21 @@
     ]
   }
   ```
-  
+
 - **Business Logic:**  
   - Validate the incoming request.  
-  - Invoke an external HTTP GET request to the external API.  
-  - Process and transform the fetched data as needed.  
+  - Make an external GET request to the specified API to retrieve the brand data.  
+  - Process and transform the fetched data if necessary.  
   - Store the processed data in the internal datastore.  
-  - Return a response indicating success along with the fetched data.
+  - Return a response indicating success, including the fetched data.
 
 ### 2. GET /api/brands
 - **Purpose:**  
-  Retrieve the stored brand data from the internal datastore without performing any external API calls.
+  This endpoint retrieves the stored brand data from the internal datastore and presents it to the user.
 
 - **Request Format:**  
-  No body required (HTTP GET)  
-  Optionally, query parameters for pagination or filtering in future enhancements.
+  No body required (HTTP GET).  
+  Optionally, query parameters for pagination or filtering can be added in future iterations.
 
 - **Response Format:**  
   Content-Type: application/json  
@@ -68,12 +70,21 @@
   ]
   ```
 
+### 3. Error Handling
+- The application should handle errors gracefully, returning appropriate status codes and messages for different failure scenarios, such as:
+  - 400 Bad Request: Invalid request format or parameters.
+  - 404 Not Found: Data not found in the datastore.
+  - 500 Internal Server Error: Unexpected errors during processing.
+
+## User Interface
+- The application will provide an interface to trigger data fetch and display the retrieved company details. The specific UI framework can be decided in later iterations.
+
 ## Mermaid Diagrams
 
 ### User-App Interaction Journey
 ```mermaid
 journey
-    title User-App Interaction for Data Retrieval
+    title User-App Interaction for Data Display
     section Trigger Data Fetch
       User: 5: Initiates POST request to /api/brands/fetch
       Backend: 4: Validates request and fetches external data

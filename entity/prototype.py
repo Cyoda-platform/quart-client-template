@@ -1,10 +1,15 @@
 import asyncio
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Using validate_request in POST endpoint
 
 app = Quart(__name__)
 QuartSchema(app)
+
+@dataclass
+class FetchBrandsRequest:
+    fetch_mode: str = None  # Optional parameter for future use
 
 # In-memory cache for storing processed brand data.
 BRANDS_CACHE = {}
@@ -23,7 +28,8 @@ async def process_entity(job_id, data):
     entity_jobs[job_id]['status'] = 'completed'
 
 @app.route('/fetch-brands', methods=['POST'])
-async def fetch_brands():
+@validate_request(FetchBrandsRequest)  # Workaround for quart-schema: validation decorator goes after route decorator in POST
+async def fetch_brands(data: FetchBrandsRequest):
     # TODO: Generate a unique job_id and capture the current timestamp.
     job_id = "job_placeholder"
     requested_at = "timestamp_placeholder"
@@ -38,16 +44,16 @@ async def fetch_brands():
             ) as resp:
                 if resp.status != 200:
                     return jsonify({"error": "Failed to fetch external data."}), 500
-                data = await resp.json()
+                external_data = await resp.json()
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
     # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, data))
+    asyncio.create_task(process_entity(job_id, external_data))
     
     return jsonify({
         "message": "Data fetched successfully.",
-        "data": data
+        "data": external_data
     })
 
 @app.route('/brands', methods=['GET'])

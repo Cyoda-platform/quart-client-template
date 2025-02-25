@@ -34,25 +34,33 @@ class EntityServiceImpl(EntityService):
         """Retrieve a single item based on its ID."""
         meta = await self._repository.get_meta(token, entity_model, entity_version)
         resp = await self._repository.find_by_id(meta, technical_id)
+        if resp and isinstance(resp, dict) and resp.get("errorMessage"):
+            return []
         return resp
 
     async def get_items(self, token: str, entity_model: str, entity_version: str) -> List[Any]:
         """Retrieve multiple items based on their IDs."""
         meta = await self._repository.get_meta(token, entity_model, entity_version)
         resp = await self._repository.find_all(meta)
+        if resp and isinstance(resp, dict) and resp.get("errorMessage"):
+            return []
         return resp
 
     async def get_single_item_by_condition(self, token: str, entity_model: str, entity_version: str, condition: Any) -> List[Any]:
         """Retrieve multiple items based on their IDs."""
         resp = await self._find_by_criteria(token, entity_model, entity_version, condition)
+        if resp and isinstance(resp, dict) and resp.get("errorMessage"):
+            return []
         return resp[0]
 
     async def get_items_by_condition(self, token: str, entity_model: str, entity_version: str, condition: Any) -> List[Any]:
         """Retrieve multiple items based on their IDs."""
         resp = await self._find_by_criteria(token, entity_model, entity_version, condition.get(CHAT_REPOSITORY))
+        if resp and isinstance(resp, dict) and resp.get("errorMessage"):
+            return []
         return resp
 
-    async def add_item(self, token: str, entity_model: str, entity_version: str, entity: Any) -> Any:
+    async def add_item(self, token: str, entity_model: str, entity_version: str, entity: Any, workflow=None) -> Any:
         """Add a new item to the repository."""
         meta = await self._repository.get_meta(token, entity_model, entity_version)
         resp = await self._repository.save(meta, entity)

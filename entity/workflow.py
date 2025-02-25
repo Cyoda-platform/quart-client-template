@@ -39,7 +39,7 @@ async def process_event(token, data, processor_name):
     payload_data = data['payload']['data']
     if processor_name in process_dispatch:
         #todo
-        response = await process_dispatch[processor_name](entity=payload_data)
+        response = await process_dispatch[processor_name](payload_data)
     else:
         raise ValueError(f"Unknown processing step: {processor_name}")
     return response

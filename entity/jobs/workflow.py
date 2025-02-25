@@ -41,22 +41,13 @@ async def process_entity(job: dict) -> dict:
                         entity_model="brands",
                         entity_version=ENTITY_VERSION,
                     )
-                    if existing_brands:
-                        await entity_service.update_item(
-                            token=cyoda_token,
-                            entity_model="brands",
-                            entity_version=ENTITY_VERSION,
-                            entity=data,
-                            meta={}
-                        )
-                    else:
-                        await entity_service.add_item(
-                            token=cyoda_token,
-                            entity_model="brands",
-                            entity_version=ENTITY_VERSION,
-                            entity=data,
-                            workflow=process_brands
-                        )
+                    await entity_service.add_item(
+                        token=cyoda_token,
+                        entity_model="brands",
+                        entity_version=ENTITY_VERSION,
+                        entity=data,
+                        workflow=process_brands)
+
                     job["status"] = "completed"
                 else:
                     job["status"] = "failed"

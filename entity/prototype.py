@@ -2,11 +2,23 @@ import asyncio
 import uuid
 import datetime
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Dataclasses for request validation
+@dataclass
+class SubscribeData:
+    email: str
+    name: str = ""  # Default empty string if name is not provided
+
+@dataclass
+class EmptyData:
+    # This dataclass is intentionally left empty for endpoints that expect no data.
+    pass
 
 # In-memory storage for subscribers and email send statistics (mock persistence)
 subscribers = []
@@ -16,10 +28,10 @@ email_send_stats = {
 
 # POST /subscribe
 @app.route("/subscribe", methods=["POST"])
-async def subscribe():
-    data = await request.get_json()
-    email = data.get("email")
-    name = data.get("name", "")
+@validate_request(SubscribeData)  # Workaround: For POST endpoints, validation decorator comes after route decorator.
+async def subscribe(data: SubscribeData):
+    email = data.email
+    name = data.name
     if not email:
         return jsonify({"message": "Email is required"}), 400
 
@@ -37,7 +49,7 @@ async def subscribe():
     subscribers.append(new_subscriber)
     return jsonify({"message": "Subscription successful", "subscriberId": new_subscriber["id"]}), 200
 
-# GET /subscribers
+# GET /subscribers - No validation needed for GET endpoints without query parameters.
 @app.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     response = {
@@ -67,7 +79,8 @@ async def fetch_cat_fact():
 
 # POST /send-catfact
 @app.route("/send-catfact", methods=["POST"])
-async def send_catfact():
+@validate_request(EmptyData)  # Workaround: For POST endpoints, validation decorator comes after route decorator even if no data is expected.
+async def send_catfact(data: EmptyData):
     cat_fact = await fetch_cat_fact()
 
     send_results = []
@@ -83,7 +96,7 @@ async def send_catfact():
     
     return jsonify({"message": "Cat fact sent to all subscribers", "details": send_results}), 200
 
-# GET /report
+# GET /report - No validation needed for GET endpoints without query parameters.
 @app.route("/report", methods=["GET"])
 async def report():
     report_data = {

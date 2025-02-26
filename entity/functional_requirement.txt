@@ -1,10 +1,13 @@
 # Functional Requirements for NBA Score Ingestion System
 
+## API Overview
+The system will interact with the external NBA scores API at `https://api.sportsdata.io/v3/nba/scores`. The API supports various endpoints to retrieve information about teams, games, players, standings, and statistics.
+
 ## API Endpoints
 
 ### 1. POST /nba/ingest
 - **Purpose:**  
-  Trigger the process to fetch the latest NBA game scores from the external sports data API, analyze changes, and publish update events.
+  Trigger the process to fetch the latest NBA game scores from the external API, analyze changes, and publish update events.
 - **Request Format:**  
   Content-Type: `application/json`
   

@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
+import datetime
+import asyncio
+import aiohttp
 from quart import Quart, request, jsonify, abort
 from quart_schema import QuartSchema, validate_request  # validate_querystring exists but not needed for /data-result
-import aiohttp
-import asyncio
-import datetime
-import json
 from dataclasses import dataclass
 
 from common.config.config import ENTITY_VERSION  # always use this constant
@@ -60,11 +59,31 @@ async def process_data():
         # TODO: Improve error handling and logging as needed
         raise Exception(f"Error while processing data: {str(e)}")
 
+async def add_supplementary_info(entity):
+    # This function adds supplementary data as a separate entity.
+    try:
+        supplementary_data = {
+            "original_combined_at": entity.get("combined_at"),
+            "note": "Supplementary information added asynchronously"
+        }
+        # Using a different entity_model to avoid recursion issues.
+        await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="supplementary_data",
+            entity_version=ENTITY_VERSION,
+            entity=supplementary_data
+        )
+    except Exception as e:
+        # Log the error or handle it appropriately
+        print(f"Error adding supplementary info: {str(e)}")
+
 async def process_data_result(entity):
-    # Workflow function applied to the entity before persistence.
-    # For example, add a processed timestamp field.
+    # This workflow function is applied to the entity before persistence.
+    # Add a processed timestamp.
     entity["processed_at"] = datetime.datetime.utcnow().isoformat() + "Z"
-    # You can add more processing logic here.
+    # Fire-and-forget task: add supplementary data for further processing.
+    asyncio.create_task(add_supplementary_info(entity))
+    # Additional asynchronous tasks can be added here.
     return entity
 
 # For POST endpoints, per the workaround issue with quart_schema,
@@ -74,19 +93,19 @@ async def process_data_result(entity):
 async def fetch_data(data: FetchDataRequest):
     """
     POST endpoint to fetch external API data, combine it,
-    store it externally, and return the item id.
+    store it externally with our workflow processing, and return the item id.
     """
     try:
         # Process the external API data and combine it.
         combined_result = await process_data()
         # Store the combined result using the external entity_service.
-        # The entity_model is set to "data_result", adjust if needed.
+        # The workflow function will add processed timestamps or fire-and-forget tasks.
         item_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="data_result",
             entity_version=ENTITY_VERSION,  # always use constant
             entity=combined_result,  # the validated data object
-            workflow=process_data_result  # Workflow function applied to the entity asynchronously before persistence.
+            workflow=process_data_result  # Workflow function applied asynchronously before persistence.
         )
         # Return the generated id; the result should be retrieved via a separate GET endpoint.
         return jsonify({"id": item_id}), 200

@@ -1,0 +1,18 @@
+create a app to display the data from a given open source api request/job:
+
+curl -X 'GET' \
+'https://services.cro.ie/cws/companies?&company_name=ryanair&skip=0&max=5&htmlEnc=1'
+ -H 'accept: application/json'
+
+Request URL
+https://services.cro.ie/cws/companies?&company_name=ryanair&skip=0&max=5&htmlEnc=1
+
+Authorization Header: Basic dGVzdEBjcm8uaWU6ZGEwOTNhMDQtYzlkNy00NmQ3LTljODMtOWM5Zjg2MzBkNWUw
+Status Code: 200 / OK
+Content Type: application/json; charset=utf-8
+Response body
+Download
+
+[{"company_num":117738,"company_bus_ind":"C","company_name":"RYANAIR CARGO LIMITED","company_addr_1":"3 DAWSON STREET","company_addr_2":"DUBLIN 2.","company_addr_3":"DUBLIN, DUBLIN, Ireland","company_addr_4":"","company_reg_date":"1986-10-28T00:00:00Z","company_status_desc":"Dissolved","company_status_date":"1993-11-19T00:00:00Z","last_ar_date":"0001-01-01T00:00:00Z","next_ar_date":"2002-04-28T00:00:00Z","last_acc_date":"0001-01-01T00:00:00Z","comp_type_desc":"Private limited by shares","company_type_code":1119,"company_status_code":1158,"place_of_business":"Ireland","eircode":""}
+
+company details from the api request in the from of json object

@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "subscriber", "entity_data_example": {"id": "string", "email": "string", "name": "string", "subscribedAt": "string"}}, {"entity_name": "email_stats", "entity_data_example": {"id": "string", "totalEmailsSent": "number"}}]}

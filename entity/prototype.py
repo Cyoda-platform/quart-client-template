@@ -1,13 +1,20 @@
 import asyncio
 import datetime
+from dataclasses import dataclass
 import json
 
 from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # validate_querystring exists but not needed for /data-result
 import aiohttp
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Dummy dataclass for POST /fetch-data request.
+@dataclass
+class FetchDataRequest:
+    # TODO: Add request parameters if needed for filtering or additional options.
+    filter: str = ""
 
 # Local in-memory cache for persistence (mock persistence)
 CACHE = {}
@@ -16,7 +23,6 @@ CACHE = {}
 BRANDS_API_URL = "https://api.practicesoftwaretesting.com/brands"
 CATEGORIES_API_URL = "https://api.practicesoftwaretesting.com/categories"
 
-
 async def fetch_external_data(url: str):
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers={'accept': 'application/json'}) as response:
@@ -24,7 +30,6 @@ async def fetch_external_data(url: str):
                 # TODO: Handle specific error logic or retries if required
                 raise Exception(f"Failed to fetch data from {url}")
             return await response.json()
-
 
 async def process_data():
     """
@@ -52,20 +57,16 @@ async def process_data():
         # TODO: Improve error handling and logging as needed
         raise Exception(f"Error while processing data: {str(e)}")
 
-
+# For POST endpoints, per the workaround issue with quart_schema, route decorator is first, validate_request second.
 @app.route('/fetch-data', methods=['POST'])
-async def fetch_data():
+@validate_request(FetchDataRequest)  # NOTE: This is placed after route decorator as workaround for POST requests.
+async def fetch_data(data: FetchDataRequest):
     """
     POST endpoint to fetch external API data, combine it, store it locally,
     and return the combined data.
     """
-    # TODO: Process additional request filters if provided in request.json
+    # TODO: Process additional request filters from data if provided.
     try:
-        # Using a fire-and-forget pattern if processing in background is desired:
-        # job_id = "some_unique_id"  # TODO: generate unique job id if needed
-        # entity_job[job_id] = {"status": "processing", "requestedAt": datetime.datetime.utcnow().isoformat() + "Z"}
-        # asyncio.create_task(process_entity(entity_job, request_json))
-
         # For this prototype, we await the processing task directly.
         combined_result = await process_data()
         return jsonify(combined_result), 200
@@ -74,7 +75,7 @@ async def fetch_data():
         # Return error response with a 500 status code.
         return jsonify({"error": str(e)}), 500
 
-
+# GET endpoint without query parameters, so no validation decorator is needed.
 @app.route('/data-result', methods=['GET'])
 async def data_result():
     """
@@ -85,7 +86,6 @@ async def data_result():
         # No data available yet.
         abort(404, description="No combined data available")
     return jsonify(result), 200
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

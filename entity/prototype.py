@@ -1,29 +1,33 @@
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Note: For GET requests with query parameters, use validate_querystring as needed
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize schema support
+
+# Define dataclass for POST request validation
+@dataclass
+class CompanyRequest:
+    company_name: str
+    skip: int = 0
+    max: int = 5
 
 # In-memory cache for job persistence. This is a simple placeholder.
 entity_jobs = {}
 
 
 @app.route("/companies", methods=["POST"])
-async def create_company_job():
-    data = await request.get_json() or {}
-    
-    # Basic input validation (TODO: Enhance validation as required)
-    company_name = data.get("company_name")
-    if not company_name:
-        return jsonify({"error": "company_name is required", "status": "failed"}), 400
-
-    skip = data.get("skip", 0)
-    max_records = data.get("max", 5)
+@validate_request(CompanyRequest)  # Workaround: For POST request, validation is applied after route declaration.
+async def create_company_job(data: CompanyRequest):
+    # Use validated data from the request
+    company_name = data.company_name
+    skip = data.skip
+    max_records = data.max
 
     # Generate a unique job id and record initial job info
     job_id = str(uuid.uuid4())
@@ -45,6 +49,7 @@ async def create_company_job():
 
 @app.route("/companies/<job_id>", methods=["GET"])
 async def get_company_job(job_id):
+    # No validation decorator for route parameters in GET requests per requirements.
     job = entity_jobs.get(job_id)
     if not job:
         return jsonify({

@@ -36,30 +36,40 @@ class FilterCrocodilesRequest:
     min_age: int = 0
     max_age: int = 200
 
+# Supplementary async function that can be used as fire-and-forget task.
+async def send_notification(entity):
+    # Here you can implement sending notifications or logging asynchronously.
+    await asyncio.sleep(0.1)  # Simulate async work
+    print(f"Notification: Entity {entity.get('id', 'unknown')} processed.")
+
 # Workflow function to process crocodile entity before persistence.
 async def process_crocodiles(entity):
-    # Example: add a processed timestamp to the entity.
+    # Move any processing logic from the endpoint into this function.
+    # For example, add a processed timestamp.
     entity["processed_at"] = datetime.utcnow().isoformat() + "Z"
-    # You can add other processing steps here.
+    # Launch any supplementary async tasks (fire-and-forget).
+    asyncio.create_task(send_notification(entity))
+    # You can also modify the entity further or retrieve and add supplementary data.
+    # Return the modified entity implicitly via its mutable changes.
     return entity
 
 @app.route('/api/crocodiles/ingest', methods=['POST'])
 @validate_request(IngestRequest)  # Workaround: For POST endpoints, validate_request is added after route declaration.
 async def ingest_crocodiles(data: IngestRequest):
-    # Retrieve data from the external API using aiohttp
+    # Retrieve data from the external API using aiohttp.
     async with aiohttp.ClientSession() as session:
         async with session.get(EXTERNAL_API_URL) as resp:
-            # TODO: Add error handling for non-200 responses
+            # TODO: Add error handling for non-200 responses.
             external_data = await resp.json()
 
-    # Use external entity_service to add the fetched data.
-    # The external service processes the entity asynchronously with process_crocodiles workflow.
+    # Use the external entity_service to add the fetched data.
+    # The external service applies the process_crocodiles workflow function to the entity before persistence.
     new_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="crocodiles",
         entity_version=ENTITY_VERSION,
         entity=external_data,
-        workflow=process_crocodiles  # Workflow function applied to the entity before persistence
+        workflow=process_crocodiles  # Workflow function applied to process the entity asynchronously.
     )
     # Return only the id; full entity details can be retrieved later.
     return jsonify({
@@ -71,7 +81,6 @@ async def ingest_crocodiles(data: IngestRequest):
 @validate_request(FilterCrocodilesRequest)  # Workaround: For POST endpoints, validate_request is added after route declaration.
 async def filter_crocodiles(data: FilterCrocodilesRequest):
     # Build condition dict based on the validated request data.
-    # The external service is expected to process these conditions.
     condition = {
         "name": data.name,
         "sex": data.sex,

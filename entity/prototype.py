@@ -1,13 +1,19 @@
 import asyncio
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema  # Schema integration, dynamic data so no validate_request
+from quart_schema import QuartSchema, validate_request  # Also support for validate_querystring if needed
 
 app = Quart(__name__)
 QuartSchema(app)
 
 # In-memory cache for processed brands data (persistence mock)
 cached_brands = None
+
+@dataclass
+class BrandsRequest:
+    # Dummy field for validation. Extend with filtering options as needed.
+    filter: str = ""  # Use only primitives
 
 async def fetch_brands():
     async with aiohttp.ClientSession() as session:
@@ -38,12 +44,13 @@ async def process_entity_task(entity_job, data):
     entity_job['status'] = "completed"
     # TODO: Add proper logging and job persistence if needed.
 
+# For POST requests: Route decorator is placed first, then validation decorator.
 @app.route('/brands', methods=['POST'])
-async def post_brands():
+@validate_request(BrandsRequest)  # Workaround: POST validate_request must come after @app.route
+async def post_brands(data: BrandsRequest):
     global cached_brands
-    # Read optional payload (for future extensions like filtering options)
-    payload = await request.get_json(silent=True)
-    # TODO: Process payload if filtering or other parameters are required
+    # Use the validated data if needed (e.g., filtering options)
+    payload = data
 
     # Trigger external API call to fetch brands data
     brands_data = await fetch_brands()
@@ -68,6 +75,7 @@ async def post_brands():
         "data": brands_data
     }), 200
 
+# GET endpoint does not require validation since there are no query parameters.
 @app.route('/brands', methods=['GET'])
 async def get_brands():
     global cached_brands

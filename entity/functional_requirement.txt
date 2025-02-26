@@ -1,0 +1,157 @@
+# Functional Requirements for NBA Score Ingestion System
+
+## API Endpoints
+
+### 1. POST /nba/ingest
+- **Purpose:**  
+  Trigger the process to fetch the latest NBA game scores from the external sports data API, analyze changes, and publish update events.
+- **Request Format:**  
+  Content-Type: `application/json`
+  
+  Example:
+  ```json
+  {
+    "triggerTime": "2023-10-20T15:30:00Z",  // Optional, to record when the request was initiated
+    "parameters": {
+      "gameFilter": ["active", "upcoming"]  // Optional, filters can be applied if needed
+    }
+  }
+  ```
+- **Response Format:**  
+  Content-Type: `application/json`
+  
+  Example:
+  ```json
+  {
+    "status": "success",
+    "message": "Data ingestion complete.",
+    "data": {
+      "updatedGames": [
+        {
+          "gameId": "1234",
+          "homeTeam": "Team A",
+          "awayTeam": "Team B",
+          "homeScore": 101,
+          "awayScore": 99,
+          "timeRemaining": "02:15"
+        }
+      ]
+    }
+  }
+  ```
+
+### 2. GET /nba/scores
+- **Purpose:**  
+  Retrieve the latest processed NBA score updates from the internal database.
+- **Response Format:**  
+  Content-Type: `application/json`
+  
+  Example:
+  ```json
+  {
+    "status": "ok",
+    "latestScores": [
+      {
+        "gameId": "1234",
+        "homeTeam": "Team A",
+        "awayTeam": "Team B",
+        "homeScore": 101,
+        "awayScore": 99,
+        "updatedAt": "2023-10-20T15:31:00Z"
+      }
+    ]
+  }
+  ```
+
+### 3. POST /nba/subscribe
+- **Purpose:**  
+  Allow external components or subscribers to register a callback for real-time score update notifications.
+- **Request Format:**  
+  Content-Type: `application/json`
+  
+  Example:
+  ```json
+  {
+    "callbackUrl": "https://subscriber-endpoint.com/notify",
+    "subscriptionType": "scoreUpdates"
+  }
+  ```
+- **Response Format:**  
+  Content-Type: `application/json`
+  
+  Example:
+  ```json
+  {
+    "status": "success",
+    "message": "Subscribed successfully."
+  }
+  ```
+
+### 4. DELETE /nba/unsubscribe
+- **Purpose:**  
+  Allow subscribers to unregister from notifications.
+- **Request Format:**  
+  Content-Type: `application/json`
+  
+  Example:
+  ```json
+  {
+    "callbackUrl": "https://subscriber-endpoint.com/notify"
+  }
+  ```
+- **Response Format:**  
+  Content-Type: `application/json`
+  
+  Example:
+  ```json
+  {
+    "status": "success",
+    "message": "Unsubscribed successfully."
+  }
+  ```
+
+## Business Logic in POST Endpoints
+
+- The POST /nba/ingest endpoint will:
+  - Invoke the external API (https://sportsdata.io/downloads/swagger/nba-v3-scores.json).
+  - Retrieve current NBA game scores.
+  - Process and compare with stored data for change detection.
+  - Trigger events for any significant updates.
+  - Publish these events for delivery to registered subscribers.
+  
+- The POST /nba/subscribe endpoint will:
+  - Register new subscribers.
+  - Validate the provided callback URL.
+  - Store subscription information for future notifications.
+
+## Mermaid Diagrams
+
+```mermaid
+sequenceDiagram
+    participant Client as Client
+    participant Backend as Server
+    participant ExtAPI as External NBA API
+    participant Subscriber as Notification Service
+
+    Client->>Backend: POST /nba/ingest
+    Backend->>ExtAPI: Fetch latest game scores
+    ExtAPI-->>Backend: Return game data
+    Backend->>Backend: Analyze data & detect changes
+    Backend->>Subscriber: Publish update events if significant
+    Backend-->>Client: Response with ingestion status
+
+    Client->>Backend: GET /nba/scores
+    Backend-->>Client: Return latest score updates
+```
+
+```mermaid
+journey
+    title User App Interaction Journey
+    section Data Ingestion and Event Publishing
+      Initiate Ingestion: 5: Client, Server
+      Fetch Data from External API: 4: Server, External NBA API
+      Process and Analyze: 5: Server
+      Publish Events: 4: Server, Subscribers
+    section Data Retrieval
+      Retrieve Processed Results: 5: Client, Server
+```

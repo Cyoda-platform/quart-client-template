@@ -2,8 +2,9 @@ import asyncio
 import uuid
 import time
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # For GET, no validate_querystring needed as there are no query parameters
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -14,16 +15,20 @@ jobs = {}
 # TODO: In a real implementation, consider a persistent storage or a proper caching strategy.
 # For the prototype, we are using a simple dictionary.
 
-@app.route('/fetch_data', methods=['POST'])
-async def fetch_data():
-    data = await request.get_json()
-    if not data:
-        return jsonify({"message": "Invalid request body"}), 400
+@dataclass
+class FetchDataRequest:
+    company_name: str
+    skip: int
+    max: int
 
-    # Extract request parameters with defaults
-    company_name = data.get("company_name", "ryanair")
-    skip = data.get("skip", 0)
-    max_results = data.get("max", 5)
+# For POST requests, per quart-schema workaround, validation decorator is applied after the route decorator.
+@app.route('/fetch_data', methods=['POST'])
+@validate_request(FetchDataRequest)  # Workaround: For POST endpoints, validation comes after route declaration.
+async def fetch_data(data: FetchDataRequest):
+    # Extract request parameters (defaults can be handled at client side if missing)
+    company_name = data.company_name if data.company_name else "ryanair"
+    skip = data.skip
+    max_results = data.max
 
     # Generate a unique job_id for tracking the request
     job_id = str(uuid.uuid4())
@@ -31,7 +36,11 @@ async def fetch_data():
     jobs[job_id] = {"status": "processing", "requestedAt": requested_at, "data": None}
 
     # Fire and forget task to process the external API call and processing
-    asyncio.create_task(process_entity(job_id, {"company_name": company_name, "skip": skip, "max": max_results}))
+    asyncio.create_task(process_entity(job_id, {
+        "company_name": company_name,
+        "skip": skip,
+        "max": max_results
+    }))
 
     return jsonify({
         "message": "Data retrieval initiated",
@@ -67,13 +76,13 @@ async def process_entity(job_id, params):
             "details": str(e)
         }
     
-    # Simulate additional processing or calculations here if necessary.
     # TODO: Perform any required business logic or data transformations.
     
     # Update local cache with the fetched data
     jobs[job_id]["data"] = external_data
     jobs[job_id]["status"] = "completed"
 
+# GET endpoint without request parameters, so no validation decorator is used.
 @app.route('/company_data', methods=['GET'])
 async def get_company_data():
     # For the prototype, return all jobs in the cache.

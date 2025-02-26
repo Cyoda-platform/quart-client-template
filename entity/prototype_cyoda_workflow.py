@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import asyncio
-import uuid
 from datetime import datetime
 
 import aiohttp
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -29,18 +28,9 @@ async def startup():
     await init_cyoda(cyoda_token)
 
 async def process_external_data(entity):
-    # Workflow function applied to the entity before persistence
-    # For demonstration, add a workflow_processed flag with timestamp
-    entity["workflow_processed"] = True
-    entity["workflow_processed_at"] = datetime.utcnow().isoformat()
-    return entity
-
-async def process_entity(job_id, params):
-    """
-    Process the external API request.
-    This function uses aiohttp.ClientSession to call the external API and updates the job status via external entity service.
-    """
-    # Build URL with query parameters.
+    # Workflow function applied to the entity asynchronously before persistence.
+    # It processes the external API request and updates the entity state.
+    params = entity.get("params", {})
     query_params = {
         "company_name": params.get("company_name", ""),
         "skip": str(params.get("skip", 0)),
@@ -56,63 +46,43 @@ async def process_entity(job_id, params):
             async with session.get(EXTERNAL_API_URL, params=query_params, headers=headers) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    update_data = {
-                        "technical_id": job_id,
-                        "status": "done",
-                        "data": data,
-                        "completedAt": datetime.utcnow().isoformat()
-                    }
+                    entity["status"] = "done"
+                    entity["data"] = data
+                    entity["completedAt"] = datetime.utcnow().isoformat()
                 else:
-                    update_data = {
-                        "technical_id": job_id,
-                        "status": "error",
-                        "error": f"External API returned status code {resp.status}"
-                    }
+                    entity["status"] = "error"
+                    entity["error"] = f"External API returned status code {resp.status}"
     except Exception as e:
-        update_data = {
-            "technical_id": job_id,
-            "status": "error",
-            "error": str(e)
-        }
-    # Update the job record via external service.
-    await entity_service.update_item(
-        token=cyoda_token,
-        entity_model="external_data",
-        entity_version=ENTITY_VERSION,
-        entity=update_data,
-        meta={}
-    )
+        entity["status"] = "error"
+        entity["error"] = str(e)
+    # Remove the supplementary params before persisting the final entity
+    entity.pop("params", None)
+    return entity
 
 @app.route("/external-data", methods=["POST"])
 @validate_request(ExternalDataRequest)
 async def external_data(data: ExternalDataRequest):
-    """
-    POST endpoint to retrieve external data.
-    It creates a job record via the external entity service and fires off the processing task.
-    """
+    # Create a job record with initial status and include the external request parameters.
     job = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat(),
-        "data": None
+        "data": None,
+        "params": data.__dict__  # Save params for processing in the workflow function.
     }
-    # Create a job record using the external service with the workflow function applied
+    # Persist the job record with the workflow function applied.
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="external_data",
         entity_version=ENTITY_VERSION,
         entity=job,
-        workflow=process_external_data  # Workflow function applied asynchronously before persistence
+        workflow=process_external_data  # This workflow function processes external API request.
     )
-    # Fire and forget the external API processing task.
-    asyncio.create_task(process_entity(job_id, data.__dict__))
     # Return the job ID so the client can later retrieve the results.
     return jsonify({"status": "processing", "job_id": job_id})
 
 @app.route("/results", methods=["GET"])
 async def get_results():
-    """
-    GET endpoint to retrieve stored job results from the external service.
-    """
+    # GET endpoint to retrieve stored job results from the external service.
     results = await entity_service.get_items(
         token=cyoda_token,
         entity_model="external_data",

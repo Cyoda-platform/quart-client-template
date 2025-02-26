@@ -2,13 +2,18 @@
 import datetime
 import asyncio
 import aiohttp
+import logging
 from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema, validate_request  # validate_querystring exists but not needed for /data-result
+from quart_schema import QuartSchema, validate_request
 from dataclasses import dataclass
 
 from common.config.config import ENTITY_VERSION  # always use this constant
 from app_init.app_init import entity_service, cyoda_token
 from common.repository.cyoda.cyoda_init import init_cyoda
+
+# Configure basic logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -16,12 +21,16 @@ QuartSchema(app)
 # Startup initialization for cyoda
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+    except Exception as e:
+        logger.error(f"Failed to initialize cyoda: {str(e)}")
+        raise
 
 # Dummy dataclass for POST /fetch-data request.
 @dataclass
 class FetchDataRequest:
-    # TODO: Add request parameters if needed for filtering or additional options.
+    # Additional filtering options can be added here.
     filter: str = ""
 
 # External API URLs (constants)
@@ -29,12 +38,18 @@ BRANDS_API_URL = "https://api.practicesoftwaretesting.com/brands"
 CATEGORIES_API_URL = "https://api.practicesoftwaretesting.com/categories"
 
 async def fetch_external_data(url: str):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers={'accept': 'application/json'}) as response:
-            if response.status != 200:
-                # TODO: Handle specific error logic or retries if required
-                raise Exception(f"Failed to fetch data from {url}")
-            return await response.json()
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers={'accept': 'application/json'}) as response:
+                if response.status != 200:
+                    # Handle error responses and log detailed error message.
+                    error_text = await response.text()
+                    logger.error(f"Failed to fetch data from {url}: {response.status} {error_text}")
+                    raise Exception(f"Failed to fetch data from {url}")
+                return await response.json()
+    except Exception as e:
+        logger.error(f"Exception fetching external data from {url}: {str(e)}")
+        raise
 
 async def process_data():
     """
@@ -42,11 +57,10 @@ async def process_data():
     combines the results with a timestamp, and returns the combined data.
     """
     try:
-        # Fetch brands and categories concurrently
+        # Concurrently fetch brands and categories.
         brands_task = asyncio.create_task(fetch_external_data(BRANDS_API_URL))
         categories_task = asyncio.create_task(fetch_external_data(CATEGORIES_API_URL))
         brands, categories = await asyncio.gather(brands_task, categories_task)
-
         combined_at = datetime.datetime.utcnow().isoformat() + "Z"
         combined_result = {
             "brands": brands,
@@ -54,72 +68,80 @@ async def process_data():
             "combined_at": combined_at
         }
         return combined_result
-
     except Exception as e:
-        # TODO: Improve error handling and logging as needed
+        logger.error(f"Error in process_data: {str(e)}")
         raise Exception(f"Error while processing data: {str(e)}")
 
 async def add_supplementary_info(entity):
-    # This function adds supplementary data as a separate entity.
+    """
+    Adds supplementary data as a separate entity. This is a fire-and-forget task.
+    Uses a different entity_model to prevent recursion issues.
+    """
     try:
         supplementary_data = {
             "original_combined_at": entity.get("combined_at"),
-            "note": "Supplementary information added asynchronously"
+            "note": "Supplementary information added asynchronously",
+            "supplementary_at": datetime.datetime.utcnow().isoformat() + "Z"
         }
-        # Using a different entity_model to avoid recursion issues.
         await entity_service.add_item(
             token=cyoda_token,
             entity_model="supplementary_data",
             entity_version=ENTITY_VERSION,
-            entity=supplementary_data
+            entity=supplementary_data,
+            workflow=lambda e: e  # No additional workflow logic for supplementary data.
         )
+        logger.info("Supplementary information added successfully.")
     except Exception as e:
-        # Log the error or handle it appropriately
-        print(f"Error adding supplementary info: {str(e)}")
+        # Log but do not propagate to avoid affecting the main workflow.
+        logger.error(f"Error adding supplementary info: {str(e)}")
 
 async def process_data_result(entity):
-    # This workflow function is applied to the entity before persistence.
-    # Add a processed timestamp.
-    entity["processed_at"] = datetime.datetime.utcnow().isoformat() + "Z"
-    # Fire-and-forget task: add supplementary data for further processing.
-    asyncio.create_task(add_supplementary_info(entity))
-    # Additional asynchronous tasks can be added here.
-    return entity
+    """
+    Workflow function applied to the entity before persistence.
+    Performs modifications directly on the entity state and triggers secondary tasks.
+    """
+    try:
+        # Add a processed timestamp to the entity.
+        entity["processed_at"] = datetime.datetime.utcnow().isoformat() + "Z"
+        # Launch a fire-and-forget task for additional processing (e.g., adding supplementary info).
+        asyncio.create_task(add_supplementary_info(entity))
+        # Additional asynchronous tasks can be added here if necessary.
+        return entity
+    except Exception as e:
+        logger.error(f"Error in process_data_result: {str(e)}")
+        raise
 
-# For POST endpoints, per the workaround issue with quart_schema,
-# route decorator is first, validate_request second.
 @app.route('/fetch-data', methods=['POST'])
-@validate_request(FetchDataRequest)  # NOTE: This is placed after route decorator as workaround for POST requests.
+@validate_request(FetchDataRequest)
 async def fetch_data(data: FetchDataRequest):
     """
     POST endpoint to fetch external API data, combine it,
-    store it externally with our workflow processing, and return the item id.
+    process it via the workflow function, store it externally,
+    and return the item id.
     """
     try:
-        # Process the external API data and combine it.
+        # Obtain combined data from external APIs.
         combined_result = await process_data()
         # Store the combined result using the external entity_service.
-        # The workflow function will add processed timestamps or fire-and-forget tasks.
+        # The workflow function applies asynchronous processing before persistence.
         item_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="data_result",
-            entity_version=ENTITY_VERSION,  # always use constant
-            entity=combined_result,  # the validated data object
-            workflow=process_data_result  # Workflow function applied asynchronously before persistence.
+            entity_version=ENTITY_VERSION,
+            entity=combined_result,
+            workflow=process_data_result
         )
-        # Return the generated id; the result should be retrieved via a separate GET endpoint.
+        logger.info(f"Data stored successfully with id: {item_id}")
         return jsonify({"id": item_id}), 200
-
     except Exception as e:
-        # Return error response with a 500 status code.
+        logger.error(f"Error in fetch_data endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-# GET endpoint to retrieve the stored combined data.
 @app.route('/data-result', methods=['GET'])
 async def data_result():
     """
     GET endpoint to retrieve stored combined data from the external entity service.
-    It calls get_items to retrieve all stored items of model 'data_result'.
+    If no data is available, responds with a 404 status.
     """
     try:
         results = await entity_service.get_items(
@@ -130,8 +152,8 @@ async def data_result():
         if not results:
             abort(404, description="No combined data available")
         return jsonify(results), 200
-
     except Exception as e:
+        logger.error(f"Error in data_result endpoint: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':

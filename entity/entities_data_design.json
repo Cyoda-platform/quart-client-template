@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "companies", "entity_data_example": {"company_name": "string", "skip": "integer", "max": "integer"}}]}

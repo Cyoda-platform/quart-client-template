@@ -56,7 +56,8 @@ async def process_entity(job_id, params):
     
     # Prepare headers. Basic authentication is included in the header.
     headers = {
-        "Authorization": "Basic dGVzdEBjcm8uaWU6ZGEwOTNhMDQtYzlkNy00NmQ3LTljODMtOWM5Zjg2MzBkNWUw"
+        "Authorization": "Basic dGVzdEBjcm8uaWU6ZGEwOTNhMDQtYzlkNy00NmQ3LTljODMtOWM5Zjg2MzBkNWUw",
+        "Content-Type": "application/json"
     }
     
     # TODO: Evaluate if additional authentication details are needed (e.g., using aiohttp.BasicAuth).

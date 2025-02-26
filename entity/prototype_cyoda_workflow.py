@@ -16,6 +16,7 @@ QuartSchema(app)
 
 @app.before_serving
 async def startup():
+    # Initialize external service
     await init_cyoda(cyoda_token)
 
 @dataclass
@@ -25,26 +26,25 @@ class FetchBrandsRequest:
 @app.route('/brands/fetch', methods=['POST'])
 @validate_request(FetchBrandsRequest)
 async def fetch_brands(data: FetchBrandsRequest):
-    # Generate a job id and requested time
+    # Generate a unique job id and current timestamp
     job_id = str(uuid.uuid4())
     requested_at = datetime.datetime.utcnow().isoformat()
 
-    # Create a job record with initial state.
+    # Create initial job record state
     job_record = {
         "job_id": job_id,
         "requestedAt": requested_at,
         "status": "processing",
         "brands": []
     }
-    # The workflow function will fetch brands and update the job record before persistence.
+    # Create job record through entity_service and apply workflow function before persistence.
     created_job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="jobs",
         entity_version=ENTITY_VERSION,
         entity=job_record,
-        workflow=process_job_workflow  # Workflow function to process job data.
+        workflow=process_job_workflow  # Workflow function to process the job record asynchronously.
     )
-
     # Simply return the job id.
     return jsonify({
         "status": "success",
@@ -53,45 +53,61 @@ async def fetch_brands(data: FetchBrandsRequest):
     })
 
 # Workflow function applied to the job entity before persistence.
-# This workflow function asynchronously fetches brands data and updates the job entity state.
+# This function handles fetching brands data from external API,
+# updates the job entity state and also updates a supplementary brands entity.
 async def process_job_workflow(job_entity):
     url = "https://api.practicesoftwaretesting.com/brands"
     try:
+        # Create an HTTP session to fetch brands data.
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers={"accept": "application/json"}) as resp:
+            async with session.get(url, headers={"accept": "application/json"}, timeout=10) as resp:
+                # If the external service returns a successful response, process the data.
                 if resp.status == 200:
                     brands_data = await resp.json()
-                    # Update job entity state to 'completed' and add brands data.
                     job_entity["status"] = "completed"
                     job_entity["brands"] = brands_data
-                    # Update supplementary brands entity (different entity_model).
-                    await entity_service.update_item(
-                        token=cyoda_token,
-                        entity_model="brands",
-                        entity_version=ENTITY_VERSION,
-                        entity={"data": brands_data},
-                        meta={}
-                    )
+                    # Update supplementary brands entity.
+                    try:
+                        await entity_service.update_item(
+                            token=cyoda_token,
+                            entity_model="brands",  # different entity_model from jobs.
+                            entity_version=ENTITY_VERSION,
+                            entity={"data": brands_data},
+                            meta={}
+                        )
+                    except Exception:
+                        # Log or handle supplementary update error if needed.
+                        pass
                 else:
+                    # Non-200 response marks the job as error.
                     job_entity["status"] = "error"
     except Exception:
+        # Handle exceptions related to network or data processing.
         job_entity["status"] = "error"
-    # Optionally add a workflow timestamp.
+    # Add a timestamp indicating when the workflow was applied.
     job_entity["workflow_applied_at"] = datetime.datetime.utcnow().isoformat()
     return job_entity
 
 @app.route('/brands', methods=['GET'])
 async def get_brands():
-    # Retrieve the brands cache from the external service.
-    brands_items = await entity_service.get_items(
-        token=cyoda_token,
-        entity_model="brands",
-        entity_version=ENTITY_VERSION
-    )
+    # Retrieve brands cache from external service.
+    try:
+        brands_items = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model="brands",
+            entity_version=ENTITY_VERSION
+        )
+    except Exception:
+        # In case of retrieval error, return empty list with error status.
+        return jsonify({
+            "status": "error",
+            "data": []
+        })
     return jsonify({
         "status": "success",
         "data": brands_items
     })
 
 if __name__ == '__main__':
+    # Run the Quart application.
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

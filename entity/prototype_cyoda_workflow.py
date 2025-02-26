@@ -17,18 +17,32 @@ QuartSchema(app)
 async def startup():
     await init_cyoda(cyoda_token)
 
-# Workflow function for subscriber entity
+# Fire-and-forget async helper to send a welcome email.
+async def send_welcome_email(email):
+    # Simulate sending a welcome email
+    await asyncio.sleep(0.1)
+    print(f"Welcome email sent to {email}")
+
+# Workflow function for subscriber entity: adds workflow attributes and triggers welcome email.
 async def process_subscriber(entity):
     # Mark entity as processed with a timestamp
     entity["workflowProcessed"] = True
     entity["processedAt"] = datetime.datetime.utcnow().isoformat()
+    # Fire-and-forget sending welcome email to the new subscriber.
+    asyncio.create_task(send_welcome_email(entity["email"]))
     return entity
 
-# Workflow function for email_stats entity
+# Fire-and-forget async helper to log email stats processing.
+async def log_email_stats(entity):
+    await asyncio.sleep(0.1)
+    print(f"Email stats processed for record {entity.get('id')} with totalEmailsSent: {entity.get('totalEmailsSent')}")
+    
+# Workflow function for email_stats entity: adds workflow attributes and logs the processing.
 async def process_email_stats(entity):
-    # Mark entity as processed with a timestamp
     entity["workflowProcessed"] = True
     entity["processedAt"] = datetime.datetime.utcnow().isoformat()
+    # Fire-and-forget log to track that email_stats record was processed.
+    asyncio.create_task(log_email_stats(entity))
     return entity
 
 # Dataclasses for request validation
@@ -51,7 +65,7 @@ async def subscribe(data: SubscribeData):
     if not email:
         return jsonify({"message": "Email is required"}), 400
 
-    # Check for duplicate subscription using external service
+    # Check for duplicate subscription using external service.
     duplicate = await entity_service.get_items_by_condition(
         token=cyoda_token,
         entity_model="subscriber",
@@ -67,7 +81,7 @@ async def subscribe(data: SubscribeData):
         "name": name,
         "subscribedAt": datetime.datetime.utcnow().isoformat()  # Timestamp for subscription
     }
-    # Add new subscriber via external service with workflow function
+    # Add new subscriber via external service with workflow function.
     new_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="subscriber",
@@ -91,13 +105,13 @@ async def get_subscribers():
     }
     return jsonify(response), 200
 
-# Async function to simulate email sending
+# Async function to simulate email sending for catfacts.
 async def send_email(email, cat_fact):
     # TODO: Replace with integration to a real email service provider.
-    await asyncio.sleep(0.1)  # Simulate email sending delay
+    await asyncio.sleep(0.1)
     print(f"Email sent to {email}: {cat_fact}")
 
-# Function to retrieve a random cat fact from external API
+# Function to retrieve a random cat fact from external API.
 async def fetch_cat_fact():
     url = "https://catfact.ninja/fact"
     async with aiohttp.ClientSession() as session:
@@ -116,7 +130,7 @@ async def send_catfact(data: EmptyData):
     cat_fact = await fetch_cat_fact()
     send_results = []
 
-    # Retrieve subscribers from the external service
+    # Retrieve subscribers from the external service.
     subscribers = await entity_service.get_items(
         token=cyoda_token,
         entity_model="subscriber",
@@ -126,8 +140,7 @@ async def send_catfact(data: EmptyData):
         await send_email(sub["email"], cat_fact)
         send_results.append({"email": sub["email"], "status": "sent"})
     
-    # Update email send statistics via external service using "email_stats" entity model
-    # Try to retrieve existing email_stats record; assume there is only one record.
+    # Update email send statistics via external service using "email_stats" entity model.
     stats_list = await entity_service.get_items_by_condition(
         token=cyoda_token,
         entity_model="email_stats",
@@ -137,7 +150,7 @@ async def send_catfact(data: EmptyData):
     count_sent = len(subscribers)
     if stats_list and len(stats_list) > 0:
         stats = stats_list[0]
-        # Ensure totalEmailsSent exists
+        # Ensure totalEmailsSent exists.
         previous = stats.get("totalEmailsSent", 0)
         stats["totalEmailsSent"] = previous + count_sent
         await entity_service.update_item(
@@ -148,11 +161,11 @@ async def send_catfact(data: EmptyData):
             meta={}
         )
     else:
-        # Create a new email_stats record with workflow function
         new_stats = {
             "id": str(uuid.uuid4()),
             "totalEmailsSent": count_sent
         }
+        # Create a new email_stats record with workflow function.
         await entity_service.add_item(
             token=cyoda_token,
             entity_model="email_stats",
@@ -166,13 +179,13 @@ async def send_catfact(data: EmptyData):
 # GET /report
 @app.route("/report", methods=["GET"])
 async def report():
-    # Get subscribers count from external service
+    # Get subscribers count from external service.
     subscribers = await entity_service.get_items(
         token=cyoda_token,
         entity_model="subscriber",
         entity_version=ENTITY_VERSION,
     )
-    # Get email send statistics from external service
+    # Get email send statistics from external service.
     stats_list = await entity_service.get_items_by_condition(
         token=cyoda_token,
         entity_model="email_stats",

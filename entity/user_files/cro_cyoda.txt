@@ -1,0 +1,15 @@
+create a app to display the data from a given open source api request/job:
+
+Request URL
+https://services.cro.ie/cws/companies?&company_name=ryanair&skip=0&max=5&htmlEnc=1
+username:test@cro.ie
+password:da093a04-c9d7-46d7-9c83-9c9f8630d5e0
+Method: GET
+Authorization Header: Basic dGVzdEBjcm8uaWU6ZGEwOTNhMDQtYzlkNy00NmQ3LTljODMtOWM5Zjg2MzBkNWUw
+Status Code: 200 / OK
+Content Type: application/json; charset=utf-8
+Response body
+Download
+
+
+company details from the api request in the from of json object

@@ -1,10 +1,11 @@
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # Only one line per instructions
+from quart_schema import QuartSchema, validate_request, validate_querystring  # Workaround: For GET requests, validation must be applied before @app.route; for POST, after.
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -16,6 +17,11 @@ entity_jobs = {}
 EXTERNAL_API_URL = "https://services.cro.ie/cws/companies"
 AUTHORIZATION_HEADER = "Basic dGVzdEBjcm8uaWU6ZGEwOTNhMDQtYzlkNy00NmQ3LTljODMtOWM5Zjg2MzBkNWUw"
 
+@dataclass
+class ExternalDataRequest:
+    company_name: str
+    skip: int
+    max: int
 
 async def process_entity(job_id, params):
     """
@@ -25,8 +31,8 @@ async def process_entity(job_id, params):
     # Build URL with query parameters.
     query_params = {
         "company_name": params.get("company_name", ""),
-        "skip": params.get("skip", "0"),
-        "max": params.get("max", "5"),
+        "skip": str(params.get("skip", 0)),
+        "max": str(params.get("max", 5)),
         "htmlEnc": "1"
     }
 
@@ -53,41 +59,38 @@ async def process_entity(job_id, params):
             entity_jobs[job_id]["status"] = "error"
             entity_jobs[job_id]["error"] = str(e)
 
-
+# For POST endpoints, route decorator must come first, then validate_request as a workaround.
 @app.route("/external-data", methods=["POST"])
-async def external_data():
+@validate_request(ExternalDataRequest)
+async def external_data(data: ExternalDataRequest):
     """
     POST endpoint to retrieve external data.
     It fires and forgets the task for processing the external API request.
     """
-    request_data = await request.get_json()
-    # TODO: Add additional request validation if required.
     job_id = str(uuid.uuid4())
     entity_jobs[job_id] = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat(),
         "data": None
     }
-    # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, request_data))
+    # Fire and forget the processing task using data converted to dict.
+    asyncio.create_task(process_entity(job_id, data.__dict__))
     # Return the job ID so the client can later retrieve the results.
     return jsonify({"status": "processing", "job_id": job_id})
 
-
+# No validation for GET /results as there are no query parameters.
 @app.route("/results", methods=["GET"])
 async def get_results():
     """
     GET endpoint to retrieve stored job results.
     Returns the list of jobs and their data.
     """
-    # For simplicity, we return all jobs.
     results = []
     for job_id, job_data in entity_jobs.items():
         entry = {"job_id": job_id}
         entry.update(job_data)
         results.append(entry)
     return jsonify({"status": "success", "results": results})
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

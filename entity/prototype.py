@@ -1,10 +1,11 @@
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 # Initialize Quart app and schema
 app = Quart(__name__)
@@ -15,6 +16,21 @@ STORAGE = {"crocodiles": []}
 INGESTION_JOBS = {}
 
 EXTERNAL_API_URL = "https://test-api.k6.io/public/crocodiles/"
+
+# Dummy dataclass for ingestion endpoint (no payload expected)
+@dataclass
+class IngestRequest:
+    # This is a dummy field to satisfy the validate_request decorator.
+    dummy: str = ""
+
+# Dataclass for filter endpoint
+@dataclass
+class FilterCrocodilesRequest:
+    # Using only primitives per instructions. Note: Using min_age and max_age instead of nested age_range.
+    name: str = ""
+    sex: str = ""
+    min_age: int = 0
+    max_age: int = 200
 
 async def process_entity(job_id: str, data):
     # TODO: Add any processing logic if needed.
@@ -30,19 +46,20 @@ async def process_entity(job_id: str, data):
     INGESTION_JOBS[job_id]["completedAt"] = datetime.utcnow().isoformat()
 
 @app.route('/api/crocodiles/ingest', methods=['POST'])
-async def ingest_crocodiles():
+@validate_request(IngestRequest)  # Workaround: For POST endpoints, validate_request is added after route declaration.
+async def ingest_crocodiles(data: IngestRequest):
     # Retrieve data from the external API using aiohttp
     async with aiohttp.ClientSession() as session:
         async with session.get(EXTERNAL_API_URL) as resp:
             # TODO: Add error handling for non-200 responses
-            data = await resp.json()
+            external_data = await resp.json()
 
     # Create a job to process the data asynchronously
     job_id = str(uuid.uuid4())
     INGESTION_JOBS[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
     # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, data))
-    ingested_count = len(data) if isinstance(data, list) else 0
+    asyncio.create_task(process_entity(job_id, external_data))
+    ingested_count = len(external_data) if isinstance(external_data, list) else 0
     return jsonify({
         "status": "success",
         "message": "Data ingestion initiated.",
@@ -51,16 +68,14 @@ async def ingest_crocodiles():
     })
 
 @app.route('/api/crocodiles/filter', methods=['POST'])
-async def filter_crocodiles():
-    filters = await request.get_json()
-    # Retrieve filter criteria
-    name_filter = filters.get("name", "").lower()
-    sex_filter = filters.get("sex")
-    age_range = filters.get("age_range", {})
-    min_age = age_range.get("min", 0)
-    max_age = age_range.get("max", 200)
+@validate_request(FilterCrocodilesRequest)  # Workaround: For POST endpoints, validate_request is added after route declaration.
+async def filter_crocodiles(data: FilterCrocodilesRequest):
+    # Apply filtering on the in-memory STORAGE using validated data from request
+    name_filter = data.name.lower() if data.name else ""
+    sex_filter = data.sex if data.sex else ""
+    min_age = data.min_age
+    max_age = data.max_age
 
-    # Apply filtering on the in-memory STORAGE
     results = []
     for crocodile in STORAGE.get("crocodiles", []):
         # Assume each crocodile is a dict with keys: 'name', 'sex', 'age'

@@ -59,7 +59,7 @@ async def process_entity(job_id, params):
             entity_jobs[job_id]["status"] = "error"
             entity_jobs[job_id]["error"] = str(e)
 
-# For POST endpoints, route decorator must come first, then validate_request as a workaround.
+# For POST endpoints, the route decorator comes first and then validate_request.
 @app.route("/external-data", methods=["POST"])
 @validate_request(ExternalDataRequest)
 async def external_data(data: ExternalDataRequest):
@@ -78,7 +78,7 @@ async def external_data(data: ExternalDataRequest):
     # Return the job ID so the client can later retrieve the results.
     return jsonify({"status": "processing", "job_id": job_id})
 
-# No validation for GET /results as there are no query parameters.
+# GET endpoint for retrieving job results does not need validation because no query parameters are expected.
 @app.route("/results", methods=["GET"])
 async def get_results():
     """

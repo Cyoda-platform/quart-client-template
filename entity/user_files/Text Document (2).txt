@@ -1,0 +1,27 @@
+NovaFit Gym Finder – Gym Booking Application
+Description:
+NovaFit Gym Finder is a gym search and booking application integrated with GymAPI (fictional API) to provide real-time information about available gyms, class schedules, and membership pricing.
+
+Features:
+
+Search for gyms based on location, pricing, and workout types
+View detailed gym information (address, rating, available services)
+Filter by memberships
+Book gym sessions directly through the app
+Key Functionalities:
+
+Geolocation – Detects user location and displays nearby gyms.
+GymAPI Integration – Fetches real-time gym availability, pricing, and schedules.
+Sorting & Filters – Allows sorting by price, rating, and facility availability.
+Reviews & Ratings – Users can leave reviews and rate gyms.
+Subscription System – Users can purchase memberships or single-session passes.
+Error Handling:
+
+Displays a message if no gyms are available nearby.
+Manages API failures by offering alternative options.
+Handles payment errors with notifications and retry options.
+Target Audience:
+
+Fitness enthusiasts (beginners and advanced users)
+Travelers looking for gyms in new locations
+Personal trainers booking facilities for clients

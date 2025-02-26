@@ -1,22 +1,39 @@
 import asyncio
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)  # Register QuartSchema
 
+# Data classes for validation
+@dataclass
+class IngestRequest:
+    triggerTime: str  # use only primitive types; TODO: Add additional fields if needed
+
+@dataclass
+class SubscribeRequest:
+    callbackUrl: str
+    subscriptionType: str  # e.g., "scoreUpdates"
+
+@dataclass
+class UnsubscribeRequest:
+    callbackUrl: str
+
 # In-memory caches and storage for prototype purposes.
 scores_cache = {}  # To store the latest scores; key "latest" holds the result.
-subscribers = []   # List of subscriber dicts: { "callbackUrl": ..., "subscriptionType": ... }
+subscribers = []   # List of subscriber dicts: {"callbackUrl": ..., "subscriptionType": ...}
 jobs = {}          # To track ingestion jobs.
 
 # Asynchronous processing task for ingestion.
 async def process_entity(job_id: str, requested_at: str, data: dict):
     # TODO: Customize external API call parameters based on real requirements.
     # For now, use a mock/fixed URL with a placeholder API key.
-    external_url = ("https://api.sportsdata.io/v3/nba/scores/ScoresBasic/2020-SEP-01"
-                    "?key=YOUR_API_KEY")  # TODO: Replace YOUR_API_KEY with actual API key.
+    external_url = (
+        "https://api.sportsdata.io/v3/nba/scores/ScoresBasic/2020-SEP-01"
+        "?key=YOUR_API_KEY"  # TODO: Replace YOUR_API_KEY with actual API key.
+    )
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(external_url) as response:
@@ -41,7 +58,7 @@ async def process_entity(job_id: str, requested_at: str, data: dict):
             }
         ]
     }
-    # Update the in-memory scores cache.
+    # Update the in-memory scores cache
     scores_cache["latest"] = result
 
     # TODO: Publish events to subscribers. For now, simulate notification by printing.
@@ -55,15 +72,16 @@ async def process_entity(job_id: str, requested_at: str, data: dict):
     jobs[job_id]["status"] = "completed"
 
 
+# POST endpoint: Route decorator comes first, then validate_request decorator (workaround for quart-schema issue)
 @app.route('/nba/ingest', methods=['POST'])
-async def ingest():
-    req_data = await request.get_json()
-    # Create a simple job ID and capture the request time.
+@validate_request(IngestRequest)  # For POST, place validate_request after route decorator
+async def ingest(data: IngestRequest):
+    # data is validated and available as IngestRequest instance
+    requested_at = data.triggerTime if data.triggerTime else "unknown"
     job_id = f"job_{len(jobs) + 1}"
-    requested_at = req_data.get("triggerTime", "unknown")
     jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
     # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, requested_at, req_data))
+    asyncio.create_task(process_entity(job_id, requested_at, request.json))
     return jsonify({
         "status": "accepted",
         "jobId": job_id,
@@ -71,6 +89,7 @@ async def ingest():
     })
 
 
+# GET endpoint without parameters; no request validation needed.
 @app.route('/nba/scores', methods=['GET'])
 async def get_scores():
     result = scores_cache.get("latest", {"updatedGames": []})
@@ -80,16 +99,17 @@ async def get_scores():
     })
 
 
+# POST endpoint for subscription.
 @app.route('/nba/subscribe', methods=['POST'])
-async def subscribe():
-    req_data = await request.get_json()
-    callback_url = req_data.get("callbackUrl")
+@validate_request(SubscribeRequest)  # For POST, validate_request comes after route decorator.
+async def subscribe(data: SubscribeRequest):
+    callback_url = data.callbackUrl
     if not callback_url:
         return jsonify({"status": "error", "message": "Missing callbackUrl"}), 400
     # TODO: Validate the callbackUrl format.
     subscribers.append({
         "callbackUrl": callback_url,
-        "subscriptionType": req_data.get("subscriptionType", "scoreUpdates")
+        "subscriptionType": data.subscriptionType
     })
     return jsonify({
         "status": "success",
@@ -97,10 +117,11 @@ async def subscribe():
     })
 
 
+# DELETE endpoint for unsubscription.
 @app.route('/nba/unsubscribe', methods=['DELETE'])
-async def unsubscribe():
-    req_data = await request.get_json()
-    callback_url = req_data.get("callbackUrl")
+@validate_request(UnsubscribeRequest)  # For DELETE (with body), using validate_request similarly.
+async def unsubscribe(data: UnsubscribeRequest):
+    callback_url = data.callbackUrl
     if not callback_url:
         return jsonify({"status": "error", "message": "Missing callbackUrl"}), 400
     global subscribers

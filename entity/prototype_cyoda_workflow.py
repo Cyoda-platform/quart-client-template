@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from datetime import datetime
 import asyncio
-import uuid
 
 import aiohttp
 from quart import Quart, request, jsonify
@@ -15,18 +14,44 @@ app = Quart(__name__)
 QuartSchema(app)  # Initialize schema support
 
 # Define workflow function to be applied to the entity before persistence.
-# This function takes the entity data as its only argument and can modify it.
+# This function invokes any asynchronous tasks and updates the entity state.
 async def process_companies_workflow(entity):
-    # Add a timestamp indicating when the workflow processed the entity.
+    # Add a timestamp for when the workflow was processed.
     entity["preProcessedAt"] = datetime.utcnow().isoformat()
-    # Optionally modify or add additional state here.
-    # For example, you could add a flag indicating that pre-processing is complete.
-    entity["workflowProcessed"] = True
-    # Simulate async operation if needed (e.g., validation, transformation, etc.)
-    await asyncio.sleep(0)
+
+    # Retrieve parameters stored from the incoming request.
+    company_name = entity.get("companyName")
+    skip = entity.get("skip", 0)
+    max_records = entity.get("max", 5)
+
+    # Build external API URL.
+    url = (
+        f"https://services.cro.ie/cws/companies?&company_name={company_name}"
+        f"&skip={skip}&max={max_records}&htmlEnc=1"
+    )
+    headers = {
+        "accept": "application/json",
+        "Authorization": "Basic dGVzdEBjcm8uaWU6ZGEwOTNhMDQtYzlkNy00NmQ3LTljODMtOWM5Zjg2MzBkNWUw"
+    }
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers) as response:
+                if response.status != 200:
+                    # Update entity state to failed if external API did not return a 200 status.
+                    entity["status"] = "failed"
+                    entity["data"] = {"error": f"External API returned status {response.status}"}
+                    return entity
+                external_data = await response.json()
+                # Update entity state to completed with the external data.
+                entity["status"] = "completed"
+                entity["data"] = external_data
+    except Exception as e:
+        # Mark the entity as failed when an exception occurs.
+        entity["status"] = "failed"
+        entity["data"] = {"error": str(e)}
     return entity
 
-# Define dataclass for POST request validation
+# Define dataclass for POST request validation.
 from dataclasses import dataclass
 
 @dataclass
@@ -42,40 +67,41 @@ async def startup():
 @app.route("/companies", methods=["POST"])
 @validate_request(CompanyRequest)  # Validation applied after route declaration.
 async def create_company_job(data: CompanyRequest):
-    # Use validated data from the request
+    # Use validated data from the request.
     company_name = data.company_name
     skip = data.skip
     max_records = data.max
 
-    # Record initial job info
+    # Record initial job info and include original request parameters
     requested_at = datetime.utcnow().isoformat()
     job_data = {
         "status": "processing",
         "requestedAt": requested_at,
-        "data": None  # Will be updated after processing
+        "data": None,
+        # Store extra parameters for use in the workflow function.
+        "companyName": company_name,
+        "skip": skip,
+        "max": max_records
     }
 
     # Use external service to add job item.
-    # Pass the workflow function that will pre-process the entity before adding.
+    # The workflow function will be applied to the entity asynchronously before persistence.
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="companies",
         entity_version=ENTITY_VERSION,  # always use this constant
-        entity=job_data,  # the validated data object
-        workflow=process_companies_workflow  # Workflow function applied to the entity asynchronously before persistence.
+        entity=job_data,  # the validated data object containing job info
+        workflow=process_companies_workflow  # Workflow function applied to the entity
     )
-
-    # Fire-and-forget background processing task.
-    asyncio.create_task(process_entity(job_id, company_name, skip, max_records))
     
     return jsonify({
         "job_id": job_id,
-        "status": "processing"
+        "status": job_data["status"]
     }), 202
 
 @app.route("/companies/<job_id>", methods=["GET"])
 async def get_company_job(job_id):
-    # Retrieve the job using external service call
+    # Retrieve the job using external service call.
     job = await entity_service.get_item(
         token=cyoda_token,
         entity_model="companies",
@@ -92,59 +118,6 @@ async def get_company_job(job_id):
         "status": job.get("status"),
         "data": job.get("data")
     })
-
-async def process_entity(job_id, company_name, skip, max_records):
-    # Build external API URL
-    url = (
-        f"https://services.cro.ie/cws/companies?&company_name={company_name}"
-        f"&skip={skip}&max={max_records}&htmlEnc=1"
-    )
-    headers = {
-        "accept": "application/json",
-        "Authorization": "Basic dGVzdEBjcm8uaWU6ZGEwOTNhMDQtYzlkNy00NmQ3LTljODMtOWM5Zjg2MzBkNWUw"
-    }
-
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers) as response:
-                if response.status != 200:
-                    update_data = {
-                        "status": "failed",
-                        "data": {"error": f"External API returned status {response.status}"}
-                    }
-                    await entity_service.update_item(
-                        token=cyoda_token,
-                        entity_model="companies",
-                        entity_version=ENTITY_VERSION,
-                        entity=update_data,
-                        meta={"technical_id": job_id}
-                    )
-                    return
-
-                external_data = await response.json()
-                update_data = {
-                    "status": "completed",
-                    "data": external_data
-                }
-                await entity_service.update_item(
-                    token=cyoda_token,
-                    entity_model="companies",
-                    entity_version=ENTITY_VERSION,
-                    entity=update_data,
-                    meta={"technical_id": job_id}
-                )
-    except Exception as e:
-        update_data = {
-            "status": "failed",
-            "data": {"error": str(e)}
-        }
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="companies",
-            entity_version=ENTITY_VERSION,
-            entity=update_data,
-            meta={"technical_id": job_id}
-        )
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

@@ -1,5 +1,6 @@
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Using validate_request as per quart-schema workaround
 import aiohttp
 import asyncio
 from uuid import uuid4
@@ -7,6 +8,11 @@ from datetime import datetime
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data class for POST request validation
+@dataclass
+class BrandRequest:
+    filter: str = None  # Optional filter parameter; TODO: adjust fields as requirements are clarified.
 
 # Global local cache for processed brands
 PROCESSED_DATA = []
@@ -35,15 +41,17 @@ async def process_entity(job_id, params: dict):
             print(f"Error processing job {job_id}: {e}")
 
 @app.route('/api/brands', methods=['POST'])
-async def fetch_and_process_brands():
-    req_data = await request.get_json() or {}
+@validate_request(BrandRequest)  # Workaround: for POST, validation decorator goes after the route decorator.
+async def fetch_and_process_brands(data: BrandRequest):
+    # Access validated request data from the dataclass
+    req_params = data.__dict__
     job_id = str(uuid4())
     ENTITY_JOBS[job_id] = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat()
     }
     # Fire and forget the processing task.
-    task = asyncio.create_task(process_entity(job_id, req_data))
+    task = asyncio.create_task(process_entity(job_id, req_params))
     await task  # In this prototype, we wait for the task to complete.
     response = {
         "status": "success",

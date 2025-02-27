@@ -2,13 +2,20 @@ import asyncio
 import uuid
 import datetime
 import logging
+from dataclasses import dataclass
 
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # For GET requests with querystring, use validate_querystring if needed.
 import aiohttp
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize the schema (data validations are dynamic)
+
+# Dummy dataclass for POST request validation in /brands/fetch.
+@dataclass
+class FetchBrandsRequest:
+    # Dummy field; TODO: Add actual fields if parameters are needed.
+    dummy: str = ""
 
 # In-memory cache and jobs store (mock persistence)
 cached_brands = None  # Will hold the processed brand data
@@ -24,7 +31,7 @@ async def process_brands(job_id: str):
         async with aiohttp.ClientSession() as session:
             async with session.get(EXTERNAL_API_URL, headers={"accept": "application/json"}) as response:
                 if response.status != 200:
-                    # TODO: Handle non-200 externally if necessary.
+                    # TODO: Handle non-200 external responses if necessary.
                     jobs[job_id]["status"] = "failed"
                     logging.error(f"External API returned status {response.status}")
                     return
@@ -51,8 +58,10 @@ async def process_brands(job_id: str):
         logging.exception("Error processing brands")
         # TODO: Further error handling/logging can be added if necessary.
 
+# For POST endpoints, due to an issue in Quart Schema, the @validate_request decorator is placed after the route decorator.
 @app.route('/brands/fetch', methods=['POST'])
-async def fetch_brands():
+@validate_request(FetchBrandsRequest)  # Workaround: For POST, validator decorator goes after route decorator.
+async def fetch_brands(data: FetchBrandsRequest):
     # Setup job tracking.
     job_id = str(uuid.uuid4())
     requested_at = datetime.datetime.utcnow().isoformat() + "Z"
@@ -60,9 +69,9 @@ async def fetch_brands():
 
     # Fire and forget the processing task.
     # In this prototype, we await the task so the response includes processed data.
-    data = await asyncio.create_task(process_brands(job_id))
+    processed_data = await asyncio.create_task(process_brands(job_id))
 
-    if data is None:
+    if processed_data is None:
         response = {
             "success": False,
             "job_id": job_id,
@@ -73,13 +82,14 @@ async def fetch_brands():
         response = {
             "success": True,
             "job_id": job_id,
-            "data": data,
+            "data": processed_data,
             "message": "External source data fetched and processed successfully"
         }
         status_code = 200
 
     return jsonify(response), status_code
 
+# GET /brands does not require validation as no request parameters are expected.
 @app.route('/brands', methods=['GET'])
 async def get_brands():
     if cached_brands is None:

@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import aiohttp
 from dataclasses import dataclass
-from quart import Quart, jsonify
+from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ENTITY_VERSION
@@ -15,7 +15,12 @@ QuartSchema(app)
 # Startup initialization for cyoda service
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+    except Exception as e:
+        # Log error in production; here we simply print
+        print(f"Error during cyoda initialization: {e}")
+        raise
 
 # Dataclass for POST /api/categories/refresh request
 @dataclass
@@ -28,58 +33,93 @@ class SearchRequest:
     searchTerm: str
 
 # Workflow function to process category entity before persistence
-# This function can be expanded to include any asynchronous tasks, enrichment,
-# or secondary data retrieval/update as needed. It should only modify the entity state.
+# This function is executed asynchronously before the entity is saved.
+# It enriches the entity and can perform additional async tasks without affecting the controller.
 async def process_categories_workflow(entity):
-    # Add a timestamp and mark the entity as processed
-    entity["last_refresh"] = datetime.datetime.utcnow().isoformat()
-    entity["workflow_processed"] = True
-    # Additional async operations or modifications can be done here.
-    await asyncio.sleep(0.1)  # simulate async processing if needed
+    try:
+        # Mark entity as processed by adding a workflow flag and a processing timestamp
+        entity["workflow_processed"] = True
+        entity["workflow_timestamp"] = datetime.datetime.utcnow().isoformat()
+        # For example, perform additional asynchronous tasks (simulate with a sleep)
+        await asyncio.sleep(0.1)
+        # Ensure that 'last_refresh' key exists; if not, set it (for consistency)
+        if "last_refresh" not in entity:
+            entity["last_refresh"] = datetime.datetime.utcnow().isoformat()
+    except Exception as e:
+        # In production, log the error appropriately
+        print(f"Error in workflow processing: {e}")
+        raise
     return entity
 
-# Async function to fetch external data and store it via entity_service
-# Logic for transforming or enriching data is delegated to the workflow function.
+# Async function to fetch external data, prepare entity, and store it using entity_service
 async def process_categories(force_refresh: bool):
-    # Fetch categories data from external API
     url = "https://api.practicesoftwaretesting.com/categories/tree"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            # Basic error handling is assumed; production code should handle errors robustly.
-            raw_data = await response.json()
+    raw_data = {}
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=10) as response:
+                if response.status != 200:
+                    # Handle non-200 responses appropriately
+                    raise Exception(f"Failed to fetch data. Status: {response.status}")
+                raw_data = await response.json()
+    except asyncio.TimeoutError:
+        raise Exception("External API call timed out.")
+    except Exception as e:
+        raise Exception(f"Error retrieving categories: {e}")
 
-    # Prepare the entity using raw data
+    # Validate and transform raw_data
+    categories = []
+    if isinstance(raw_data, dict) and "categories" in raw_data:
+        categories = raw_data.get("categories", [])
+    else:
+        # If structure is unexpected, log and set categories to empty list
+        print("Unexpected data format received from external API.")
+    
+    # Build the entity to be persisted
     entity = {
-        "categories": raw_data.get("categories", [])
+        "categories": categories,
+        "last_refresh": datetime.datetime.utcnow().isoformat()
     }
-    # Persist the entity; the workflow function will update its state before persistence.
-    new_id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="categories",
-        entity_version=ENTITY_VERSION,
-        entity=entity,
-        workflow=process_categories_workflow
-    )
+
+    try:
+        # Persist the entity; workflow function will be applied before persistence.
+        new_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="categories",
+            entity_version=ENTITY_VERSION,
+            entity=entity,
+            workflow=process_categories_workflow
+        )
+    except Exception as e:
+        # In production, log the persistence error
+        raise Exception(f"Error storing entity: {e}")
+    
     return new_id
 
 # Helper function to recursively search for a category in the hierarchical tree
 def search_category(tree, search_term):
+    if not isinstance(tree, list):
+        return None
     for category in tree:
-        if str(category.get("id", "")).lower() == search_term.lower() or search_term.lower() in category.get("name", "").lower():
+        # Convert id to string for comparison and perform case-insensitive search on name
+        cat_id = str(category.get("id", "")).lower()
+        cat_name = category.get("name", "").lower()
+        if search_term.lower() == cat_id or search_term.lower() in cat_name:
             return category
         sub_categories = category.get("subCategories", [])
-        if sub_categories:
-            result = search_category(sub_categories, search_term)
-            if result:
-                return result
+        result = search_category(sub_categories, search_term)
+        if result:
+            return result
     return None
 
 # Endpoint to refresh categories data by fetching from external source
 @app.route("/api/categories/refresh", methods=["POST"])
 @validate_request(RefreshRequest)
 async def refresh_categories(data: RefreshRequest):
-    new_id = await process_categories(data.forceRefresh)
-    # Return the id of the newly stored item; retrieval is done with a separate endpoint.
+    try:
+        new_id = await process_categories(data.forceRefresh)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
     return jsonify({
         "status": "success",
         "id": new_id
@@ -91,20 +131,22 @@ async def refresh_categories(data: RefreshRequest):
 async def search_categories(data: SearchRequest):
     if not data.searchTerm:
         return jsonify({"status": "error", "message": "searchTerm is required"}), 400
+    try:
+        items = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model="categories",
+            entity_version=ENTITY_VERSION
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Error retrieving data: {e}"}), 500
 
-    # Retrieve all stored category items using the external entity service
-    items = await entity_service.get_items(
-        token=cyoda_token,
-        entity_model="categories",
-        entity_version=ENTITY_VERSION
-    )
     if not items:
         return jsonify({
             "status": "error",
             "message": "No category data available. Please refresh first."
         }), 404
 
-    # Assume the latest stored item is the one we need for search
+    # Assume that the latest stored item is the most relevant for search
     latest_item = items[-1]
     tree = latest_item.get("categories", [])
     result = search_category(tree, data.searchTerm)
@@ -116,11 +158,15 @@ async def search_categories(data: SearchRequest):
 # Endpoint to return the current categories data from the external store
 @app.route("/api/categories", methods=["GET"])
 async def get_categories():
-    items = await entity_service.get_items(
-        token=cyoda_token,
-        entity_model="categories",
-        entity_version=ENTITY_VERSION
-    )
+    try:
+        items = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model="categories",
+            entity_version=ENTITY_VERSION
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Error retrieving data: {e}"}), 500
+
     if not items:
         return jsonify({
             "status": "error",

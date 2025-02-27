@@ -1,8 +1,9 @@
 import asyncio
 from datetime import datetime
+from dataclasses import dataclass
 from quart import Quart, jsonify, request
 import aiohttp
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -13,6 +14,11 @@ brand_data_cache = {}
 # Local in-memory job tracker.
 entity_job = {}
 
+@dataclass
+class FetchBrandsRequest:
+    # TODO: Define any request parameters if necessary; currently using dummy field.
+    dummy: str = ""  # Using a dummy field as a workaround for empty body validation.
+
 async def process_entity(entity_job, job_id, data):
     # TODO: Implement any additional processing or transformation if necessary.
     await asyncio.sleep(0)  # Simulate processing delay if needed.
@@ -22,7 +28,8 @@ async def process_entity(entity_job, job_id, data):
     entity_job[job_id]["status"] = "success"
 
 @app.route('/brands/fetch', methods=['POST'])
-async def fetch_brands():
+@validate_request(FetchBrandsRequest)  # NOTE: For POST requests, validate_request is placed after the route decorator (workaround for quart-schema issue).
+async def fetch_brands(data: FetchBrandsRequest):
     # Generate a job_id based on current timestamp.
     job_id = str(datetime.utcnow().timestamp())
     requested_at = datetime.utcnow().isoformat()
@@ -36,9 +43,9 @@ async def fetch_brands():
                 headers={'accept': 'application/json'}
             ) as resp:
                 if resp.status == 200:
-                    data = await resp.json()
+                    api_data = await resp.json()
                     # Fire and forget the processing task.
-                    await asyncio.create_task(process_entity(entity_job, job_id, data))
+                    await asyncio.create_task(process_entity(entity_job, job_id, api_data))
                 else:
                     entity_job[job_id]["status"] = "error"
                     return jsonify({
@@ -60,7 +67,7 @@ async def fetch_brands():
 
 @app.route('/brands', methods=['GET'])
 async def get_brands():
-    # Retrieve data from the local cache.
+    # No request validation is added here since GET requests without parameters do not require it.
     if 'brands' in brand_data_cache:
         return jsonify(brand_data_cache['brands'])
     else:

@@ -31,13 +31,26 @@ class FetchBrandsRequest:
 EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/brands"
 
 async def workflow_brands(entity):
-    # This workflow function is applied to the entity before persistence.
-    # For instance, we add a timestamp to indicate when the entity was processed.
+    # Workflow function to be applied asynchronously right before persistence.
+    # Move any business logic or async tasks here to keep the endpoint lightweight.
     try:
+        # Example: Add a timestamp attribute to the entity.
         entity["workflow_processed_at"] = datetime.datetime.utcnow().isoformat() + "Z"
+        
+        # Additional asynchronous tasks (fire-and-forget) can be invoked here.
+        # For instance, log additional info, trigger notifications, etc.
+        asyncio.create_task(async_logging(entity))
+        
+        # Further modifications on entity can be made as needed.
     except Exception as e:
         logging.exception("Error in workflow processing")
     return entity
+
+async def async_logging(entity):
+    # Example fire-and-forget async task. This function can log,
+    # notify external services, or perform other async operations.
+    await asyncio.sleep(0)  # Simulate async work
+    logging.info(f"Entity has been processed in workflow: {entity.get('workflow_processed_at')}")
 
 async def process_brands():
     try:
@@ -48,15 +61,16 @@ async def process_brands():
                     return None
 
                 external_data = await response.json()
-                # Additional calculations or data transformations can be added here.
+                # Minimal processing here; further transformation should be done in the workflow.
                 processed_data = external_data
 
-                # Persist the processed data via the external entity_service.
+                # Persist the processed data via entity_service.
+                # The workflow function will be applied to the entity before it is persisted.
                 item_id = await entity_service.add_item(
                     token=cyoda_token,
                     entity_model="brands",
                     entity_version=ENTITY_VERSION,  # always use this constant
-                    entity=processed_data,  # the validated data object
+                    entity=processed_data,  # the raw external data object
                     workflow=workflow_brands  # Workflow function applied to the entity asynchronously before persistence.
                 )
                 return item_id
@@ -65,11 +79,11 @@ async def process_brands():
         logging.exception("Error processing brands")
         return None
 
-# For POST endpoints, due to an issue in Quart Schema, the @validate_request decorator is placed after the route decorator.
+# For POST endpoints, due to an issue in Quart Schema the @validate_request decorator is placed after the route decorator.
 @app.route('/brands/fetch', methods=['POST'])
 @validate_request(FetchBrandsRequest)  # Workaround: For POST, validator decorator goes after route decorator.
 async def fetch_brands(data: FetchBrandsRequest):
-    # Trigger external processing and storage.
+    # The endpoint only triggers the external data fetching and persistence.
     item_id = await process_brands()
 
     if item_id is None:

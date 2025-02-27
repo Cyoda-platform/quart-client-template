@@ -1,8 +1,9 @@
 import asyncio
 import aiohttp
 import datetime
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
@@ -10,17 +11,24 @@ QuartSchema(app)  # Initialize QuartSchema
 # In-memory cache for persistence (mock persistence)
 BRANDS_CACHE = []
 
+# Dataclass for POST /fetch-brands request
+@dataclass
+class FetchBrandsRequest:
+    fetchType: str  # Optional: defines fetch mode; currently expected to be "all"
 
+# Workaround for quart-schema ordering issue:
+# For POST requests, the @app.route decorator must appear before @validate_request.
 @app.route('/fetch-brands', methods=['POST'])
-async def fetch_brands():
+@validate_request(FetchBrandsRequest)
+async def fetch_brands(data: FetchBrandsRequest):
     """
     POST /fetch-brands
     Triggers the external API call and fires a background task to process the data.
     """
-    # TODO: Generate a unique job_id (using UUID or similar) if required
+    # TODO: Generate a unique job_id (using UUID or similar) if required.
     job_id = "job_placeholder"
 
-    # Create a simple entity job dict to simulate job processing information
+    # Create a simple entity job dict to simulate job processing information.
     requested_at = datetime.datetime.utcnow()
     entity_job = {
         job_id: {
@@ -30,14 +38,13 @@ async def fetch_brands():
     }
 
     # Fire and forget the processing task.
-    # TODO: If additional processing details are required, update the process_entity accordingly.
+    # TODO: If additional processing details are required, update process_entity accordingly.
     asyncio.create_task(process_entity(entity_job, job_id))
 
     return jsonify({
         "message": "Brands fetching initiated.",
         "job": entity_job[job_id]
     })
-
 
 async def process_entity(entity_job, job_id):
     """
@@ -64,7 +71,6 @@ async def process_entity(entity_job, job_id):
         # TODO: Add logging or error handling here.
         print(f"Error processing entity job {job_id}: {e}")
 
-
 @app.route('/brands', methods=['GET'])
 async def get_brands():
     """
@@ -75,7 +81,6 @@ async def get_brands():
         return jsonify(BRANDS_CACHE)
     else:
         return jsonify({"message": "No brands found."})
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

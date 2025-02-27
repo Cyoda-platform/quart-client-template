@@ -25,34 +25,39 @@ class FetchBrandsRequest:
     dummy: str = ""
 
 # Workflow function applied to the entity before persistence.
-async def process_brands(entity_data):
-    # Modify the entity data as needed before it is persisted.
-    entity_data['workflow_processed'] = True
-    entity_data['processed_at'] = datetime.utcnow().isoformat()
-    return entity_data
+# Asynchronous tasks or modifications can be added here to update the entity state.
+async def process_brands(entity):
+    # Example asynchronous processing: add attributes to the entity.
+    # You can include any async logic here if needed.
+    entity["workflow_processed"] = True
+    entity["processed_at"] = datetime.utcnow().isoformat()
+    return entity
 
-async def process_entity(entity_job, job_id, data):
-    # Use external service to add the item with a workflow processing step.
-    item_id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="brands",
-        entity_version=ENTITY_VERSION,  # always use this constant
-        entity=data,  # the validated data object
-        workflow=process_brands  # Workflow function applied to the entity asynchronously before persistence.
-    )
-    # Update job status to success and store the item id for retrieval via separate endpoint.
-    entity_job[job_id]["status"] = "success"
-    entity_job[job_id]["id"] = item_id
+# Background task to add the brand entity with the workflow processing.
+async def create_brand_item(job_id, data):
+    try:
+        item_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="brands",
+            entity_version=ENTITY_VERSION,  # always use this constant
+            entity=data,  # the original external data
+            workflow=process_brands  # Workflow function for asynchronous processing before persistence.
+        )
+        entity_job[job_id]["status"] = "success"
+        entity_job[job_id]["id"] = item_id
+    except Exception as e:
+        entity_job[job_id]["status"] = "error"
+        entity_job[job_id]["message"] = str(e)
 
 @app.route('/brands/fetch', methods=['POST'])
 @validate_request(FetchBrandsRequest)
 async def fetch_brands(data: FetchBrandsRequest):
-    # Generate a job_id based on current timestamp.
+    # Generate a unique job_id based on the current timestamp.
     job_id = str(datetime.utcnow().timestamp())
     requested_at = datetime.utcnow().isoformat()
     entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
 
-    # Using aiohttp.ClientSession for the external API call.
+    # Fetch external API data.
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(
@@ -61,8 +66,8 @@ async def fetch_brands(data: FetchBrandsRequest):
             ) as resp:
                 if resp.status == 200:
                     api_data = await resp.json()
-                    # Fire and forget the processing task.
-                    await asyncio.create_task(process_entity(entity_job, job_id, api_data))
+                    # Delegate entity processing using the workflow function.
+                    asyncio.create_task(create_brand_item(job_id, api_data))
                 else:
                     entity_job[job_id]["status"] = "error"
                     return jsonify({
@@ -78,7 +83,7 @@ async def fetch_brands(data: FetchBrandsRequest):
 
     return jsonify({
         "status": "success",
-        "message": "External data retrieved and processed successfully.",
+        "message": "External data retrieved. Entity processing initiated.",
         "jobId": job_id
     })
 

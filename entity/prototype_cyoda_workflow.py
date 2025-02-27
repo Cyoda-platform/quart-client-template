@@ -20,20 +20,33 @@ async def startup():
 
 # Workflow function applied to the entity asynchronously before persistence.
 # This function takes the entity data as the only argument.
+# It encapsulates additional asynchronous processing logic that might include fire-and-forget tasks.
 async def process_brands(entity_data):
-    # Example: add a processed timestamp to the entity data. Modify the entity data as needed.
+    # Example: Add a processed timestamp to the entity data.
     entity_data['processed_at'] = datetime.utcnow().isoformat() + "Z"
-    # Simulate asynchronous processing if needed.
-    await asyncio.sleep(0)
+
+    # Example: Extract a summary (e.g., count of brands) and add it as a supplementary entity.
+    # Note: We use a different entity_model ("brands_summary") to avoid recursion.
+    if isinstance(entity_data, list):
+        summary = {"brand_count": len(entity_data), "logged_at": datetime.utcnow().isoformat() + "Z"}
+        # Add supplementary entity asynchronously (fire-and-forget style).
+        await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="brands_summary",
+            entity_version=ENTITY_VERSION,
+            entity=summary,
+            workflow=None  # No workflow for supplementary entity
+        )
+
+    # Additional asynchronous tasks can be invoked here.
+    await asyncio.sleep(0)  # Placeholder for async operations
 
 # Data class for validating POST request body for /api/brands/fetch
 @dataclass
 class FetchRequest:
     force_refresh: bool = False
 
-# For POST endpoints, the route decorator comes first followed by the validate_request decorator.
-# This is a workaround for an issue in the Quart Schema library.
-
+# The endpoint remains thin, deferring processing logic to the workflow function.
 @app.route('/api/brands/fetch', methods=['POST'])
 @validate_request(FetchRequest)  # Validate request body after route decorator for POST endpoints
 async def fetch_brands(data: FetchRequest):
@@ -50,12 +63,13 @@ async def fetch_brands(data: FetchRequest):
         # TODO: Enhance exception handling based on actual failure modes.
         return jsonify({"status": "error", "message": "Exception occurred while fetching data", "detail": str(e)}), 500
 
-    # Add the fetched data as a new entity item with the workflow function applied.
+    # Persist the fetched data. The workflow function process_brands will be invoked
+    # asynchronously before the entity is persisted, performing any additional logic.
     new_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="brands",
         entity_version=ENTITY_VERSION,  # always use this constant
-        entity=external_data,  # the validated data object (external data)
+        entity=external_data,  # the entity data fetched from external API
         workflow=process_brands  # Workflow function applied to the entity before persistence.
     )
 
@@ -63,12 +77,12 @@ async def fetch_brands(data: FetchRequest):
         "status": "success",
         "message": "Brand data fetch initiated. Data added with external service.",
         "job_id": new_id,
-        "data_count": len(external_data)  # number of brands processed
+        "data_count": len(external_data) if isinstance(external_data, list) else 0
     })
 
 @app.route('/api/brands', methods=['GET'])
 async def get_brands():
-    # Retrieve brand data from the external service
+    # Retrieve brand data from the external service.
     items = await entity_service.get_items(
         token=cyoda_token,
         entity_model="brands",

@@ -2,10 +2,12 @@ import asyncio
 import json
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
+from typing import List, Optional
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
@@ -18,6 +20,25 @@ subscriptions_cache = {}  # Key: subscriptionId, Value: subscription details
 EXTERNAL_API_URL = "https://api.sportsdata.io/v3/nba/scores/json/GamesByDate/2023-OCT-10"
 API_KEY = "YOUR_API_KEY"  # TODO: Replace with your API key for SportsData
 
+# Dataclasses for request validation
+@dataclass
+class ScoreConfig:
+    interval: int
+    date: Optional[str] = None
+
+@dataclass
+class ScoreFetchRequest:
+    fetchMode: str
+    config: ScoreConfig
+
+@dataclass
+class SubscriptionRequest:
+    email: str
+    preferences: List[str]
+
+# Workaround for Quart-Schema Validation Ordering:
+# For POST/PUT endpoints, the route decorator must come first, followed by @validate_request.
+# For GET endpoints with query parameters, @validate_querystring must be placed before the route decorator.
 
 async def fetch_external_scores():
     """Fetch scores from the external API using aiohttp.ClientSession."""
@@ -30,7 +51,6 @@ async def fetch_external_scores():
                 raise Exception("Failed to fetch external scores")
             data = await response.json()
             return data  # Expecting data to be a list of game objects
-
 
 async def process_scores(data):
     """
@@ -77,21 +97,21 @@ async def process_scores(data):
             print(f"Trigger notification for game {game_id} update.")
     return updated_games
 
-
+# POST endpoint: Route decorator comes first, then validate_request (workaround for Quart-Schema issue)
 @app.route("/api/v1/scores/fetch", methods=["POST"])
-async def fetch_scores():
+@validate_request(ScoreFetchRequest)
+async def fetch_scores(data: ScoreFetchRequest):
     """
     POST /api/v1/scores/fetch
     Triggers the external data retrieval, processes the scores,
     updates the internal cache, and triggers event notifications.
     """
-    req_data = await request.get_json()
-    fetch_mode = req_data.get("fetchMode", "manual")
-    config = req_data.get("config", {})
-    interval = config.get("interval", 60)
-    date_filter = config.get("date", None)  # Currently unused in mock, TODO: Implement filtering by date
+    # Access validated data from ScoreFetchRequest dataclass
+    fetch_mode = data.fetchMode
+    config = data.config
+    interval = config.interval
+    date_filter = config.date  # Currently unused in mock, TODO: Implement filtering by date
 
-    # Fire and forget the processing task.
     try:
         # Fetch external scores (using a placeholder call)
         external_data = await fetch_external_scores()
@@ -99,7 +119,6 @@ async def fetch_scores():
         # TODO: Implement retry mechanism and proper error logging
         return jsonify({"status": "error", "message": str(e)}), 500
 
-    # Process scores in background task
     updated_games = await process_scores(external_data)
     response = {
         "status": "success",
@@ -107,7 +126,7 @@ async def fetch_scores():
     }
     return jsonify(response)
 
-
+# GET endpoints: No request body, so no validation decorator is needed.
 @app.route("/api/v1/scores", methods=["GET"])
 async def get_scores():
     """
@@ -116,16 +135,16 @@ async def get_scores():
     """
     return jsonify(list(scores_cache.values()))
 
-
+# POST endpoint: Route decorator comes first, then validate_request (workaround)
 @app.route("/api/v1/subscriptions", methods=["POST"])
-async def create_subscription():
+@validate_request(SubscriptionRequest)
+async def create_subscription(data: SubscriptionRequest):
     """
     POST /api/v1/subscriptions
     Creates a new subscription for receiving email notifications.
     """
-    data = await request.get_json()
-    email = data.get("email")
-    preferences = data.get("preferences", [])
+    email = data.email
+    preferences = data.preferences
     if not email:
         return jsonify({"message": "Email is required"}), 400
 
@@ -139,7 +158,7 @@ async def create_subscription():
     subscriptions_cache[subscription_id] = subscription
     return jsonify({"subscriptionId": subscription_id, "message": "Subscription created successfully."})
 
-
+# GET endpoint: No request body, so no validation is required.
 @app.route("/api/v1/subscriptions", methods=["GET"])
 async def get_subscriptions():
     """
@@ -148,9 +167,10 @@ async def get_subscriptions():
     """
     return jsonify(list(subscriptions_cache.values()))
 
-
+# PUT endpoint: Route decorator comes first, then validate_request (workaround)
 @app.route("/api/v1/subscriptions/<subscription_id>", methods=["PUT"])
-async def update_subscription(subscription_id):
+@validate_request(SubscriptionRequest)
+async def update_subscription(data: SubscriptionRequest, subscription_id):
     """
     PUT /api/v1/subscriptions/{subscriptionId}
     Updates the subscription details.
@@ -158,16 +178,15 @@ async def update_subscription(subscription_id):
     if subscription_id not in subscriptions_cache:
         return jsonify({"message": "Subscription not found"}), 404
 
-    data = await request.get_json()
-    email = data.get("email")
-    preferences = data.get("preferences")
+    email = data.email
+    preferences = data.preferences
     if email:
         subscriptions_cache[subscription_id]["email"] = email
     if preferences is not None:
         subscriptions_cache[subscription_id]["preferences"] = preferences
     return jsonify({"subscriptionId": subscription_id, "message": "Subscription updated successfully."})
 
-
+# DELETE endpoint: No request body, so no validation is required.
 @app.route("/api/v1/subscriptions/<subscription_id>", methods=["DELETE"])
 async def delete_subscription(subscription_id):
     """
@@ -179,7 +198,6 @@ async def delete_subscription(subscription_id):
 
     del subscriptions_cache[subscription_id]
     return jsonify({"subscriptionId": subscription_id, "message": "Subscription deleted successfully."})
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

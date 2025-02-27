@@ -66,9 +66,8 @@ async def process_entity(entity_job, job_id):
                     data = await response.json()
                     # Iterate over each brand item and call the external service to add the item.
                     for item in data:
-                        # Call the external service add_item with a workflow parameter.
-                        # The workflow function (process_brands) is applied asynchronously to the entity
-                        # before persistence.
+                        # Instead of embedding asynchronous tasks here (fire and forget),
+                        # we delegate any additional async processing to the workflow function.
                         await entity_service.add_item(
                             token=cyoda_token,
                             entity_model="brands",
@@ -86,10 +85,20 @@ async def process_entity(entity_job, job_id):
 
 async def process_brands(entity):
     # Workflow function applied to the brand entity before persistence.
-    # Here we add a processed timestamp to the entity.
+    # Modify entity state directly and perform any async tasks to enrich the data.
     entity["processedAt"] = datetime.datetime.utcnow().isoformat()
-    # You can perform additional modifications as required.
+    # For example, fetch supplementary info asynchronously and add to the entity.
+    supplementary_info = await fetch_supplementary_info(entity)
+    entity["supplementaryInfo"] = supplementary_info
     return entity
+
+async def fetch_supplementary_info(entity):
+    # This asynchronous function simulates fetching extra data based on the brand's details.
+    # This is a placeholder for any asynchronous tasks (e.g., external API call).
+    await asyncio.sleep(0.1)  # Simulate async I/O delay
+    # Example: generate supplementary info based on the entity's "name" field.
+    name = entity.get("name", "unknown")
+    return {"info": f"Additional details based on {name}"}
 
 @app.route('/brands', methods=['GET'])
 async def get_brands():

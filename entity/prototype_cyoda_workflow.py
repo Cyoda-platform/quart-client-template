@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# entity/prototype_cyoda.py
 import asyncio
 import datetime
 import logging
@@ -7,50 +6,79 @@ import aiohttp
 
 from dataclasses import dataclass
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request  # For GET requests with querystring, use validate_querystring if needed.
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
 
+logging.basicConfig(level=logging.INFO)
+
 app = Quart(__name__)
-QuartSchema(app)  # Initialize the schema (data validations are dynamic)
+QuartSchema(app)  # Initialize schema for request validations
 
 # Startup initialization
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+    except Exception as e:
+        logging.exception("Error during startup initialization")
+
 
 # Dummy dataclass for POST request validation in /brands/fetch.
 @dataclass
 class FetchBrandsRequest:
-    # Dummy field; TODO: Add actual fields if parameters are needed.
+    # Dummy field; add actual fields if required.
     dummy: str = ""
+
 
 EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/brands"
 
-async def workflow_brands(entity):
-    # Workflow function to be applied asynchronously right before persistence.
-    # Move any business logic or async tasks here to keep the endpoint lightweight.
+async def async_logging(entity):
+    # Fire-and-forget async task example:
     try:
-        # Example: Add a timestamp attribute to the entity.
+        # Simulate additional asynchronous processing or external notifications.
+        await asyncio.sleep(0)
+        processed_at = entity.get("workflow_processed_at", "unknown time")
+        logging.info(f"Async Log: Entity processed at {processed_at}.")
+    except Exception as e:
+        logging.exception("Error in async_logging")
+
+
+async def workflow_brands(entity):
+    # Workflow function applied to the entity before persistence.
+    try:
+        # Add a processing timestamp to the entity.
         entity["workflow_processed_at"] = datetime.datetime.utcnow().isoformat() + "Z"
         
-        # Additional asynchronous tasks (fire-and-forget) can be invoked here.
-        # For instance, log additional info, trigger notifications, etc.
+        # Example of additional business logic:
+        # Validate that certain required fields exist. If not, add defaults.
+        if "status" not in entity:
+            entity["status"] = "new"
+        
+        # You can invoke any fire-and-forget asynchronous tasks here.
         asyncio.create_task(async_logging(entity))
         
-        # Further modifications on entity can be made as needed.
+        # Suppose we want to add supplemental data from an external service,
+        # ensure that the external call does not modify the current entity by using
+        # a secondary entity_model if needed. (This example is commented out.)
+        #
+        # supplemental_data = await fetch_supplemental_data()
+        # if supplemental_data:
+        #     await entity_service.add_item(
+        #         token=cyoda_token,
+        #         entity_model="brands_supplement",
+        #         entity_version=ENTITY_VERSION,
+        #         entity=supplemental_data,
+        #         workflow=lambda x: x  # No further workflow on supplemental entity.
+        #     )
+        
     except Exception as e:
-        logging.exception("Error in workflow processing")
+        logging.exception("Error in workflow_brands")
+    # Return the modified entity, which will be persisted.
     return entity
-
-async def async_logging(entity):
-    # Example fire-and-forget async task. This function can log,
-    # notify external services, or perform other async operations.
-    await asyncio.sleep(0)  # Simulate async work
-    logging.info(f"Entity has been processed in workflow: {entity.get('workflow_processed_at')}")
 
 async def process_brands():
     try:
@@ -60,32 +88,39 @@ async def process_brands():
                     logging.error(f"External API returned status {response.status}")
                     return None
 
-                external_data = await response.json()
-                # Minimal processing here; further transformation should be done in the workflow.
+                try:
+                    external_data = await response.json()
+                except Exception as je:
+                    logging.exception("Error parsing JSON from external API")
+                    return None
+
+                # Ensure external_data is a dict; if not, wrap it.
+                if not isinstance(external_data, dict):
+                    external_data = {"data": external_data}
+
+                # Minimal processing here; heavy lifting can be done in the workflow.
                 processed_data = external_data
 
-                # Persist the processed data via entity_service.
-                # The workflow function will be applied to the entity before it is persisted.
+                # Persist the processed data using entity_service.add_item.
+                # The workflow function will be applied to the entity before persistence.
                 item_id = await entity_service.add_item(
                     token=cyoda_token,
                     entity_model="brands",
-                    entity_version=ENTITY_VERSION,  # always use this constant
-                    entity=processed_data,  # the raw external data object
-                    workflow=workflow_brands  # Workflow function applied to the entity asynchronously before persistence.
+                    entity_version=ENTITY_VERSION,
+                    entity=processed_data,
+                    workflow=workflow_brands  # Asynchronously modify entity before storage.
                 )
                 return item_id
 
     except Exception as e:
-        logging.exception("Error processing brands")
+        logging.exception("Error in process_brands")
         return None
 
-# For POST endpoints, due to an issue in Quart Schema the @validate_request decorator is placed after the route decorator.
 @app.route('/brands/fetch', methods=['POST'])
-@validate_request(FetchBrandsRequest)  # Workaround: For POST, validator decorator goes after route decorator.
+@validate_request(FetchBrandsRequest)
 async def fetch_brands(data: FetchBrandsRequest):
-    # The endpoint only triggers the external data fetching and persistence.
+    # The controller is kept minimal; business logic is delegated.
     item_id = await process_brands()
-
     if item_id is None:
         response = {
             "success": False,
@@ -99,17 +134,23 @@ async def fetch_brands(data: FetchBrandsRequest):
             "message": "External source data fetched and stored successfully."
         }
         status_code = 200
-
     return jsonify(response), status_code
 
-# GET /brands retrieves data via the external entity_service.
 @app.route('/brands', methods=['GET'])
 async def get_brands():
-    items = await entity_service.get_items(
-        token=cyoda_token,
-        entity_model="brands",
-        entity_version=ENTITY_VERSION
-    )
+    try:
+        items = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model="brands",
+            entity_version=ENTITY_VERSION
+        )
+    except Exception as e:
+        logging.exception("Error retrieving brands data")
+        return jsonify({
+            "data": [],
+            "message": "Error retrieving data."
+        }), 500
+
     if not items:
         response = {
             "data": [],
@@ -117,12 +158,9 @@ async def get_brands():
         }
         status_code = 404
     else:
-        response = {
-            "data": items
-        }
+        response = {"data": items}
         status_code = 200
-
     return jsonify(response), status_code
 
 if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

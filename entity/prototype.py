@@ -2,19 +2,24 @@ import asyncio
 import aiohttp
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Import validate_request
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
+
+# Data class for validating POST request body for /api/brands/fetch
+@dataclass
+class FetchRequest:
+    force_refresh: bool = False
 
 # Global in-memory cache for brand data
 brands_cache = []
 
 # Global in-memory store for jobs (mock persistence)
 entity_job = {}
-
 
 async def process_entity(job, data):
     # Simulate some processing delay
@@ -26,11 +31,13 @@ async def process_entity(job, data):
     job["status"] = "completed"
     job["completedAt"] = datetime.utcnow().isoformat()
 
+# For POST endpoints, the route decorator comes first followed by the validate_request decorator.
+# This is a workaround for an issue in the Quart Schema library.
 
 @app.route('/api/brands/fetch', methods=['POST'])
-async def fetch_brands():
-    payload = await request.get_json(silent=True) or {}
-    force_refresh = payload.get("force_refresh", False)
+@validate_request(FetchRequest)  # Validate request body after route decorator for POST endpoints
+async def fetch_brands(data: FetchRequest):
+    force_refresh = data.force_refresh
 
     # Generate a unique job id and register the job
     job_id = str(uuid.uuid4())
@@ -61,10 +68,9 @@ async def fetch_brands():
 
 @app.route('/api/brands', methods=['GET'])
 async def get_brands():
-    # Return the cached/processed brand data.
+    # No validation is added for GET requests without parameters.
     global brands_cache
     return jsonify(brands_cache)
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

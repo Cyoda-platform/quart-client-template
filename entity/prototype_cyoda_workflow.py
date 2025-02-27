@@ -6,6 +6,7 @@ import aiohttp
 from dataclasses import dataclass
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request  # Also support for validate_querystring if needed
+from datetime import datetime
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -33,11 +34,20 @@ async def fetch_brands():
                 # TODO: handle non-200 responses appropriately
                 return None
 
+async def additional_processing():
+    # Example of an additional asynchronous task (fire and forget)
+    await asyncio.sleep(0.1)
+    # Placeholder for any additional tasks like logging, monitoring, etc.
+    return
+
 async def process_brands(entity):
     # Workflow function applied to the entity asynchronously before persistence.
-    # You can change entity state here, get and add entities with a different entity_model.
-    # For prototype, we assume entity is already well-formed.
-    await asyncio.sleep(0.1)  # Simulate processing delay
+    # Modify entity state directly.
+    entity['processed'] = True
+    entity['processed_at'] = datetime.utcnow().isoformat() + 'Z'
+    # Simulate additional async processing
+    await additional_processing()
+    # Return the modified entity which will be persisted.
     return entity
 
 # POST endpoint for ingesting brands data
@@ -50,14 +60,14 @@ async def post_brands(data: BrandsRequest):
     if brands_data is None:
         return jsonify({"error": "Failed to fetch brands data"}), 500
 
-    # Persist the raw data via the external entity_service.
-    # The workflow function process_brands will be applied asynchronously before persistence.
+    # Persist the raw fetched data via the external entity_service.
+    # The workflow function process_brands is applied asynchronously before persistence.
     new_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="brands",
         entity_version=ENTITY_VERSION,  # always use this constant
-        entity=brands_data,  # the raw fetched data
-        workflow=process_brands  # Workflow function applied to the entity asynchronously before persistence
+        entity=brands_data,  # raw fetched data
+        workflow=process_brands  # Workflow function for additional processing
     )
 
     # Return the resulting identifier (the full data can be retrieved later via GET endpoint)

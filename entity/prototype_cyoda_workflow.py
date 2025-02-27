@@ -4,7 +4,6 @@ from quart import Quart, request, jsonify
 from quart_schema import QuartSchema, validate_request  # Using validate_request as per quart-schema workaround
 import aiohttp
 import asyncio
-from uuid import uuid4
 from datetime import datetime
 
 from common.config.config import ENTITY_VERSION  # always use this constant
@@ -17,7 +16,12 @@ QuartSchema(app)
 # Startup initialization
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+    except Exception as e:
+        # Log startup error and raise to prevent running in faulty state.
+        print(f"Failed to initialize cyoda: {e}")
+        raise e
 
 # Data class for POST request validation
 @dataclass
@@ -25,66 +29,84 @@ class BrandRequest:
     filter: str = None  # Optional filter parameter; adjust fields as requirements are clarified.
 
 # Workflow function applied to 'brands' entity asynchronously before persistence.
-# This function can perform asynchronous operations and update the entity state.
+# This function takes the fetched entity data as its only argument and applies modifications.
 async def process_brands(entity: dict) -> dict:
-    # Add a processing timestamp to the entity.
-    entity["processed_at"] = datetime.utcnow().isoformat()
-    # Fire-and-forget asynchronous task; for example, notify an analytics service.
-    # We deliberately do not await this operation since it should not block persistence.
-    asyncio.create_task(notify_analytics(entity))
-    # Additional business logic can be applied here.
+    try:
+        # Add a processing timestamp to the entity
+        entity["processed_at"] = datetime.utcnow().isoformat()
+        # Optionally modify entity based on request parameters or other internal logic.
+        # E.g., apply transformation if 'filter' key exists.
+        if "filter" in entity and entity["filter"]:
+            entity["filtered"] = True
+
+        # Fire-and-forget asynchronous task: notify an external analytics or logging service.
+        asyncio.create_task(notify_analytics(entity))
+    except Exception as proc_ex:
+        # Log any processing errors, but do not halt the persistence
+        print(f"Error in process_brands workflow: {proc_ex}")
     return entity
 
 # Example of an asynchronous fire-and-forget function.
 async def notify_analytics(entity: dict):
-    async with aiohttp.ClientSession() as session:
-        try:
-            # Simulate an asynchronous call to an external analytics service.
-            await session.post(
+    try:
+        async with aiohttp.ClientSession() as session:
+            # Simulate an asynchronous POST request to an external analytics service.
+            async with session.post(
                 "https://api.analyticsservice.com/track",
-                json={"event": "brand_processed", "data": entity}
-            )
-        except Exception as ex:
-            # Log the exception or handle error as necessary.
-            print(f"Analytics notification failed: {ex}")
+                json={"event": "brand_processed", "data": entity},
+                timeout=aiohttp.ClientTimeout(total=10)
+            ) as resp:
+                if resp.status != 200:
+                    # Log non-successful analytics notifications.
+                    print(f"Analytics service responded with status {resp.status}")
+    except Exception as ex:
+        # Log exception for analytics without impacting main workflow.
+        print(f"Analytics notification failed: {ex}")
 
+# Function that fetches raw brand data and stores it using the entity_service.
 async def process_entity(params: dict) -> str:
-    async with aiohttp.ClientSession() as session:
-        try:
+    # Using a timeout to prevent hanging requests
+    timeout = aiohttp.ClientTimeout(total=15)
+    try:
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.get(
                 "https://api.practicesoftwaretesting.com/brands",
                 headers={"accept": "application/json"}
             ) as resp:
                 if resp.status == 200:
-                    data = await resp.json()
+                    try:
+                        data = await resp.json()
+                    except Exception as json_ex:
+                        raise Exception(f"Failed to parse JSON: {json_ex}") from json_ex
                     # All entity specific logic such as transformations or asynchronous tasks
-                    # can be moved to the workflow function (process_brands).
+                    # is moved into the workflow function (process_brands).
                     item_id = await entity_service.add_item(
                         token=cyoda_token,
                         entity_model="brands",
-                        entity_version=ENTITY_VERSION,  # always use this constant,
-                        entity=data,  # the raw data fetched,
-                        workflow=process_brands  # workflow function applied to the entity.
+                        entity_version=ENTITY_VERSION,  # always use this constant
+                        entity=data,  # the raw data fetched
+                        workflow=process_brands  # workflow function applied to the entity
                     )
                     return item_id
                 else:
                     raise Exception(f"Failed to fetch data, status code {resp.status}")
-        except Exception as e:
-            print(f"Error processing entity: {e}")
-            raise e
+    except Exception as e:
+        print(f"Error in process_entity: {e}")
+        raise e
 
 @app.route('/api/brands', methods=['POST'])
-@validate_request(BrandRequest)
+@validate_request(BrandRequest)  # For POST, validation decorator goes after the route decorator.
 async def fetch_and_process_brands(data: BrandRequest):
     req_params = data.__dict__
     try:
-        # The endpoint remains light as the business logic is delegated to workflow functions.
+        # Delegate core business logic to process_entity, keeping endpoint lean.
         item_id = await process_entity(req_params)
         response = {
             "status": "success",
-            "jobId": item_id
+            "jobId": item_id  # Expose the generated id for tracking purposes.
         }
     except Exception as e:
+        # Provide appropriate error details for debugging.
         response = {
             "status": "failed",
             "error": str(e)
@@ -94,6 +116,7 @@ async def fetch_and_process_brands(data: BrandRequest):
 @app.route('/api/brands', methods=['GET'])
 async def get_brands():
     try:
+        # Retrieve stored brands via the external entity_service.
         data = await entity_service.get_items(
             token=cyoda_token,
             entity_model="brands",

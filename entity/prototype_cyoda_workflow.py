@@ -41,21 +41,25 @@ class SubscriptionRequest:
     preferences: List[str]
 
 async def fetch_external_scores():
-    """Fetch scores from the external API using aiohttp.ClientSession."""
+    # Fetch scores from the external API using aiohttp.ClientSession.
     async with aiohttp.ClientSession() as session:
         headers = {"Ocp-Apim-Subscription-Key": API_KEY}
         async with session.get(EXTERNAL_API_URL, headers=headers) as response:
             if response.status != 200:
-                # TODO: Implement better error handling and retry logic.
-                raise Exception("Failed to fetch external scores")
+                # Handle non-200 responses
+                raise Exception("Failed to fetch external scores, status code: " + str(response.status))
             data = await response.json()
             return data  # Expecting data to be a list of game objects
 
 async def send_score_notification(entity):
     # Fire-and-forget async notification (e.g., sending email)
-    # This is a placeholder for sending an actual email notification.
-    await asyncio.sleep(0.1)
-    print(f"Notifying subscribers about game {entity.get('gameId')} update.")
+    try:
+        # Simulate sending notification with a small delay
+        await asyncio.sleep(0.1)
+        print(f"Notifying subscribers about game {entity.get('gameId')} update.")
+    except Exception as e:
+        # Log error, do not crash workflow
+        print(f"Notification error for game {entity.get('gameId')}: {e}")
 
 async def process_scores_entity(entity):
     # Workflow function for scores entity.
@@ -71,16 +75,15 @@ async def process_subscriptions_entity(entity):
     # Workflow function for subscriptions entity.
     # Mark the entity as workflow processed.
     entity["workflowProcessed"] = True
-    # You can add additional asynchronous tasks here if needed.
+    # In future you can add secondary tasks here (e.g., validation against external service)
     return entity
 
 async def process_scores(data):
     """
     Process the fetched external scores.
-    For each game, check if it exists in the external repository via entity_service.
-    If it does not exist or if significant changes are detected,
-    add or update the game record accordingly.
-    All asynchronous tasks (like sending notifications) are invoked via the workflow.
+    For each game, check if it exists in the external repository.
+    If not or if significant changes are detected, add or update the game record.
+    All asynchronous tasks (like sending notifications) are decoupled via workflow.
     """
     updated_games = []
     for game in data:
@@ -88,7 +91,7 @@ async def process_scores(data):
         if game_id is None:
             continue
 
-        # Build the new record from external data
+        # Build a new record from the external data
         new_record = {
             "gameId": game_id,
             "awayTeam": game.get("AwayTeam"),
@@ -110,22 +113,24 @@ async def process_scores(data):
             existing = None
 
         if not existing:
-            # New game record: mark for event notification.
+            # New game record, mark as event triggered.
             new_record["eventTriggered"] = True
+            # Persist new record with workflow processing
             await entity_service.add_item(
                 token=cyoda_token,
                 entity_model="scores",
                 entity_version=ENTITY_VERSION,
                 entity=new_record,
-                workflow=process_scores_entity  # Workflow processing before persistence.
+                workflow=process_scores_entity
             )
             significant_change = True
         else:
-            # Check for significant changes by comparing scores and status.
+            # Check for significant changes comparing record fields
             if (game.get("AwayTeamScore") != existing.get("awayTeamScore") or
                 game.get("HomeTeamScore") != existing.get("homeTeamScore") or
                 game.get("Status") != existing.get("Status")):
                 new_record["eventTriggered"] = True
+                # Update existing record; update_item may not support workflow so workflow is applied only on add.
                 await entity_service.update_item(
                     token=cyoda_token,
                     entity_model="scores",
@@ -139,14 +144,14 @@ async def process_scores(data):
             updated_games.append(new_record)
     return updated_games
 
-# POST endpoint: Triggers the external data retrieval and processing.
+# POST endpoint: Triggers external data retrieval and processing.
 @app.route("/api/v1/scores/fetch", methods=["POST"])
 @validate_request(ScoreFetchRequest)
 async def fetch_scores(data: ScoreFetchRequest):
     """
     POST /api/v1/scores/fetch
-    Triggers the external data retrieval, processes the scores,
-    and triggers event notifications via workflow logic.
+    Triggers external data retrieval, processes scores data,
+    and fires off notifications via workflow logic.
     """
     try:
         external_data = await fetch_external_scores()
@@ -160,12 +165,12 @@ async def fetch_scores(data: ScoreFetchRequest):
     }
     return jsonify(response)
 
-# GET endpoint for scores: Retrieve scores from external service.
+# GET endpoint for scores: Retrieves scores.
 @app.route("/api/v1/scores", methods=["GET"])
 async def get_scores():
     """
     GET /api/v1/scores
-    Retrieves the current NBA game score data from the external service.
+    Retrieves current NBA game score data.
     """
     try:
         scores = await entity_service.get_items(
@@ -177,13 +182,13 @@ async def get_scores():
         return jsonify({"message": str(e)}), 500
     return jsonify(scores)
 
-# POST endpoint: Create subscription using external service.
+# POST endpoint: Creates a subscription.
 @app.route("/api/v1/subscriptions", methods=["POST"])
 @validate_request(SubscriptionRequest)
 async def create_subscription(data: SubscriptionRequest):
     """
     POST /api/v1/subscriptions
-    Creates a new subscription for receiving email notifications.
+    Creates a new subscription for email notifications.
     """
     if not data.email:
         return jsonify({"message": "Email is required"}), 400
@@ -199,18 +204,19 @@ async def create_subscription(data: SubscriptionRequest):
             entity_model="subscriptions",
             entity_version=ENTITY_VERSION,
             entity=subscription,
-            workflow=process_subscriptions_entity  # Workflow processing before persistence.
+            workflow=process_subscriptions_entity
         )
     except Exception as e:
         return jsonify({"message": str(e)}), 500
+
     return jsonify({"subscriptionId": subscription_id, "message": "Subscription created successfully."})
 
-# GET endpoint: Retrieve subscriptions from external service.
+# GET endpoint: Retrieves subscriptions.
 @app.route("/api/v1/subscriptions", methods=["GET"])
 async def get_subscriptions():
     """
     GET /api/v1/subscriptions
-    Retrieve a list of active subscriptions.
+    Retrieves a list of active subscriptions.
     """
     try:
         subscriptions = await entity_service.get_items(
@@ -222,13 +228,13 @@ async def get_subscriptions():
         return jsonify({"message": str(e)}), 500
     return jsonify(subscriptions)
 
-# PUT endpoint: Update subscription using external service.
+# PUT endpoint: Updates a subscription.
 @app.route("/api/v1/subscriptions/<subscription_id>", methods=["PUT"])
 @validate_request(SubscriptionRequest)
 async def update_subscription(data: SubscriptionRequest, subscription_id):
     """
     PUT /api/v1/subscriptions/{subscriptionId}
-    Updates the subscription details.
+    Updates subscription details.
     """
     try:
         existing = await entity_service.get_item(
@@ -248,6 +254,7 @@ async def update_subscription(data: SubscriptionRequest, subscription_id):
         updated_subscription["email"] = data.email
     if data.preferences is not None:
         updated_subscription["preferences"] = data.preferences
+    updated_subscription["updatedAt"] = datetime.utcnow().isoformat() + "Z"
 
     try:
         await entity_service.update_item(
@@ -262,7 +269,7 @@ async def update_subscription(data: SubscriptionRequest, subscription_id):
 
     return jsonify({"subscriptionId": subscription_id, "message": "Subscription updated successfully."})
 
-# DELETE endpoint: Delete subscription using external service.
+# DELETE endpoint: Deletes a subscription.
 @app.route("/api/v1/subscriptions/<subscription_id>", methods=["DELETE"])
 async def delete_subscription(subscription_id):
     """

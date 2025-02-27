@@ -1,13 +1,24 @@
 import asyncio
 import datetime
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)
 
-# Global cache for category data
+# Dataclass for POST /api/categories/refresh request
+@dataclass
+class RefreshRequest:
+    forceRefresh: bool = False
+
+# Dataclass for POST /api/categories/search request
+@dataclass
+class SearchRequest:
+    searchTerm: str
+
+# Global cache for category data (mock persistence)
 categories_cache = {
     "categories": None,
     "last_refresh": None,
@@ -45,11 +56,11 @@ def search_category(tree, search_term):
     return None
 
 @app.route("/api/categories/refresh", methods=["POST"])
-async def refresh_categories():
-    data = await request.get_json() or {}
-    force_refresh = data.get("forceRefresh", False)
-    # Fire and forget the processing task. In a real implementation, you might want to track
-    # and return the job status.
+@validate_request(RefreshRequest)  # For POST, validation comes after route (workaround for library issue)
+async def refresh_categories(data: RefreshRequest):
+    force_refresh = data.forceRefresh
+    # Fire and forget the processing task.
+    # In a real implementation, you might want to track and return the job status.
     asyncio.create_task(process_categories(force_refresh))
     # Return immediately to verify UX; processing happens in the background.
     return jsonify({
@@ -58,9 +69,9 @@ async def refresh_categories():
     })
 
 @app.route("/api/categories/search", methods=["POST"])
-async def search_categories():
-    data = await request.get_json() or {}
-    search_term = data.get("searchTerm", "")
+@validate_request(SearchRequest)  # For POST, validation comes after route (workaround for library issue)
+async def search_categories(data: SearchRequest):
+    search_term = data.searchTerm
     if not search_term:
         return jsonify({"status": "error", "message": "searchTerm is required"}), 400
 
@@ -90,6 +101,9 @@ async def get_categories():
         "categories": tree,
         "last_refresh": categories_cache.get("last_refresh")
     })
+
+# Note: GET endpoints do not require validate_request/validate_querystring if no query parameters are expected.
+# For GET requests with query parameters, validation should be placed first (workaround for library issue).
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

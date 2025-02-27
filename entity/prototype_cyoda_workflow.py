@@ -22,14 +22,23 @@ async def startup():
 # This function takes the entity data as the only argument.
 # It encapsulates additional asynchronous processing logic that might include fire-and-forget tasks.
 async def process_brands(entity_data):
-    # Example: Add a processed timestamp to the entity data.
-    entity_data['processed_at'] = datetime.utcnow().isoformat() + "Z"
-
-    # Example: Extract a summary (e.g., count of brands) and add it as a supplementary entity.
-    # Note: We use a different entity_model ("brands_summary") to avoid recursion.
-    if isinstance(entity_data, list):
-        summary = {"brand_count": len(entity_data), "logged_at": datetime.utcnow().isoformat() + "Z"}
-        # Add supplementary entity asynchronously (fire-and-forget style).
+    try:
+        # Add a processed timestamp to the entity data.
+        entity_data['processed_at'] = datetime.utcnow().isoformat() + "Z"
+        
+        # Example: Validate that entity_data is a list; if not, convert it if possible.
+        if not isinstance(entity_data, list):
+            # Log or raise error if needed; here we try to wrap it in a list.
+            entity_data = [entity_data]
+        
+        # Example: Compute a summary of brands and add it as a supplementary entity.
+        summary = {
+            "brand_count": len(entity_data),
+            "logged_at": datetime.utcnow().isoformat() + "Z",
+            "summary_id": str(uuid.uuid4())  # Unique identifier for the summary
+        }
+        # Add supplementary entity asynchronously.
+        # This must be done with a different entity_model to avoid recursion.
         await entity_service.add_item(
             token=cyoda_token,
             entity_model="brands_summary",
@@ -37,9 +46,26 @@ async def process_brands(entity_data):
             entity=summary,
             workflow=None  # No workflow for supplementary entity
         )
+    
+        # Additional asynchronous fire-and-forget tasks can be triggered here.
+        # For example, sending notifications or caching data.
+        asyncio.create_task(_fire_and_forget_task(entity_data))
+    
+    except Exception as e:
+        # In production, proper logging should be added.
+        # Avoid raising exceptions here to prevent disruption of the persistence process.
+        print(f"Error in processing workflow for brands: {e}")
+    # Return is not necessary as the modifications made on entity_data will be persisted.
 
-    # Additional asynchronous tasks can be invoked here.
-    await asyncio.sleep(0)  # Placeholder for async operations
+# Example of an additional asynchronous fire-and-forget task.
+async def _fire_and_forget_task(entity_data):
+    try:
+        # Simulate additional asynchronous processing.
+        await asyncio.sleep(0.1)
+        # Additional logic can be added here, e.g., send notification or update cache.
+    except Exception as e:
+        # Errors in fire-and-forget tasks should be logged but not raised.
+        print(f"Error in fire-and-forget task: {e}")
 
 # Data class for validating POST request body for /api/brands/fetch
 @dataclass
@@ -56,38 +82,61 @@ async def fetch_brands(data: FetchRequest):
         async with aiohttp.ClientSession() as session:
             async with session.get("https://api.practicesoftwaretesting.com/brands", headers={"accept": "application/json"}) as resp:
                 if resp.status != 200:
-                    # TODO: Add better error handling and logging as needed.
-                    return jsonify({"status": "error", "message": "Failed to fetch brand data from external API"}), resp.status
+                    # Return error if external API call fails.
+                    return jsonify({
+                        "status": "error",
+                        "message": "Failed to fetch brand data from external API"
+                    }), resp.status
                 external_data = await resp.json()
     except Exception as e:
-        # TODO: Enhance exception handling based on actual failure modes.
-        return jsonify({"status": "error", "message": "Exception occurred while fetching data", "detail": str(e)}), 500
+        # Handle exceptions from the external API call.
+        return jsonify({
+            "status": "error",
+            "message": "Exception occurred while fetching data",
+            "detail": str(e)
+        }), 500
 
     # Persist the fetched data. The workflow function process_brands will be invoked
     # asynchronously before the entity is persisted, performing any additional logic.
-    new_id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="brands",
-        entity_version=ENTITY_VERSION,  # always use this constant
-        entity=external_data,  # the entity data fetched from external API
-        workflow=process_brands  # Workflow function applied to the entity before persistence.
-    )
+    try:
+        new_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="brands",
+            entity_version=ENTITY_VERSION,  # always use this constant
+            entity=external_data,  # the entity data fetched from external API
+            workflow=process_brands  # Workflow function applied to the entity before persistence.
+        )
+    except Exception as e:
+        # Catch any exception that occurs during the persistence process.
+        return jsonify({
+            "status": "error",
+            "message": "Failed to add brand data",
+            "detail": str(e)
+        }), 500
 
     return jsonify({
         "status": "success",
         "message": "Brand data fetch initiated. Data added with external service.",
         "job_id": new_id,
-        "data_count": len(external_data) if isinstance(external_data, list) else 0
+        "data_count": len(external_data) if isinstance(external_data, list) else 1
     })
 
 @app.route('/api/brands', methods=['GET'])
 async def get_brands():
-    # Retrieve brand data from the external service.
-    items = await entity_service.get_items(
-        token=cyoda_token,
-        entity_model="brands",
-        entity_version=ENTITY_VERSION,
-    )
+    try:
+        # Retrieve brand data from the external service.
+        items = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model="brands",
+            entity_version=ENTITY_VERSION,
+        )
+    except Exception as e:
+        # Handle errors during data retrieval.
+        return jsonify({
+            "status": "error",
+            "message": "Failed to retrieve brands",
+            "detail": str(e)
+        }), 500
     return jsonify(items)
 
 if __name__ == '__main__':

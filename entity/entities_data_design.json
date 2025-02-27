@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "categories", "entity_data_example": {"categories": [{"id": 1, "name": "Category Name", "subCategories": [{"id": 11, "name": "Sub-category Name", "subCategories": []}]}], "last_refresh": "2023-10-01T12:00:00Z"}}]}

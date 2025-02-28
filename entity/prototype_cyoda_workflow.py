@@ -11,10 +11,28 @@ from common.repository.cyoda.cyoda_init import init_cyoda
 app = Quart(__name__)
 QuartSchema(app)  # One-liner setup for QuartSchema
 
+SUPPLEMENTARY_API_URL = "https://api.practicesoftwaretesting.com/supplementary/info"
+
 # Workflow function applied to categories data before persistence
 async def process_categories(entity_data):
-    # Example: Append a UTC timestamp to the entity data
+    # Append a UTC timestamp to the entity data
     entity_data['processed_at'] = datetime.utcnow().isoformat() + 'Z'
+    # Fire-and-forget asynchronous task: fetch supplementary data and add it to entity_data
+    async def fetch_supplementary():
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(SUPPLEMENTARY_API_URL) as resp:
+                    if resp.status == 200:
+                        supplementary = await resp.json()
+                        # Modify entity data directly (allowed modification on current entity)
+                        entity_data['supplementary'] = supplementary
+                    else:
+                        entity_data['supplementary_error'] = f"Status {resp.status}"
+        except Exception as e:
+            entity_data['supplementary_error'] = str(e)
+    # Schedule the supplementary task but do not await it to avoid delaying persistence
+    asyncio.create_task(fetch_supplementary())
+    # Additional transformation logic can be applied here if needed.
     return entity_data
 
 # Startup hook to initialize external service
@@ -53,8 +71,6 @@ def find_category(categories, query):
 async def fetch_categories(data: FetchCategoriesRequest):
     refresh = data.refresh
 
-    # In this refactored version we do not use a local cache.
-    # Always fetch from the external API and add as a new item via entity_service.
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(EXTERNAL_API_URL) as resp:
@@ -62,19 +78,18 @@ async def fetch_categories(data: FetchCategoriesRequest):
                     return jsonify({"status": "error", "message": "Failed to fetch data from external API"}), 500
                 raw_data = await resp.json()
 
-        # TODO: Perform any additional transformation if necessary.
-        # For now, assume that the external API data is already in a hierarchical format.
+        # Apply any transformation if necessary; here raw_data is used directly.
         transformed_data = raw_data
 
-        # Add the fetched data to external persistence with a workflow function applied
+        # Add the fetched data to external persistence with the workflow function applied.
         entity_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="categories",
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=transformed_data,  # the validated data object
-            workflow=process_categories  # Workflow function applied to the entity asynchronously before persistence
+            workflow=process_categories  # Workflow function applied asynchronously before persistence
         )
-        # Return only the technical id; the actual data is available via a separate endpoint
+        # Return only the technical id; the actual data is available via a separate endpoint.
         return jsonify({"status": "success", "id": entity_id}), 200
 
     except Exception as e:

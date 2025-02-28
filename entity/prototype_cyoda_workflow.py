@@ -22,15 +22,21 @@ def current_timestamp():
 # Workflow function for datasource entity.
 # This function is applied to the datasource entity asynchronously before persistence.
 async def process_datasource(entity):
-    # Add a workflow processing timestamp for example.
+    # Example: add a processing timestamp.
     entity["workflow_processed_at"] = current_timestamp()
+    # You can add any additional async tasks here if needed.
     return entity
 
 # Workflow function for fetched_data entity.
 # This function is applied to the fetched_data entity asynchronously before persistence.
 async def process_fetched_data(entity):
-    # Add a workflow processing timestamp for example.
+    # Example: add a processing timestamp.
     entity["workflow_processed_at"] = current_timestamp()
+    # Additional asynchronous logic can be executed here.
+    # For instance, simulate further processing:
+    await asyncio.sleep(0.1)
+    # Mark the record as processed.
+    entity["status"] = "processed"
     return entity
 
 # Startup initialization
@@ -61,13 +67,13 @@ async def create_datasource(data: DatasourceInput):
         "Authorization_Header": data.Authorization_Header,
         "created_at": current_timestamp()
     }
-    # Call external service to add item with workflow processing
+    # Call external service to add item with workflow processing.
     new_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="datasource",
         entity_version=ENTITY_VERSION,  # always use this constant
         entity=datasource,  # the validated data object
-        workflow=process_datasource  # Workflow function applied to the entity asynchronously before persistence.
+        workflow=process_datasource  # Workflow function applied asynchronously before persistence.
     )
     return jsonify({"id": new_id}), 201
 
@@ -164,13 +170,6 @@ async def delete_datasource(ds_id):
 
     return jsonify({"message": "Datasource deleted successfully"})
 
-# Utility: Process entity (simulate additional processing)
-async def process_entity(job_id, data_obj):
-    # Simulate processing delay
-    await asyncio.sleep(0.1)
-    entity_jobs[job_id]["status"] = "completed"
-    return
-
 # Endpoint: Fetch external data for a datasource
 @app.route("/datasources/<int:ds_id>/fetch", methods=["POST"])
 async def fetch_external_data(ds_id):
@@ -201,24 +200,23 @@ async def fetch_external_data(ds_id):
             return jsonify({"error": f"External API request failed: {e}"}), 500
 
     fetched_ids = []
-    # Process and store each fetched data object individually
+    # Process and store each fetched data object individually,
+    # move additional processing logic to the workflow function.
     for record in external_response:
         fetched_record = {
             "datasource_id": ds_id,
             "data": record,
             "fetched_at": current_timestamp()
         }
-        # Use external service to add fetched data with workflow processing
+        # Use external service to add fetched data with workflow processing.
         fetched_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="fetched_data",
             entity_version=ENTITY_VERSION,
             entity=fetched_record,
-            workflow=process_fetched_data  # Workflow function applied to the fetched_data entity
+            workflow=process_fetched_data  # Workflow function applied asynchronously before persistence.
         )
         fetched_ids.append(fetched_id)
-        # Fire and forget processing task for each fetched record
-        asyncio.create_task(process_entity(str(uuid4()), record))
 
     # Mark job as completed
     entity_jobs[job_id]["status"] = "completed"

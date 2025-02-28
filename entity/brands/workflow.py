@@ -1,37 +1,33 @@
 import asyncio
-import uuid
-from datetime import datetime
+import datetime
+import logging
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
+# Business logic: add processing timestamp to the entity.
+def process_add_timestamp(entity):
+    entity["workflow_processed_at"] = datetime.datetime.utcnow().isoformat() + "Z"
+    return entity
 
-from app import process_brands
+# Business logic: ensure entity has a default status.
+def process_validate_status(entity):
+    if "status" not in entity:
+        entity["status"] = "new"
+    return entity
 
-async def process_set_processed_timestamp(entity):
-    entity['processed_at'] = datetime.utcnow().isoformat() + "Z"
-
-async def process_compute_summary(entity):
-    count = len(entity) if isinstance(entity, list) else 1
-    summary = {
-        "brand_count": count,
-        "logged_at": datetime.utcnow().isoformat() + "Z",
-        "summary_id": str(uuid.uuid4())
-    }
-    entity['brands_summary'] = summary
-
-async def process_fire_and_forget_task():
+# Asynchronous business logic: perform additional async logging.
+async def process_async_logging(entity):
     try:
-        # Simulate additional asynchronous processing.
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0)
+        processed_at = entity.get("workflow_processed_at", "unknown time")
+        logging.info(f"Async Log: Entity processed at {processed_at}.")
     except Exception as e:
-        print(f"Error in fire-and-forget task: {e}")
+        logging.exception("Error in process_async_logging")
 
-app = Quart(__name__)
-QuartSchema(app)
-
-@app.route('/brands', methods=['POST'])
-@validate_request()
-async def brands_endpoint():
-    entity = await request.get_json()
-    await process_brands()
-    return jsonify(entity)
+# Workflow orchestration: calls business logic functions.
+async def process_brands(entity):
+    try:
+        process_add_timestamp(entity)
+        process_validate_status(entity)
+        asyncio.create_task(process_async_logging(entity))
+    except Exception as e:
+        logging.exception("Error in process_brands")
+    return entity

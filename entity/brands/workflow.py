@@ -9,6 +9,8 @@ from quart_schema import QuartSchema, validate_request
 from common.config.config import ENTITY_VERSION
 from app_init.app_init import cyoda_token, entity_service
 from common.repository.cyoda.cyoda_init import init_cyoda
+from entity.prototype_cyoda_workflow import process_brands
+
 
 async def process_set_processed_timestamp(entity):
     # Set a processed timestamp on the entity.

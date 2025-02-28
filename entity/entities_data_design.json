@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "categories", "entity_data_example": {"id": "01JN6A98DXNPRMWXTXN8C1BEHN", "name": "Hand Tools", "slug": "hand-tools", "parent_id": null, "sub_categories": [{"id": "01JN6A98E770ZNR1W2RAPCZGFE", "name": "Hammer", "slug": "hammer", "parent_id": "01JN6A98DXNPRMWXTXN8C1BEHN", "sub_categories": []}]}}]}

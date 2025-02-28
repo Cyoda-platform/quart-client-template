@@ -7,7 +7,6 @@ from quart_schema import QuartSchema, validate_request
 
 from app import process_brands
 
-
 async def process_set_processed_timestamp(entity):
     entity['processed_at'] = datetime.utcnow().isoformat() + "Z"
 

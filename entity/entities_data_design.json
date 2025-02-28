@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "datasource", "entity_data_example": {"technical_id": "string", "datasource_name": "string", "url": "string", "uri_params": "object", "authorization_header": "string", "created_at": "string (ISO 8601 format)"}}]}

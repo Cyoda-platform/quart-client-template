@@ -12,6 +12,7 @@ from quart_schema import QuartSchema, validate_request
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
+from entity.prototype_cyoda_workflow import workflow_brands
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,9 +28,6 @@ async def startup():
 @app.after_serving
 async def shutdown():
     app.background_task.cancel()
-    await app.background_task
-    except Exception as e:
-        logging.exception("Error during startup initialization")
 
 
 # Dummy dataclass for POST request validation in /brands/fetch.

@@ -101,15 +101,22 @@ async def get_datasources():
 @validate_request(FetchParams)
 async def fetch_data(data: FetchParams, datasource_name):
     # Retrieve datasource entity based on the given name.
-    ds_list = await entity_service.get_items_by_condition(
+    # ds_list = await entity_service.get_items_by_condition(
+    #     token=cyoda_token,
+    #     entity_model="datasource",
+    #     entity_version=ENTITY_VERSION,
+    #     condition={"datasource_name": datasource_name}
+    # )
+    ds_list = await entity_service.get_item(
         token=cyoda_token,
         entity_model="datasource",
         entity_version=ENTITY_VERSION,
-        condition={"datasource_name": datasource_name}
+        technical_id=datasource_name
     )
     if not ds_list or len(ds_list) == 0:
         abort(404, description="Datasource not found for given name")
-    datasource = ds_list[0]
+    datasource = ds_list
+    # datasource = ds_list[0]
 
     # Build a fetch_job entity that drives the external API call.
     fetch_job_entity = {
@@ -142,11 +149,17 @@ async def fetch_data(data: FetchParams, datasource_name):
 @app.route('/data/<datasource_name>', methods=['GET'])
 async def get_persisted_data(datasource_name):
     try:
-        data_items = await entity_service.get_items_by_condition(
+        # data_items = await entity_service.get_items_by_condition(
+        #     token=cyoda_token,
+        #     entity_model="persisted_data",
+        #     entity_version=ENTITY_VERSION,
+        #     condition={"datasource_name": datasource_name}
+        # )
+        data_items = await entity_service.get_items(
             token=cyoda_token,
-            entity_model="persisted_data",
-            entity_version=ENTITY_VERSION,
-            condition={"datasource_name": datasource_name}
+            # entity_model="persisted_data",
+            entity_model=datasource_name,
+            entity_version=ENTITY_VERSION
         )
     except Exception as e:
         abort(500, description=f"Error retrieving persisted data: {e}")

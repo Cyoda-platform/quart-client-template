@@ -58,7 +58,8 @@ async def process_record_saving(entity):
             record["datasource_name"] = datasource_name
             await entity_service.add_item(
                 token=cyoda_token,
-                entity_model="persisted_data",
+                # entity_model="persisted_data",
+                entity_model=datasource_name,
                 entity_version=ENTITY_VERSION,
                 entity=record,
                 workflow=process_persisted_data

@@ -1,8 +1,9 @@
 import asyncio
 import aiohttp
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # Using QuartSchema as required
+from dataclasses import dataclass
 from datetime import datetime
+from quart import Quart, request, jsonify
+from quart_schema import QuartSchema, validate_request  # Using QuartSchema as required
 
 app = Quart(__name__)
 QuartSchema(app)  # One-liner setup for QuartSchema
@@ -14,6 +15,15 @@ categories_cache = None
 entity_job = {}  # TODO: Replace with proper persistence mechanism
 
 EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/categories/tree"
+
+# Request dataclasses for validation
+@dataclass
+class FetchCategoriesRequest:
+    refresh: bool = False  # Optional refresh flag
+
+@dataclass
+class SearchRequest:
+    query: str
 
 # Helper function to recursively search through the category tree
 def find_category(categories, query):
@@ -29,12 +39,14 @@ def find_category(categories, query):
                 return result
     return None
 
+# For POST endpoints, route decorator must go first then validate_request.
+# This is a workaround for an issue with the Quart-Schema library.
+
 @app.route("/api/categories/fetch", methods=["POST"])
-async def fetch_categories():
+@validate_request(FetchCategoriesRequest)
+async def fetch_categories(data: FetchCategoriesRequest):
     global categories_cache
-    # Parse optional refresh parameter from request body
-    params = await request.get_json(silent=True) or {}
-    refresh = params.get("refresh", False)
+    refresh = data.refresh
 
     # If cached data exists and no refresh requested, return cached data
     if categories_cache and not refresh:
@@ -63,7 +75,6 @@ async def fetch_categories():
         return jsonify({"status": "success", "data": transformed_data}), 200
 
     except Exception as e:
-        # For prototype purposes, simply return internal server error
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/api/categories", methods=["GET"])
@@ -73,12 +84,12 @@ async def get_categories():
     return jsonify({"status": "success", "data": categories_cache}), 200
 
 @app.route("/api/categories/search", methods=["POST"])
-async def search_category():
+@validate_request(SearchRequest)
+async def search_category(data: SearchRequest):
     if categories_cache is None:
         return jsonify({"status": "error", "message": "No category data available. Please fetch data first."}), 404
 
-    data = await request.get_json()
-    query = data.get("query", "").strip()
+    query = data.query.strip()
     if not query:
         return jsonify({"status": "error", "message": "Query parameter is required."}), 400
 

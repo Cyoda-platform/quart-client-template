@@ -2,11 +2,25 @@ import asyncio
 import datetime
 import uuid
 import aiohttp
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # validate_querystring imported if needed
 
 app = Quart(__name__)
-QuartSchema(app)  # Schema integration for request/response validation (data is dynamic)
+QuartSchema(app)  # Schema integration for request/response validation
+
+# Data models for request validation
+
+@dataclass
+class RealTimeFetchRequest:
+    date: str
+
+@dataclass
+class SubscriptionRequest:
+    email: str
+    # Using optional string fields instead of a dict for filters due to schema constraints
+    team: str = ""         # TODO: Update type if more complex filter is needed
+    gameType: str = ""     # TODO: Update type if more complex filter is needed
 
 # Global in-memory caches (mock persistence)
 scores_cache = {}         # key: gameId, value: score data
@@ -14,7 +28,9 @@ subscriptions_cache = {}  # key: subscriptionId, value: subscription details
 jobs_cache = {}           # key: job_id, value: job status info
 
 SPORTS_DATA_API_KEY = "f8824354d80d45368063dd2e6fb16c38"
-SPORTS_DATA_URL_TEMPLATE = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key=" + SPORTS_DATA_API_KEY
+SPORTS_DATA_URL_TEMPLATE = (
+    "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key=" + SPORTS_DATA_API_KEY
+)
 
 # Function to call external API and fetch score data
 async def fetch_scores_from_external(date: str):
@@ -65,10 +81,12 @@ async def process_scores(job_id: str, date: str):
     if updated_games:
         print(f"Job {job_id} - Score updates detected and events published: {updated_games}")
 
+# POST endpoint: fetch real-time scores
+# NOTE: Workaround for quart-schema issue: for POST requests, route decorator goes first, then validation.
 @app.route('/api/scores/fetch-real-time', methods=['POST'])
-async def fetch_real_time_scores():
-    req_data = await request.get_json()
-    date = req_data.get("date")
+@validate_request(RealTimeFetchRequest)  # This decorator is added second per workaround
+async def fetch_real_time_scores(data: RealTimeFetchRequest):
+    date = data.date
     if not date:
         return jsonify({"status": "error", "message": "Missing required field: date"}), 400
 
@@ -86,6 +104,7 @@ async def fetch_real_time_scores():
         "requestedAt": requested_at
     })
 
+# GET endpoint: retrieve scores (no validation needed for GET bodies)
 @app.route('/api/scores', methods=['GET'])
 async def get_scores():
     # Retrieve query parameters if any
@@ -104,12 +123,18 @@ async def get_scores():
         "results": results
     })
 
+# POST endpoint: create subscription
+# NOTE: Workaround for quart-schema issue: for POST requests, route decorator goes first, then validation.
 @app.route('/api/subscriptions', methods=['POST'])
-async def create_subscription():
-    req_data = await request.get_json()
-    email = req_data.get("email")
-    filters = req_data.get("filters", {})
-
+@validate_request(SubscriptionRequest)  # Added second per workaround for post requests
+async def create_subscription(data: SubscriptionRequest):
+    email = data.email
+    # Construct filters dictionary from available fields
+    filters = {
+        "team": data.team,
+        "gameType": data.gameType
+    }
+    
     if not email:
         return jsonify({"status": "error", "message": "Email is required"}), 400
 
@@ -128,6 +153,7 @@ async def create_subscription():
         "subscriptionId": subscription_id
     })
 
+# GET endpoint: list subscriptions (no validation needed for GET without request parameters)
 @app.route('/api/subscriptions', methods=['GET'])
 async def list_subscriptions():
     results = list(subscriptions_cache.values())

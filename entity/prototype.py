@@ -1,8 +1,9 @@
 import asyncio
 import time
 import uuid
+from dataclasses import dataclass
 from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Workaround: For POST/PUT endpoints, route decorator comes first, then validate_request.
 import aiohttp
 
 app = Quart(__name__)
@@ -16,6 +17,19 @@ persisted_data = {}     # Key: datasource_name, Value: list of records from exte
 def generate_id():
     return str(uuid.uuid4())
 
+# Dataclasses for request validation
+
+@dataclass
+class DatasourceBody:
+    datasource_name: str
+    url: str
+    uri_params: dict  # TODO: Consider validating the structure of uri_params further if required.
+    authorization_header: str
+
+@dataclass
+class FetchParams:
+    additional_params: dict
+
 # Background processing function (simulate processing task)
 async def process_entity(entity_job, data):
     # TODO: Implement any additional processing if required for each entity
@@ -24,10 +38,9 @@ async def process_entity(entity_job, data):
 
 # Endpoint: Create Datasource
 @app.route('/datasources', methods=['POST'])
-async def create_datasource():
-    body = await request.get_json()
-    if not body:
-        abort(400, description="Invalid JSON body")
+@validate_request(DatasourceBody)  # For POST endpoints, place validate_request after @app.route due to known quart-schema issue.
+async def create_datasource(data: DatasourceBody):
+    body = data.__dict__
     datasource_id = generate_id()
     body["id"] = datasource_id
     datasources[datasource_id] = body
@@ -39,16 +52,14 @@ async def create_datasource():
 
 # Endpoint: Update Datasource
 @app.route('/datasources/<datasource_id>', methods=['PUT'])
-async def update_datasource(datasource_id):
+@validate_request(DatasourceBody)  # Workaround: @app.route comes first for POST/PUT endpoints.
+async def update_datasource(data: DatasourceBody, datasource_id):
     if datasource_id not in datasources:
         abort(404, description="Datasource not found")
-    body = await request.get_json()
-    if not body:
-        abort(400, description="Invalid JSON body")
-    datasources[datasource_id].update(body)
+    datasources[datasource_id].update(data.__dict__)
     return jsonify({"message": "Datasource updated successfully"})
 
-# Endpoint: Get All Datasources
+# Endpoint: Get All Datasources (no validation needed)
 @app.route('/datasources', methods=['GET'])
 async def get_datasources():
     # Return all datasource objects
@@ -56,7 +67,8 @@ async def get_datasources():
 
 # Endpoint: Fetch Data from External API via Datasource
 @app.route('/datasources/<datasource_name>/fetch', methods=['POST'])
-async def fetch_data(datasource_name):
+@validate_request(FetchParams)  # Workaround: @app.route comes first for POST endpoints.
+async def fetch_data(data: FetchParams, datasource_name):
     # Look up datasource by datasource_name (not by id)
     datasource = None
     for ds in datasources.values():
@@ -67,8 +79,7 @@ async def fetch_data(datasource_name):
     if not datasource:
         abort(404, description="Datasource not found for given name")
 
-    # Retrieve request data (additional parameters)
-    additional_params = await request.get_json() or {}
+    additional_params = data.__dict__
     # Build headers for the external API call
     headers = {"Content-Type": "application/json"}
     if datasource.get("authorization_header"):
@@ -78,7 +89,7 @@ async def fetch_data(datasource_name):
     job_id = generate_id()
     entity_job = {"status": "processing", "requestedAt": time.time()}
 
-    # Fire and forget the processing task
+    # Fire and forget the processing task.
     asyncio.create_task(process_fetch(job_id, datasource, additional_params, headers, entity_job))
 
     # Immediate response to user
@@ -123,7 +134,7 @@ async def process_fetch(job_id, datasource, additional_params, headers, entity_j
     entity_job["fetched_count"] = count
     entity_job["status"] = "completed"
 
-# Endpoint: Retrieve Persisted Data for a Datasource
+# Endpoint: Retrieve Persisted Data for a Datasource (no validation needed)
 @app.route('/data/<datasource_name>', methods=['GET'])
 async def get_persisted_data(datasource_name):
     data = persisted_data.get(datasource_name, [])

@@ -1,20 +1,27 @@
 import asyncio
 import datetime
-import json
 from uuid import uuid4
+from dataclasses import dataclass
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema  # One-liner as required
+from quart_schema import QuartSchema, validate_request  # validate_querystring available if needed
 
 app = Quart(__name__)
 QuartSchema(app)
 
+# Dataclass for Datasource input validation
+@dataclass
+class DatasourceInput:
+    datasource_name: str
+    url: str
+    uri_params: dict = None  # TODO: Consider stricter type definition if required.
+    Authorization_Header: str = None
+
 # In-memory persistence mocks
 datasources = {}        # {datasource_id: datasource_data}
 fetched_data_store = {} # {fetched_data_id: fetched_data_object}
-# Local cache to simulate job processing (if needed)
-entity_jobs = {}
+entity_jobs = {}        # Local cache for job processing simulation
 
 # Simple counters for IDs (note: in production, use more robust ID generation)
 datasource_counter = 1
@@ -25,18 +32,18 @@ def current_timestamp():
     return datetime.datetime.utcnow().isoformat() + "Z"
 
 @app.route("/datasources", methods=["POST"])
-async def create_datasource():
+@validate_request(DatasourceInput)  # Workaround: POST validation added after route decorator as per Quart-Schema guidelines.
+async def create_datasource(data: DatasourceInput):
     global datasource_counter
-    body = await request.get_json()
     ds_id = datasource_counter
     datasource_counter += 1
 
     datasource = {
         "datasource_id": ds_id,
-        "datasource_name": body.get("datasource_name"),
-        "url": body.get("url"),
-        "uri_params": body.get("uri_params", {}),
-        "Authorization_Header": body.get("Authorization_Header"),
+        "datasource_name": data.datasource_name,
+        "url": data.url,
+        "uri_params": data.uri_params or {},
+        "Authorization_Header": data.Authorization_Header,
         "created_at": current_timestamp()
     }
     datasources[ds_id] = datasource
@@ -54,16 +61,16 @@ async def get_datasource(ds_id):
     return jsonify(datasource)
 
 @app.route("/datasources/<int:ds_id>", methods=["PUT"])
-async def update_datasource(ds_id):
+@validate_request(DatasourceInput)  # Workaround: PUT validation added after route decorator as per Quart-Schema guidelines.
+async def update_datasource(data: DatasourceInput, ds_id):
     datasource = datasources.get(ds_id)
     if datasource is None:
         return jsonify({"error": "Datasource not found"}), 404
-    body = await request.get_json()
-    # Update only provided fields
-    datasource["datasource_name"] = body.get("datasource_name", datasource["datasource_name"])
-    datasource["url"] = body.get("url", datasource["url"])
-    datasource["uri_params"] = body.get("uri_params", datasource["uri_params"])
-    datasource["Authorization_Header"] = body.get("Authorization_Header", datasource["Authorization_Header"])
+    # Update only provided fields from validated data
+    datasource["datasource_name"] = data.datasource_name or datasource["datasource_name"]
+    datasource["url"] = data.url or datasource["url"]
+    datasource["uri_params"] = data.uri_params or datasource["uri_params"]
+    datasource["Authorization_Header"] = data.Authorization_Header or datasource["Authorization_Header"]
     # TODO: Add more validations if needed.
     datasources[ds_id] = datasource
     return jsonify(datasource)

@@ -62,10 +62,9 @@ async def update_datasource(data: DatasourceBody, datasource_id):
 # Endpoint: Get All Datasources (no validation needed)
 @app.route('/datasources', methods=['GET'])
 async def get_datasources():
-    # Return all datasource objects
     return jsonify(list(datasources.values()))
 
-# Endpoint: Fetch Data from External API via Datasource
+# Endpoint: Fetch Data from External API via Datasource using GET (instead of POST)
 @app.route('/datasources/<datasource_name>/fetch', methods=['POST'])
 @validate_request(FetchParams)  # Workaround: @app.route comes first for POST endpoints.
 async def fetch_data(data: FetchParams, datasource_name):
@@ -80,8 +79,8 @@ async def fetch_data(data: FetchParams, datasource_name):
         abort(404, description="Datasource not found for given name")
 
     additional_params = data.__dict__
-    # Build headers for the external API call
-    headers = {"Content-Type": "application/json"}
+    # Build headers for external API call; note: GET requests typically do not need "Content-Type"
+    headers = {"Accept": "application/json"}
     if datasource.get("authorization_header"):
         headers["Authorization"] = datasource.get("authorization_header")
 
@@ -92,13 +91,12 @@ async def fetch_data(data: FetchParams, datasource_name):
     # Fire and forget the processing task.
     asyncio.create_task(process_fetch(job_id, datasource, additional_params, headers, entity_job))
 
-    # Immediate response to user
     return jsonify({
         "message": "Data fetch initiated",
         "job_id": job_id
     })
 
-# Background function to call external API, process, and persist data
+# Background function to call external API, process, and persist data using GET request
 async def process_fetch(job_id, datasource, additional_params, headers, entity_job):
     async with aiohttp.ClientSession() as session:
         # Merge datasource uri_params with additional_params if provided
@@ -107,8 +105,7 @@ async def process_fetch(job_id, datasource, additional_params, headers, entity_j
         params.update(additional_params.get("additional_params", {}))
         
         try:
-            async with session.post(datasource.get("url"), json=params, headers=headers) as resp:
-                # Ensure the response is in JSON format as per requirement
+            async with session.get(datasource.get("url"), params=params, headers=headers) as resp:
                 if resp.headers.get('Content-Type', '').startswith("application/json"):
                     json_data = await resp.json()
                 else:
@@ -129,7 +126,6 @@ async def process_fetch(job_id, datasource, additional_params, headers, entity_j
         persisted_data[ds_name].append(record)
         count += 1
 
-    # Simulate any additional processing needed for the fetched data
     await process_entity(entity_job, json_data)
     entity_job["fetched_count"] = count
     entity_job["status"] = "completed"

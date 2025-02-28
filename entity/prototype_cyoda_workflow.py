@@ -2,7 +2,7 @@ from datetime import datetime
 import asyncio
 import aiohttp
 from dataclasses import dataclass
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request  # Using QuartSchema as required
 from common.config.config import ENTITY_VERSION
 from app_init.app_init import entity_service, cyoda_token
@@ -12,35 +12,39 @@ app = Quart(__name__)
 QuartSchema(app)  # One-liner setup for QuartSchema
 
 SUPPLEMENTARY_API_URL = "https://api.practicesoftwaretesting.com/supplementary/info"
+EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/categories/tree"
 
 # Workflow function applied to categories data before persistence
 async def process_categories(entity_data):
-    # Append a UTC timestamp to the entity data
-    entity_data['processed_at'] = datetime.utcnow().isoformat() + 'Z'
-    # Fire-and-forget asynchronous task: fetch supplementary data and add it to entity_data
+    # Append a UTC timestamp to mark processing time
+    entity_data["processed_at"] = datetime.utcnow().isoformat() + "Z"
+
+    # Fire-and-forget asynchronous task: fetch supplementary data
     async def fetch_supplementary():
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.get(SUPPLEMENTARY_API_URL) as resp:
+                # Set a reasonable timeout to prevent hanging
+                async with session.get(SUPPLEMENTARY_API_URL, timeout=10) as resp:
                     if resp.status == 200:
-                        supplementary = await resp.json()
-                        # Modify entity data directly (allowed modification on current entity)
-                        entity_data['supplementary'] = supplementary
+                        try:
+                            supplementary = await resp.json()
+                            # Add supplementary data directly to entity data
+                            entity_data["supplementary"] = supplementary
+                        except Exception as json_exc:
+                            entity_data["supplementary_error"] = f"JSON decode error: {json_exc}"
                     else:
-                        entity_data['supplementary_error'] = f"Status {resp.status}"
+                        entity_data["supplementary_error"] = f"HTTP Error {resp.status}"
         except Exception as e:
-            entity_data['supplementary_error'] = str(e)
-    # Schedule the supplementary task but do not await it to avoid delaying persistence
+            entity_data["supplementary_error"] = str(e)
+
+    # Schedule the supplementary task asynchronously without awaiting it
     asyncio.create_task(fetch_supplementary())
-    # Additional transformation logic can be applied here if needed.
     return entity_data
 
 # Startup hook to initialize external service
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
-
-EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/categories/tree"
 
 # Request dataclasses for validation
 @dataclass
@@ -53,49 +57,55 @@ class SearchRequest:
 
 # Helper function to recursively search through the category tree
 def find_category(categories, query):
+    # Ensure categories is iterable
+    if isinstance(categories, dict):
+        categories = [categories]
     for category in categories:
-        # Check if query matches category name (case-insensitive) or id
-        if (category.get("name", "").lower() == query.lower() or 
-            category.get("id", "") == query):
-            return category
-        # Recursively search in sub_categories if available
-        if category.get("sub_categories"):
-            result = find_category(category["sub_categories"], query)
-            if result:
-                return result
+        if isinstance(category, dict):
+            # Compare both name (case-insensitive) and id
+            if (category.get("name", "").lower() == query.lower() or 
+                category.get("id", "") == query):
+                return category
+            # Check if sub_categories exist and recurse into them
+            sub_cats = category.get("sub_categories")
+            if sub_cats:
+                result = find_category(sub_cats, query)
+                if result:
+                    return result
     return None
 
 # Endpoint to fetch categories from external API and store them via entity_service
 @app.route("/api/categories/fetch", methods=["POST"])
 @validate_request(FetchCategoriesRequest)
 async def fetch_categories(data: FetchCategoriesRequest):
-    refresh = data.refresh
-
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(EXTERNAL_API_URL) as resp:
+            async with session.get(EXTERNAL_API_URL, timeout=10) as resp:
                 if resp.status != 200:
                     return jsonify({"status": "error", "message": "Failed to fetch data from external API"}), 500
-                raw_data = await resp.json()
+                try:
+                    raw_data = await resp.json()
+                except Exception as json_exc:
+                    return jsonify({"status": "error", "message": f"JSON decode error: {json_exc}"}), 500
 
-        # Apply any transformation if necessary; here raw_data is used directly.
+        # In case of additional transformations, perform them here.
         transformed_data = raw_data
 
-        # Add the fetched data to external persistence with the workflow function applied.
+        # Persist the entity with the workflow function applied.
         entity_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="categories",
             entity_version=ENTITY_VERSION,  # always use this constant
-            entity=transformed_data,  # the validated data object
-            workflow=process_categories  # Workflow function applied asynchronously before persistence
+            entity=transformed_data,  # the validated/transformed data object
+            workflow=process_categories  # Workflow function to process the entity asynchronously before persistence
         )
-        # Return only the technical id; the actual data is available via a separate endpoint.
+        # Return only the technical id; the stored data can be retrieved by another endpoint.
         return jsonify({"status": "success", "id": entity_id}), 200
 
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# Endpoint to retrieve stored categories using the external service
+# Endpoint to retrieve stored categories via external service
 @app.route("/api/categories", methods=["GET"])
 async def get_categories():
     try:
@@ -110,7 +120,7 @@ async def get_categories():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# Endpoint to search through the stored categories
+# Endpoint to search through the stored categories data
 @app.route("/api/categories/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def search_category(data: SearchRequest):
@@ -127,7 +137,7 @@ async def search_category(data: SearchRequest):
         if not items:
             return jsonify({"status": "error", "message": "No category data available. Please fetch data first."}), 404
 
-        # Iterate over all items in case multiple category trees are stored.
+        # Iterate over all stored items in case multiple category trees exist.
         found = None
         for item in items:
             found = find_category(item, query)

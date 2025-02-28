@@ -1,11 +1,10 @@
 import asyncio
 import datetime
 import uuid
-import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema, validate_request  # validate_querystring not needed as no GET with query payload
+from quart_schema import QuartSchema, validate_request
 import aiohttp
 
 app = Quart(__name__)
@@ -16,18 +15,19 @@ datasources = {}       # key: technical_id, value: datasource details
 fetched_data = {}      # key: datasource technical_id, value: list of fetched external records
 
 # Dataclasses for request validation
+
 @dataclass
 class CreateDatasource:
     datasource_name: str
     url: str
-    uri_params: str = ""  # TODO: Replace with a proper dict conversion from JSON string in a complete solution.
+    uri_params: dict = field(default_factory=dict)
     authorization_header: str = ""
 
 @dataclass
 class UpdateDatasource:
     datasource_name: str = ""
     url: str = ""
-    uri_params: str = ""  # TODO: Replace with a proper dict conversion from JSON string in a complete solution.
+    uri_params: dict = field(default_factory=dict)
     authorization_header: str = ""
 
 # Data Source Management Endpoints
@@ -35,21 +35,14 @@ class UpdateDatasource:
 @app.route('/datasources', methods=['POST'])
 @validate_request(CreateDatasource)  # For POST, validation decorator goes second
 async def create_datasource(data: CreateDatasource):
-    # Validate required fields are present
     if not data.datasource_name or not data.url:
         abort(400, "datasource_name and url are required")
     technical_id = str(uuid.uuid4())
-    # Convert uri_params from JSON string to dict if applicable
-    try:
-        params = json.loads(data.uri_params) if data.uri_params else {}
-    except Exception:
-        params = {}
-        # TODO: Handle invalid JSON string for uri_params properly.
     datasource = {
         "technical_id": technical_id,
         "datasource_name": data.datasource_name,
         "url": data.url,
-        "uri_params": params,
+        "uri_params": data.uri_params,
         "authorization_header": data.authorization_header,
         "created_at": datetime.datetime.utcnow().isoformat() + "Z"
     }
@@ -73,17 +66,12 @@ async def update_datasource(data: UpdateDatasource, technical_id):
     datasource = datasources.get(technical_id)
     if not datasource:
         abort(404, "Datasource not found")
-    # Update fields if provided
     if data.datasource_name:
         datasource["datasource_name"] = data.datasource_name
     if data.url:
         datasource["url"] = data.url
     if data.uri_params:
-        try:
-            datasource["uri_params"] = json.loads(data.uri_params)
-        except Exception:
-            datasource["uri_params"] = {}
-            # TODO: Handle invalid JSON string for uri_params properly.
+        datasource["uri_params"] = data.uri_params
     if data.authorization_header:
         datasource["authorization_header"] = data.authorization_header
     return jsonify(datasource)
@@ -92,7 +80,6 @@ async def update_datasource(data: UpdateDatasource, technical_id):
 async def delete_datasource(technical_id):
     if technical_id in datasources:
         del datasources[technical_id]
-        # Remove related fetched data if exists.
         fetched_data.pop(technical_id, None)
         return '', 204
     else:
@@ -101,7 +88,6 @@ async def delete_datasource(technical_id):
 # External API Data Fetch and Persistence
 
 async def process_fetch(datasource):
-    # Prepare headers and parameters
     headers = {"Accept": "application/json"}
     if datasource.get("authorization_header"):
         headers["Authorization"] = datasource["authorization_header"]
@@ -109,7 +95,6 @@ async def process_fetch(datasource):
     url = datasource["url"]
     params = datasource.get("uri_params", {})
 
-    # Make GET request to the external API using aiohttp
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(url, params=params, headers=headers) as resp:
@@ -121,7 +106,6 @@ async def process_fetch(datasource):
             # TODO: Log exception and handle unexpected errors.
             return None
 
-    # Persist the fetched data in the local cache.
     fetched_data.setdefault(datasource["technical_id"], [])
     if isinstance(data, list):
         fetched_data[datasource["technical_id"]].extend(data)
@@ -136,8 +120,6 @@ async def fetch_datasource_data(technical_id):
     datasource = datasources.get(technical_id)
     if not datasource:
         abort(404, "Datasource not found")
-    # Fire and forget processing task.
-    # TODO: In a full implementation, consider using proper background task processing.
     task = asyncio.create_task(process_fetch(datasource))
     records_count = await task
 

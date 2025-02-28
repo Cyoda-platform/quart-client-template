@@ -5,48 +5,66 @@ import uuid
 import aiohttp
 from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request  # validate_querystring imported if needed
+from quart_schema import QuartSchema, validate_request
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
 
 app = Quart(__name__)
-QuartSchema(app)  # Schema integration for request/response validation
+QuartSchema(app)  # Integrate schema validation
 
-# Workflow function for jobs entity
-# It will launch the background processing function for scores asynchronously.
+# Workflow function for jobs entity.
+# This function is applied asynchronously before the job entity is persisted.
+# It launches the background task to process scores once the job entity is saved.
 async def process_jobs(entity):
-    # Mark the job as processed by workflow.
+    # Mark the job as processed by the workflow.
     entity["workflowProcessed"] = True
     entity["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
-    # Launch the background task with the job's id and date.
-    # We assume that the job entity already contains a 'date' field.
+    # Ensure the job entity has a valid identifier and a date.
+    # The identifier might be returned later by the persistence layer. We try to get it if exists.
     job_id = entity.get("technical_id") or entity.get("id")
-    if job_id and entity.get("date"):
-        asyncio.create_task(process_scores(job_id, entity["date"]))
+    if not job_id:
+        # If no identifier, generate a temporary id which the background task can use.
+        job_id = str(uuid.uuid4())
+        entity["technical_id"] = job_id
+    if entity.get("date"):
+        # Launch the background processing task for scores.
+        try:
+            asyncio.create_task(process_scores(job_id, entity["date"]))
+        except Exception as e:
+            # Log error in launching background job.
+            print(f"Error launching background processing for job {job_id}: {e}")
+    else:
+        print(f"Job {job_id} missing 'date' field; background processing will not be launched.")
+    # Return modified entity. The returned state is what persists.
     return entity
 
-# Workflow function for scores entity
+# Workflow function for scores entity.
+# This function can be used to prepare or augment scores data before persistence.
 async def process_scores_workflow(entity):
-    # Add a workflow flag and a workflow timestamp to the score data.
+    # Add workflow flag and timestamp.
     entity["workflowProcessed"] = True
     entity["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
     return entity
 
-# Workflow function for subscriptions entity
+# Workflow function for subscriptions entity.
+# This function adjusts subscription entity before persisting.
 async def process_subscriptions(entity):
-    # Lower-case the email and mark the subscription as processed.
-    entity["email"] = entity.get("email", "").lower()
+    # Normalize email and mark processed.
+    if "email" in entity and isinstance(entity["email"], str):
+        entity["email"] = entity["email"].strip().lower()
+    else:
+        entity["email"] = ""
     entity["workflowProcessed"] = True
     entity["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
     return entity
 
-# Startup routine to initialize cyoda
+# Startup routine: initialize cyoda before serving requests.
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
 
-# Data models for request validation
+# Data models for request validation.
 @dataclass
 class RealTimeFetchRequest:
     date: str
@@ -54,15 +72,15 @@ class RealTimeFetchRequest:
 @dataclass
 class SubscriptionRequest:
     email: str
-    team: str = ""         # TODO: Update type if more complex filter is needed
-    gameType: str = ""     # TODO: Update type if more complex filter is needed
+    team: str = ""         # Can be updated to more complex filter if needed.
+    gameType: str = ""     # Can be updated to more complex filter if needed.
 
 SPORTS_DATA_API_KEY = "f8824354d80d45368063dd2e6fb16c38"
 SPORTS_DATA_URL_TEMPLATE = (
     "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key=" + SPORTS_DATA_API_KEY
 )
 
-# Function to call external API and fetch score data
+# Function to fetch scores from the external API.
 async def fetch_scores_from_external(date: str):
     url = SPORTS_DATA_URL_TEMPLATE.format(date=date)
     async with aiohttp.ClientSession() as session:
@@ -71,13 +89,12 @@ async def fetch_scores_from_external(date: str):
                 data = await response.json()
                 return data
         except Exception as e:
-            # TODO: Add proper error handling and logging
-            print(f"Error fetching data from external API: {e}")
+            # Log and return None in case of error.
+            print(f"Error fetching data from external API for date {date}: {e}")
             return None
 
-# Background processing function for score ingestion and updating job status
+# Background processing function for ingesting scores and updating the job status.
 async def process_scores(job_technical_id: str, date: str):
-    # Retrieve job record from external service
     try:
         job = await entity_service.get_item(
             token=cyoda_token,
@@ -90,11 +107,11 @@ async def process_scores(job_technical_id: str, date: str):
         return
 
     external_data = await fetch_scores_from_external(date)
-
     if external_data is None:
-        # Update job status to failed
+        # Update job status to 'failed' since external data could not be retrieved.
         job_update = dict(job)
         job_update["status"] = "failed"
+        job_update["failedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
         try:
             await entity_service.update_item(
                 token=cyoda_token,
@@ -109,6 +126,7 @@ async def process_scores(job_technical_id: str, date: str):
 
     updated_games = []
     for game in external_data:
+        # Determine a game identifier; fallback to generated one if missing.
         game_id = game.get("GameID") or str(uuid.uuid4())
         try:
             existing = await entity_service.get_item(
@@ -120,6 +138,7 @@ async def process_scores(job_technical_id: str, date: str):
         except Exception:
             existing = None
 
+        # Check if new data differs from existing data.
         if (not existing) or (existing.get("finalScore") != game.get("FinalScore")):
             score_data = {
                 "gameId": game_id,
@@ -130,6 +149,7 @@ async def process_scores(job_technical_id: str, date: str):
                 "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
             }
             if existing:
+                # Update score if it exists.
                 try:
                     await entity_service.update_item(
                         token=cyoda_token,
@@ -141,8 +161,8 @@ async def process_scores(job_technical_id: str, date: str):
                 except Exception as e:
                     print(f"Error updating score for game {game_id}: {e}")
             else:
+                # Add new score applying its workflow.
                 try:
-                    # Persist the new score entity applying its workflow before saving.
                     await entity_service.add_item(
                         token=cyoda_token,
                         entity_model="scores",
@@ -154,7 +174,7 @@ async def process_scores(job_technical_id: str, date: str):
                     print(f"Error adding score for game {game_id}: {e}")
             updated_games.append(score_data)
 
-    # Update job record with completion status
+    # Update the job record with 'completed' status.
     job_update = dict(job)
     job_update["status"] = "completed"
     job_update["completedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
@@ -170,14 +190,13 @@ async def process_scores(job_technical_id: str, date: str):
         print(f"Error updating job {job_technical_id} to completed: {e}")
 
     if updated_games:
-        print(f"Job {job_technical_id} - Score updates detected and events published: {updated_games}")
+        print(f"Job {job_technical_id} - Updated games: {updated_games}")
 
-# POST endpoint: fetch real-time scores
-# NOTE: Workaround for quart-schema issue: for POST requests, route decorator goes first, then validation.
+# POST endpoint for fetching real-time scores.
 @app.route('/api/scores/fetch-real-time', methods=['POST'])
-@validate_request(RealTimeFetchRequest)  # This decorator is added second per workaround
+@validate_request(RealTimeFetchRequest)
 async def fetch_real_time_scores(data: RealTimeFetchRequest):
-    date = data.date
+    date = data.date.strip()
     if not date:
         return jsonify({"status": "error", "message": "Missing required field: date"}), 400
 
@@ -188,7 +207,7 @@ async def fetch_real_time_scores(data: RealTimeFetchRequest):
         "date": date
     }
     try:
-        # The workflow function process_jobs will launch the background processing task.
+        # Create the job entity with the workflow that launches background processing.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="jobs",
@@ -206,18 +225,17 @@ async def fetch_real_time_scores(data: RealTimeFetchRequest):
         "requestedAt": requested_at
     })
 
-# GET endpoint: retrieve scores
+# GET endpoint to retrieve scores.
 @app.route('/api/scores', methods=['GET'])
 async def get_scores():
-    date_filter = request.args.get('date')
-    game_id_filter = request.args.get('gameId')
+    date_filter = request.args.get('date', "").strip()
+    game_id_filter = request.args.get('gameId', "").strip()
     condition = {}
     if game_id_filter:
         condition["gameId"] = game_id_filter
     if date_filter:
-        # For prototype, assume timestamp starts with the given date string.
+        # Assume timestamp starts with the given date string.
         condition["timestamp"] = date_filter
-
     try:
         if condition:
             results = await entity_service.get_items_by_condition(
@@ -240,27 +258,25 @@ async def get_scores():
         "results": results
     })
 
-# POST endpoint: create subscription
-# NOTE: Workaround for quart-schema issue: for POST requests, route decorator goes first, then validation.
+# POST endpoint to create a subscription.
 @app.route('/api/subscriptions', methods=['POST'])
-@validate_request(SubscriptionRequest)  # Added second per workaround for post requests
+@validate_request(SubscriptionRequest)
 async def create_subscription(data: SubscriptionRequest):
-    email = data.email
-    filters = {
-        "team": data.team,
-        "gameType": data.gameType
-    }
-
+    email = data.email.strip()
     if not email:
         return jsonify({"status": "error", "message": "Email is required"}), 400
 
+    filters = {
+        "team": data.team.strip() if data.team else "",
+        "gameType": data.gameType.strip() if data.gameType else ""
+    }
     sub_data = {
         "email": email,
         "filters": filters,
         "createdAt": datetime.datetime.utcnow().isoformat() + "Z"
     }
     try:
-        # Persist the subscription entity applying its workflow before saving.
+        # Add subscription entity applying its workflow for preprocessing.
         subscription_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="subscriptions",
@@ -277,7 +293,7 @@ async def create_subscription(data: SubscriptionRequest):
         "subscriptionId": subscription_id
     })
 
-# GET endpoint: list subscriptions
+# GET endpoint to list subscriptions.
 @app.route('/api/subscriptions', methods=['GET'])
 async def list_subscriptions():
     try:

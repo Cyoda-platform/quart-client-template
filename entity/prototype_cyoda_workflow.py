@@ -18,7 +18,6 @@ def generate_id():
     return str(uuid.uuid4())
 
 # Dataclasses for request validation
-
 @dataclass
 class DatasourceBody:
     datasource_name: str
@@ -34,21 +33,72 @@ class FetchParams:
 async def startup():
     await init_cyoda(cyoda_token)
 
-# Workflow function for datasource entity; applied before persisting
+# Workflow function for datasource entity; applied before persistence
 async def process_datasource(entity):
     # Example: Add a timestamp indicating when the datasource was processed
     entity["processed_at"] = time.time()
     return entity
 
-# Workflow function for persisted_data entity; applied before persisting
+# Workflow function for persisted_data entity; applied before persistence
 async def process_persisted_data(entity):
     # Example: Mark the record as validated
     entity["validated"] = True
     return entity
 
-# Background processing function (simulate processing task)
+# Workflow function for fetch_job entity; applied before persistence
+# This function will perform the async external API call, create secondary persisted_data entities,
+# and update the fetch_job entity state accordingly.
+async def process_fetch_job(entity):
+    # Build headers from entity; remove header if not needed
+    headers = {"Accept": "application/json"}
+    auth = entity.get("authorization_header")
+    if auth:
+        headers["Authorization"] = auth
+
+    # Merge uri_params from datasource and additional_params from request
+    uri_params = entity.get("uri_params", {}).copy()
+    additional = entity.get("additional_params", {})
+    uri_params.update(additional)
+
+    # External API call using the URL from the entity
+    url = entity.get("url")
+    count = 0
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=uri_params, headers=headers) as resp:
+                if resp.headers.get('Content-Type', '').startswith("application/json"):
+                    json_data = await resp.json()
+                else:
+                    # Fallback: if non-JSON, assume empty result set
+                    json_data = []
+    except Exception as e:
+        # If external API call fails, update entity status accordingly
+        entity["status"] = "failed"
+        entity["error"] = str(e)
+        return entity
+
+    # For each record fetched, add datasource identifier and persist as a secondary entity
+    datasource_name = entity.get("datasource_name")
+    for record in json_data:
+        record["datasource_name"] = datasource_name
+        # Persist each record using external service call with its own workflow function
+        await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="persisted_data",
+            entity_version=ENTITY_VERSION,
+            entity=record,
+            workflow=process_persisted_data  # Workflow applied for persisted_data
+        )
+        count += 1
+
+    # Update current fetch_job entity state
+    entity["fetched_count"] = count
+    entity["status"] = "completed"
+    entity["completed_at"] = time.time()
+    return entity
+
+# Background processing function (simulate additional processing task)
 async def process_entity(entity_job, data):
-    # TODO: Implement any additional processing if required for each entity
     await asyncio.sleep(1)
     entity_job["status"] = "done"
 
@@ -56,7 +106,6 @@ async def process_entity(entity_job, data):
 @app.route('/datasources', methods=['POST'])
 @validate_request(DatasourceBody)  # For POST endpoints, validate_request comes after @app.route due to known quart-schema issue.
 async def create_datasource(data: DatasourceBody):
-    # Call external service to add the datasource
     datasource_data = data.__dict__
     generated_id = await entity_service.add_item(
         token=cyoda_token,
@@ -74,7 +123,6 @@ async def create_datasource(data: DatasourceBody):
 @app.route('/datasources/<datasource_id>', methods=['PUT'])
 @validate_request(DatasourceBody)  # Workaround: @app.route comes first for POST/PUT endpoints.
 async def update_datasource(data: DatasourceBody, datasource_id):
-    # Check for existence
     existing = await entity_service.get_item(
         token=cyoda_token,
         entity_model="datasource",
@@ -83,7 +131,6 @@ async def update_datasource(data: DatasourceBody, datasource_id):
     )
     if not existing:
         abort(404, description="Datasource not found")
-        
     await entity_service.update_item(
         token=cyoda_token,
         entity_model="datasource",
@@ -103,7 +150,7 @@ async def get_datasources():
     )
     return jsonify(items)
 
-# Endpoint: Fetch Data from External API via Datasource using GET (instead of POST)
+# Endpoint: Fetch Data from External API via Datasource using POST
 @app.route('/datasources/<datasource_name>/fetch', methods=['POST'])
 @validate_request(FetchParams)  # Workaround: @app.route comes first for POST endpoints.
 async def fetch_data(data: FetchParams, datasource_name):
@@ -118,61 +165,31 @@ async def fetch_data(data: FetchParams, datasource_name):
         abort(404, description="Datasource not found for given name")
     datasource = ds_list[0]
 
-    additional_params = data.__dict__
-    # Build headers for external API call; note: GET requests typically do not need "Content-Type"
-    headers = {"Accept": "application/json"}
-    if datasource.get("authorization_header"):
-        headers["Authorization"] = datasource.get("authorization_header")
+    # Build a fetch_job entity that will drive the external API call asynchronously
+    fetch_job_entity = {
+        "datasource_name": datasource_name,
+        "url": datasource.get("url"),
+        "uri_params": datasource.get("uri_params", {}),
+        "authorization_header": datasource.get("authorization_header"),
+        "additional_params": data.__dict__.get("additional_params", {}),
+        "status": "processing",
+        "requested_at": time.time()
+    }
 
-    # Create a job to track async processing (fire-and-forget)
-    job_id = generate_id()
-    entity_job = {"status": "processing", "requestedAt": time.time()}
-
-    # Fire and forget the fetch processing task.
-    asyncio.create_task(process_fetch(job_id, datasource, additional_params, headers, entity_job))
+    # Persist the fetch job with its workflow; workflow function will execute the external fetch,
+    # create secondary persisted_data entities, and update the fetch_job state.
+    job_id = await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="fetch_job",
+        entity_version=ENTITY_VERSION,
+        entity=fetch_job_entity,
+        workflow=process_fetch_job  # Workflow function handles the external API call and related tasks
+    )
 
     return jsonify({
         "message": "Data fetch initiated",
         "job_id": job_id
     })
-
-# Background function to call external API, process, and persist data using GET request
-async def process_fetch(job_id, datasource, additional_params, headers, entity_job):
-    async with aiohttp.ClientSession() as session:
-        # Merge datasource uri_params with additional_params if provided
-        params = datasource.get("uri_params", {}).copy()
-        params.update(additional_params.get("additional_params", {}))
-        
-        try:
-            async with session.get(datasource.get("url"), params=params, headers=headers) as resp:
-                if resp.headers.get('Content-Type', '').startswith("application/json"):
-                    json_data = await resp.json()
-                else:
-                    # TODO: Implement proper handling for non-JSON responses
-                    json_data = []
-        except Exception as e:
-            # TODO: Add proper error logging and handling
-            entity_job["status"] = "failed"
-            return
-
-    ds_name = datasource.get("datasource_name")
-    count = 0
-    for record in json_data:
-        # Add datasource identifier to the record for later retrieval
-        record["datasource_name"] = ds_name
-        # Persist each record using external service call with workflow function for persisted_data
-        await entity_service.add_item(
-            token=cyoda_token,
-            entity_model="persisted_data",
-            entity_version=ENTITY_VERSION,
-            entity=record,
-            workflow=process_persisted_data  # Workflow function applied to the persisted_data entity
-        )
-        count += 1
-
-    await process_entity(entity_job, json_data)
-    entity_job["fetched_count"] = count
-    entity_job["status"] = "completed"
 
 # Endpoint: Retrieve Persisted Data for a Datasource
 @app.route('/data/<datasource_name>', methods=['GET'])

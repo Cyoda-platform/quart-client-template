@@ -2,9 +2,10 @@
 import asyncio
 import datetime
 import uuid
-from dataclasses import asdict, dataclass, field
+import logging
+from dataclasses import dataclass, field
 
-from quart import Quart, request, jsonify, abort
+from quart import Quart, jsonify, abort
 from quart_schema import QuartSchema, validate_request
 import aiohttp
 
@@ -12,14 +13,17 @@ from common.config.config import ENTITY_VERSION
 from app_init.app_init import entity_service, cyoda_token
 from common.repository.cyoda.cyoda_init import init_cyoda
 
-app = Quart(__name__)
-QuartSchema(app)  # Workaround: For GET endpoints with query parameters validation must be first, but here only POST/PUT use validation.
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Local cache for fetched external records remains as is.
-fetched_data = {}      # key: datasource technical_id, value: list of fetched external records
+app = Quart(__name__)
+QuartSchema(app)  # Required for endpoints using validation
+
+# Local cache for fetched external records (key: datasource technical_id, value: list of records)
+fetched_data = {}
 
 # Dataclasses for request validation
-
 @dataclass
 class CreateDatasource:
     datasource_name: str
@@ -34,91 +38,126 @@ class UpdateDatasource:
     uri_params: dict = field(default_factory=dict)
     authorization_header: str = ""
 
-# Workflow function to be applied to datasource entities before persistence.
-# This function encapsulates business logic that was previously inside the controller.
-# Any asynchronous tasks and manipulation of the entity can be done here.
+# Workflow function for datasource entity processing before persistence.
+# This encapsulates business logic, asynchronous tasks, and state mutation.
 async def process_datasource(entity):
-    # Add a creation timestamp if not already set.
-    if "created_at" not in entity:
-        entity["created_at"] = datetime.datetime.utcnow().isoformat() + "Z"
-    # You can add additional processing logic here.
-    # For example, setting a unique identifier if needed:
-    if "id" not in entity:
-        entity["id"] = str(uuid.uuid4())
-    # As an example of fire-and-forget secondary task, we can start an async logging task.
-    asyncio.create_task(log_entity_creation(entity))
+    try:
+        # Ensure a creation timestamp is set (if not already provided)
+        if "created_at" not in entity:
+            entity["created_at"] = datetime.datetime.utcnow().isoformat() + "Z"
+        # Set a unique identifier if needed (Note: This is separate from technical id)
+        if "id" not in entity:
+            entity["id"] = str(uuid.uuid4())
+        # Additional business rules can be added here.
+        # For example, validate URL format or enrich the entity with supplementary data.
+        
+        # Example of fire-and-forget asynchronous logging task.
+        asyncio.create_task(log_entity_creation(entity))
+    except Exception as e:
+        logger.exception("Error processing datasource entity: %s", e)
+        # Depending on business rules, you may decide to fail processing or continue.
+        # Here we continue with the current state.
     return entity
 
-# Example asynchronous logging task that could be used as a supplementary process.
+# Example asynchronous task: log entity creation details.
 async def log_entity_creation(entity):
-    # Simulate asynchronous logging (e.g., sending info to an external monitoring service)
-    await asyncio.sleep(0.1)
-    # In a real scenario, replace this print with an actual logging call.
-    print(f"Entity created with id: {entity.get('id')} at {entity.get('created_at')}")
+    try:
+        # Simulate delay before logging (e.g. sending data to an external monitoring service)
+        await asyncio.sleep(0.1)
+        logger.info("Entity created with id: %s at %s", entity.get("id"), entity.get("created_at"))
+    except Exception as log_exc:
+        # Log the exception without interfering with main process.
+        logger.exception("Error in asynchronous logging: %s", log_exc)
 
-# Startup initialization for external repository
+# Additional workflow functions can be implemented here for other entity models if needed.
+
+# Startup initialization: run any required external initializations.
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+        logger.info("Cyoda initialization complete.")
+    except Exception as e:
+        logger.exception("Error during startup initialization: %s", e)
+        raise e
 
-# Data Source Management Endpoints
-
+# Endpoint: Create Datasource
 @app.route('/datasources', methods=['POST'])
-@validate_request(CreateDatasource)  # For POST, validation decorator goes second
+@validate_request(CreateDatasource)
 async def create_datasource(data: CreateDatasource):
-    # Basic validation check (required fields ensured by dataclass validation)
+    # Basic validation (dataclass already ensures required fields structure)
     if not data.datasource_name or not data.url:
         abort(400, "datasource_name and url are required")
-    # Build datasource object using request data.
+    # Build the datasource object.
     datasource = {
         "datasource_name": data.datasource_name,
         "url": data.url,
         "uri_params": data.uri_params,
-        "authorization_header": data.authorization_header
+        "authorization_header": data.authorization_header,
     }
-    # Call external entity_service to add datasource.
-    # The workflow function process_datasource will be invoked asynchronously before persisting the entity.
-    new_id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,  # always use this constant
-        entity=datasource,  # the validated data object
-        workflow=process_datasource  # Workflow function applied to the entity before persistence.
-    )
+    try:
+        # Persist datasource using entity_service.
+        # The workflow function process_datasource will be executed before persisting.
+        new_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="datasource",
+            entity_version=ENTITY_VERSION,  # Always use this constant
+            entity=datasource,
+            workflow=process_datasource  # Apply business logic asynchronously prior to persistence.
+        )
+    except Exception as e:
+        logger.exception("Error creating datasource: %s", e)
+        abort(500, "Failed to create datasource")
     return jsonify({"id": new_id}), 201
 
+# Endpoint: Get all Datasources
 @app.route('/datasources', methods=['GET'])
 async def get_datasources():
-    items = await entity_service.get_items(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,
-    )
+    try:
+        items = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model="datasource",
+            entity_version=ENTITY_VERSION,
+        )
+    except Exception as e:
+        logger.exception("Error retrieving datasources: %s", e)
+        abort(500, "Failed to retrieve datasources")
     return jsonify(items)
 
+# Endpoint: Get single Datasource by technical_id
 @app.route('/datasources/<technical_id>', methods=['GET'])
 async def get_datasource(technical_id):
-    datasource = await entity_service.get_item(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,
-        technical_id=technical_id
-    )
+    try:
+        datasource = await entity_service.get_item(
+            token=cyoda_token,
+            entity_model="datasource",
+            entity_version=ENTITY_VERSION,
+            technical_id=technical_id
+        )
+    except Exception as e:
+        logger.exception("Error retrieving datasource: %s", e)
+        abort(500, "Error retrieving datasource")
     if not datasource:
         abort(404, "Datasource not found")
     return jsonify(datasource)
 
+# Endpoint: Update Datasource
 @app.route('/datasources/<technical_id>', methods=['PUT'])
-@validate_request(UpdateDatasource)  # For PUT, validation decorator goes second
+@validate_request(UpdateDatasource)
 async def update_datasource(data: UpdateDatasource, technical_id):
-    datasource = await entity_service.get_item(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,
-        technical_id=technical_id
-    )
+    try:
+        datasource = await entity_service.get_item(
+            token=cyoda_token,
+            entity_model="datasource",
+            entity_version=ENTITY_VERSION,
+            technical_id=technical_id
+        )
+    except Exception as e:
+        logger.exception("Error retrieving datasource for update: %s", e)
+        abort(500, "Error retrieving datasource")
     if not datasource:
         abort(404, "Datasource not found")
+    # Update mutable fields if provided.
     if data.datasource_name:
         datasource["datasource_name"] = data.datasource_name
     if data.url:
@@ -127,79 +166,101 @@ async def update_datasource(data: UpdateDatasource, technical_id):
         datasource["uri_params"] = data.uri_params
     if data.authorization_header:
         datasource["authorization_header"] = data.authorization_header
-    await entity_service.update_item(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,
-        entity=datasource,
-        meta={}
-    )
+    try:
+        await entity_service.update_item(
+            token=cyoda_token,
+            entity_model="datasource",
+            entity_version=ENTITY_VERSION,
+            entity=datasource,
+            meta={}
+        )
+    except Exception as e:
+        logger.exception("Error updating datasource: %s", e)
+        abort(500, "Failed to update datasource")
     return jsonify(datasource)
 
+# Endpoint: Delete Datasource
 @app.route('/datasources/<technical_id>', methods=['DELETE'])
 async def delete_datasource(technical_id):
-    datasource = await entity_service.get_item(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,
-        technical_id=technical_id
-    )
+    try:
+        datasource = await entity_service.get_item(
+            token=cyoda_token,
+            entity_model="datasource",
+            entity_version=ENTITY_VERSION,
+            technical_id=technical_id
+        )
+    except Exception as e:
+        logger.exception("Error retrieving datasource for deletion: %s", e)
+        abort(500, "Error retrieving datasource")
     if not datasource:
         abort(404, "Datasource not found")
-    await entity_service.delete_item(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,
-        entity=datasource,
-        meta={}
-    )
+    try:
+        await entity_service.delete_item(
+            token=cyoda_token,
+            entity_model="datasource",
+            entity_version=ENTITY_VERSION,
+            entity=datasource,
+            meta={}
+        )
+    except Exception as e:
+        logger.exception("Error deleting datasource: %s", e)
+        abort(500, "Failed to delete datasource")
+    # Clean up local in-memory cache if present.
     fetched_data.pop(technical_id, None)
     return '', 204
 
-# External API Data Fetch and Persistence
-
+# Function to fetch external API data for a datasource.
 async def process_fetch(datasource):
     headers = {"Accept": "application/json"}
     if datasource.get("authorization_header"):
         headers["Authorization"] = datasource["authorization_header"]
-    
-    url = datasource["url"]
+    url = datasource.get("url")
     params = datasource.get("uri_params", {})
-
-    async with aiohttp.ClientSession() as session:
-        try:
+    try:
+        async with aiohttp.ClientSession() as session:
             async with session.get(url, params=params, headers=headers) as resp:
                 if resp.status != 200:
+                    logger.error("Failed to fetch data; HTTP status: %s", resp.status)
                     return None
                 data = await resp.json()
-        except Exception as e:
-            return None
+    except Exception as e:
+        logger.exception("Exception during external API fetch: %s", e)
+        return None
 
-    fetched_data.setdefault(datasource.get("technical_id", ""), [])
+    # Use datasource technical_id for caching fetched data.
+    tech_id = datasource.get("technical_id", "")
+    if not tech_id:
+        logger.error("Datasource technical_id missing in fetched entity")
+        return None
+
+    fetched_data.setdefault(tech_id, [])
     if isinstance(data, list):
-        fetched_data[datasource.get("technical_id", "")].extend(data)
+        fetched_data[tech_id].extend(data)
         return len(data)
     else:
-        fetched_data[datasource.get("technical_id", "")].append(data)
+        fetched_data[tech_id].append(data)
         return 1
 
+# Endpoint: Trigger external data fetch for a datasource.
 @app.route('/datasources/<technical_id>/fetch', methods=['POST'])
 async def fetch_datasource_data(technical_id):
-    datasource = await entity_service.get_item(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,
-        technical_id=technical_id
-    )
+    try:
+        datasource = await entity_service.get_item(
+            token=cyoda_token,
+            entity_model="datasource",
+            entity_version=ENTITY_VERSION,
+            technical_id=technical_id
+        )
+    except Exception as e:
+        logger.exception("Error retrieving datasource for fetch: %s", e)
+        abort(500, "Error retrieving datasource")
     if not datasource:
         abort(404, "Datasource not found")
+    # Ensure technical_id is available in the datasource for caching purpose.
     datasource["technical_id"] = technical_id
-    task = asyncio.create_task(process_fetch(datasource))
-    records_count = await task
-
+    records_count = await process_fetch(datasource)
     if records_count is None:
         abort(500, "Failed to fetch data from external API")
-
     response = {
         "message": "Data successfully retrieved and persisted.",
         "fetched_records": records_count,
@@ -207,14 +268,20 @@ async def fetch_datasource_data(technical_id):
     }
     return jsonify(response)
 
+# Endpoint: Retrieve fetched data from local in-memory cache.
 @app.route('/datasources/<technical_id>/data', methods=['GET'])
 async def get_fetched_data(technical_id):
-    if not await entity_service.get_item(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,
-        technical_id=technical_id
-    ):
+    try:
+        exists = await entity_service.get_item(
+            token=cyoda_token,
+            entity_model="datasource",
+            entity_version=ENTITY_VERSION,
+            technical_id=technical_id
+        )
+    except Exception as e:
+        logger.exception("Error checking existence of datasource: %s", e)
+        abort(500, "Error retrieving datasource")
+    if not exists:
         abort(404, "Datasource not found")
     data = fetched_data.get(technical_id, [])
     return jsonify(data)

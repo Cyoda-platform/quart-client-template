@@ -1,0 +1,12 @@
+create an app to fetch and persist the data from given external APIs (datasources).
+2 entities: datasources and fetched_data.
+user can CRUD datasource entity: datasource_name, url, uri params (optional), Authorization Header (optional).
+user can perform API calls with a datasource_id given as param.
+use GET endpoint to fetch data from external APIs and "Accept": "application/json".
+ensure uri params are correctly applied.
+fetched_data from API call is persisted and read by datasource_id as param.
+each fetched_data is saved under entity_model = datasource_id.
+
+
+example of Response body:
+[{"company_num":117738,"company_bus_ind":"C","company_name":"RYANAIR CARGO LIMITED","company_addr_1":"3 DAWSON STREET","company_addr_2":"DUBLIN 2.","company_addr_3":"DUBLIN, DUBLIN, Ireland","company_addr_4":"","company_reg_date":"1986-10-28T00:00:00Z","company_status_desc":"Dissolved","company_status_date":"1993-11-19T00:00:00Z","last_ar_date":"0001-01-01T00:00:00Z","next_ar_date":"2002-04-28T00:00:00Z","last_acc_date":"0001-01-01T00:00:00Z","comp_type_desc":"Private limited by shares","company_type_code":1119,"company_status_code":1158,"place_of_business":"Ireland","eircode":""}]

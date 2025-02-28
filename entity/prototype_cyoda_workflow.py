@@ -14,22 +14,28 @@ app = Quart(__name__)
 QuartSchema(app)  # Schema integration for request/response validation
 
 # Workflow function for jobs entity
+# It will launch the background processing function for scores asynchronously.
 async def process_jobs(entity):
-    # Example: mark the job as processed by workflow and add a processed timestamp
+    # Mark the job as processed by workflow.
     entity["workflowProcessed"] = True
     entity["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
+    # Launch the background task with the job's id and date.
+    # We assume that the job entity already contains a 'date' field.
+    job_id = entity.get("technical_id") or entity.get("id")
+    if job_id and entity.get("date"):
+        asyncio.create_task(process_scores(job_id, entity["date"]))
     return entity
 
 # Workflow function for scores entity
 async def process_scores_workflow(entity):
-    # Example: add a workflow flag and a workflow timestamp to the score data
+    # Add a workflow flag and a workflow timestamp to the score data.
     entity["workflowProcessed"] = True
     entity["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
     return entity
 
 # Workflow function for subscriptions entity
 async def process_subscriptions(entity):
-    # Example: lower-case the email and mark subscription as processed
+    # Lower-case the email and mark the subscription as processed.
     entity["email"] = entity.get("email", "").lower()
     entity["workflowProcessed"] = True
     entity["workflowProcessedAt"] = datetime.datetime.utcnow().isoformat() + "Z"
@@ -41,7 +47,6 @@ async def startup():
     await init_cyoda(cyoda_token)
 
 # Data models for request validation
-
 @dataclass
 class RealTimeFetchRequest:
     date: str
@@ -137,6 +142,7 @@ async def process_scores(job_technical_id: str, date: str):
                     print(f"Error updating score for game {game_id}: {e}")
             else:
                 try:
+                    # Persist the new score entity applying its workflow before saving.
                     await entity_service.add_item(
                         token=cyoda_token,
                         entity_model="scores",
@@ -182,6 +188,7 @@ async def fetch_real_time_scores(data: RealTimeFetchRequest):
         "date": date
     }
     try:
+        # The workflow function process_jobs will launch the background processing task.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="jobs",
@@ -191,9 +198,6 @@ async def fetch_real_time_scores(data: RealTimeFetchRequest):
         )
     except Exception as e:
         return jsonify({"status": "error", "message": f"Unable to create job: {e}"}), 500
-
-    # Fire and forget the processing task.
-    asyncio.create_task(process_scores(job_id, date))
 
     return jsonify({
         "status": "success",
@@ -256,6 +260,7 @@ async def create_subscription(data: SubscriptionRequest):
         "createdAt": datetime.datetime.utcnow().isoformat() + "Z"
     }
     try:
+        # Persist the subscription entity applying its workflow before saving.
         subscription_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="subscriptions",
@@ -266,7 +271,6 @@ async def create_subscription(data: SubscriptionRequest):
     except Exception as e:
         return jsonify({"status": "error", "message": f"Unable to create subscription: {e}"}), 500
 
-    # TODO: In a full implementation, validate email and handle duplicate subscriptions.
     return jsonify({
         "status": "success",
         "message": "Subscription created successfully",

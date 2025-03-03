@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import asyncio
-import uuid
 from datetime import datetime
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -16,7 +15,6 @@ app = Quart(__name__)
 QuartSchema(app)
 
 # Use "job_report" as the entity_model name in all external service calls.
-
 @dataclass
 class JobRequest:
     recipient: str  # Use only primitive types
@@ -35,9 +33,10 @@ async def send_email(recipient: str, report: dict):
     print(f"Sending email to {recipient} with report: {report}")
     await asyncio.sleep(0.1)  # Simulate email sending delay
 
-# Workflow function for job_report. The entity_service.add_item will call this
-# function asynchronously before persisting the entity.
+# Workflow function for "job_report". It is applied to the job_report entity
+# asynchronously before it is persisted.
 async def process_job_report(entity: dict) -> dict:
+    # entity already contains job details (e.g. "recipient", "requestedAt", "status")
     try:
         # Fetch conversion rates for BTC/USD and BTC/EUR
         btc_usd = await fetch_conversion_rate("BTCUSDT")
@@ -49,29 +48,28 @@ async def process_job_report(entity: dict) -> dict:
         return entity
 
     timestamp = datetime.utcnow().isoformat() + "Z"
-    report_details = {
-        "conversionRates": {
-            "BTC_USD": btc_usd,
-            "BTC_EUR": btc_eur
-        },
-        "timestamp": timestamp,
-        "email_sent": False
+    conversion_data = {
+        "BTC_USD": btc_usd,
+        "BTC_EUR": btc_eur
     }
+    # Send email report; no further action on current entity is allowed
+    await send_email(entity["recipient"], {
+        "conversionRates": conversion_data,
+        "timestamp": timestamp
+    })
 
-    # Send email report (fire and forget pattern)
-    await send_email(entity["recipient"], report_details)
-    report_details["email_sent"] = True
-
-    entity.update(report_details)
+    # Modify the entity state directly; the updated state will be persisted
     entity["status"] = "success"
+    entity["conversionRates"] = conversion_data
+    entity["timestamp"] = timestamp
+    entity["email_sent"] = True
     return entity
 
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
 
-# For POST requests, the route decorator must come first, followed by validate_request.
-# This ordering is a workaround for an issue in the quart-schema library.
+# The controller now only creates the initial entity and passes it to the workflow.
 @app.route("/job", methods=["POST"])
 @validate_request(JobRequest)
 async def create_job(data: JobRequest):
@@ -79,22 +77,21 @@ async def create_job(data: JobRequest):
     if not recipient:
         return jsonify({"error": "Recipient email is required"}), 400
 
-    # Create job_report entity including the recipient for workflow processing
+    # Create the base entity, including all required initial details.
     job_report = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat() + "Z",
         "recipient": recipient
     }
 
-    # entity_service.add_item now expects a workflow function for asynchronous processing
+    # Pass the workflow function; it will process the entity asynchronously before persistence.
     job_id = await entity_service.add_item(
         token=cyoda_token,
         entity_model="job_report",
         entity_version=ENTITY_VERSION,  # always use this constant
-        entity=job_report,  # the validated data object with job details
-        workflow=process_job_report  # Workflow function applied to the entity before persistence
+        entity=job_report,  # the validated data object including initial job details
+        workflow=process_job_report  # workflow function applied to the entity
     )
-
     return jsonify({"id": job_id}), 200
 
 @app.route("/report/<job_id>", methods=["GET"])

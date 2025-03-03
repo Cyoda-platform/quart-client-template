@@ -1,16 +1,21 @@
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 app = Quart(__name__)
 QuartSchema(app)
 
 # In-memory storage for reports
 reports = {}
+
+@dataclass
+class JobRequest:
+    recipient: str  # Use only primitive types
 
 async def fetch_conversion_rate(symbol: str) -> float:
     # Use Binance API as external source
@@ -59,10 +64,12 @@ async def process_entity(job_id: str, recipient: str):
     # Update the in-memory report with final details
     reports[job_id] = report
 
+# For POST requests, the route decorator must come first, followed by validate_request.
+# This ordering is a workaround for an issue in the quart-schema library.
 @app.route("/job", methods=["POST"])
-async def create_job():
-    data = await request.get_json()
-    recipient = data.get("recipient")
+@validate_request(JobRequest)
+async def create_job(data: JobRequest):
+    recipient = data.recipient
     if not recipient:
         return jsonify({"error": "Recipient email is required"}), 400
 
@@ -75,6 +82,7 @@ async def create_job():
 
     return jsonify(reports[job_id]), 200
 
+# GET endpoint without request body; no validation needed
 @app.route("/report/<job_id>", methods=["GET"])
 async def get_report(job_id):
     report = reports.get(job_id)

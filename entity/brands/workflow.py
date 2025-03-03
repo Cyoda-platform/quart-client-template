@@ -1,10 +1,7 @@
 from datetime import datetime
-import asyncio
+
 import aiohttp
 
-from common.config.config import ENTITY_VERSION  # always use this constant
-from common.repository.cyoda.cyoda_init import init_cyoda
-from app_init.app_init import entity_service, cyoda_token  # external service and token
 
 async def process_add_timestamp(entity: dict) -> None:
     # Add a processing timestamp to the entity

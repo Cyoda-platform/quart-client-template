@@ -1,1 +1,133 @@
-{"name": "brands_processing_workflow", "description": "Workflow to process brands including adding timestamp, applying filter logic, and scheduling analytics notification", "transitions": [{"name": "add_timestamp_transition", "description": "Add processing timestamp to the brand entity", "start_state": "None", "start_state_description": "Initial state", "end_state": "Timestamp_Added", "end_state_description": "Timestamp has been added", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_add_timestamp", "description": "Adds a processing timestamp to the entity", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}, {"name": "apply_filter_transition", "description": "Apply filter logic to the brand entity", "start_state": "Timestamp_Added", "start_state_description": "Timestamp has been added", "end_state": "Filter_Applied", "end_state_description": "Filter logic processed if applicable", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_filter", "description": "Processes the filter logic on the entity", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}, {"name": "notify_analytics_transition", "description": "Schedule asynchronous analytics notification for the brand entity", "start_state": "Filter_Applied", "start_state_description": "Filter logic applied", "end_state": "Analytics_NotificationScheduled", "end_state_description": "Analytics notification task scheduled", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_notify_analytics", "description": "Sends analytics notification asynchronously", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}], "workflow_criteria": {"externalized_criteria": [], "condition_criteria": [{"name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR", "description": "Workflow criteria", "condition": {"group_condition_operator": "AND", "conditions": [{"field_name": "entityModelName", "is_meta_field": true, "operation": "equals", "value": "ENTITY_MODEL_VAR", "value_type": "strings"}, {"field_name": "entityModelVersion", "is_meta_field": true, "operation": "equals", "value": "ENTITY_VERSION_VAR", "value_type": "strings"}]}}]}}
+{
+  "name": "brands_processing_workflow",
+  "description": "Workflow to process brands including adding timestamp, applying filter logic, and scheduling analytics notification",
+  "transitions": [
+    {
+      "name": "add_timestamp_transition",
+      "description": "Add processing timestamp to the brand entity",
+      "start_state": "None",
+      "start_state_description": "Initial state",
+      "end_state": "Timestamp_Added",
+      "end_state_description": "Timestamp has been added",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_add_timestamp",
+            "description": "Adds a processing timestamp to the entity",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    },
+    {
+      "name": "apply_filter_transition",
+      "description": "Apply filter logic to the brand entity",
+      "start_state": "Timestamp_Added",
+      "start_state_description": "Timestamp has been added",
+      "end_state": "Filter_Applied",
+      "end_state_description": "Filter logic processed if applicable",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_filter",
+            "description": "Processes the filter logic on the entity",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    },
+    {
+      "name": "notify_analytics_transition",
+      "description": "Schedule asynchronous analytics notification for the brand entity",
+      "start_state": "Filter_Applied",
+      "start_state_description": "Filter logic applied",
+      "end_state": "Analytics_NotificationScheduled",
+      "end_state_description": "Analytics notification task scheduled",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_notify_analytics",
+            "description": "Sends analytics notification asynchronously",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    }
+  ],
+  "workflow_criteria": {
+    "externalized_criteria": [],
+    "condition_criteria": [
+      {
+        "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+        "description": "Workflow criteria",
+        "condition": {
+          "group_condition_operator": "AND",
+          "conditions": [
+            {
+              "field_name": "entityModelName",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_MODEL_VAR",
+              "value_type": "strings"
+            },
+            {
+              "field_name": "entityModelVersion",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_VERSION_VAR",
+              "value_type": "strings"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

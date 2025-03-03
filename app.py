@@ -23,15 +23,12 @@ async def startup():
 async def shutdown():
     app.background_task.cancel()
     await app.background_task
-    except Exception as e:
-        # Log startup error and raise to prevent running in faulty state.
-        print(f"Failed to initialize cyoda: {e}")
-        raise e
 
-# Data class for POST request validation
+from typing import Optional
+
 @dataclass
 class BrandRequest:
-    filter: str = None  # Optional filter parameter; adjust fields as requirements are clarified.
+    filter: Optional[str] = None
 
 # Function that fetches raw brand data and stores it using the entity_service.
 async def process_entity(params: dict) -> str:

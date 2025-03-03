@@ -1,1 +1,97 @@
-{"name": "Job_Processing_Workflow", "description": "Workflow for orchestrating job processing by marking job as processed, assigning a job ID, and launching a background task.", "transitions": [{"name": "job_processing_transition", "description": "Orchestrates job processing by invoking process_mark_as_processed, process_assign_job_id, and process_launch_background_task.", "start_state": "None", "start_state_description": "Initial state", "end_state": "Job_Processed", "end_state_description": "Job is processed and background task is launched", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_mark_as_processed", "description": "Marks the job as processed by updating workflow flags.", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}, {"name": "process_assign_job_id", "description": "Assigns a valid job identifier if not present.", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}, {"name": "process_launch_background_task", "description": "Launches a background task if the job has a valid date.", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}], "workflow_criteria": {"externalized_criteria": [], "condition_criteria": [{"name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR", "description": "Workflow criteria", "condition": {"group_condition_operator": "AND", "conditions": [{"field_name": "entityModelName", "is_meta_field": true, "operation": "equals", "value": "ENTITY_MODEL_VAR", "value_type": "strings"}, {"field_name": "entityModelVersion", "is_meta_field": true, "operation": "equals", "value": "ENTITY_VERSION_VAR", "value_type": "strings"}]}}]}}
+{
+  "name": "Job_Processing_Workflow",
+  "description": "Workflow for orchestrating job processing by marking job as processed, assigning a job ID, and launching a background task.",
+  "transitions": [
+    {
+      "name": "job_processing_transition",
+      "description": "Orchestrates job processing by invoking process_mark_as_processed, process_assign_job_id, and process_launch_background_task.",
+      "start_state": "None",
+      "start_state_description": "Initial state",
+      "end_state": "Job_Processed",
+      "end_state_description": "Job is processed and background task is launched",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_mark_as_processed",
+            "description": "Marks the job as processed by updating workflow flags.",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          },
+          {
+            "name": "process_assign_job_id",
+            "description": "Assigns a valid job identifier if not present.",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          },
+          {
+            "name": "process_launch_background_task",
+            "description": "Launches a background task if the job has a valid date.",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    }
+  ],
+  "workflow_criteria": {
+    "externalized_criteria": [],
+    "condition_criteria": [
+      {
+        "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+        "description": "Workflow criteria",
+        "condition": {
+          "group_condition_operator": "AND",
+          "conditions": [
+            {
+              "field_name": "entityModelName",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_MODEL_VAR",
+              "value_type": "strings"
+            },
+            {
+              "field_name": "entityModelVersion",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_VERSION_VAR",
+              "value_type": "strings"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

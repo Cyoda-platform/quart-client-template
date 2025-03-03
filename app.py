@@ -113,23 +113,27 @@ async def create_subscription(data: SubscriptionRequest):
     if not email:
         return jsonify({"status": "error", "message": "Email is required"}), 400
 
-    filters = {
-        "team": data.team.strip() if data.team else "",
-        "gameType": data.gameType.strip() if data.gameType else ""
-    }
+    # Формируем словарь фильтров только если значения не пустые.
+    filters = {}
+    if data.team.strip():
+        filters["team"] = data.team.strip()
+    if data.gameType.strip():
+        filters["gameType"] = data.gameType.strip()
+
     sub_data = {
         "email": email,
-        "filters": filters,
         "createdAt": datetime.datetime.utcnow().isoformat() + "Z"
     }
+    if filters:
+        sub_data["filters"] = filters
+
     try:
-        # Add subscription entity applying its workflow for preprocessing.
         subscription_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="subscriptions",
             entity_version=ENTITY_VERSION,
             entity=sub_data,
-            )
+        )
     except Exception as e:
         return jsonify({"status": "error", "message": f"Unable to create subscription: {e}"}), 500
 

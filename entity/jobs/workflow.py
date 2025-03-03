@@ -1,13 +1,11 @@
 import asyncio
 import datetime
 import uuid
+
 import aiohttp
-from dataclasses import dataclass
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
-from common.config.config import ENTITY_VERSION
-from common.repository.cyoda.cyoda_init import init_cyoda
+
 from app_init.app_init import cyoda_token, entity_service
+from common.config.config import ENTITY_VERSION
 
 SPORTS_DATA_API_KEY = "f8824354d80d45368063dd2e6fb16c38"
 SPORTS_DATA_URL_TEMPLATE = "https://api.sportsdata.io/v3/scores/json/GamesByDate/{date}?key=" + SPORTS_DATA_API_KEY

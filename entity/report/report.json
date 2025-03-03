@@ -1,0 +1,1 @@
+{"report_id": "string", "btc_usd": "number", "btc_eur": "number", "timestamp": "ISO8601", "status": "string"}

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import asyncio
-import uuid
 import logging
 from datetime import datetime
 
@@ -54,45 +53,48 @@ async def fetch_conversion_rates() -> dict:
             "btc_eur": float(data_eur.get("price", 0))
         }
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error fetching conversion rates")
         raise
 
 # Workflow function applied to report entity before persistence.
 # It MUST be named with the prefix 'process_' followed by the entity name.
 async def process_report(entity: dict) -> dict:
     try:
-        # Mark the entity as processing
+        # Mark the entity as processing before doing any asynchronous tasks.
         entity["status"] = "processing"
-        # Fetch conversion rates
+        # Fetch conversion rates.
         rates = await fetch_conversion_rates()
+        # Set timestamp for the report.
         timestamp = datetime.utcnow().isoformat()
-        # Update entity with completed report details
+        # Update the entity with complete report details.
         entity["btc_usd"] = rates["btc_usd"]
         entity["btc_eur"] = rates["btc_eur"]
         entity["timestamp"] = timestamp
         entity["status"] = "completed"
-        # Optionally add workflow flag
+        # Optional flag to indicate workflow has been applied.
         entity["workflow_applied"] = True
-        # Asynchronously trigger email sending (fire-and-forget)
+        # Trigger asynchronous email sending (fire-and-forget).
         asyncio.create_task(send_email(entity))
     except Exception as e:
-        logger.exception(e)
-        # On error, mark entity as failed. The modified state will be persisted.
+        logger.exception("Error during workflow processing for report")
+        # On error, mark the entity as failed.
         entity["status"] = "failed"
+    # Return the modified entity; this new state will be persisted.
     return entity
 
 # POST endpoint: Create a new job record.
-# The workflow function (process_report) is applied to the entity asynchronously
-# before persistence, thus offloading processing logic from the controller.
+# The workflow function process_report is applied asynchronously to the entity
+# before persistence, offloading the business logic from the controller.
 @app.route("/job", methods=["POST"])
 @validate_request(JobRequest)
 async def create_job(data: JobRequest):
+    # Build initial job record with status "received".
     requested_at = datetime.utcnow().isoformat()
-    # Build initial job record with status "received"
     job_data = {"status": "received", "requestedAt": requested_at}
     try:
         # Add new job via external entity_service.
-        # The workflow function process_report will update the entity with processing details.
+        # The workflow function (process_report) will update the entity
+        # with conversion rates, timestamp, and trigger email sending.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="report",
@@ -101,9 +103,9 @@ async def create_job(data: JobRequest):
             workflow=process_report
         )
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to create job record")
         abort(500, description="Could not create job record.")
-    # Return the generated job id; the full report details can be retrieved later.
+    # Return the generated job id; full report details can be retrieved later.
     return jsonify({
         "report_id": job_id,
         "message": "Job created. Retrieve result later using the report endpoint."
@@ -120,8 +122,9 @@ async def get_report(job_id: str):
             technical_id=job_id
         )
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error retrieving report")
         abort(500, description="Error retrieving report.")
+    # Ensure report exists and is completed.
     if not report or report.get("status") != "completed":
         abort(404, description="Report not found or not completed yet.")
     return jsonify({

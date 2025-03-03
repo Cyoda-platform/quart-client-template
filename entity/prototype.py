@@ -5,7 +5,9 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request, abort
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # using validate_request for POST endpoints
+
+from dataclasses import dataclass
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -13,6 +15,11 @@ logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Dummy schema for POST /job request
+@dataclass
+class JobRequest:
+    dummy: str = ""  # TODO: This schema is a placeholder since no data is expected. Update if requirements change.
 
 # Global in-memory cache to store reports
 reports = {}
@@ -76,14 +83,16 @@ async def process_entity(job_id: str):
         # In a real implementation, handle retries or error reporting.
         raise
 
+# For POST endpoints, route decorator comes first, then validate_request (workaround for a quart-schema issue)
 @app.route("/job", methods=["POST"])
-async def create_job():
+@validate_request(JobRequest)
+async def create_job(data: JobRequest):
     # Create a new job with unique id and record request time
     job_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat()
     reports[job_id] = {"status": "received", "requestedAt": requested_at}
 
-    # Fire and forget: process the job asynchronously
+    # Fire and forget the processing task.
     try:
         # Await the processing for the prototype user feedback.
         report = await asyncio.create_task(process_entity(job_id))
@@ -99,6 +108,7 @@ async def create_job():
     }
     return jsonify(response)
 
+# GET endpoint does not require validation as it only retrieves a stored report using a URL parameter
 @app.route("/report/<string:job_id>", methods=["GET"])
 async def get_report(job_id: str):
     report = reports.get(job_id)

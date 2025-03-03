@@ -58,8 +58,6 @@ async def create_brand_item(job_id, data):
 @app.route('/brands/fetch', methods=['POST'])
 @validate_request(FetchBrandsRequest)
 async def fetch_brands(data: FetchBrandsRequest):
-    # Используем payload вместо data
-    # Генерируем уникальный job_id и далее логика остается без изменений.
     job_id = str(datetime.utcnow().timestamp())
     requested_at = datetime.utcnow().isoformat()
     entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}

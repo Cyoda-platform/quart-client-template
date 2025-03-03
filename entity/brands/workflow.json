@@ -1,1 +1,100 @@
-{"name": "brands_processing_workflow", "description": "Workflow for processing brand entities with initial state setting and optional supplementary data fetching.", "transitions": [{"name": "set_initial_state", "description": "Set initial processing flags and timestamp on the entity.", "start_state": "None", "start_state_description": "Initial state", "end_state": "initial_state_set", "end_state_description": "Entity state has been initialized.", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_set_initial_state", "description": "Sets workflow_processed flag to true and updates processed_at with current UTC timestamp.", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}, {"name": "fetch_supplementary_data", "description": "Optionally fetch and attach supplementary data to the entity.", "start_state": "initial_state_set", "start_state_description": "Entity state has been initialized.", "end_state": "supplementary_data_fetched", "end_state_description": "Entity state has been updated with supplementary data if available.", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_fetch_supplementary_data", "description": "Attempts to fetch supplementary data and attach it to the entity.", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}], "workflow_criteria": {"externalized_criteria": [], "condition_criteria": [{"name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR", "description": "Workflow criteria", "condition": {"group_condition_operator": "AND", "conditions": [{"field_name": "entityModelName", "is_meta_field": true, "operation": "equals", "value": "ENTITY_MODEL_VAR", "value_type": "strings"}, {"field_name": "entityModelVersion", "is_meta_field": true, "operation": "equals", "value": "ENTITY_VERSION_VAR", "value_type": "strings"}]}}]}}
+{
+  "name": "brands_processing_workflow",
+  "description": "Workflow for processing brand entities with initial state setting and optional supplementary data fetching.",
+  "transitions": [
+    {
+      "name": "set_initial_state",
+      "description": "Set initial processing flags and timestamp on the entity.",
+      "start_state": "None",
+      "start_state_description": "Initial state",
+      "end_state": "initial_state_set",
+      "end_state_description": "Entity state has been initialized.",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_set_initial_state",
+            "description": "Sets workflow_processed flag to true and updates processed_at with current UTC timestamp.",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    },
+    {
+      "name": "fetch_supplementary_data",
+      "description": "Optionally fetch and attach supplementary data to the entity.",
+      "start_state": "initial_state_set",
+      "start_state_description": "Entity state has been initialized.",
+      "end_state": "supplementary_data_fetched",
+      "end_state_description": "Entity state has been updated with supplementary data if available.",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_fetch_supplementary_data",
+            "description": "Attempts to fetch supplementary data and attach it to the entity.",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    }
+  ],
+  "workflow_criteria": {
+    "externalized_criteria": [],
+    "condition_criteria": [
+      {
+        "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+        "description": "Workflow criteria",
+        "condition": {
+          "group_condition_operator": "AND",
+          "conditions": [
+            {
+              "field_name": "entityModelName",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_MODEL_VAR",
+              "value_type": "strings"
+            },
+            {
+              "field_name": "entityModelVersion",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_VERSION_VAR",
+              "value_type": "strings"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

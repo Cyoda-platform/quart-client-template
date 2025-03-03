@@ -1,6 +1,5 @@
-import asyncio
 from datetime import datetime
-from dataclasses import dataclass
+
 
 # Business logic: update entity state by setting processing flags and timestamps.
 async def process_set_initial_state(entity):
@@ -9,10 +8,13 @@ async def process_set_initial_state(entity):
     return entity
 
 # Business logic: (optional) fetch and add supplementary data to entity.
+async def fetch_supplementary_data():
+    pass
+
+
 async def process_fetch_supplementary_data(entity):
     # Uncomment and implement the following lines if supplementary data is needed.
-    #
-    # supplementary_data = await fetch_supplementary_data()
-    # if supplementary_data:
-    #     entity["supplementary_info"] = supplementary_data
+    supplementary_data = await fetch_supplementary_data()
+    if supplementary_data:
+        entity["supplementary_info"] = supplementary_data
     return entity

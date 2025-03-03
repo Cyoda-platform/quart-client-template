@@ -1,12 +1,14 @@
-from common.grpc_client.grpc_client import grpc_stream
 import asyncio
-from datetime import datetime
 from dataclasses import dataclass
-from quart import Quart, jsonify, request
+from datetime import datetime
+
 import aiohttp
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
-from common.config.config import ENTITY_VERSION
+
 from app_init.app_init import entity_service, cyoda_token
+from common.config.config import ENTITY_VERSION
+from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 
 app = Quart(__name__)
@@ -56,12 +58,11 @@ async def create_brand_item(job_id, data):
 @app.route('/brands/fetch', methods=['POST'])
 @validate_request(FetchBrandsRequest)
 async def fetch_brands(data: FetchBrandsRequest):
-    # Generate a unique job_id based on current timestamp.
+    # Используем payload вместо data
+    # Генерируем уникальный job_id и далее логика остается без изменений.
     job_id = str(datetime.utcnow().timestamp())
     requested_at = datetime.utcnow().isoformat()
     entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
-
-    # Fetch external API data for brands.
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(
@@ -70,7 +71,6 @@ async def fetch_brands(data: FetchBrandsRequest):
             ) as resp:
                 if resp.status == 200:
                     api_data = await resp.json()
-                    # Delegate processing to the background workflow.
                     asyncio.create_task(create_brand_item(job_id, api_data))
                 else:
                     entity_job[job_id]["status"] = "error"
@@ -84,7 +84,6 @@ async def fetch_brands(data: FetchBrandsRequest):
                 "status": "error",
                 "message": f"Exception during data retrieval: {str(e)}"
             }), 500
-
     return jsonify({
         "status": "success",
         "message": "External data retrieved. Entity processing initiated.",

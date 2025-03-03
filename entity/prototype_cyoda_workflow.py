@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request, abort
+from quart import Quart, jsonify, abort
 from quart_schema import QuartSchema, validate_request
 from dataclasses import dataclass
 
@@ -60,59 +60,30 @@ async def fetch_conversion_rates() -> dict:
 # Workflow function applied to report entity before persistence.
 # It MUST be named with the prefix 'process_' followed by the entity name.
 async def process_report(entity: dict) -> dict:
-    logger.info("Applying workflow modifications to report entity")
-    # Example: add a flag indicating workflow has been applied.
-    entity["workflow_applied"] = True
-    return entity
-
-# Process the job: update status, fetch rates, save completed report and trigger email.
-async def process_entity(job_id: str):
     try:
-        # Update job status to "processing"
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="report",
-            entity_version=ENTITY_VERSION,
-            entity={"status": "processing"},
-            technical_id=job_id,
-            meta={}
-        )
-        # Fetch conversion rates.
+        # Mark the entity as processing
+        entity["status"] = "processing"
+        # Fetch conversion rates
         rates = await fetch_conversion_rates()
         timestamp = datetime.utcnow().isoformat()
-        report = {
-            "report_id": job_id,
-            "btc_usd": rates["btc_usd"],
-            "btc_eur": rates["btc_eur"],
-            "timestamp": timestamp,
-            "status": "completed"
-        }
-        # Update job record with completed report.
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="report",
-            entity_version=ENTITY_VERSION,
-            entity=report,
-            technical_id=job_id,
-            meta={}
-        )
-        # Fire off email asynchronously.
-        asyncio.create_task(send_email(report))
-        return report
+        # Update entity with completed report details
+        entity["btc_usd"] = rates["btc_usd"]
+        entity["btc_eur"] = rates["btc_eur"]
+        entity["timestamp"] = timestamp
+        entity["status"] = "completed"
+        # Optionally add workflow flag
+        entity["workflow_applied"] = True
+        # Asynchronously trigger email sending (fire-and-forget)
+        asyncio.create_task(send_email(entity))
     except Exception as e:
         logger.exception(e)
-        # Mark job as failed if error occurs.
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="report",
-            entity_version=ENTITY_VERSION,
-            entity={"status": "failed"},
-            technical_id=job_id,
-            meta={}
-        )
-        raise
+        # On error, mark entity as failed. The modified state will be persisted.
+        entity["status"] = "failed"
+    return entity
 
-# POST endpoint: Create a new job record and trigger async processing.
+# POST endpoint: Create a new job record.
+# The workflow function (process_report) is applied to the entity asynchronously
+# before persistence, thus offloading processing logic from the controller.
 @app.route("/job", methods=["POST"])
 @validate_request(JobRequest)
 async def create_job(data: JobRequest):
@@ -121,7 +92,7 @@ async def create_job(data: JobRequest):
     job_data = {"status": "received", "requestedAt": requested_at}
     try:
         # Add new job via external entity_service.
-        # Note: workflow function 'process_report' is applied to the entity before persistence.
+        # The workflow function process_report will update the entity with processing details.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="report",
@@ -132,11 +103,7 @@ async def create_job(data: JobRequest):
     except Exception as e:
         logger.exception(e)
         abort(500, description="Could not create job record.")
-
-    # Fire and forget the background processing task.
-    asyncio.create_task(process_entity(job_id))
-
-    # Return the generated job id; report details will be available later via the GET endpoint.
+    # Return the generated job id; the full report details can be retrieved later.
     return jsonify({
         "report_id": job_id,
         "message": "Job created. Retrieve result later using the report endpoint."
@@ -155,10 +122,8 @@ async def get_report(job_id: str):
     except Exception as e:
         logger.exception(e)
         abort(500, description="Error retrieving report.")
-
     if not report or report.get("status") != "completed":
         abort(404, description="Report not found or not completed yet.")
-
     return jsonify({
         "report_id": report.get("report_id"),
         "btc_usd": report.get("btc_usd"),

@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import asyncio
 import logging
-import uuid
 import datetime
 from dataclasses import dataclass
 
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 import httpx
 
@@ -26,13 +25,13 @@ async def startup():
 
 @dataclass
 class ProcessRequest:
-    # Using dict for nested data, TODO: adjust types if a more strict schema is needed
+    # Using dict for nested data; adjust types as needed
     inputData: dict  
     externalParams: dict  
     operation: str
 
 @app.route('/process', methods=['POST'])
-@validate_request(ProcessRequest)  # POST: validation goes second due to library workaround issues.
+@validate_request(ProcessRequest)
 async def process(data: ProcessRequest):
     try:
         process_data = {
@@ -40,7 +39,7 @@ async def process(data: ProcessRequest):
             "externalParams": data.externalParams,
             "operation": data.operation,
         }
-        # Prepare the job data to be stored externally.
+        # Prepare the job data with initial state. This entity will be passed to the workflow function.
         job_data = {
             "status": "processing",
             "requestedAt": datetime.datetime.utcnow().isoformat(),
@@ -48,15 +47,16 @@ async def process(data: ProcessRequest):
             "externalParams": process_data.get("externalParams"),
             "operation": process_data.get("operation"),
         }
-        # Call add_item with workflow function that will process the entity asynchronously before persistence.
+        # Call add_item with workflow function that processes the entity asynchronously before persistence.
+        # The workflow function will modify the entity directly.
         new_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="entity_job",
             entity_version=ENTITY_VERSION,  # always use this constant
-            entity=job_data,  # the validated data object
-            workflow=process_entity_job  # Workflow function that processes the entity data
+            entity=job_data,  # validated job data
+            workflow=process_entity_job  # async workflow function to process the entity
         )
-        logger.info(f"Received process request for {new_id}")
+        logger.info(f"Received process request. Assigned ID: {new_id}")
         return jsonify({
             "status": "success",
             "message": "Processing initiated.",
@@ -77,7 +77,8 @@ async def get_results(processed_id):
         )
         if not job:
             return jsonify({"status": "not_found", "result": None}), 404
-        # Return current entity state
+        
+        # Return current entity state; if still processing or in error, it will indicate so.
         if job.get("status") != "completed":
             return jsonify({"status": job.get("status"), "result": "Processing not complete"}), 200
         
@@ -91,18 +92,31 @@ async def get_results(processed_id):
 
 # Workflow function for entity_job.
 # This function is invoked asynchronously before the current entity is persisted.
-# It moves all processing logic that was originally in separate async tasks.
+# It moves all async processing logic (external API calls, business logic, delays) from the controller.
 async def process_entity_job(entity):
     try:
-        # Using entity's "externalParams" to call an external API.
+        # Validate necessary fields exist
+        if "externalParams" not in entity:
+            raise ValueError("Missing externalParams in entity")
+        if "operation" not in entity:
+            raise ValueError("Missing operation in entity")
+        if "inputData" not in entity:
+            raise ValueError("Missing inputData in entity")
+        
+        # Call external API using provided parameters.
         async with httpx.AsyncClient() as client:
-            external_url = "https://example.com/api"  # Replace with actual external API URL as needed.
+            external_url = "https://example.com/api"  # Replace with actual URL
             external_params = entity.get("externalParams", {})
             external_response = await client.post(external_url, json=external_params)
-            external_data = external_response.json()
-            logger.info(f"Received external data for entity_job: {external_data}")
+            try:
+                # Attempt to parse JSON response; if fails, log and continue.
+                external_data = external_response.json()
+            except Exception as json_err:
+                logger.error(f"Error parsing external API response: {json_err}")
+                external_data = {}
+            logger.info(f"External API responded with: {external_data}")
         
-        # Process business logic based on "operation".
+        # Determine business logic based on the operation.
         operation = entity.get("operation")
         input_data = entity.get("inputData", {})
         if operation == "calculate_discount":
@@ -111,7 +125,7 @@ async def process_entity_job(entity):
             result = {
                 "id": input_data.get("id"),
                 "calculation": value * 0.9,
-                "details": "Discount applied."
+                "details": "10% discount applied."
             }
         else:
             result = {
@@ -120,15 +134,18 @@ async def process_entity_job(entity):
                 "details": f"Operation '{operation}' not supported."
             }
         
-        # Simulate processing delay if necessary.
+        # Optional processing delay; remove or adjust as needed.
         await asyncio.sleep(1)
-        # Modify the entity state directly.
+        
+        # Directly modify the entity state.
         entity["status"] = "completed"
         entity["result"] = result
         entity["completedAt"] = datetime.datetime.utcnow().isoformat()
+        # Optionally, add external data if needed for auditing.
+        entity["externalData"] = external_data
     except Exception as e:
         logger.exception(e)
-        # Directly modify the entity state in case of errors.
+        # Modify the entity state to reflect error without calling entity_service.update_item
         entity["status"] = "error"
         entity["error"] = str(e)
     return entity

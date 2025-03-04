@@ -6,7 +6,8 @@ from typing import List, Dict, Any
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Using validate_request for POST endpoints
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -17,11 +18,20 @@ QuartSchema(app)
 # In-memory cache for jobs (mock persistence)
 jobs: Dict[str, Dict[str, Any]] = {}
 
+
+# Data class for the analyze request body
+@dataclass
+class AnalyzeRequest:
+    post_ids: List[int]
+    email: str
+
+
 # TODO: Replace with a real email sending function in production
 async def send_email(recipient: str, subject: str, body: str):
     logger.info(f"Sending email to {recipient} with subject '{subject}' and body:\n{body}")
     # Simulate email sending delay
     await asyncio.sleep(0.5)
+
 
 # Helper function to perform sentiment analysis (mock implementation)
 def perform_sentiment_analysis(comment: str) -> str:
@@ -29,11 +39,13 @@ def perform_sentiment_analysis(comment: str) -> str:
     # Placeholder: categorize everything as 'neutral' sentiment.
     return "neutral"
 
+
 # Helper function to perform keyword extraction (mock implementation)
 def extract_keywords(comment: str) -> List[str]:
     # TODO: Implement real keyword extraction
-    # Placeholder: simply split the comment into words and return unique words
+    # Placeholder: simply split the comment into words and return unique words.
     return list(set(comment.split()))
+
 
 async def fetch_comments_for_post(post_id: int) -> List[Dict[str, Any]]:
     url = f"https://jsonplaceholder.typicode.com/posts/{post_id}/comments"
@@ -49,10 +61,11 @@ async def fetch_comments_for_post(post_id: int) -> List[Dict[str, Any]]:
             # Return empty list on failure
             return []
 
+
 async def process_entity(job_id: str, post_ids: List[int], recipient_email: str):
     try:
         all_comments = []
-        # Retrieve comments for each post id (can be done concurrently)
+        # Retrieve comments for each post id concurrently
         tasks = [fetch_comments_for_post(pid) for pid in post_ids]
         results = await asyncio.gather(*tasks)
         for comments in results:
@@ -100,12 +113,15 @@ async def process_entity(job_id: str, post_ids: List[int], recipient_email: str)
         jobs[job_id]["status"] = "error"
         jobs[job_id]["report"] = str(e)
 
+
+# Workaround for quart-schema ordering issue:
+# For POST endpoints, the route decorator must be placed first, then validate_request.
 @app.route("/api/analyze", methods=["POST"])
-async def analyze():
+@validate_request(AnalyzeRequest)
+async def analyze(data: AnalyzeRequest):
     try:
-        data = await request.get_json()
-        post_ids = data.get("post_ids")
-        recipient_email = data.get("email")
+        post_ids = data.post_ids
+        recipient_email = data.email
 
         if not post_ids or not recipient_email:
             return jsonify({"error": "post_ids and email are required fields"}), 400
@@ -126,6 +142,7 @@ async def analyze():
         logger.exception(e)
         return jsonify({"error": str(e)}), 500
 
+
 @app.route("/api/result/<job_id>", methods=["GET"])
 async def get_result(job_id: str):
     try:
@@ -142,6 +159,7 @@ async def get_result(job_id: str):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

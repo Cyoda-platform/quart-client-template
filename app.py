@@ -1,14 +1,15 @@
-from common.grpc_client.grpc_client import grpc_stream
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
-from dataclasses import dataclass
-import datetime
 import asyncio
+import datetime
+from dataclasses import dataclass
+
 import aiohttp
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 
 # Import external entity_service functions and constants
 from app_init.app_init import entity_service, cyoda_token
 from common.config.config import ENTITY_VERSION
+from common.grpc_client.grpc_client import grpc_stream
 from common.repository.cyoda.cyoda_init import init_cyoda
 
 app = Quart(__name__)
@@ -32,7 +33,7 @@ class FetchBrandsRequest:
 
 @app.route('/fetch-brands', methods=['POST'])
 @validate_request(FetchBrandsRequest)
-async def fetch_brands(data: FetchBrandsRequest):
+async def fetch_brands():
     """
     POST /fetch-brands
     Triggers the external API call and fires a background task to process and store brands data.

@@ -56,72 +56,63 @@ async def fetch_comments_for_post(post_id: int) -> List[Dict[str, Any]]:
             logger.exception(e)
             return []
 
-async def process_entity(job_id: str, post_ids: List[int], recipient_email: str):
-    try:
-        all_comments = []
-        tasks = [fetch_comments_for_post(pid) for pid in post_ids]
-        results = await asyncio.gather(*tasks)
-        for comments in results:
-            all_comments.extend(comments)
-
-        total_comments = len(all_comments)
-        sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0}
-        keywords_frequency = {}
-
-        for comment in all_comments:
-            body = comment.get("body", "")
-            sentiment = perform_sentiment_analysis(body)
-            sentiment_counts[sentiment] += 1
-
-            keywords = extract_keywords(body)
-            for kw in keywords:
-                keywords_frequency[kw] = keywords_frequency.get(kw, 0) + 1
-
-        report_lines = [
-            f"Total Comments Analyzed: {total_comments}",
-            f"Positive Comments: {sentiment_counts['positive']}",
-            f"Negative Comments: {sentiment_counts['negative']}",
-            f"Neutral Comments: {sentiment_counts['neutral']}",
-            "",
-            "Keywords Frequency:"
-        ]
-        for kw, freq in keywords_frequency.items():
-            report_lines.append(f"- {kw}: {freq} occurrence(s)")
-
-        report = "\n".join(report_lines)
-        logger.info(f"Analysis report for job_id {job_id} created.")
-
-        update_data = {"status": "completed", "report": report}
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="job",
-            entity_version=ENTITY_VERSION,
-            entity=update_data,
-            technical_id=job_id,
-            meta={}
-        )
-
-        await send_email(recipient_email, "Analysis Report", report)
-    except Exception as e:
-        logger.exception(e)
-        error_update = {"status": "error", "report": str(e)}
-        try:
-            await entity_service.update_item(
-                token=cyoda_token,
-                entity_model="job",
-                entity_version=ENTITY_VERSION,
-                entity=error_update,
-                technical_id=job_id,
-                meta={}
-            )
-        except Exception as ex:
-            logger.exception(ex)
-
-# Workflow function for job entity; it is applied before persisting the entity.
+# Workflow function for job entity.
+# This function is applied to the job entity asynchronously before it is persisted.
+# It performs the analysis and sends the report email. Any changes to the entity dictionary
+# will be persisted.
 async def process_job(entity: Dict[str, Any]) -> Dict[str, Any]:
-    # Modify the job entity as needed before persistence.
+    # Add metadata about the workflow
     entity["workflow_applied"] = True
     entity["workflow_timestamp"] = datetime.datetime.utcnow().isoformat()
+    
+    post_ids = entity.get("post_ids", [])
+    recipient_email = entity.get("recipient_email", "")
+    
+    if not post_ids or not recipient_email:
+        entity["status"] = "error"
+        entity["report"] = "Missing post_ids or recipient_email."
+        return entity
+
+    # Fetch comments concurrently for all provided post IDs
+    all_comments = []
+    tasks = [fetch_comments_for_post(pid) for pid in post_ids]
+    results = await asyncio.gather(*tasks)
+    for comments in results:
+        all_comments.extend(comments)
+    
+    # Analyze the fetched comments
+    total_comments = len(all_comments)
+    sentiment_counts = {"positive": 0, "negative": 0, "neutral": 0}
+    keywords_frequency = {}
+    
+    for comment in all_comments:
+        body = comment.get("body", "")
+        sentiment = perform_sentiment_analysis(body)
+        sentiment_counts[sentiment] += 1
+        keywords = extract_keywords(body)
+        for kw in keywords:
+            keywords_frequency[kw] = keywords_frequency.get(kw, 0) + 1
+    
+    # Compose a report based on the analysis
+    report_lines = [
+        f"Total Comments Analyzed: {total_comments}",
+        f"Positive Comments: {sentiment_counts['positive']}",
+        f"Negative Comments: {sentiment_counts['negative']}",
+        f"Neutral Comments: {sentiment_counts['neutral']}",
+        "",
+        "Keywords Frequency:"
+    ]
+    for kw, freq in keywords_frequency.items():
+        report_lines.append(f"- {kw}: {freq} occurrence(s)")
+    report = "\n".join(report_lines)
+    
+    # Update the entity with the analysis result
+    entity["status"] = "completed"
+    entity["report"] = report
+
+    # Send the analysis report via email (fire-and-forget is acceptable since workflow supports async code)
+    await send_email(recipient_email, "Analysis Report", report)
+    
     return entity
 
 @app.route("/api/analyze", methods=["POST"])
@@ -134,7 +125,6 @@ async def analyze(data: AnalyzeRequest):
         if not post_ids or not recipient_email:
             return jsonify({"error": "post_ids and email are required fields"}), 400
 
-        job_id = str(uuid.uuid4())
         requested_at = datetime.datetime.utcnow().isoformat()
         job_data = {
             "status": "processing",
@@ -143,20 +133,18 @@ async def analyze(data: AnalyzeRequest):
             "recipient_email": recipient_email
         }
 
-        # Pass the workflow function process_job as an argument;
-        # It will be applied to the job_data before persistence.
-        id = await entity_service.add_item(
+        # The workflow function process_job will be applied to the entity before persisting.
+        # All asynchronous tasks (analysis, sending email, etc.) are executed inside the workflow.
+        job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="job",
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=job_data,
             workflow=process_job
         )
-        logger.info(f"Job {id} created with post_ids {post_ids} for recipient {recipient_email}")
+        logger.info(f"Job {job_id} created with post_ids {post_ids} for recipient {recipient_email}")
 
-        asyncio.create_task(process_entity(id, post_ids, recipient_email))
-
-        return jsonify({"job_id": id, "status": "processing"}), 202
+        return jsonify({"job_id": job_id, "status": "completed"}), 200
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": str(e)}), 500

@@ -1,20 +1,25 @@
 import asyncio
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import aiohttp
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # Using validate_request for POST endpoints
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
+
+# Dataclass for POST endpoint request validation
+@dataclass
+class SyncRequest:
+    query: str = ""  # Placeholder for filter options; TODO: update with proper structure if needed
 
 # Global in-memory persistence mocks
 brands_cache = []  # Stores the brands data from the last sync
 jobs = {}  # Stores job information for background processing
 
 EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/brands"
-
 
 async def process_entity(job_id: str, data: list) -> None:
     """
@@ -28,9 +33,10 @@ async def process_entity(job_id: str, data: list) -> None:
     jobs[job_id]["status"] = "completed"
     jobs[job_id]["completedAt"] = datetime.utcnow().isoformat()
 
-
+# For POST endpoints, the route decorator must come first then the validate_request decorator.
 @app.route("/api/brands/sync", methods=["POST"])
-async def sync_brands():
+@validate_request(SyncRequest)  # This is placed second due to a known issue/workaround with quart-schema
+async def sync_brands(data: SyncRequest):
     """
     Endpoint to sync brand details from the external API.
     Business logic includes:
@@ -42,7 +48,7 @@ async def sync_brands():
     job_id = str(uuid.uuid4())
     jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
 
-    # Optional: Process any filters from request body in the future.
+    # TODO: Utilize data.query from the validated request if filtering needs to be implemented.
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(EXTERNAL_API_URL, headers={"accept": "application/json"}) as resp:
@@ -52,7 +58,7 @@ async def sync_brands():
                         "status": "error",
                         "message": f"External API returned status code {resp.status}"
                     }), resp.status
-                data = await resp.json()
+                external_data = await resp.json()
     except Exception as e:
         jobs[job_id]["status"] = "failed"
         return jsonify({
@@ -61,12 +67,11 @@ async def sync_brands():
         }), 500
 
     # Fire and forget the processing task.
-    # TODO: If further processing logic is added, adjust this task accordingly.
-    asyncio.create_task(process_entity(job_id, data))
+    # TODO: Adjust processing logic as needed.
+    asyncio.create_task(process_entity(job_id, external_data))
 
-    # For the prototype, we wait shortly to simulate processing completion.
-    # In a production scenario, you might want to return a job id and let the user poll for the result.
-    await asyncio.sleep(1.1)  # Waiting a bit longer than process_entity simulated delay
+    # For the prototype, we wait slightly longer than the simulated processing delay.
+    await asyncio.sleep(1.1)  # Waiting a bit longer than process_entity's simulated delay
 
     # Return the processed data. Assumes that process_entity has updated the cache.
     return jsonify({
@@ -75,7 +80,7 @@ async def sync_brands():
         "data": brands_cache
     }), 200
 
-
+# GET endpoint with no validation as no query parameters are expected.
 @app.route("/api/brands", methods=["GET"])
 async def get_brands():
     """
@@ -91,7 +96,6 @@ async def get_brands():
         "status": "success",
         "data": brands_cache
     }), 200
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

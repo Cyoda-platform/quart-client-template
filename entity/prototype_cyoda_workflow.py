@@ -48,18 +48,15 @@ async def process(data: ProcessRequest):
             "externalParams": process_data.get("externalParams"),
             "operation": process_data.get("operation"),
         }
-        # Call add_item with workflow function applied before persistence.
+        # Call add_item with workflow function that will process the entity asynchronously before persistence.
         new_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="entity_job",
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=job_data,  # the validated data object
-            workflow=process_entity_job  # Workflow function applied asynchronously before persistence.
+            workflow=process_entity_job  # Workflow function that processes the entity data
         )
         logger.info(f"Received process request for {new_id}")
-        # Fire and forget the background processing task.
-        asyncio.create_task(process_entity(new_id, process_data))
-        
         return jsonify({
             "status": "success",
             "message": "Processing initiated.",
@@ -80,7 +77,7 @@ async def get_results(processed_id):
         )
         if not job:
             return jsonify({"status": "not_found", "result": None}), 404
-        # If processing is still in progress or encountered an error, return that status.
+        # Return current entity state
         if job.get("status") != "completed":
             return jsonify({"status": job.get("status"), "result": "Processing not complete"}), 200
         
@@ -92,93 +89,49 @@ async def get_results(processed_id):
         logger.exception(e)
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
-# Workflow function for entity_job. This function is applied to the entity data 
-# before it is persisted by entity_service.add_item.
+# Workflow function for entity_job.
+# This function is invoked asynchronously before the current entity is persisted.
+# It moves all processing logic that was originally in separate async tasks.
 async def process_entity_job(entity):
-    # Modify entity state before persistence; for example, add a flag.
-    entity["workflow_applied"] = True
-    # Additional pre-persistence processing can be implemented here.
-    return entity
-
-async def process_entity(processed_id, process_data):
-    """
-    Background task to process the entity.
-    process_data is expected to have:
-      - "inputData": dict with necessary data
-      - "externalParams": dict with parameters for external API call
-      - "operation": string to decide business logic (e.g. "calculate_discount")
-    
-    Uses httpx.AsyncClient to invoke an external API as a POST, and then performs
-    business logic calculations.
-    """
     try:
-        logger.info(f"Starting processing for {processed_id}")
-        
-        # Simulate external API call using httpx.AsyncClient
+        # Using entity's "externalParams" to call an external API.
         async with httpx.AsyncClient() as client:
-            # TODO: Replace URL and parameters with actual external API details
-            external_url = "https://example.com/api"
-            external_params = process_data.get("externalParams", {})
+            external_url = "https://example.com/api"  # Replace with actual external API URL as needed.
+            external_params = entity.get("externalParams", {})
             external_response = await client.post(external_url, json=external_params)
             external_data = external_response.json()
-            # TODO: Handle external_data properly as per business requirements.
-            logger.info(f"Received external data for {processed_id}: {external_data}")
+            logger.info(f"Received external data for entity_job: {external_data}")
         
-        # Apply business logic and calculation based on the specified operation
-        operation = process_data.get("operation")
-        input_data = process_data.get("inputData", {})
-        result = {}
-
+        # Process business logic based on "operation".
+        operation = entity.get("operation")
+        input_data = entity.get("inputData", {})
         if operation == "calculate_discount":
-            # Example calculation: apply a 10% discount
+            # Example: apply a 10% discount.
             value = input_data.get("value", 0)
             result = {
                 "id": input_data.get("id"),
-                "calculation": value * 0.9,  # discount calculation
+                "calculation": value * 0.9,
                 "details": "Discount applied."
             }
         else:
-            # TODO: Implement additional operations as necessary
             result = {
                 "id": input_data.get("id"),
                 "calculation": None,
                 "details": f"Operation '{operation}' not supported."
             }
         
-        # Simulate processing delay
-        await asyncio.sleep(1)  # TODO: Adjust or remove this delay in production
-        
-        updated_data = {
-            "status": "completed",
-            "result": result,
-            "completedAt": datetime.datetime.utcnow().isoformat()
-        }
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="entity_job",
-            entity_version=ENTITY_VERSION,  # always use this constant
-            entity=updated_data,
-            technical_id=processed_id,
-            meta={}
-        )
-        logger.info(f"Processing completed for {processed_id}")
+        # Simulate processing delay if necessary.
+        await asyncio.sleep(1)
+        # Modify the entity state directly.
+        entity["status"] = "completed"
+        entity["result"] = result
+        entity["completedAt"] = datetime.datetime.utcnow().isoformat()
     except Exception as e:
         logger.exception(e)
-        error_data = {
-            "status": "error",
-            "error": str(e)
-        }
-        try:
-            await entity_service.update_item(
-                token=cyoda_token,
-                entity_model="entity_job",
-                entity_version=ENTITY_VERSION,  # always use this constant
-                entity=error_data,
-                technical_id=processed_id,
-                meta={}
-            )
-        except Exception as inner_e:
-            logger.exception(inner_e)
+        # Directly modify the entity state in case of errors.
+        entity["status"] = "error"
+        entity["error"] = str(e)
+    return entity
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

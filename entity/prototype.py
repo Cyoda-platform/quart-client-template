@@ -2,9 +2,10 @@ import asyncio
 import logging
 import uuid
 import datetime
+from dataclasses import dataclass
 
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 import httpx
 
 logging.basicConfig(level=logging.INFO)
@@ -16,6 +17,61 @@ QuartSchema(app)  # Initialize QuartSchema for documentation support
 
 # In-memory store for processed entities (mock persistence)
 entity_jobs = {}
+
+@dataclass
+class ProcessRequest:
+    # Using dict for nested data, TODO: adjust types if a more strict schema is needed
+    inputData: dict  
+    externalParams: dict  
+    operation: str
+
+@app.route('/process', methods=['POST'])
+@validate_request(ProcessRequest)  # POST: validation goes second due to library workaround issues.
+async def process(data: ProcessRequest):
+    try:
+        # Convert dataclass to dict for easier handling
+        process_data = {
+            "inputData": data.inputData,
+            "externalParams": data.externalParams,
+            "operation": data.operation,
+        }
+        processed_id = str(uuid.uuid4())
+        requested_at = datetime.datetime.utcnow().isoformat()
+        entity_jobs[processed_id] = {
+            "status": "processing",
+            "requestedAt": requested_at
+        }
+        logger.info(f"Received process request for {processed_id}")
+        
+        # Fire and forget the background processing task.
+        asyncio.create_task(process_entity(processed_id, process_data))
+        
+        return jsonify({
+            "status": "success",
+            "message": "Processing initiated.",
+            "processedId": processed_id
+        }), 202
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
+
+@app.route('/results/<processed_id>', methods=['GET'])
+async def get_results(processed_id):
+    try:
+        job = entity_jobs.get(processed_id)
+        if not job:
+            return jsonify({"status": "not_found", "result": None}), 404
+        # If processing is still in progress or encountered an error, return that status.
+        if job["status"] != "completed":
+            return jsonify({"status": job["status"], "result": "Processing not complete"}), 200
+        
+        return jsonify({
+            "status": "found",
+            "result": job.get("result")
+        }), 200
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 async def process_entity(processed_id, process_data):
     """
@@ -63,7 +119,7 @@ async def process_entity(processed_id, process_data):
             }
         
         # Simulate processing delay
-        await asyncio.sleep(1)  # TODO: Adjust or remove in production
+        await asyncio.sleep(1)  # TODO: Adjust or remove this delay in production
         
         # Update the in-memory store with the processed result
         entity_jobs[processed_id]["status"] = "completed"
@@ -74,52 +130,6 @@ async def process_entity(processed_id, process_data):
         logger.exception(e)
         entity_jobs[processed_id]["status"] = "error"
         entity_jobs[processed_id]["error"] = str(e)
-
-@app.route('/process', methods=['POST'])
-async def process():
-    try:
-        process_data = await request.get_json()
-        if not process_data:
-            return jsonify({"status": "error", "message": "Invalid JSON payload"}), 400
-
-        processed_id = str(uuid.uuid4())
-        requested_at = datetime.datetime.utcnow().isoformat()
-        entity_jobs[processed_id] = {
-            "status": "processing",
-            "requestedAt": requested_at
-        }
-        
-        logger.info(f"Received process request for {processed_id}")
-        
-        # Fire and forget the background processing task
-        asyncio.create_task(process_entity(processed_id, process_data))
-        
-        return jsonify({
-            "status": "success",
-            "message": "Processing initiated.",
-            "processedId": processed_id
-        }), 202
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"status": "error", "message": "Internal server error"}), 500
-
-@app.route('/results/<processed_id>', methods=['GET'])
-async def get_results(processed_id):
-    try:
-        job = entity_jobs.get(processed_id)
-        if not job:
-            return jsonify({"status": "not_found", "result": None}), 404
-        # If processing is still in progress or encountered an error, return that status.
-        if job["status"] != "completed":
-            return jsonify({"status": job["status"], "result": "Processing not complete"}), 200
-        
-        return jsonify({
-            "status": "found",
-            "result": job.get("result")
-        }), 200
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

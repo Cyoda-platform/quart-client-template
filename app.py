@@ -113,7 +113,6 @@ async def create_subscription(data: SubscriptionRequest):
     if not email:
         return jsonify({"status": "error", "message": "Email is required"}), 400
 
-    # Формируем словарь фильтров только если значения не пустые.
     filters = {}
     if data.team.strip():
         filters["team"] = data.team.strip()

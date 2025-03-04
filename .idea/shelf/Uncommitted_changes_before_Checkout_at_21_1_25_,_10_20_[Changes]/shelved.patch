@@ -1,0 +1,97 @@
+Index: entity/data_extraction_job/workflow/workflow.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># Here's the implementation of the `extract_data_process` function for the `data_extraction_job`, which uses the ingest data endpoint. The function will fetch data from the Pet Store API, map it to the `raw_product_data` entity, and save it using the appropriate ingest function. Additionally, tests are included in the same file.\n# \n# ```python\nimport logging\nimport requests\nfrom common.app_init import entity_service\nfrom common.config.config import ENTITY_VERSION\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\ndef extract_data_process(meta, data):\n    url = 'https://petstore.swagger.io/v2/store/inventory'\n    headers = {'accept': 'application/json'}\n\n    try:\n        # Fetch the data from the external API\n        response = requests.get(url, headers=headers)\n        response.raise_for_status()  # Raise an error for bad responses\n\n        # Parse the JSON response\n        api_data = response.json()\n        logger.info(f\"Data fetched from the API: {api_data}\")\n\n        # Prepare the raw_product_data structure\n        raw_product_data = {\n            \"sold\": api_data.get(\"sold\", 0),\n            \"string\": api_data.get(\"string\", 0),\n            \"pending\": api_data.get(\"pending\", 0),\n            \"available\": api_data.get(\"available\", 0),\n            \"not_available\": api_data.get(\"not available\", 0),\n            \"disponible\": api_data.get(\"Disponible\", 0)\n        }\n\n        # Ingest the data to the entity service\n        raw_product_data_id = entity_service.add_item(\n            meta[\"token\"],  # Using the token from meta\n            \"raw_product_data\",\n            ENTITY_VERSION,\n            raw_product_data\n        )\n\n        logger.info(f\"Raw product data ingested with ID: {raw_product_data_id}\")\n\n    except requests.exceptions.HTTPError as http_err:\n        logger.error(f\"HTTP error occurred: {http_err}\")\n    except Exception as err:\n        logger.error(f\"An error occurred: {err}\")\n\n\n# Testing the extract_data_process function\nimport unittest\nfrom unittest.mock import patch, MagicMock\n\nclass TestExtractDataProcess(unittest.TestCase):\n\n    @patch('requests.get')\n    @patch('common.app_init.entity_service.add_item')\n    def test_extract_data_process(self, mock_add_item, mock_get):\n        # Arrange\n        mock_response = MagicMock()\n        mock_response.json.return_value = {\n            \"sold\": 10,\n            \"string\": 20,\n            \"pending\": 5,\n            \"available\": 15,\n            \"not available\": 3,\n            \"Disponible\": 1\n        }\n        mock_response.status_code = 200\n        mock_get.return_value = mock_response\n\n        mock_add_item.return_value = \"raw_product_data_id\"  # Simulate successful item addition\n\n        meta = {\"token\": \"test_token\"}\n        data = {\"id\": \"data_extraction_job_id\"}  # Sample data\n\n        # Act\n        extract_data_process(meta, data)\n\n        # Assert\n        mock_get.assert_called_once_with('https://petstore.swagger.io/v2/store/inventory', headers={'accept': 'application/json'})\n        mock_add_item.assert_called_once_with(\n            meta[\"token\"],\n            \"raw_product_data\",\n            ENTITY_VERSION,\n            {\n                \"sold\": 10,\n                \"string\": 20,\n                \"pending\": 5,\n                \"available\": 15,\n                \"not_available\": 3,\n                \"disponible\": 1\n            }\n        )\n\nif __name__ == \"__main__\":\n    unittest.main()\n# ```\n# \n# ### Explanation:\n# 1. **Function `extract_data_process`**:\n#    - This function makes a GET request to the Pet Store API's inventory endpoint.\n#    - It parses the JSON response and maps the relevant fields to the structure expected by the `raw_product_data` entity.\n#    - The data is then saved using the `entity_service.add_item` method.\n# \n# 2. **Unit Test Class `TestExtractDataProcess`**:\n#    - Uses `unittest` and `unittest.mock` to mock the external HTTP request and the `entity_service.add_item` function.\n#    - Tests the `extract_data_process` function to ensure that it correctly fetches data and saves it.\n# \n# 3. **Running Tests**: The tests can be executed directly in the script by running the script as a standalone program.\n# \n# ### Note:\n# - Ensure that the `requests` library and `common.app_init` modules are available in your environment. Adjust the import paths as necessary based on your project structure.
+===================================================================
+diff --git a/entity/data_extraction_job/workflow/workflow.py b/entity/data_extraction_job/workflow/workflow.py
+--- a/entity/data_extraction_job/workflow/workflow.py	(revision f88d5714d1d3d6f51bf890c0888c9b9cb8d0def6)
++++ b/entity/data_extraction_job/workflow/workflow.py	(date 1737043284917)
+@@ -1,9 +1,10 @@
+-# Here's the implementation of the `extract_data_process` function for the `data_extraction_job`, which uses the ingest data endpoint. The function will fetch data from the Pet Store API, map it to the `raw_product_data` entity, and save it using the appropriate ingest function. Additionally, tests are included in the same file.
++# Here's the implementation of the `extract_data_process` function along with the corresponding tests. This function will fetch data from the Pet Store API and save it to the `raw_product_data` entity. The tests include mocks for external services to allow for isolated testing.
+ # 
+ # ```python
+ import logging
+ import requests
+ from common.app_init import entity_service
++from common.service.connections import connections  # Assuming connections.py is in common/service
+ from common.config.config import ENTITY_VERSION
+ 
+ logging.basicConfig(level=logging.INFO)
+@@ -12,7 +13,7 @@
+ def extract_data_process(meta, data):
+     url = 'https://petstore.swagger.io/v2/store/inventory'
+     headers = {'accept': 'application/json'}
+-
++    
+     try:
+         # Fetch the data from the external API
+         response = requests.get(url, headers=headers)
+@@ -22,7 +23,7 @@
+         api_data = response.json()
+         logger.info(f"Data fetched from the API: {api_data}")
+ 
+-        # Prepare the raw_product_data structure
++        # Map the API response to the raw_product_data structure
+         raw_product_data = {
+             "sold": api_data.get("sold", 0),
+             "string": api_data.get("string", 0),
+@@ -60,11 +61,11 @@
+         # Arrange
+         mock_response = MagicMock()
+         mock_response.json.return_value = {
+-            "sold": 10,
+-            "string": 20,
+-            "pending": 5,
+-            "available": 15,
+-            "not available": 3,
++            "sold": 2,
++            "string": 60,
++            "pending": 15,
++            "available": 31,
++            "not available": 1,
+             "Disponible": 1
+         }
+         mock_response.status_code = 200
+@@ -85,11 +86,11 @@
+             "raw_product_data",
+             ENTITY_VERSION,
+             {
+-                "sold": 10,
+-                "string": 20,
+-                "pending": 5,
+-                "available": 15,
+-                "not_available": 3,
++                "sold": 2,
++                "string": 60,
++                "pending": 15,
++                "available": 31,
++                "not_available": 1,
+                 "disponible": 1
+             }
+         )
+@@ -100,15 +101,15 @@
+ # 
+ # ### Explanation:
+ # 1. **Function `extract_data_process`**:
+-#    - This function makes a GET request to the Pet Store API's inventory endpoint.
+-#    - It parses the JSON response and maps the relevant fields to the structure expected by the `raw_product_data` entity.
+-#    - The data is then saved using the `entity_service.add_item` method.
++#    - Fetches data from the Pet Store API.
++#    - Parses the response and maps it to the structure expected by the `raw_product_data` entity.
++#    - Saves the data using `entity_service.add_item`.
+ # 
+ # 2. **Unit Test Class `TestExtractDataProcess`**:
+-#    - Uses `unittest` and `unittest.mock` to mock the external HTTP request and the `entity_service.add_item` function.
+-#    - Tests the `extract_data_process` function to ensure that it correctly fetches data and saves it.
++#    - Uses `unittest` and `unittest.mock` to mock external dependencies such as the HTTP request and the entity service.
++#    - Tests the `extract_data_process` function to ensure that it correctly fetches data and saves it to the entity service.
+ # 
+-# 3. **Running Tests**: The tests can be executed directly in the script by running the script as a standalone program.
++# 3. **Running Tests**: The tests can be run directly in the script by executing the script as a standalone program.
+ # 
+ # ### Note:
+-# - Ensure that the `requests` library and `common.app_init` modules are available in your environment. Adjust the import paths as necessary based on your project structure.
+\ No newline at end of file
++# - Ensure that the `requests` library and `common.app_init` module are available in your environment. Adjust the paths as necessary based on your project structure.
+\ No newline at end of file

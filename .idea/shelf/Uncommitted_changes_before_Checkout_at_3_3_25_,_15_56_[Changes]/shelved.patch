@@ -1,0 +1,19 @@
+Index: entity/job_report/workflow.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import asyncio\nfrom datetime import datetime\nimport httpx\n\n# Process conversion rates by fetching BTC/USD and BTC/EUR prices and updating the entity.\nasync def process_fetch_conversion_rates(entity: dict) -> None:\n    # Internal helper to fetch the conversion rate for a given symbol.\n    async def _fetch_rate(symbol: str) -> float:\n        url = f\"https://api.binance.com/api/v3/ticker/price?symbol={symbol}\"\n        async with httpx.AsyncClient(timeout=5.0) as client:\n            response = await client.get(url)\n            response.raise_for_status()  # Raise error for non-200 responses\n            data = response.json()\n            try:\n                price = float(data.get(\"price\", 0.0))\n            except (TypeError, ValueError):\n                raise ValueError(f\"Invalid price received for {symbol}: {data.get('price')}\")\n            return price\n    btc_usd = await _fetch_rate(\"BTCUSDT\")\n    btc_eur = await _fetch_rate(\"BTCEUR\")\n    entity[\"conversionRates\"] = {\"BTC_USD\": btc_usd, \"BTC_EUR\": btc_eur}\n\n# Process sending an email by using the entity's recipient, conversion rates, and timestamp.\nasync def process_send_email(entity: dict) -> None:\n    # Simulate sending email (replace with actual integration if needed).\n    # The email payload consists of conversion rates and timestamp from the entity.\n    report = {\n        \"conversionRates\": entity[\"conversionRates\"],\n        \"timestamp\": entity[\"timestamp\"]\n    }\n    print(f\"Sending email to {entity['recipient']} with report: {report}\")\n    await asyncio.sleep(0.1)
+===================================================================
+diff --git a/entity/job_report/workflow.py b/entity/job_report/workflow.py
+--- a/entity/job_report/workflow.py	(revision 3299d37ed3bc442d33473a49689762b1b9979cbd)
++++ b/entity/job_report/workflow.py	(date 1741019539381)
+@@ -25,8 +25,7 @@
+     # Simulate sending email (replace with actual integration if needed).
+     # The email payload consists of conversion rates and timestamp from the entity.
+     report = {
+-        "conversionRates": entity["conversionRates"],
+-        "timestamp": entity["timestamp"]
++        "conversionRates": entity["conversionRates"]
+     }
+     print(f"Sending email to {entity['recipient']} with report: {report}")
+     await asyncio.sleep(0.1)
+\ No newline at end of file

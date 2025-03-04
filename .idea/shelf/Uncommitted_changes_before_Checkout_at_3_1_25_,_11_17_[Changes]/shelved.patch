@@ -1,0 +1,16 @@
+Index: entity/user_feedback_entity/connections/connections.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import requests\n\nBASE_URL = \"https://api.example.com/data\"\n\n\ndef get_user_feedback(params):\n    response = requests.get(f\"{BASE_URL}/feedback\", params=params)\n    response.raise_for_status()  # Raise an error for bad responses\n    return response.json()\n\n\ndef analyze_sentiment(data):\n    response = requests.post(f\"{BASE_URL}/feedback/sentiment\", json=data)\n    response.raise_for_status()  # Raise an error for bad responses\n    return response.json()\n\n\ndef generate_summary_report():\n    response = requests.get(f\"{BASE_URL}/feedback/report\")\n    response.raise_for_status()  # Raise an error for bad responses\n    return response.json()\n\n\ndef ingest_data(feedback_params, sentiment_data):\n    feedback = get_user_feedback(feedback_params)\n    sentiment_analysis = analyze_sentiment(sentiment_data)\n    summary_report = generate_summary_report()\n    return feedback, sentiment_analysis, summary_report\n\n\nif __name__ == \"__main__\":\n    feedback_params = {\"param1\": \"value1\", \"param2\": \"value2\"}\n    sentiment_data = {\"comments\": [\"Great service!\", \"Will come back again.\"]}\n    feedback, sentiment_analysis, summary_report = ingest_data(\n        feedback_params, sentiment_data\n    )\n    print(\"Feedback:\", feedback)\n    print(\"Sentiment Analysis:\", sentiment_analysis)\n    print(\"Summary Report:\", summary_report)\n
+===================================================================
+diff --git a/entity/user_feedback_entity/connections/connections.py b/entity/user_feedback_entity/connections/connections.py
+--- a/entity/user_feedback_entity/connections/connections.py	(revision 32aa22e42af650d552828b9e307a7f355013f940)
++++ b/entity/user_feedback_entity/connections/connections.py	(date 1735913095845)
+@@ -1,6 +1,6 @@
+ import requests
+ 
+-BASE_URL = "https://api.example.com/data"
++BASE_URL = "https://www.yelp.com/"
+ 
+ 
+ def get_user_feedback(params):

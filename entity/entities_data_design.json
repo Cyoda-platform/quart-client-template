@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "job", "entity_data_example": {"status": "processing", "requestedAt": "2023-10-01T12:00:00Z", "post_ids": [1, 2, 3], "recipient_email": "recipient@example.com", "report": "Total Comments Analyzed: 5\nPositive Comments: 2\nNegative Comments: 1\nNeutral Comments: 2\n\nKeywords Frequency:\n- example: 3 occurrence(s)"}}]}

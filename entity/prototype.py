@@ -2,17 +2,18 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 # Initialize logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
-QuartSchema(app)  # Enable QuartSchema for API documentation, without request validation
+QuartSchema(app)  # Enable QuartSchema for API documentation
 
 # In-memory caches (mock persistence)
 scores_cache = {}  # { date_str: [list of game dicts] }
@@ -23,6 +24,18 @@ entity_jobs = {}  # For demo purposes: { job_id: { "status": ..., "requestedAt":
 SPORTS_API_KEY = "f8824354d80d45368063dd2e6fb16c38"
 SPORTS_API_URL = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key={key}"
 
+# Dataclasses for request validation
+@dataclass
+class IngestRequest:
+    date: str
+
+@dataclass
+class SubscribeRequest:
+    email: str
+
+@dataclass
+class ScoresQuery:
+    date: str = None  # Optional query parameter
 
 async def process_scores(job_id: str, date: str, data: list):
     """
@@ -41,16 +54,15 @@ async def process_scores(job_id: str, date: str, data: list):
         logger.exception(e)
         entity_jobs[job_id]["status"] = "failed"
 
-
 @app.route("/ingest-scores", methods=["POST"])
-async def ingest_scores():
+@validate_request(IngestRequest)  # Workaround: For POST, route decorator goes first, then validation.
+async def ingest_scores(data: IngestRequest):
     """
     Trigger ingestion of NBA scores from the external API.
     Expects JSON: { "date": "YYYY-MM-DD" }
     """
     try:
-        req_data = await request.get_json()
-        date = req_data.get("date")
+        date = data.date
         if not date:
             return jsonify({"status": "error", "message": "Date not provided"}), 400
 
@@ -81,7 +93,7 @@ async def ingest_scores():
         logger.exception(e)
         return jsonify({"status": "error", "message": "Ingestion failed"}), 500
 
-
+@validate_querystring(ScoresQuery)  # Workaround: For GET requests, validation decorator goes first.
 @app.route("/scores", methods=["GET"])
 async def get_scores():
     """
@@ -92,19 +104,18 @@ async def get_scores():
     if date:
         data = scores_cache.get(date, [])
         return jsonify({"date": date, "games": data})
-    # If no date filter is provided, return all scores by date
+    # If no date filter is provided, return all stored scores by date
     return jsonify(scores_cache)
 
-
 @app.route("/subscribe", methods=["POST"])
-async def subscribe():
+@validate_request(SubscribeRequest)  # Workaround: For POST, route decorator goes first, then validation.
+async def subscribe(data: SubscribeRequest):
     """
     Register a new user subscription to receive email notifications for score updates.
     Expects JSON: { "email": "user@example.com" }
     """
     try:
-        req_data = await request.get_json()
-        email = req_data.get("email")
+        email = data.email
         if not email:
             return jsonify({"status": "error", "message": "Email not provided"}), 400
 
@@ -124,14 +135,12 @@ async def subscribe():
         logger.exception(e)
         return jsonify({"status": "error", "message": "Subscription failed"}), 500
 
-
 @app.route("/subscriptions", methods=["GET"])
 async def get_subscriptions():
     """
     Retrieve a list of user subscriptions.
     """
     return jsonify({"subscriptions": list(subscriptions.values())})
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

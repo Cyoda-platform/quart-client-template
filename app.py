@@ -33,12 +33,10 @@ class FetchBrandsRequest(BaseModel):
 @validate_request(FetchBrandsRequest)
 async def fetch_brands(data: FetchBrandsRequest):
     try:
-        # Если fetch_type равен "string", возвращаем статический список брендов
         if data.fetch_type == "string":
             brands = ["Brand A", "Brand B", "Brand C"]
             return jsonify({"brands": brands})
         else:
-            # В противном случае инициируем процесс извлечения брендов через внешнее API
             job_id = "job_placeholder"
             requested_at = datetime.datetime.utcnow()
             entity_job = {

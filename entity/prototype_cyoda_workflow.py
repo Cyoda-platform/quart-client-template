@@ -42,47 +42,63 @@ async def startup():
 
 # Workflow function for job entity.
 # This function is executed asynchronously before persisting the job entity.
-# It processes the external scores data by adding a new scores entity (using process_scores workflow)
-# and then updates the job entity state.
+# It processes the raw external scores data attached to the job and creates a new scores entity.
 async def process_job(entity):
     try:
-        logger.info(f"Processing job workflow for entity: {entity}")
-        # Simulate processing delay
+        logger.info(f"Executing job workflow for entity: {entity}")
+        # Simulate processing delay if needed
         await asyncio.sleep(1)
-        # Extract external_data attached by the controller.
+        # Extract external_data that was attached by the controller.
+        # Using pop to avoid persisting it in the job entity.
         external_data = entity.pop("external_data", [])
-        # Create scores payload from job entity fields.
-        scores_payload = {"date": entity.get("date"), "games": external_data}
-        # Persist the scores entity using its workflow function.
-        await entity_service.add_item(
-            token=cyoda_token,
-            entity_model="scores",
-            entity_version=ENTITY_VERSION,
-            entity=scores_payload,
-            workflow=process_scores  # Workflow for scores entity.
-        )
-        # Update job entity state to reflect processing outcome.
+        if not external_data:
+            logger.warning("No external data found in job entity; skipping scores creation.")
+        else:
+            # Construct scores payload based on job entity information.
+            scores_payload = {"date": entity.get("date"), "games": external_data}
+            # Persist the scores entity using its workflow.
+            # This is safe because it's a different entity_model ("scores"), so no recursion happens.
+            await entity_service.add_item(
+                token=cyoda_token,
+                entity_model="scores",
+                entity_version=ENTITY_VERSION,
+                entity=scores_payload,
+                workflow=process_scores  # Workflow function for scores entity.
+            )
+        # Update job entity state to reflect the outcome.
         entity["status"] = "completed"
-        logger.info(f"Job processed for date {entity.get('date')}, processed {len(scores_payload.get('games', []))} records.")
+        entity["processedAt"] = datetime.utcnow().isoformat()
+        logger.info(f"Job processed for date {entity.get('date')}, records processed: {len(external_data)}.")
     except Exception as e:
         logger.exception(e)
         entity["status"] = "failed"
+        entity["processedAt"] = datetime.utcnow().isoformat()
     return entity
 
 # Workflow function for scores entity.
-# This function can be used to adjust or enrich the scores entity before persistence.
+# Adjusts scores entity prior to persistence.
 async def process_scores(entity):
-    logger.info(f"Processing scores workflow for entity: {entity}")
-    # Example: mark the scores entity as processed.
-    entity["processed"] = True
+    try:
+        logger.info(f"Executing scores workflow for entity: {entity}")
+        # Example modification: mark the record as processed.
+        entity["processed"] = True
+        entity["processedAt"] = datetime.utcnow().isoformat()
+    except Exception as e:
+        logger.exception(e)
+        # In case of error, we can flag the record.
+        entity["processed"] = False
     return entity
 
 # Workflow function for subscription entity.
-# This function is executed asynchronously before persisting the subscription.
+# Adjust subscription entity prior to persistence.
 async def process_subscription(entity):
-    logger.info(f"Processing subscription workflow for entity: {entity}")
-    # Example: add a flag indicating that email confirmation is pending.
-    entity["confirmed"] = False
+    try:
+        logger.info(f"Executing subscription workflow for entity: {entity}")
+        # Example: add a flag indicating that email confirmation is pending.
+        entity["confirmed"] = False
+        entity["subscribedAt"] = entity.get("subscribedAt", datetime.utcnow().isoformat())
+    except Exception as e:
+        logger.exception(e)
     return entity
 
 @app.route("/ingest-scores", methods=["POST"])
@@ -97,25 +113,25 @@ async def ingest_scores(data: IngestRequest):
         if not date:
             return jsonify({"status": "error", "message": "Date not provided"}), 400
 
-        # Construct external API URL
+        # Fetch external data based on the provided date.
         url = SPORTS_API_URL.format(date=date, key=SPORTS_API_KEY)
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
             response.raise_for_status()
             external_data = response.json()
 
-        logger.info(f"Ingested data for date {date}: {external_data}")
+        logger.info(f"Fetched external data for date {date}: {external_data}")
 
         requested_at = datetime.utcnow().isoformat()
-        # Create a job payload including the external_data.
-        # The embedded external_data will be processed by the job workflow.
+        # Create job payload including the raw external data.
+        # The raw external_data is attached temporarily and will be removed in the job workflow.
         job_payload = {
             "status": "processing",
             "requestedAt": requested_at,
             "date": date,
-            "external_data": external_data  # Attach raw data for workflow processing.
+            "external_data": external_data
         }
-        # Persist the job entity using its workflow.
+        # Persist the job entity with an attached workflow that processes its data.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="job",
@@ -127,7 +143,7 @@ async def ingest_scores(data: IngestRequest):
         return jsonify({
             "status": "success",
             "message": "Data ingestion complete. Processing in background.",
-            "ingestedRecords": len(external_data),
+            "ingestedRecords": len(external_data) if external_data else 0,
             "job_id": job_id
         })
     except Exception as e:
@@ -176,6 +192,7 @@ async def subscribe(data: SubscribeRequest):
 
         subscribed_at = datetime.utcnow().isoformat()
         subscription_payload = {"email": email, "subscribedAt": subscribed_at}
+        # Persist the subscription entity with its associated workflow.
         subscription_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="subscription",
@@ -183,7 +200,7 @@ async def subscribe(data: SubscribeRequest):
             entity=subscription_payload,
             workflow=process_subscription  # Workflow function for subscription entity.
         )
-        logger.info(f"New subscription created: {subscription_id} for email: {email}")
+        logger.info(f"Created subscription {subscription_id} for email: {email}")
         return jsonify({
             "status": "success",
             "message": "Subscription created successfully.",

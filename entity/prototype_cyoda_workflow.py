@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import asyncio
 import logging
-import uuid
 from datetime import datetime
 from dataclasses import dataclass
 
@@ -41,78 +40,53 @@ class ScoresQuery:
 async def startup():
     await init_cyoda(cyoda_token)
 
-# Workflow function for job entity
+# Workflow function for job entity.
+# This function is executed asynchronously before persisting the job entity.
+# It processes the external scores data by adding a new scores entity (using process_scores workflow)
+# and then updates the job entity state.
 async def process_job(entity):
-    # You can modify the job entity prior to persistence if needed
-    logger.info(f"Workflow processing for job entity: {entity}")
-    # For example, add a workflowProcessed timestamp
-    entity["workflowProcessed"] = datetime.utcnow().isoformat()
-    return entity
-
-# Workflow function for scores entity
-async def process_scores(entity):
-    # Process the scores entity before persistence
-    logger.info(f"Workflow processing for scores entity: {entity}")
-    # For example, add a processed flag
-    entity["processed"] = True
-    return entity
-
-# Workflow function for subscription entity
-async def process_subscription(entity):
-    # Process the subscription entity before persistence
-    logger.info(f"Workflow processing for subscription entity: {entity}")
-    # For example, add a confirmed flag defaulting to False
-    entity["confirmed"] = False
-    return entity
-
-# Background task to process job data (renamed from process_scores to avoid conflict)
-async def process_job_data(job_id: str, date: str, data: list):
-    """
-    Process the ingested scores data and update the external service.
-    This function simulates processing delays and any additional data transformation.
-    """
     try:
-        logger.info(f"Processing job {job_id} for date {date}.")
+        logger.info(f"Processing job workflow for entity: {entity}")
         # Simulate processing delay
         await asyncio.sleep(1)
-        # Add scores record to external service with workflow function process_scores
-        scores_payload = {"date": date, "games": data}
+        # Extract external_data attached by the controller.
+        external_data = entity.pop("external_data", [])
+        # Create scores payload from job entity fields.
+        scores_payload = {"date": entity.get("date"), "games": external_data}
+        # Persist the scores entity using its workflow function.
         await entity_service.add_item(
             token=cyoda_token,
             entity_model="scores",
             entity_version=ENTITY_VERSION,
             entity=scores_payload,
-            workflow=process_scores  # Workflow function for scores entity
+            workflow=process_scores  # Workflow for scores entity.
         )
-        # Update job status to completed in external service
-        update_payload = {"status": "completed"}
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="job",
-            entity_version=ENTITY_VERSION,
-            entity=update_payload,
-            technical_id=job_id,
-            meta={}
-        )
-        logger.info(f"Job {job_id} completed. Processed {len(data)} records for date {date}.")
+        # Update job entity state to reflect processing outcome.
+        entity["status"] = "completed"
+        logger.info(f"Job processed for date {entity.get('date')}, processed {len(scores_payload.get('games', []))} records.")
     except Exception as e:
         logger.exception(e)
-        # Update job status to failed in external service
-        update_payload = {"status": "failed"}
-        try:
-            await entity_service.update_item(
-                token=cyoda_token,
-                entity_model="job",
-                entity_version=ENTITY_VERSION,
-                entity=update_payload,
-                technical_id=job_id,
-                meta={}
-            )
-        except Exception as ex:
-            logger.exception(ex)
+        entity["status"] = "failed"
+    return entity
+
+# Workflow function for scores entity.
+# This function can be used to adjust or enrich the scores entity before persistence.
+async def process_scores(entity):
+    logger.info(f"Processing scores workflow for entity: {entity}")
+    # Example: mark the scores entity as processed.
+    entity["processed"] = True
+    return entity
+
+# Workflow function for subscription entity.
+# This function is executed asynchronously before persisting the subscription.
+async def process_subscription(entity):
+    logger.info(f"Processing subscription workflow for entity: {entity}")
+    # Example: add a flag indicating that email confirmation is pending.
+    entity["confirmed"] = False
+    return entity
 
 @app.route("/ingest-scores", methods=["POST"])
-@validate_request(IngestRequest)  # Workaround: For POST, route decorator goes first, then validation.
+@validate_request(IngestRequest)  # For POST, route decorator goes first, then validation.
 async def ingest_scores(data: IngestRequest):
     """
     Trigger ingestion of NBA scores from the external API.
@@ -133,18 +107,22 @@ async def ingest_scores(data: IngestRequest):
         logger.info(f"Ingested data for date {date}: {external_data}")
 
         requested_at = datetime.utcnow().isoformat()
-        # Create a job entry in the external service for processing, using workflow for job entities
-        job_payload = {"status": "processing", "requestedAt": requested_at, "date": date}
+        # Create a job payload including the external_data.
+        # The embedded external_data will be processed by the job workflow.
+        job_payload = {
+            "status": "processing",
+            "requestedAt": requested_at,
+            "date": date,
+            "external_data": external_data  # Attach raw data for workflow processing.
+        }
+        # Persist the job entity using its workflow.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="job",
             entity_version=ENTITY_VERSION,
             entity=job_payload,
-            workflow=process_job  # Workflow function for job entity
+            workflow=process_job  # Workflow function for job entity.
         )
-
-        # Fire and forget task to process the data
-        asyncio.create_task(process_job_data(job_id, date, external_data))
 
         return jsonify({
             "status": "success",
@@ -156,7 +134,7 @@ async def ingest_scores(data: IngestRequest):
         logger.exception(e)
         return jsonify({"status": "error", "message": "Ingestion failed"}), 500
 
-@validate_querystring(ScoresQuery)  # Workaround: For GET requests, validation decorator goes first.
+@validate_querystring(ScoresQuery)  # For GET requests, validation decorator goes first.
 @app.route("/scores", methods=["GET"])
 async def get_scores():
     """
@@ -166,7 +144,6 @@ async def get_scores():
     try:
         date = request.args.get("date")
         if date:
-            # Retrieve scores by condition from external service
             condition = {"date": date}
             scores_data = await entity_service.get_items_by_condition(
                 token=cyoda_token,
@@ -175,7 +152,6 @@ async def get_scores():
                 condition=condition
             )
             return jsonify({"date": date, "games": scores_data})
-        # Retrieve all scores from external service
         scores_data = await entity_service.get_items(
             token=cyoda_token,
             entity_model="scores",
@@ -187,7 +163,7 @@ async def get_scores():
         return jsonify({"status": "error", "message": "Failed to retrieve scores"}), 500
 
 @app.route("/subscribe", methods=["POST"])
-@validate_request(SubscribeRequest)  # Workaround: For POST, route decorator goes first, then validation.
+@validate_request(SubscribeRequest)  # For POST, route decorator goes first, then validation.
 async def subscribe(data: SubscribeRequest):
     """
     Register a new user subscription to receive email notifications for score updates.
@@ -205,7 +181,7 @@ async def subscribe(data: SubscribeRequest):
             entity_model="subscription",
             entity_version=ENTITY_VERSION,
             entity=subscription_payload,
-            workflow=process_subscription  # Workflow function for subscription entity
+            workflow=process_subscription  # Workflow function for subscription entity.
         )
         logger.info(f"New subscription created: {subscription_id} for email: {email}")
         return jsonify({

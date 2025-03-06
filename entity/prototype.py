@@ -1,11 +1,12 @@
 import asyncio
 import datetime
 import logging
+from dataclasses import dataclass
 from typing import List, Dict
 
 import httpx
-from quart import Quart, request, jsonify, Response
-from quart_schema import QuartSchema
+from quart import Quart, request, jsonify
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -17,6 +18,23 @@ logger.addHandler(handler)
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
+
+# Data classes for request validation
+@dataclass
+class SubscribeRequest:
+    email: str
+
+@dataclass
+class FetchScoresRequest:
+    date: str = None  # Optional; if not provided, current date is used
+
+# For GET requests with query parameters, note the decorator order workaround:
+# Validation must be applied before route decorator.
+@dataclass
+class GamesQuery:
+    page: int = 1
+    limit: int = 10
+    team: str = ""  # Optional filtering
 
 # In-memory persistence mocks
 subscribers: List[str] = []
@@ -56,55 +74,47 @@ async def process_scores(date: str):
         logger.exception(e)
         raise Exception("Failed to fetch data from external API") from e
 
-@app.route('/subscribe', methods=['POST'])
-async def subscribe():
-    try:
-        data = await request.get_json()
-        email = data.get("email")
-        if not email or not isinstance(email, str):
-            return jsonify({"error": "Invalid email format."}), 400
-        if email in subscribers:
-            return jsonify({"error": "Subscription already exists."}), 400
-        
-        subscribers.append(email)
-        logger.info(f"Subscribed new email: {email}")
-        return jsonify({
-            "message": "Subscription successful.",
-            "data": {
-                "email": email
-            }
-        }), 200
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "An error occurred during subscription."}), 500
+# POST endpoint: Subscribe a user
+@app.route('/subscribe', methods=['POST'])  # Route decorator must go first for POST endpoints.
+@validate_request(SubscribeRequest)         # Validation decorator follows.
+async def subscribe(data: SubscribeRequest):
+    email = data.email
+    if not email or not isinstance(email, str):
+        return jsonify({"error": "Invalid email format."}), 400
+    if email in subscribers:
+        return jsonify({"error": "Subscription already exists."}), 400
 
+    subscribers.append(email)
+    logger.info(f"Subscribed new email: {email}")
+    return jsonify({
+        "message": "Subscription successful.",
+        "data": {"email": email}
+    }), 200
+
+# GET endpoint: Retrieve all subscribers (no validation needed)
 @app.route('/subscribers', methods=['GET'])
 async def get_subscribers():
     return jsonify({"subscribers": subscribers}), 200
 
-@app.route('/fetch-scores', methods=['POST'])
-async def fetch_scores():
-    try:
-        data = await request.get_json(silent=True) or {}
-        date = data.get("date")
-        if not date:
-            date = datetime.date.today().strftime("%Y-%m-%d")
-        # Fire and forget the processing task.
-        asyncio.create_task(process_scores(date))
-        # In a real system, you may want to track the job status.
-        logger.info(f"Triggered fetch-scores process for date {date}")
-        return jsonify({
-            "message": "NBA scores fetch process has been initiated.",
-            "date": date
-        }), 200
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to initiate score fetching process."}), 500
+# POST endpoint: Trigger NBA scores fetching and notifications
+@app.route('/fetch-scores', methods=['POST'])  # Route decorator first for POST endpoints.
+@validate_request(FetchScoresRequest)            # Validation decorator follows.
+async def fetch_scores(data: FetchScoresRequest):
+    date = data.date if data.date else datetime.date.today().strftime("%Y-%m-%d")
+    # Fire and forget the processing task.
+    asyncio.create_task(process_scores(date))
+    logger.info(f"Triggered fetch-scores process for date {date}")
+    return jsonify({
+        "message": "NBA scores fetch process has been initiated.",
+        "date": date
+    }), 200
 
+# GET endpoint: Retrieve all games with query parameters
+@validate_querystring(GamesQuery)  # For GET endpoints, validation decorator goes first (workaround).
 @app.route('/games/all', methods=['GET'])
 async def get_all_games():
     try:
-        # Optional query parameters for filtering and pagination
+        # Access query parameters using standard approach
         page = int(request.args.get("page", 1))
         limit = int(request.args.get("limit", 10))
         team_filter = request.args.get("team")
@@ -140,6 +150,7 @@ async def get_all_games():
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve games data."}), 500
 
+# GET endpoint: Retrieve games by a specific date (no query validation needed)
 @app.route('/games/<date>', methods=['GET'])
 async def get_games_by_date(date):
     try:

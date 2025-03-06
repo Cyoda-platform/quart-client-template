@@ -40,43 +40,56 @@ class GamesQuery:
 
 # Async function to simulate sending an email.
 async def send_email_notification(email: str, subject: str, body: str):
-    logger.info(f"Sending email to {email} with subject '{subject}'")
-    await asyncio.sleep(0.1)
+    try:
+        logger.info(f"Sending email to {email} with subject '{subject}'")
+        await asyncio.sleep(0.1)
+    except Exception as e:
+        logger.exception(e)
     return True
 
 # Workflow function for 'game' entity.
 async def process_game(entity):
-    # Example: annotate the game entity with processing timestamp.
-    entity["processed_at"] = datetime.datetime.utcnow().isoformat()
-    # Additional game-specific logic can be added here.
+    # Annotate game entity with a processing timestamp.
+    try:
+        entity["processed_at"] = datetime.datetime.utcnow().isoformat()
+        # Additional game-specific processing logic can be added here.
+    except Exception as e:
+        logger.exception(e)
     return entity
 
 # Workflow function for 'subscriber' entity.
 async def process_subscriber(entity):
-    # Example: annotate the subscriber entity with subscription timestamp.
-    entity["subscribed_at"] = datetime.datetime.utcnow().isoformat()
-    return entity
-
-# New workflow function for 'notification' entity.
-async def process_notification(entity):
-    # Annotate notification entity with processing timestamp.
-    entity["notified_at"] = datetime.datetime.utcnow().isoformat()
-    subject = entity.get("subject", "")
-    body = entity.get("body", "")
+    # Annotate subscriber entity with subscription timestamp.
     try:
-        subscribers = await entity_service.get_items(
-            token=cyoda_token,
-            entity_model="subscriber",
-            entity_version=ENTITY_VERSION,
-        )
+        entity["subscribed_at"] = datetime.datetime.utcnow().isoformat()
     except Exception as e:
         logger.exception(e)
-        subscribers = []
-    # Fire and forget sending email notifications to all subscribers.
-    for subscriber in subscribers:
-        email = subscriber.get("email")
-        if email:
-            asyncio.create_task(send_email_notification(email, subject, body))
+    return entity
+
+# Workflow function for 'notification' entity.
+async def process_notification(entity):
+    # Annotate notification entity with processing timestamp.
+    try:
+        entity["notified_at"] = datetime.datetime.utcnow().isoformat()
+        subject = entity.get("subject", "Notification")
+        body = entity.get("body", "")
+        # Retrieve subscribers from a different entity model.
+        try:
+            subscribers = await entity_service.get_items(
+                token=cyoda_token,
+                entity_model="subscriber",
+                entity_version=ENTITY_VERSION,
+            )
+        except Exception as e:
+            logger.exception(e)
+            subscribers = []
+        # Fire and forget email notifications to all subscribers.
+        for subscriber in subscribers:
+            email = subscriber.get("email")
+            if email:
+                asyncio.create_task(send_email_notification(email, subject, body))
+    except Exception as e:
+        logger.exception(e)
     return entity
 
 # Process scores by fetching from external API and storing each game via entity_service.
@@ -91,10 +104,10 @@ async def process_scores(date: str):
             external_data = response.json()
             logger.info(f"Fetched {len(external_data)} games for {date}")
 
-            # For each game record, inject the date and persist with workflow.
+            # For each game record, add the date and persist with its workflow.
             for game in external_data:
-                game["date"] = date
                 try:
+                    game["date"] = date
                     await entity_service.add_item(
                         token=cyoda_token,
                         entity_model="game",
@@ -114,7 +127,7 @@ async def process_scores(date: str):
                 "subject": subject_line,
                 "body": body_content,
             }
-            # Persist notification entity with its workflow that sends emails.
+            # Persist notification entity; its workflow will send emails.
             await entity_service.add_item(
                 token=cyoda_token,
                 entity_model="notification",
@@ -142,7 +155,11 @@ async def scheduler():
 
 @app.before_serving
 async def startup():
-    await init_cyoda(cyoda_token)
+    try:
+        await init_cyoda(cyoda_token)
+    except Exception as e:
+        logger.exception(e)
+    # Start scheduler in background.
     asyncio.create_task(scheduler())
 
 # POST endpoint: Subscribe a user.
@@ -181,6 +198,7 @@ async def subscribe(data: SubscribeRequest):
         return jsonify({"error": "Failed to subscribe."}), 500
 
     logger.info(f"Subscribed new email: {email}")
+    # Return only the technical id of the newly created subscription.
     return jsonify({
         "message": "Subscription successful.",
         "data": {"id": new_id}
@@ -205,12 +223,16 @@ async def get_subscribers():
 @validate_request(FetchScoresRequest)
 async def fetch_scores(data: FetchScoresRequest):
     date = data.date if data.date else datetime.date.today().strftime("%Y-%m-%d")
-    asyncio.create_task(process_scores(date))
-    logger.info(f"Triggered fetch-scores process for date {date}")
-    return jsonify({
-        "message": "NBA scores fetch process has been initiated.",
-        "date": date
-    }), 200
+    try:
+        asyncio.create_task(process_scores(date))
+        logger.info(f"Triggered fetch-scores process for date {date}")
+        return jsonify({
+            "message": "NBA scores fetch process has been initiated.",
+            "date": date
+        }), 200
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to trigger NBA scores process."}), 500
 
 # GET endpoint: Retrieve all games with query parameters.
 @validate_querystring(GamesQuery)
@@ -227,13 +249,14 @@ async def get_all_games():
             entity_version=ENTITY_VERSION,
         )
 
+        # Apply filtering by team if provided.
         if team_filter:
             all_games = [
                 game for game in all_games
-                if team_filter.lower() in game.get("homeTeam", "").lower() or 
+                if team_filter.lower() in game.get("homeTeam", "").lower() or
                    team_filter.lower() in game.get("awayTeam", "").lower()
             ]
-        
+
         total = len(all_games)
         start = (page - 1) * limit
         end = start + limit

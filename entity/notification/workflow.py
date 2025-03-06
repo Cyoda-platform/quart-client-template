@@ -42,7 +42,7 @@ async def process_send_notifications(entity: dict):
         body = entity.get("body", "")
         subscribers = entity.get("subscribers", [])
         for subscriber in subscribers:
-            email = subscriber.get("email")
+            email = subscriber.get("tree").get("email")
             if email:
                 asyncio.create_task(send_email_notification(email, subject, body))
     except Exception as e:

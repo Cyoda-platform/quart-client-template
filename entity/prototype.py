@@ -64,19 +64,39 @@ async def process_scores(date: str):
             logger.info(f"Fetched and stored {len(external_data)} games for {date}")
             
             # Prepare email notification content
-            subject = f"Daily NBA Scores for {date}"
-            body = f"Summary of games: {external_data}"  # TODO: Format summary in a user-friendly way.
+            subject_line = f"Daily NBA Scores for {date}"
+            body_content = f"Summary of games: {external_data}"  # TODO: Format summary in a user-friendly way.
             
             # Fire and forget email notifications to all subscribers.
             for email in subscribers:
-                asyncio.create_task(send_email_notification(email, subject, body))
+                asyncio.create_task(send_email_notification(email, subject_line, body_content))
     except httpx.HTTPError as e:
         logger.exception(e)
         raise Exception("Failed to fetch data from external API") from e
 
+# Background scheduler to trigger fetch-scores daily at 6:00 PM UTC
+async def scheduler():
+    while True:
+        now = datetime.datetime.utcnow()
+        target = now.replace(hour=18, minute=0, second=0, microsecond=0)
+        if now >= target:
+            target += datetime.timedelta(days=1)
+        wait_seconds = (target - now).total_seconds()
+        logger.info("Scheduler sleeping for %.2f seconds until next fetch", wait_seconds)
+        await asyncio.sleep(wait_seconds)
+        scheduled_date = target.strftime("%Y-%m-%d")
+        logger.info("Scheduler triggering fetch-scores for date %s", scheduled_date)
+        asyncio.create_task(process_scores(scheduled_date))
+
+@app.before_serving
+async def startup():
+    # Start background scheduler once the application starts.
+    asyncio.create_task(scheduler())
+
 # POST endpoint: Subscribe a user
-@app.route('/subscribe', methods=['POST'])  # Route decorator must go first for POST endpoints.
-@validate_request(SubscribeRequest)         # Validation decorator follows.
+# Note: For POST endpoints, route decorator comes first then the validation decorator.
+@app.route('/subscribe', methods=['POST'])
+@validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     email = data.email
     if not email or not isinstance(email, str):
@@ -97,8 +117,9 @@ async def get_subscribers():
     return jsonify({"subscribers": subscribers}), 200
 
 # POST endpoint: Trigger NBA scores fetching and notifications
-@app.route('/fetch-scores', methods=['POST'])  # Route decorator first for POST endpoints.
-@validate_request(FetchScoresRequest)            # Validation decorator follows.
+# Note: For POST endpoints, route decorator comes first then the validation decorator.
+@app.route('/fetch-scores', methods=['POST'])
+@validate_request(FetchScoresRequest)
 async def fetch_scores(data: FetchScoresRequest):
     date = data.date if data.date else datetime.date.today().strftime("%Y-%m-%d")
     # Fire and forget the processing task.
@@ -110,7 +131,8 @@ async def fetch_scores(data: FetchScoresRequest):
     }), 200
 
 # GET endpoint: Retrieve all games with query parameters
-@validate_querystring(GamesQuery)  # For GET endpoints, validation decorator goes first (workaround).
+# Note: For GET endpoints, validation decorator should go first (workaround for quart-schema issues).
+@validate_querystring(GamesQuery)
 @app.route('/games/all', methods=['GET'])
 async def get_all_games():
     try:

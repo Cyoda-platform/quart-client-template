@@ -32,8 +32,6 @@ class SubscribeRequest:
 class FetchScoresRequest:
     date: str = None  # Optional; if not provided, current date is used
 
-# For GET requests with query parameters, note the decorator order workaround:
-# Validation must be applied before route decorator.
 @dataclass
 class GamesQuery:
     page: int = 1
@@ -50,12 +48,35 @@ async def send_email_notification(email: str, subject: str, body: str):
 async def process_game(entity):
     # Example: annotate the game entity with processing timestamp.
     entity["processed_at"] = datetime.datetime.utcnow().isoformat()
+    # Additional game-specific logic can be added here.
     return entity
 
 # Workflow function for 'subscriber' entity.
 async def process_subscriber(entity):
     # Example: annotate the subscriber entity with subscription timestamp.
     entity["subscribed_at"] = datetime.datetime.utcnow().isoformat()
+    return entity
+
+# New workflow function for 'notification' entity.
+async def process_notification(entity):
+    # Annotate notification entity with processing timestamp.
+    entity["notified_at"] = datetime.datetime.utcnow().isoformat()
+    subject = entity.get("subject", "")
+    body = entity.get("body", "")
+    try:
+        subscribers = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model="subscriber",
+            entity_version=ENTITY_VERSION,
+        )
+    except Exception as e:
+        logger.exception(e)
+        subscribers = []
+    # Fire and forget sending email notifications to all subscribers.
+    for subscriber in subscribers:
+        email = subscriber.get("email")
+        if email:
+            asyncio.create_task(send_email_notification(email, subject, body))
     return entity
 
 # Process scores by fetching from external API and storing each game via entity_service.
@@ -70,11 +91,10 @@ async def process_scores(date: str):
             external_data = response.json()
             logger.info(f"Fetched {len(external_data)} games for {date}")
 
-            # For each game record, inject the date and call entity_service.add_item
+            # For each game record, inject the date and persist with workflow.
             for game in external_data:
                 game["date"] = date
                 try:
-                    # Add workflow function process_game as additional parameter.
                     await entity_service.add_item(
                         token=cyoda_token,
                         entity_model="game",
@@ -85,29 +105,28 @@ async def process_scores(date: str):
                 except Exception as e:
                     logger.exception(e)
 
-            # Prepare email notification content
+            # Build notification data for daily scores.
             subject_line = f"Daily NBA Scores for {date}"
             body_content = f"Summary of games: {external_data}"
-            # Retrieve subscribers from external service.
-            try:
-                subscribers = await entity_service.get_items(
-                    token=cyoda_token,
-                    entity_model="subscriber",
-                    entity_version=ENTITY_VERSION,
-                )
-            except Exception as e:
-                logger.exception(e)
-                subscribers = []
-            # Fire and forget email notifications to all subscribers.
-            for subscriber in subscribers:
-                email = subscriber.get("email")
-                if email:
-                    asyncio.create_task(send_email_notification(email, subject_line, body_content))
+            notification_data = {
+                "date": date,
+                "games_summary": external_data,
+                "subject": subject_line,
+                "body": body_content,
+            }
+            # Persist notification entity with its workflow that sends emails.
+            await entity_service.add_item(
+                token=cyoda_token,
+                entity_model="notification",
+                entity_version=ENTITY_VERSION,
+                entity=notification_data,
+                workflow=process_notification
+            )
     except httpx.HTTPError as e:
         logger.exception(e)
         raise Exception("Failed to fetch data from external API") from e
 
-# Background scheduler to trigger fetch-scores daily at 6:00 PM UTC
+# Background scheduler to trigger fetch-scores daily at 6:00 PM UTC.
 async def scheduler():
     while True:
         now = datetime.datetime.utcnow()
@@ -126,7 +145,7 @@ async def startup():
     await init_cyoda(cyoda_token)
     asyncio.create_task(scheduler())
 
-# POST endpoint: Subscribe a user
+# POST endpoint: Subscribe a user.
 @app.route('/subscribe', methods=['POST'])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
@@ -134,7 +153,7 @@ async def subscribe(data: SubscribeRequest):
     if not email or not isinstance(email, str):
         return jsonify({"error": "Invalid email format."}), 400
     try:
-        # Check if subscription already exists
+        # Check if subscription already exists.
         existing = await entity_service.get_items_by_condition(
             token=cyoda_token,
             entity_model="subscriber",
@@ -162,13 +181,12 @@ async def subscribe(data: SubscribeRequest):
         return jsonify({"error": "Failed to subscribe."}), 500
 
     logger.info(f"Subscribed new email: {email}")
-    # Return only the technical id of the newly created subscription.
     return jsonify({
         "message": "Subscription successful.",
         "data": {"id": new_id}
     }), 200
 
-# GET endpoint: Retrieve all subscribers
+# GET endpoint: Retrieve all subscribers.
 @app.route('/subscribers', methods=['GET'])
 async def get_subscribers():
     try:
@@ -182,7 +200,7 @@ async def get_subscribers():
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve subscribers."}), 500
 
-# POST endpoint: Trigger NBA scores fetching and notifications
+# POST endpoint: Trigger NBA scores fetching and notifications.
 @app.route('/fetch-scores', methods=['POST'])
 @validate_request(FetchScoresRequest)
 async def fetch_scores(data: FetchScoresRequest):
@@ -194,7 +212,7 @@ async def fetch_scores(data: FetchScoresRequest):
         "date": date
     }), 200
 
-# GET endpoint: Retrieve all games with query parameters
+# GET endpoint: Retrieve all games with query parameters.
 @validate_querystring(GamesQuery)
 @app.route('/games/all', methods=['GET'])
 async def get_all_games():
@@ -203,14 +221,12 @@ async def get_all_games():
         limit = int(request.args.get("limit", 10))
         team_filter = request.args.get("team")
 
-        # Retrieve all games via external service
         all_games = await entity_service.get_items(
             token=cyoda_token,
             entity_model="game",
             entity_version=ENTITY_VERSION,
         )
 
-        # Apply filtering by team if provided.
         if team_filter:
             all_games = [
                 game for game in all_games
@@ -235,7 +251,7 @@ async def get_all_games():
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve games data."}), 500
 
-# GET endpoint: Retrieve games by a specific date
+# GET endpoint: Retrieve games by a specific date.
 @app.route('/games/<date>', methods=['GET'])
 async def get_games_by_date(date):
     try:

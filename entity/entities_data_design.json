@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "subscriber", "entity_data_example": {"email": "user@example.com"}}, {"entity_name": "game", "entity_data_example": {"date": "YYYY-MM-DD", "homeTeam": "Team A", "awayTeam": "Team B", "score": {"home": 100, "away": 98}}}]}

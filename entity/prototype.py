@@ -2,10 +2,12 @@ import asyncio
 import json
 import time
 import uuid
+from dataclasses import dataclass
+from typing import List, Any
 
 import aiohttp
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
@@ -23,6 +25,63 @@ ratings_db = {}
 
 # Global lock for safe incrementing of counters (for prototype simplicity)
 counter_lock = asyncio.Lock()
+
+
+# ---------- Dataclasses for Request Validation ----------
+
+@dataclass
+class RegisterRequest:
+    username: str
+    email: str
+    password: str
+
+@dataclass
+class LoginRequest:
+    email: str
+    password: str
+
+@dataclass
+class UpdateProfileRequest:
+    bio: str
+    skills: List[Any]  # TODO: refine structure of skills if needed
+
+@dataclass
+class AddSkillRequest:
+    user_id: int
+    skill: str
+    experience_years: int
+
+@dataclass
+class VerifySkillRequest:
+    user_id: int
+    skill: str
+    verification_method: str
+    verification_data: str
+
+@dataclass
+class BookLessonRequest:
+    student_id: int
+    lesson_id: int
+    date: str
+
+@dataclass
+class SubmitReviewRequest:
+    from_user: int
+    to_user: int
+    lesson_id: int
+    rating: int
+    comment: str
+
+@dataclass
+class CalculateRatingRequest:
+    user_id: int
+    reviews: List[Any] = None  # TODO: refine review structure if needed
+    verified_skills: List[Any] = None  # TODO: refine skill structure if needed
+
+@dataclass
+class SearchLessonsQuery:
+    skill: str
+    location: str = ""
 
 
 # ---------- Helper Functions ----------
@@ -53,27 +112,24 @@ async def process_rating(entity_job, data):
 # ---------- Authentication Endpoints ----------
 
 @app.route('/api/auth/register', methods=['POST'])
-async def register():
-    data = await request.get_json()
+@validate_request(RegisterRequest)  # For POST, route decorator comes first, then validate_request (workaround for quart-schema issue)
+async def register(data: RegisterRequest):
     global user_counter
-
     async with counter_lock:
         user_id = user_counter
         user_counter += 1
 
-    # Create a new user object (mock)
     user = {
         "id": user_id,
-        "username": data.get("username"),
-        "email": data.get("email"),
+        "username": data.username,
+        "email": data.email,
         # Password stored in plain text for prototype only. TODO: Hash passwords!
-        "password": data.get("password")
+        "password": data.password
     }
     users[user_id] = user
-    # Also create an empty profile for the user
     profiles[user_id] = {
         "id": user_id,
-        "username": data.get("username"),
+        "username": data.username,
         "bio": "",
         "skills": [],
         "rating": 0.0,
@@ -81,16 +137,15 @@ async def register():
     }
     return jsonify({
         "message": "User registered successfully",
-        "user": {"id": user_id, "username": data.get("username")}
+        "user": {"id": user_id, "username": data.username}
     })
 
 
 @app.route('/api/auth/login', methods=['POST'])
-async def login():
-    data = await request.get_json()
-    # For prototype, we search manually. TODO: Implement proper auth and secure password verification.
+@validate_request(LoginRequest)
+async def login(data: LoginRequest):
     for user in users.values():
-        if user["email"] == data.get("email") and user["password"] == data.get("password"):
+        if user["email"] == data.email and user["password"] == data.password:
             # Generate a dummy JWT token (insecure, for prototype only)
             token = str(uuid.uuid4())
             return jsonify({
@@ -111,30 +166,25 @@ async def get_profile(user_id):
 
 
 @app.route('/api/users/<int:user_id>', methods=['PATCH'])
-async def update_profile(user_id):
-    data = await request.get_json()
+@validate_request(UpdateProfileRequest)  # For POST/PUT/PATCH, route first then validate_request
+async def update_profile(data: UpdateProfileRequest, user_id):
     profile = profiles.get(user_id)
     if not profile:
         return jsonify({"message": "User not found"}), 404
 
-    # Update bio if present
-    if "bio" in data:
-        profile["bio"] = data["bio"]
-
-    # Update skills if provided (only update experience, not verification status)
-    if "skills" in data:
-        for updated_skill in data["skills"]:
+    profile["bio"] = data.bio
+    if data.skills:
+        for updated_skill in data.skills:
             skill_found = False
             for skill in profile["skills"]:
-                if skill["name"] == updated_skill["name"]:
-                    skill["experience_years"] = updated_skill["experience_years"]
+                if skill["name"] == updated_skill.get("name"):
+                    skill["experience_years"] = updated_skill.get("experience_years")
                     skill_found = True
                     break
             if not skill_found:
-                # Add new skill entry if it doesn't exist
                 profile["skills"].append({
-                    "name": updated_skill["name"],
-                    "experience_years": updated_skill["experience_years"],
+                    "name": updated_skill.get("name"),
+                    "experience_years": updated_skill.get("experience_years"),
                     "verified": False
                 })
     return jsonify({"message": "Profile updated"})
@@ -143,40 +193,29 @@ async def update_profile(user_id):
 # ---------- Skill Management Endpoints ----------
 
 @app.route('/api/skills/add', methods=['POST'])
-async def add_skill():
-    data = await request.get_json()
-    user_id = data.get("user_id")
-    skill_name = data.get("skill")
-    experience_years = data.get("experience_years")
-
-    profile = profiles.get(user_id)
+@validate_request(AddSkillRequest)
+async def add_skill(data: AddSkillRequest):
+    profile = profiles.get(data.user_id)
     if not profile:
         return jsonify({"message": "User not found"}), 404
 
-    # Add skill (default verified = False)
     profile["skills"].append({
-        "name": skill_name,
-        "experience_years": experience_years,
+        "name": data.skill,
+        "experience_years": data.experience_years,
         "verified": False
     })
     return jsonify({"message": "Skill added"})
 
 
 @app.route('/api/skills/verify', methods=['POST'])
-async def verify_skill():
-    data = await request.get_json()
-    user_id = data.get("user_id")
-    skill_name = data.get("skill")
-    verification_method = data.get("verification_method")
-    verification_data = data.get("verification_data")
-
-    profile = profiles.get(user_id)
+@validate_request(VerifySkillRequest)
+async def verify_skill(data: VerifySkillRequest):
+    profile = profiles.get(data.user_id)
     if not profile:
         return jsonify({"message": "User not found"}), 404
 
-    # Find the skill and mark as verified
     for skill in profile["skills"]:
-        if skill["name"] == skill_name:
+        if skill["name"] == data.skill:
             # TODO: Use verification_method and verification_data to actually verify the skill
             skill["verified"] = True
             return jsonify({"message": "Skill verified successfully"})
@@ -185,11 +224,12 @@ async def verify_skill():
 
 # ---------- Lesson Booking Endpoints ----------
 
+@validate_querystring(SearchLessonsQuery)  # For GET endpoints with query string, validation decorator goes first (workaround for quart-schema issue)
 @app.route('/api/lessons/search', methods=['GET'])
 async def search_lessons():
-    # For GET endpoints, simply return data from our local cache
+    # Use standard approach to access query parameters
     skill = request.args.get("skill")
-    location = request.args.get("location")  # Not used in prototype, but could filter based on location
+    location = request.args.get("location")  # Not used in prototype, but could be filtered later
     # TODO: Improve filtering logic based on location/other factors
     result = []
     for lesson in lessons.values():
@@ -199,14 +239,9 @@ async def search_lessons():
 
 
 @app.route('/api/lessons/book', methods=['POST'])
-async def book_lesson():
-    data = await request.get_json()
+@validate_request(BookLessonRequest)
+async def book_lesson(data: BookLessonRequest):
     global lesson_counter
-    student_id = data.get("student_id")
-    lesson_id = data.get("lesson_id")  # In a real system we would reference an existing lesson by teacher etc.
-    date = data.get("date")
-
-    # TODO: Validate if lesson exists and check availability
     async with counter_lock:
         booking_id = lesson_counter
         lesson_counter += 1
@@ -217,8 +252,8 @@ async def book_lesson():
         "skill": "Python",     # TODO: Get skill details from lesson data
         "price": 20,           # TODO: Derive pricing from lesson data
         "rating": 4.9,         # TODO: Calculate based on teacher's rating
-        "student_id": student_id,
-        "date": date
+        "student_id": data.student_id,
+        "date": data.date
     }
     return jsonify({"message": "Lesson booked"})
 
@@ -226,36 +261,26 @@ async def book_lesson():
 # ---------- Reviews and Rating Endpoints ----------
 
 @app.route('/api/reviews', methods=['POST'])
-async def submit_review():
-    data = await request.get_json()
-    from_user = data.get("from_user")
-    to_user = data.get("to_user")
-    lesson_id = data.get("lesson_id")
-    rating = data.get("rating")
-    comment = data.get("comment")
-
-    profile = profiles.get(to_user)
+@validate_request(SubmitReviewRequest)
+async def submit_review(data: SubmitReviewRequest):
+    profile = profiles.get(data.to_user)
     if not profile:
         return jsonify({"message": "User not found"}), 404
 
-    review = {"from": f"user{from_user}", "rating": rating, "comment": comment}
+    review = {"from": f"user{data.from_user}", "rating": data.rating, "comment": data.comment}
     profile["reviews"].append(review)
-
-    # Optionally store review for rating calculation
-    reviews_db.setdefault(to_user, []).append({"rating": rating})
+    reviews_db.setdefault(data.to_user, []).append({"rating": data.rating})
     return jsonify({"message": "Review submitted"})
 
 
 @app.route('/api/rating/calculate', methods=['POST'])
-async def calculate_rating():
-    data = await request.get_json()
-    user_id = data.get("user_id")
+@validate_request(CalculateRatingRequest)
+async def calculate_rating(data: CalculateRatingRequest):
     # Business logic could use reviews and verified skills to calculate average rating,
     # but here we simulate an external call.
     entity_job = {"status": "processing", "requestedAt": time.time()}
-
     # Fire and forget the processing task.
-    asyncio.create_task(process_rating(entity_job, data))
+    asyncio.create_task(process_rating(entity_job, data.__dict__))
     return jsonify({
         "message": "Ranking calculation started. It will update shortly."
     })

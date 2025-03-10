@@ -17,25 +17,26 @@ app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema
 
 # ---------- Workflow Functions ----------
-# These functions encapsulate asynchronous pre-persistence modifications,
-# keeping controllers lean by moving business logic here.
+# These functions encapsulate asynchronous pre-persistence modifications.
+# They modify the entity state directly and do any additional asynchronous tasks if needed.
 
 async def process_user(entity):
-    # Set a created timestamp and a default active flag
+    # Set a created timestamp and default active flag
     entity["created_at"] = time.time()
     entity["active"] = True
-    # Additional asynchronous tasks can be executed here, e.g.:
+    # Example: perform additional asynchronous tasks such as sending welcome emails
     # asyncio.create_task(send_welcome_email(entity["email"]))
     return entity
 
 async def process_lesson(entity):
-    # Mark the booking time and default status
+    # Mark the booking time and set default status
     entity["booked_at"] = time.time()
     entity["status"] = "pending"
+    # Further asynchronous logic related to lessons can be placed here
     return entity
 
 async def process_review(entity):
-    # Validate and adjust rating if needed; add reviewed timestamp
+    # Validate rating boundaries and add reviewed timestamp
     rating = entity.get("rating", 0)
     if not (0 <= rating <= 5):
         entity["rating"] = max(0, min(5, rating))
@@ -58,7 +59,7 @@ class LoginRequest:
 @dataclass
 class UpdateProfileRequest:
     bio: str
-    skills: List[Any]  # Refine structure as needed
+    skills: List[Any]  # You can refine the structure if needed
 
 @dataclass
 class AddSkillRequest:
@@ -90,8 +91,8 @@ class SubmitReviewRequest:
 @dataclass
 class CalculateRatingRequest:
     user_id: int
-    reviews: List[Any] = None  # Refine review structure as needed
-    verified_skills: List[Any] = None  # Refine skill structure as needed
+    reviews: List[Any] = None  # Refine the review structure if needed
+    verified_skills: List[Any] = None  # Refine skill structure if needed
 
 @dataclass
 class SearchLessonsQuery:
@@ -102,27 +103,35 @@ class SearchLessonsQuery:
 
 async def external_rating_calculation(data):
     # Simulate an external HTTP call to a rating service API.
-    async with aiohttp.ClientSession() as session:
-        await asyncio.sleep(1)  # Simulate latency
-        ratings = [review["rating"] for review in data.get("reviews", [])]
-        if ratings:
-            new_rating = sum(ratings) / len(ratings)
-        else:
-            new_rating = 0.0
-        return {"new_rating": round(new_rating, 1)}
+    try:
+        async with aiohttp.ClientSession() as session:
+            # Simulate network latency
+            await asyncio.sleep(1)
+            ratings = [review["rating"] for review in data.get("reviews", []) if "rating" in review]
+            if ratings:
+                new_rating = sum(ratings) / len(ratings)
+            else:
+                new_rating = 0.0
+            return {"new_rating": round(new_rating, 1)}
+    except Exception as e:
+        # Log error as required and return default value
+        return {"new_rating": 0.0}
 
 async def process_rating(entity_job, data):
     # Process the rating asynchronously and update its status.
     result = await external_rating_calculation(data)
     entity_job["status"] = "completed"
-    await entity_service.update_item(
-        token=cyoda_token,
-        entity_model="rating",
-        entity_version=ENTITY_VERSION,
-        entity={"user_id": data["user_id"], "rating": result["new_rating"]},
-        meta={}
-    )
-    # Additional fire-and-forget tasks can be launched here.
+    try:
+        await entity_service.update_item(
+            token=cyoda_token,
+            entity_model="rating",
+            entity_version=ENTITY_VERSION,
+            entity={"user_id": data["user_id"], "rating": result["new_rating"]},
+            meta={}
+        )
+    except Exception as e:
+        # In production, proper logging should be performed here.
+        entity_job["status"] = "failed"
     return
 
 # ---------- Application Startup ----------
@@ -136,23 +145,27 @@ async def startup():
 @app.route('/api/auth/register', methods=['POST'])
 @validate_request(RegisterRequest)
 async def register(data: RegisterRequest):
+    # Prepare user data with additional default fields.
     user = {
         "username": data.username,
         "email": data.email,
-        "password": data.password,  # For prototype only; use hashing in production
+        "password": data.password,  # For prototype only; hash passwords in production!
         "bio": "",
         "skills": [],
         "rating": 0.0,
         "reviews": []
     }
-    # Apply pre-persistence processing logic via workflow function.
-    new_id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="user",
-        entity_version=ENTITY_VERSION,
-        entity=user,
-        workflow=process_user
-    )
+    # Persist user with pre-persistence workflow function.
+    try:
+        new_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="user",
+            entity_version=ENTITY_VERSION,
+            entity=user,
+            workflow=process_user
+        )
+    except Exception as e:
+        return jsonify({"message": "Error registering user", "error": str(e)}), 500
     return jsonify({"message": "User registered successfully", "id": new_id})
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -167,7 +180,8 @@ async def login(data: LoginRequest):
     if not users:
         return jsonify({"message": "Invalid credentials"}), 401
     user = users[0]
-    token = str(uuid.uuid4())  # Dummy token for prototype purposes
+    # Generate a dummy token for prototype purposes.
+    token = str(uuid.uuid4())
     return jsonify({"token": token, "user": {"id": user.get("id"), "username": user.get("username")}})
 
 # ---------- User Profile Endpoints ----------
@@ -195,6 +209,7 @@ async def update_profile(data: UpdateProfileRequest, user_id):
     )
     if not profile:
         return jsonify({"message": "User not found"}), 404
+    # Update profile details.
     profile["bio"] = data.bio
     updated_skills = profile.get("skills", [])
     if data.skills:
@@ -212,13 +227,16 @@ async def update_profile(data: UpdateProfileRequest, user_id):
                     "verified": False
                 })
     profile["skills"] = updated_skills
-    await entity_service.update_item(
-        token=cyoda_token,
-        entity_model="user",
-        entity_version=ENTITY_VERSION,
-        entity=profile,
-        meta={}
-    )
+    try:
+        await entity_service.update_item(
+            token=cyoda_token,
+            entity_model="user",
+            entity_version=ENTITY_VERSION,
+            entity=profile,
+            meta={}
+        )
+    except Exception as e:
+        return jsonify({"message": "Error updating profile", "error": str(e)}), 500
     return jsonify({"message": "Profile updated"})
 
 # ---------- Skill Management Endpoints ----------
@@ -241,13 +259,16 @@ async def add_skill(data: AddSkillRequest):
         "verified": False
     })
     profile["skills"] = skills
-    await entity_service.update_item(
-        token=cyoda_token,
-        entity_model="user",
-        entity_version=ENTITY_VERSION,
-        entity=profile,
-        meta={}
-    )
+    try:
+        await entity_service.update_item(
+            token=cyoda_token,
+            entity_model="user",
+            entity_version=ENTITY_VERSION,
+            entity=profile,
+            meta={}
+        )
+    except Exception as e:
+        return jsonify({"message": "Error adding skill", "error": str(e)}), 500
     return jsonify({"message": "Skill added"})
 
 @app.route('/api/skills/verify', methods=['POST'])
@@ -264,16 +285,19 @@ async def verify_skill(data: VerifySkillRequest):
     skills = profile.get("skills", [])
     for skill in skills:
         if skill.get("name") == data.skill:
-            # Modify skill state directly; external operations are not allowed here.
+            # Modify skill state directly.
             skill["verified"] = True
             profile["skills"] = skills
-            await entity_service.update_item(
-                token=cyoda_token,
-                entity_model="user",
-                entity_version=ENTITY_VERSION,
-                entity=profile,
-                meta={}
-            )
+            try:
+                await entity_service.update_item(
+                    token=cyoda_token,
+                    entity_model="user",
+                    entity_version=ENTITY_VERSION,
+                    entity=profile,
+                    meta={}
+                )
+            except Exception as e:
+                return jsonify({"message": "Error verifying skill", "error": str(e)}), 500
             return jsonify({"message": "Skill verified successfully"})
     return jsonify({"message": "Skill not found"}), 404
 
@@ -295,20 +319,23 @@ async def search_lessons():
 @validate_request(BookLessonRequest)
 async def book_lesson(data: BookLessonRequest):
     lesson = {
-        "teacher": "user123",  # Simulated lookup for teacher based on lesson_id
-        "skill": "Python",     # Simulated lesson skill retrieval
+        "teacher": "user123",  # Simulated mapping for teacher based on lesson_id
+        "skill": "Python",     # Simulated retrieval of lesson skill
         "price": 20,           # Simulated pricing details
         "rating": 4.9,         # Simulated teacher rating
         "student_id": data.student_id,
         "date": data.date
     }
-    new_id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="lesson",
-        entity_version=ENTITY_VERSION,
-        entity=lesson,
-        workflow=process_lesson
-    )
+    try:
+        new_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="lesson",
+            entity_version=ENTITY_VERSION,
+            entity=lesson,
+            workflow=process_lesson
+        )
+    except Exception as e:
+        return jsonify({"message": "Error booking lesson", "error": str(e)}), 500
     return jsonify({"message": "Lesson booked", "id": new_id})
 
 # ---------- Reviews and Rating Endpoints ----------
@@ -323,20 +350,23 @@ async def submit_review(data: SubmitReviewRequest):
         "rating": data.rating,
         "comment": data.comment
     }
-    new_id = await entity_service.add_item(
-        token=cyoda_token,
-        entity_model="review",
-        entity_version=ENTITY_VERSION,
-        entity=review,
-        workflow=process_review
-    )
+    try:
+        new_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="review",
+            entity_version=ENTITY_VERSION,
+            entity=review,
+            workflow=process_review
+        )
+    except Exception as e:
+        return jsonify({"message": "Error submitting review", "error": str(e)}), 500
     return jsonify({"message": "Review submitted", "id": new_id})
 
 @app.route('/api/rating/calculate', methods=['POST'])
 @validate_request(CalculateRatingRequest)
 async def calculate_rating(data: CalculateRatingRequest):
     entity_job = {"status": "processing", "requested_at": time.time()}
-    # Fire-and-forget the rating processing in a workflow-like manner
+    # Fire-and-forget asynchronous calculation of rating.
     asyncio.create_task(process_rating(entity_job, data.__dict__))
     return jsonify({"message": "Ranking calculation started. It will update shortly."})
 

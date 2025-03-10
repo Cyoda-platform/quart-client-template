@@ -1,0 +1,175 @@
+### SkillSync - Skill Exchange Platform
+
+**Description:**
+SkillSync is a platform for skill exchange, where users can teach each other various skills. One user offers lessons in their expertise, while another can receive them by offering their skill in return or paying for the lesson.
+
+---
+
+### **Requirement:**
+**Implementation of a rating system and skill verification**
+- Each user must verify their skills (upload a portfolio, pass a test, receive recommendations).
+- After each lesson, both parties leave a review.
+- The algorithm should consider reviews and verified skills to rank users in search results.
+
+---
+
+### **SkillSync API**
+
+#### 1️⃣ Registration and Authentication
+##### User Registration
+```http
+POST /api/auth/register  
+```
+**Body:**  
+```json
+{
+  "username": "user123",
+  "email": "user@example.com",
+  "password": "securepassword"
+}
+```
+**Response:**  
+```json
+{ "message": "User registered successfully" }
+```
+
+##### User Login
+```http
+POST /api/auth/login  
+```
+**Body:**  
+```json
+{
+  "email": "user@example.com",
+  "password": "securepassword"
+}
+```
+**Response:**  
+```json
+{
+  "token": "jwt-token",
+  "user": { "id": 1, "username": "user123" }
+}
+```
+
+---
+
+#### 2️⃣ User Profile
+##### Retrieve Profile
+```http
+GET /api/users/{user_id}  
+```
+**Response:**  
+```json
+{
+  "id": 1,
+  "username": "user123",
+  "skills": ["Python", "Guitar"],
+  "rating": 4.8,
+  "reviews": [
+    { "from": "user456", "rating": 5, "comment": "Great teacher!" }
+  ]
+}
+```
+
+##### Update Profile
+```http
+PATCH /api/users/{user_id}  
+```
+**Body:**  
+```json
+{
+  "bio": "I love teaching Python and Guitar",
+  "skills": ["Python", "Guitar"]
+}
+```
+**Response:**  
+```json
+{ "message": "Profile updated" }
+```
+
+---
+
+#### 3️⃣ Skill Management
+##### Add Skill
+```http
+POST /api/skills/add  
+```
+**Body:**  
+```json
+{
+  "user_id": 1,
+  "skill": "Guitar",
+  "experience_years": 5
+}
+```
+**Response:**  
+```json
+{ "message": "Skill added" }
+```
+
+---
+
+#### 4️⃣ Lesson Search and Booking
+##### Search Lessons
+```http
+GET /api/lessons/search?skill=Python&location=remote  
+```
+**Response:**  
+```json
+[
+  {
+    "lesson_id": 12,
+    "teacher": "user123",
+    "skill": "Python",
+    "price": 20,
+    "rating": 4.9
+  }
+]
+```
+
+##### Book a Lesson
+```http
+POST /api/lessons/book  
+```
+**Body:**  
+```json
+{
+  "student_id": 2,
+  "lesson_id": 12,
+  "date": "2025-03-10T15:00:00Z"
+}
+```
+**Response:**  
+```json
+{ "message": "Lesson booked" }
+```
+
+---
+
+#### 5️⃣ Reviews
+```http
+POST /api/reviews  
+```
+**Body:**  
+```json
+{
+  "from_user": 2,
+  "to_user": 1,
+  "lesson_id": 12,
+  "rating": 5,
+  "comment": "Very useful lesson!"
+}
+```
+**Response:**  
+```json
+{ "message": "Review submitted" }
+```
+
+---
+
+### **Additional Features:**
+✅ Filter by price, rating, and experience  
+✅ Video calls via an integrated player  
+✅ Gamification: badges for achievements
+

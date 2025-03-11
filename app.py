@@ -11,6 +11,7 @@ from quart_schema import QuartSchema, validate_request  # validate_querystring a
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
+from entity.prototype import current_timestamp
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -69,7 +70,7 @@ async def list_datasources():
     return jsonify(datasources)
 
 # Endpoint: Get a single datasource by id.
-@app.route("/datasources/<int:ds_id>", methods=["GET"])
+@app.route("/datasources/<ds_id>", methods=["GET"])
 async def get_datasource(ds_id):
     datasource = await entity_service.get_item(
         token=cyoda_token,
@@ -82,15 +83,16 @@ async def get_datasource(ds_id):
     return jsonify(datasource)
 
 # Endpoint: Update a datasource.
-@app.route("/datasources/<int:ds_id>", methods=["PUT"])
+@app.route("/datasources/<ds_id>", methods=["PUT"])
 @validate_request(DatasourceInput)  # PUT validation as per Quart-Schema guidelines.
 async def update_datasource(data: DatasourceInput, ds_id):
     # Retrieve the existing datasource.
     datasource = await entity_service.get_item(
         token=cyoda_token,
-        entity_model="datasource",
+        # entity_model="datasource",
+        entity_model=ds_id,
         entity_version=ENTITY_VERSION,
-        technical_id=ds_id
+        # technical_id=ds_id
     )
     if datasource is None:
         return jsonify({"error": "Datasource not found"}), 404
@@ -102,7 +104,8 @@ async def update_datasource(data: DatasourceInput, ds_id):
     # Persist the updated datasource.
     await entity_service.update_item(
         token=cyoda_token,
-        entity_model="datasource",
+        # entity_model="datasource",
+        entity_model=ds_id,
         entity_version=ENTITY_VERSION,
         entity=datasource,
         meta={}
@@ -110,21 +113,23 @@ async def update_datasource(data: DatasourceInput, ds_id):
     return jsonify(datasource)
 
 # Endpoint: Delete a datasource and its related fetched data.
-@app.route("/datasources/<int:ds_id>", methods=["DELETE"])
+@app.route("/datasources/<ds_id>", methods=["DELETE"])
 async def delete_datasource(ds_id):
     # Retrieve the datasource.
     datasource = await entity_service.get_item(
         token=cyoda_token,
-        entity_model="datasource",
+        # entity_model="datasource",
+        entity_model=ds_id,
         entity_version=ENTITY_VERSION,
-        technical_id=ds_id
+        # technical_id=ds_id
     )
     if datasource is None:
         return jsonify({"error": "Datasource not found"}), 404
     # Delete the datasource.
     await entity_service.delete_item(
         token=cyoda_token,
-        entity_model="datasource",
+        # entity_model="datasource",
+        entity_model=ds_id,
         entity_version=ENTITY_VERSION,
         entity=datasource,
         meta={}
@@ -147,7 +152,7 @@ async def delete_datasource(ds_id):
     return jsonify({"message": "Datasource deleted successfully"})
 
 # Endpoint: Fetch external data for a datasource.
-@app.route("/datasources/<int:ds_id>/fetch", methods=["POST"])
+@app.route("/datasources/<ds_id>/fetch", methods=["POST"])
 async def fetch_external_data(ds_id):
     # Retrieve the datasource.
     datasource = await entity_service.get_item(
@@ -183,7 +188,8 @@ async def fetch_external_data(ds_id):
         # Persist fetched data after applying workflow processing.
         fetched_id = await entity_service.add_item(
             token=cyoda_token,
-            entity_model="fetched_data",
+            # entity_model="fetched_data",
+            entity_model=ds_id,
             entity_version=ENTITY_VERSION,
             entity=fetched_record,
             )
@@ -199,13 +205,20 @@ async def fetch_external_data(ds_id):
     return jsonify(result)
 
 # Endpoint: Get fetched data for a datasource.
-@app.route("/datasources/<int:ds_id>/fetched_data", methods=["GET"])
+@app.route("/datasources/<ds_id>/fetched_data", methods=["GET"])
 async def get_fetched_data(ds_id):
-    records = await entity_service.get_items_by_condition(
+    # records = await entity_service.get_items_by_condition(
+    #     token=cyoda_token,
+    #     entity_model="fetched_data",
+    #     entity_version=ENTITY_VERSION,
+    #     condition={"datasource_id": ds_id}
+    # )
+    records = await entity_service.get_items(
         token=cyoda_token,
-        entity_model="fetched_data",
+        # entity_model="fetched_data",
+        entity_model=ds_id,
         entity_version=ENTITY_VERSION,
-        condition={"datasource_id": ds_id}
+        # condition={"datasource_id": ds_id}
     )
     return jsonify(records)
 

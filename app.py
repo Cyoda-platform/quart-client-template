@@ -1,13 +1,16 @@
 from common.grpc_client.grpc_client import grpc_stream
 import asyncio
 import time
-import uuid
 from dataclasses import dataclass
 from typing import List, Any
 
 import aiohttp
 from quart import Quart, request, jsonify
 from quart_schema import QuartSchema, validate_request, validate_querystring
+
+import bcrypt
+import jwt
+import datetime
 
 from common.config.config import ENTITY_VERSION  # constant for entity version
 from common.repository.cyoda.cyoda_init import init_cyoda
@@ -75,10 +78,8 @@ class SearchLessonsQuery:
 # ---------- Helper Functions ----------
 
 async def external_rating_calculation(data):
-    # Simulate an external HTTP call to a rating service API.
     try:
-        async with aiohttp.ClientSession() as session:
-            # Simulate network latency
+        async with aiohttp.ClientSession():
             await asyncio.sleep(1)
             ratings = [review["rating"] for review in data.get("reviews", []) if "rating" in review]
             if ratings:
@@ -86,12 +87,10 @@ async def external_rating_calculation(data):
             else:
                 new_rating = 0.0
             return {"new_rating": round(new_rating, 1)}
-    except Exception as e:
-        # Log error as required and return default value
+    except Exception:
         return {"new_rating": 0.0}
 
 async def process_rating(entity_job, data):
-    # Process the rating asynchronously and update its status.
     result = await external_rating_calculation(data)
     entity_job["status"] = "completed"
     try:
@@ -102,10 +101,20 @@ async def process_rating(entity_job, data):
             entity={"user_id": data["user_id"], "rating": result["new_rating"]},
             meta={}
         )
-    except Exception as e:
-        # In production, proper logging should be performed here.
+    except Exception:
         entity_job["status"] = "failed"
     return
+
+SECRET_KEY = "your_secret_key"
+
+def create_access_token(user):
+    payload = {
+        "user_id": user.get("id"),
+        "username": user.get("username"),
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    }
+    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+    return token
 
 # ---------- Application Startup ----------
 
@@ -124,24 +133,23 @@ async def shutdown():
 @app.route('/api/auth/register', methods=['POST'])
 @validate_request(RegisterRequest)
 async def register(data: RegisterRequest):
-    # Prepare user data with additional default fields.
+    hashed_password = bcrypt.hashpw(data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     user = {
         "username": data.username,
         "email": data.email,
-        "password": data.password,  # For prototype only; hash passwords in production!
+        "hashed_password": hashed_password,
         "bio": "",
         "skills": [],
         "rating": 0.0,
         "reviews": []
     }
-    # Persist user with pre-persistence workflow function.
     try:
         new_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="user",
             entity_version=ENTITY_VERSION,
             entity=user,
-            )
+        )
     except Exception as e:
         return jsonify({"message": "Error registering user", "error": str(e)}), 500
     return jsonify({"message": "User registered successfully", "id": new_id})
@@ -153,13 +161,15 @@ async def login(data: LoginRequest):
         token=cyoda_token,
         entity_model="user",
         entity_version=ENTITY_VERSION,
-        condition={"email": data.email, "password": data.password}
+        condition={"email": data.email}
     )
     if not users:
         return jsonify({"message": "Invalid credentials"}), 401
     user = users[0]
-    # Generate a dummy token for prototype purposes.
-    token = str(uuid.uuid4())
+    stored_hashed_password = user.get("hashed_password")
+    if not stored_hashed_password or not bcrypt.checkpw(data.password.encode('utf-8'), stored_hashed_password.encode('utf-8')):
+        return jsonify({"message": "Invalid credentials"}), 401
+    token = create_access_token(user)
     return jsonify({"token": token, "user": {"id": user.get("id"), "username": user.get("username")}})
 
 # ---------- User Profile Endpoints ----------
@@ -187,7 +197,6 @@ async def update_profile(data: UpdateProfileRequest, user_id):
     )
     if not profile:
         return jsonify({"message": "User not found"}), 404
-    # Update profile details.
     profile["bio"] = data.bio
     updated_skills = profile.get("skills", [])
     if data.skills:
@@ -263,7 +272,6 @@ async def verify_skill(data: VerifySkillRequest):
     skills = profile.get("skills", [])
     for skill in skills:
         if skill.get("name") == data.skill:
-            # Modify skill state directly.
             skill["verified"] = True
             profile["skills"] = skills
             try:
@@ -278,8 +286,6 @@ async def verify_skill(data: VerifySkillRequest):
                 return jsonify({"message": "Error verifying skill", "error": str(e)}), 500
             return jsonify({"message": "Skill verified successfully"})
     return jsonify({"message": "Skill not found"}), 404
-
-# ---------- Lesson Booking Endpoints ----------
 
 @validate_querystring(SearchLessonsQuery)
 @app.route('/api/lessons/search', methods=['GET'])
@@ -297,10 +303,10 @@ async def search_lessons():
 @validate_request(BookLessonRequest)
 async def book_lesson(data: BookLessonRequest):
     lesson = {
-        "teacher": "user123",  # Simulated mapping for teacher based on lesson_id
-        "skill": "Python",     # Simulated retrieval of lesson skill
-        "price": 20,           # Simulated pricing details
-        "rating": 4.9,         # Simulated teacher rating
+        "teacher": "user123",
+        "skill": "Python",
+        "price": 20,
+        "rating": 4.9,
         "student_id": data.student_id,
         "date": data.date
     }
@@ -310,12 +316,10 @@ async def book_lesson(data: BookLessonRequest):
             entity_model="lesson",
             entity_version=ENTITY_VERSION,
             entity=lesson,
-            )
+        )
     except Exception as e:
         return jsonify({"message": "Error booking lesson", "error": str(e)}), 500
     return jsonify({"message": "Lesson booked", "id": new_id})
-
-# ---------- Reviews and Rating Endpoints ----------
 
 @app.route('/api/reviews', methods=['POST'])
 @validate_request(SubmitReviewRequest)
@@ -333,7 +337,7 @@ async def submit_review(data: SubmitReviewRequest):
             entity_model="review",
             entity_version=ENTITY_VERSION,
             entity=review,
-            )
+        )
     except Exception as e:
         return jsonify({"message": "Error submitting review", "error": str(e)}), 500
     return jsonify({"message": "Review submitted", "id": new_id})
@@ -342,7 +346,6 @@ async def submit_review(data: SubmitReviewRequest):
 @validate_request(CalculateRatingRequest)
 async def calculate_rating(data: CalculateRatingRequest):
     entity_job = {"status": "processing", "requested_at": time.time()}
-    # Fire-and-forget asynchronous calculation of rating.
     asyncio.create_task(process_rating(entity_job, data.__dict__))
     return jsonify({"message": "Ranking calculation started. It will update shortly."})
 

@@ -1,1 +1,133 @@
-{"name": "UserEntityProcessingWorkflow", "description": "Workflow for processing a user entity including setting timestamps, active status, and sending a welcome email.", "transitions": [{"name": "set_created_at", "description": "Set the created timestamp on the entity", "start_state": "None", "start_state_description": "Initial state", "end_state": "Created", "end_state_description": "Entity has a created timestamp", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_set_created_at", "description": "Sets the created timestamp on the entity", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}, {"name": "set_active_flag", "description": "Set the default active flag on the entity", "start_state": "Created", "start_state_description": "Entity has a created timestamp", "end_state": "Active", "end_state_description": "Entity is marked as active", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_set_active", "description": "Marks the entity as active", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}, {"name": "send_welcome_email", "description": "Asynchronously send a welcome email to the user", "start_state": "Active", "start_state_description": "Entity is marked as active", "end_state": "WelcomeEmailSent", "end_state_description": "A welcome email has been sent to the user", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_send_welcome_email", "description": "Sends a welcome email asynchronously", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}], "workflow_criteria": {"externalized_criteria": [], "condition_criteria": [{"name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR", "description": "Workflow criteria", "condition": {"group_condition_operator": "AND", "conditions": [{"field_name": "entityModelName", "is_meta_field": true, "operation": "equals", "value": "ENTITY_MODEL_VAR", "value_type": "strings"}, {"field_name": "entityModelVersion", "is_meta_field": true, "operation": "equals", "value": "ENTITY_VERSION_VAR", "value_type": "strings"}]}}]}}
+{
+  "name": "UserEntityProcessingWorkflow",
+  "description": "Workflow for processing a user entity including setting timestamps, active status, and sending a welcome email.",
+  "transitions": [
+    {
+      "name": "set_created_at",
+      "description": "Set the created timestamp on the entity",
+      "start_state": "None",
+      "start_state_description": "Initial state",
+      "end_state": "Created",
+      "end_state_description": "Entity has a created timestamp",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_set_created_at",
+            "description": "Sets the created timestamp on the entity",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    },
+    {
+      "name": "set_active_flag",
+      "description": "Set the default active flag on the entity",
+      "start_state": "Created",
+      "start_state_description": "Entity has a created timestamp",
+      "end_state": "Active",
+      "end_state_description": "Entity is marked as active",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_set_active",
+            "description": "Marks the entity as active",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    },
+    {
+      "name": "send_welcome_email",
+      "description": "Asynchronously send a welcome email to the user",
+      "start_state": "Active",
+      "start_state_description": "Entity is marked as active",
+      "end_state": "WelcomeEmailSent",
+      "end_state_description": "A welcome email has been sent to the user",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_send_welcome_email",
+            "description": "Sends a welcome email asynchronously",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    }
+  ],
+  "workflow_criteria": {
+    "externalized_criteria": [],
+    "condition_criteria": [
+      {
+        "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+        "description": "Workflow criteria",
+        "condition": {
+          "group_condition_operator": "AND",
+          "conditions": [
+            {
+              "field_name": "entityModelName",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_MODEL_VAR",
+              "value_type": "strings"
+            },
+            {
+              "field_name": "entityModelVersion",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_VERSION_VAR",
+              "value_type": "strings"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

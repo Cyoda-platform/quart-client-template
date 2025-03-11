@@ -1,1 +1,100 @@
-{"name": "ReviewProcessingWorkflow", "description": "Workflow for processing a review entity by adjusting rating and setting reviewed timestamp.", "transitions": [{"name": "adjust_rating", "description": "Adjust rating boundaries if outside 0 to 5", "start_state": "None", "start_state_description": "Initial state", "end_state": "RatingAdjusted", "end_state_description": "Entity rating is adjusted to be within valid boundaries", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_adjust_rating", "description": "Validates and adjusts rating within 0 to 5", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}, {"name": "set_review_timestamp", "description": "Set the reviewed timestamp on the entity", "start_state": "RatingAdjusted", "start_state_description": "Entity rating has been adjusted", "end_state": "Reviewed", "end_state_description": "Entity reviewed timestamp is recorded", "automated": true, "processes": {"schedule_transition_processors": [], "externalized_processors": [{"name": "process_set_reviewed_at", "description": "Sets the reviewed_at timestamp on the entity", "calculation_nodes_tags": "CHAT_ID_VAR", "attach_entity": true, "calculation_response_timeout_ms": "120000", "retry_policy": "NONE", "sync_process": false, "new_transaction_for_async": true, "none_transactional_for_async": false, "processor_criteria": {"externalized_criteria": [], "condition_criteria": []}}]}, "transition_criteria": {"externalized_criteria": [], "condition_criteria": []}}], "workflow_criteria": {"externalized_criteria": [], "condition_criteria": [{"name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR", "description": "Workflow criteria", "condition": {"group_condition_operator": "AND", "conditions": [{"field_name": "entityModelName", "is_meta_field": true, "operation": "equals", "value": "ENTITY_MODEL_VAR", "value_type": "strings"}, {"field_name": "entityModelVersion", "is_meta_field": true, "operation": "equals", "value": "ENTITY_VERSION_VAR", "value_type": "strings"}]}}]}}
+{
+  "name": "ReviewProcessingWorkflow",
+  "description": "Workflow for processing a review entity by adjusting rating and setting reviewed timestamp.",
+  "transitions": [
+    {
+      "name": "adjust_rating",
+      "description": "Adjust rating boundaries if outside 0 to 5",
+      "start_state": "None",
+      "start_state_description": "Initial state",
+      "end_state": "RatingAdjusted",
+      "end_state_description": "Entity rating is adjusted to be within valid boundaries",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_adjust_rating",
+            "description": "Validates and adjusts rating within 0 to 5",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    },
+    {
+      "name": "set_review_timestamp",
+      "description": "Set the reviewed timestamp on the entity",
+      "start_state": "RatingAdjusted",
+      "start_state_description": "Entity rating has been adjusted",
+      "end_state": "Reviewed",
+      "end_state_description": "Entity reviewed timestamp is recorded",
+      "automated": true,
+      "processes": {
+        "schedule_transition_processors": [],
+        "externalized_processors": [
+          {
+            "name": "process_set_reviewed_at",
+            "description": "Sets the reviewed_at timestamp on the entity",
+            "calculation_nodes_tags": "CHAT_ID_VAR",
+            "attach_entity": true,
+            "calculation_response_timeout_ms": "120000",
+            "retry_policy": "NONE",
+            "sync_process": false,
+            "new_transaction_for_async": true,
+            "none_transactional_for_async": false,
+            "processor_criteria": {
+              "externalized_criteria": [],
+              "condition_criteria": []
+            }
+          }
+        ]
+      },
+      "transition_criteria": {
+        "externalized_criteria": [],
+        "condition_criteria": []
+      }
+    }
+  ],
+  "workflow_criteria": {
+    "externalized_criteria": [],
+    "condition_criteria": [
+      {
+        "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+        "description": "Workflow criteria",
+        "condition": {
+          "group_condition_operator": "AND",
+          "conditions": [
+            {
+              "field_name": "entityModelName",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_MODEL_VAR",
+              "value_type": "strings"
+            },
+            {
+              "field_name": "entityModelVersion",
+              "is_meta_field": true,
+              "operation": "equals",
+              "value": "ENTITY_VERSION_VAR",
+              "value_type": "strings"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

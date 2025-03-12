@@ -29,7 +29,7 @@ async def shutdown():
 
 # Dataclass for Datasource input validation.
 @dataclass
-class chan:
+class DatasourceInput:
     datasource_name: str
     url: str
     uri_params: dict = field(default_factory=dict)  # TODO: Consider stricter type definition if required.

@@ -2,7 +2,7 @@ from common.grpc_client.grpc_client import grpc_stream
 import asyncio
 import datetime
 from uuid import uuid4
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import aiohttp
 from quart import Quart, jsonify, request
@@ -29,11 +29,11 @@ async def shutdown():
 
 # Dataclass for Datasource input validation.
 @dataclass
-class DatasourceInput:
+class chan:
     datasource_name: str
     url: str
-    uri_params: dict = None  # TODO: Consider stricter type definition if required.
-    Authorization_Header: str = None
+    uri_params: dict = field(default_factory=dict)  # TODO: Consider stricter type definition if required.
+    Authorization_Header: str = ""
 
 # In-memory job processing simulation (local cache).
 entity_jobs = {}
@@ -70,86 +70,86 @@ async def list_datasources():
     return jsonify(datasources)
 
 # Endpoint: Get a single datasource by id.
-@app.route("/datasources/<ds_id>", methods=["GET"])
-async def get_datasource(ds_id):
-    datasource = await entity_service.get_item(
-        token=cyoda_token,
-        entity_model="datasource",
-        entity_version=ENTITY_VERSION,
-        technical_id=ds_id
-    )
-    if datasource is None:
-        return jsonify({"error": "Datasource not found"}), 404
-    return jsonify(datasource)
+# @app.route("/datasources/<ds_id>", methods=["GET"])
+# async def get_datasource(ds_id):
+#     datasource = await entity_service.get_item(
+#         token=cyoda_token,
+#         entity_model="datasource",
+#         entity_version=ENTITY_VERSION,
+#         technical_id=ds_id
+#     )
+#     if datasource is None:
+#         return jsonify({"error": "Datasource not found"}), 404
+#     return jsonify(datasource)
 
 # Endpoint: Update a datasource.
-@app.route("/datasources/<ds_id>", methods=["PUT"])
-@validate_request(DatasourceInput)  # PUT validation as per Quart-Schema guidelines.
-async def update_datasource(data: DatasourceInput, ds_id):
-    # Retrieve the existing datasource.
-    datasource = await entity_service.get_item(
-        token=cyoda_token,
-        # entity_model="datasource",
-        entity_model=ds_id,
-        entity_version=ENTITY_VERSION,
-        # technical_id=ds_id
-    )
-    if datasource is None:
-        return jsonify({"error": "Datasource not found"}), 404
-    # Update fields from validated data.
-    datasource["datasource_name"] = data.datasource_name or datasource.get("datasource_name")
-    datasource["url"] = data.url or datasource.get("url")
-    datasource["uri_params"] = data.uri_params or datasource.get("uri_params", {})
-    datasource["Authorization_Header"] = data.Authorization_Header or datasource.get("Authorization_Header")
-    # Persist the updated datasource.
-    await entity_service.update_item(
-        token=cyoda_token,
-        # entity_model="datasource",
-        entity_model=ds_id,
-        entity_version=ENTITY_VERSION,
-        entity=datasource,
-        meta={}
-    )
-    return jsonify(datasource)
+# @app.route("/datasources/<ds_id>", methods=["PUT"])
+# @validate_request(DatasourceInput)  # PUT validation as per Quart-Schema guidelines.
+# async def update_datasource(data: DatasourceInput, ds_id):
+#     # Retrieve the existing datasource.
+#     datasource = await entity_service.get_item(
+#         token=cyoda_token,
+#         # entity_model="datasource",
+#         entity_model=ds_id,
+#         entity_version=ENTITY_VERSION,
+#         # technical_id=ds_id
+#     )
+#     if datasource is None:
+#         return jsonify({"error": "Datasource not found"}), 404
+#     # Update fields from validated data.
+#     datasource["datasource_name"] = data.datasource_name or datasource.get("datasource_name")
+#     datasource["url"] = data.url or datasource.get("url")
+#     datasource["uri_params"] = data.uri_params or datasource.get("uri_params", {})
+#     datasource["Authorization_Header"] = data.Authorization_Header or datasource.get("Authorization_Header")
+#     # Persist the updated datasource.
+#     await entity_service.update_item(
+#         token=cyoda_token,
+#         # entity_model="datasource",
+#         entity_model=ds_id,
+#         entity_version=ENTITY_VERSION,
+#         entity=datasource,
+#         meta={}
+#     )
+#     return jsonify(datasource)
 
 # Endpoint: Delete a datasource and its related fetched data.
-@app.route("/datasources/<ds_id>", methods=["DELETE"])
-async def delete_datasource(ds_id):
-    # Retrieve the datasource.
-    datasource = await entity_service.get_item(
-        token=cyoda_token,
-        # entity_model="datasource",
-        entity_model=ds_id,
-        entity_version=ENTITY_VERSION,
-        # technical_id=ds_id
-    )
-    if datasource is None:
-        return jsonify({"error": "Datasource not found"}), 404
-    # Delete the datasource.
-    await entity_service.delete_item(
-        token=cyoda_token,
-        # entity_model="datasource",
-        entity_model=ds_id,
-        entity_version=ENTITY_VERSION,
-        entity=datasource,
-        meta={}
-    )
-    # Cascade deletion: remove related fetched data.
-    fetched_data_list = await entity_service.get_items_by_condition(
-        token=cyoda_token,
-        entity_model="fetched_data",
-        entity_version=ENTITY_VERSION,
-        condition={"datasource_id": ds_id}
-    )
-    for record in fetched_data_list:
-        await entity_service.delete_item(
-            token=cyoda_token,
-            entity_model="fetched_data",
-            entity_version=ENTITY_VERSION,
-            entity=record,
-            meta={}
-        )
-    return jsonify({"message": "Datasource deleted successfully"})
+# @app.route("/datasources/<ds_id>", methods=["DELETE"])
+# async def delete_datasource(ds_id):
+#     # Retrieve the datasource.
+#     datasource = await entity_service.get_item(
+#         token=cyoda_token,
+#         # entity_model="datasource",
+#         entity_model=ds_id,
+#         entity_version=ENTITY_VERSION,
+#         # technical_id=ds_id
+#     )
+#     if datasource is None:
+#         return jsonify({"error": "Datasource not found"}), 404
+#     # Delete the datasource.
+#     await entity_service.delete_item(
+#         token=cyoda_token,
+#         # entity_model="datasource",
+#         entity_model=ds_id,
+#         entity_version=ENTITY_VERSION,
+#         entity=datasource,
+#         meta={}
+#     )
+#     # Cascade deletion: remove related fetched data.
+#     fetched_data_list = await entity_service.get_items_by_condition(
+#         token=cyoda_token,
+#         entity_model="fetched_data",
+#         entity_version=ENTITY_VERSION,
+#         condition={"datasource_id": ds_id}
+#     )
+#     for record in fetched_data_list:
+#         await entity_service.delete_item(
+#             token=cyoda_token,
+#             entity_model="fetched_data",
+#             entity_version=ENTITY_VERSION,
+#             entity=record,
+#             meta={}
+#         )
+#     return jsonify({"message": "Datasource deleted successfully"})
 
 # Endpoint: Fetch external data for a datasource.
 @app.route("/datasources/<ds_id>/fetch", methods=["POST"])

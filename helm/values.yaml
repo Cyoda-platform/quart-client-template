@@ -71,4 +71,3 @@ strategy: {}
 image:
   pullPolicy: Always
   imageName: client-app
-  tag: 6f26b992-001c-11f0-add8-40c2ba0ac9eb.latest

@@ -103,8 +103,6 @@ spec:
               value: "{{ $v }}"
             {{- end }}
           envFrom:
-            - secretRef:
-                name: cyoda-client-secrets
             {{- range .Values.container.env.configMaps }}
             - configMapRef:
                 name: {{ . }}

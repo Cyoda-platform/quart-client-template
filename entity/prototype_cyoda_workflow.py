@@ -22,8 +22,6 @@ QuartSchema(app)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Removed local in‐memory caches since we now use external entity_service
-
 def generate_job_id():
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
@@ -52,29 +50,117 @@ class ReportRequest:
 async def startup():
     await init_cyoda(cyoda_token)
 
-# Workflow functions - each function name must have a prefix "process_" followed by the entity name.
+# Workflow functions - all asynchronous processing for the respective entities is moved here.
+# Each function takes the validated entity data as the only argument and returns the processed state.
 
 async def process_scraped_products(entity):
-    # Example: Add a processed timestamp to each product in the list.
-    await asyncio.sleep(0.1)  # Simulate asynchronous processing delay
-    if isinstance(entity, list):
-        for item in entity:
-            item["processed_at"] = datetime.utcnow().isoformat()
-    return entity
+    # entity is expected to be a dict with a "url" key.
+    url = entity.get("url")
+    if not url:
+        entity["error"] = "Missing URL"
+        return entity
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url)
+            _ = response.text  # In a real scenario, use this content for actual scraping.
+    except Exception as e:
+        logger.exception(e)
+        entity["error"] = "Failed to retrieve URL"
+        return entity
+    # For prototyping, simulate scraped product data.
+    products = [
+        {
+            "name": "Radiant Tee",
+            "price": "$22.00",
+            "category": "Apparel",
+            "comments": ["Great quality!", "Comfortable fit."]
+        },
+        {
+            "name": "Breathe-Easy Tank",
+            "price": "$34.00",
+            "category": "Apparel",
+            "comments": ["Stylish and durable."]
+        }
+    ]
+    # Add processing metadata to each product.
+    for product in products:
+        product["processed_at"] = datetime.utcnow().isoformat()
+    # Replace the original entity data with the scraped products.
+    return products
 
 async def process_analysis_result(entity):
-    # Example: Mark analysis result as processed and add a timestamp.
-    await asyncio.sleep(0.1)
-    if isinstance(entity, dict):
-        entity["workflow_processed"] = True
-        entity["processed_at"] = datetime.utcnow().isoformat()
-    return entity
+    # entity is expected to be a dict with a "comments" key.
+    comments = entity.get("comments", [])
+    positive_words = ['great', 'good', 'excellent', 'positive', 'stylish', 'comfortable']
+    negative_words = ['bad', 'poor', 'terrible', 'negative']
+    positive_count = 0
+    negative_count = 0
+    for comment in comments:
+        lc = comment.lower()
+        for word in positive_words:
+            if word in lc:
+                positive_count += 1
+        for word in negative_words:
+            if word in lc:
+                negative_count += 1
+    summary = "Mixed feedback"
+    if positive_count > negative_count:
+        summary = "Overall positive feedback"
+    elif negative_count > positive_count:
+        summary = "Overall negative feedback"
+    result = {
+        "status": "success",
+        "summary": summary,
+        "sentiment": {
+            "positive": positive_count,
+            "negative": negative_count
+        },
+        "processed_at": datetime.utcnow().isoformat()
+    }
+    return result
 
 async def process_report_result(entity):
-    # Example: Wrap the report URL into a dict and add processing info.
-    await asyncio.sleep(0.1)
+    # entity is expected to be a dict with a key "product_data".
+    # Convert dataclass instances to dict, if necessary.
+    raw_products = entity.get("product_data", [])
+    products = []
+    for prod in raw_products:
+        if hasattr(prod, '__dict__'):
+            products.append(prod.__dict__)
+        elif isinstance(prod, dict):
+            products.append(prod)
+    report_content = "Product Report\n\n"
+    categories = {}
+    for product in products:
+        cat = product.get("category", "Uncategorized")
+        price_str = product.get("price", "$0").replace("$", "")
+        try:
+            price = float(price_str)
+        except Exception:
+            price = 0.0
+        categories.setdefault(cat, []).append(price)
+        report_content += f"Product: {product.get('name')}\n"
+        report_content += f"Price: {product.get('price')}\n"
+        report_content += f"Category: {cat}\n"
+        report_content += f"Comment Summary: {product.get('comment_summary', '')}\n\n"
+    report_content += "Average Prices by Category:\n"
+    for cat, prices in categories.items():
+        avg_price = sum(prices) / len(prices) if prices else 0
+        report_content += f"{cat}: ${avg_price:.2f}\n"
+    
+    # Save report to a file in the static folder
+    report_filename = "report.pdf"  # For prototyping, this is a text file with a .pdf extension.
+    report_path = os.path.join(app.static_folder, report_filename)
+    try:
+        with open(report_path, "w") as f:
+            f.write(report_content)
+    except Exception as e:
+        logger.exception(e)
+        return {"error": "Failed to write report file"}
+    
+    report_url = f"http://localhost:8000/static/{report_filename}"
     return {
-        "report_url": entity,
+        "report_url": report_url,
         "processed": True,
         "processed_at": datetime.utcnow().isoformat()
     }
@@ -82,145 +168,53 @@ async def process_report_result(entity):
 @app.route('/scrape-products', methods=['POST'])
 @validate_request(ScrapeRequest)
 async def scrape_products(data: ScrapeRequest):
-    url = data.url
-    if not url:
-        return jsonify({'status': 'error', 'message': 'Missing URL'}), 400
-    logger.info(f"Scraping products from URL: {url}")
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(url)
-            html_content = response.text
-            # TODO: Use Selenium or another JavaScript-rendering solution to extract product data.
-            # For this prototype, return a static/mock response.
-            products = [
-                {
-                    "name": "Radiant Tee",
-                    "price": "$22.00",
-                    "category": "Apparel",
-                    "comments": ["Great quality!", "Comfortable fit."]
-                },
-                {
-                    "name": "Breathe-Easy Tank",
-                    "price": "$34.00",
-                    "category": "Apparel",
-                    "comments": ["Stylish and durable."]
-                }
-            ]
-            # Replace local cache storage with an external service call
-            job_id = await entity_service.add_item(
-                token=cyoda_token,
-                entity_model="scraped_products",
-                entity_version=ENTITY_VERSION,  # always use this constant
-                entity=products,
-                workflow=process_scraped_products  # Workflow function applied asynchronously before persistence
-            )
-            return jsonify({
-                'status': 'success',
-                'job_id': job_id,
-                'message': 'Products scraping initiated. Retrieve results using the job ID.'
-            })
-        except Exception as e:
-            logger.exception(e)
-            return jsonify({'status': 'error', 'message': 'Failed to scrape products.'}), 500
+    # Pass minimal data (the URL) to the workflow function for scraping.
+    job_id = await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="scraped_products",
+        entity_version=ENTITY_VERSION,  # always use this constant
+        entity={"url": data.url},
+        workflow=process_scraped_products  # Process the scraping asynchronously before persistence.
+    )
+    return jsonify({
+        'status': 'success',
+        'job_id': job_id,
+        'message': 'Products scraping has been initiated. Retrieve results using the job ID.'
+    })
 
 @app.route('/analyze-comments', methods=['POST'])
 @validate_request(AnalyzeRequest)
 async def analyze_comments(data: AnalyzeRequest):
-    comments = data.comments
-    if not comments or not isinstance(comments, list):
-        return jsonify({'status': 'error', 'message': 'Missing or invalid comments list'}), 400
-    logger.info(f"Analyzing {len(comments)} comments")
-    try:
-        positive_words = ['great', 'good', 'excellent', 'positive', 'stylish', 'comfortable']
-        negative_words = ['bad', 'poor', 'terrible', 'negative']
-        positive_count = 0
-        negative_count = 0
-        for comment in comments:
-            lc = comment.lower()
-            for word in positive_words:
-                if word in lc:
-                    positive_count += 1
-            for word in negative_words:
-                if word in lc:
-                    negative_count += 1
-        summary = "Mixed feedback"
-        if positive_count > negative_count:
-            summary = "Overall positive feedback"
-        elif negative_count > positive_count:
-            summary = "Overall negative feedback"
-        result = {
-            "status": "success",
-            "summary": summary,
-            "sentiment": {
-                "positive": positive_count,
-                "negative": negative_count
-            }
-        }
-        job_id = await entity_service.add_item(
-            token=cyoda_token,
-            entity_model="analysis_result",
-            entity_version=ENTITY_VERSION,  # always use this constant
-            entity=result,
-            workflow=process_analysis_result  # Workflow function applied asynchronously before persistence
-        )
-        return jsonify({
-            'status': 'success',
-            'job_id': job_id,
-            'message': 'Comments analysis initiated. Retrieve results using the job ID.'
-        })
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({'status': 'error', 'message': 'Failed to analyze comments.'}), 500
+    # Pass the comments list to the workflow for processing.
+    job_id = await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="analysis_result",
+        entity_version=ENTITY_VERSION,  # always use this constant
+        entity=data.__dict__,
+        workflow=process_analysis_result  # Process the comment analysis asynchronously before persistence.
+    )
+    return jsonify({
+        'status': 'success',
+        'job_id': job_id,
+        'message': 'Comments analysis has been initiated. Retrieve results using the job ID.'
+    })
 
 @app.route('/generate-report', methods=['POST'])
 @validate_request(ReportRequest)
 async def generate_report(data: ReportRequest):
-    product_data = [p.__dict__ for p in data.product_data]
-    if not product_data or not isinstance(product_data, list):
-        return jsonify({'status': 'error', 'message': 'Missing or invalid product_data.'}), 400
-    logger.info("Generating PDF report")
-    try:
-        report_content = "Product Report\n\n"
-        categories = {}
-        for product in product_data:
-            cat = product.get("category", "Uncategorized")
-            price_str = product.get("price", "$0").replace("$", "")
-            try:
-                price = float(price_str)
-            except Exception:
-                price = 0.0
-            categories.setdefault(cat, []).append(price)
-            report_content += f"Product: {product.get('name')}\n"
-            report_content += f"Price: {product.get('price')}\n"
-            report_content += f"Category: {cat}\n"
-            report_content += f"Comment Summary: {product.get('comment_summary', '')}\n\n"
-        report_content += "Average Prices by Category:\n"
-        for cat, prices in categories.items():
-            avg_price = sum(prices) / len(prices) if prices else 0
-            report_content += f"{cat}: ${avg_price:.2f}\n"
-        
-        # Save report to a file in the static folder
-        report_filename = "report.pdf"  # This is a text file with a .pdf extension for prototyping.
-        report_path = os.path.join(app.static_folder, report_filename)
-        with open(report_path, "w") as f:
-            f.write(report_content)
-        
-        report_url = f"http://localhost:8000/static/{report_filename}"
-        job_id = await entity_service.add_item(
-            token=cyoda_token,
-            entity_model="report_result",
-            entity_version=ENTITY_VERSION,  # always use this constant
-            entity=report_url,
-            workflow=process_report_result  # Workflow function applied asynchronously before persistence
-        )
-        return jsonify({
-            'status': 'success',
-            'job_id': job_id,
-            'message': 'Report generation initiated. Retrieve report using the job ID.'
-        })
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({'status': 'error', 'message': 'Failed to generate report.'}), 500
+    # Pass product data to the workflow for report generation.
+    job_id = await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="report_result",
+        entity_version=ENTITY_VERSION,  # always use this constant
+        entity=data.__dict__,
+        workflow=process_report_result  # Process report generation asynchronously before persistence.
+    )
+    return jsonify({
+        'status': 'success',
+        'job_id': job_id,
+        'message': 'Report generation has been initiated. Retrieve report using the job ID.'
+    })
 
 @app.route('/retrieve-report', methods=['GET'])
 async def retrieve_report():
@@ -236,16 +230,10 @@ async def retrieve_report():
         )
         if not report:
             return jsonify({'status': 'error', 'message': 'No report found for the provided id.'}), 404
-        return jsonify({'status': 'success', 'report_url': report})
+        return jsonify({'status': 'success', 'report': report})
     except Exception as e:
         logger.exception(e)
         return jsonify({'status': 'error', 'message': 'Failed to retrieve report.'}), 500
-
-# Example background task using a fire-and-forget pattern.
-async def process_entity(entity_job, data):
-    await asyncio.sleep(1)  # Simulate processing delay
-    entity_job["status"] = "completed"
-    logger.info("Finished processing entity job")
 
 if __name__ == '__main__':
     # Set up the static folder to serve the generated report

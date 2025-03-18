@@ -4,10 +4,12 @@ import logging
 import random
 import string
 from datetime import datetime
+from dataclasses import dataclass
+from typing import List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema  # Only one-line setup as per requirements
+from quart_schema import QuartSchema, validate_request, validate_querystring  # Workaround: GET validators placed before route
 
 app = Quart(__name__)
 QuartSchema(app)
@@ -23,10 +25,33 @@ report_result = {}
 def generate_job_id():
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
+# Data models for request validation
+
+@dataclass
+class ScrapeRequest:
+    url: str
+
+@dataclass
+class AnalyzeRequest:
+    comments: List[str]
+
+@dataclass
+class Product:
+    name: str
+    price: str
+    category: str
+    comment_summary: str = ""
+
+@dataclass
+class ReportRequest:
+    product_data: List[Product]
+
+# POST endpoints: route decorator first then validate_request (workaround for quart-schema issue)
+
 @app.route('/scrape-products', methods=['POST'])
-async def scrape_products():
-    payload = await request.get_json()
-    url = payload.get('url')
+@validate_request(ScrapeRequest)
+async def scrape_products(data: ScrapeRequest):
+    url = data.url
     if not url:
         return jsonify({'status': 'error', 'message': 'Missing URL'}), 400
     logger.info(f"Scraping products from URL: {url}")
@@ -61,13 +86,12 @@ async def scrape_products():
             return jsonify({'status': 'error', 'message': 'Failed to scrape products.'}), 500
 
 @app.route('/analyze-comments', methods=['POST'])
-async def analyze_comments():
-    payload = await request.get_json()
-    comments = payload.get('comments')
+@validate_request(AnalyzeRequest)
+async def analyze_comments(data: AnalyzeRequest):
+    comments = data.comments
     if not comments or not isinstance(comments, list):
         return jsonify({'status': 'error', 'message': 'Missing or invalid comments list'}), 400
     logger.info(f"Analyzing {len(comments)} comments")
-    
     try:
         # Simple analysis: Count occurrences of positive and negative words.
         positive_words = ['great', 'good', 'excellent', 'positive', 'stylish', 'comfortable']
@@ -102,9 +126,9 @@ async def analyze_comments():
         return jsonify({'status': 'error', 'message': 'Failed to analyze comments.'}), 500
 
 @app.route('/generate-report', methods=['POST'])
-async def generate_report():
-    payload = await request.get_json()
-    product_data = payload.get('product_data')
+@validate_request(ReportRequest)
+async def generate_report(data: ReportRequest):
+    product_data = [p.__dict__ for p in data.product_data]
     if not product_data or not isinstance(product_data, list):
         return jsonify({'status': 'error', 'message': 'Missing or invalid product_data.'}), 400
     logger.info("Generating PDF report")
@@ -146,6 +170,7 @@ async def generate_report():
         logger.exception(e)
         return jsonify({'status': 'error', 'message': 'Failed to generate report.'}), 500
 
+# GET request without validation since no query parameters are expected
 @app.route('/retrieve-report', methods=['GET'])
 async def retrieve_report():
     report_url = report_result.get('latest')

@@ -1,5 +1,5 @@
-from common.grpc_client.grpc_client import grpc_stream
 #!/usr/bin/env python
+from common.grpc_client.grpc_client import grpc_stream
 import asyncio
 import logging
 from datetime import datetime
@@ -46,36 +46,51 @@ async def get_hello():
     # GET /hello - Retrieves a simple greeting message.
     return jsonify({"message": "Hello World"}), 200
 
-# For POST requests, use the decorator order recommended by quart-schema.
 @app.route("/hello", methods=["POST"])
 @validate_request(Greeting)
 async def post_hello(data: Greeting):
-    # POST /hello - Generates a greeting and persists an entity after asynchronous workflow processing.
+    # POST /hello - Generates a greeting and persists an entity.
     try:
         name = data.name
         greeting_text = f"Hello, {name}" if name else "Hello World"
-
-        # Minimal entity data; additional processing will be handled by the workflow.
         job_data = {
             "status": "processing",
             "requestedAt": datetime.utcnow().isoformat(),
             "name": name,
             "greeting": greeting_text
         }
-
-        # Persist the entity using the external service.
-        # The process_hello workflow function is applied to the entity asynchronously before persistence.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="hello",
             entity_version=ENTITY_VERSION,
-            entity=job_data,
-            )
-
-        # Return only the technical identifier.
+            entity=job_data
+        )
         return jsonify({"technical_id": job_id}), 200
     except Exception as e:
         logger.exception("Error in post_hello: %s", e)
+        return jsonify({"error": "Internal Server Error"}), 500
+
+@app.route("/cats", methods=["POST"])
+@validate_request(Greeting)
+async def post_cats(data: Greeting):
+    # POST /cats - Schedules a new integration job for the Cats API.
+    try:
+        name = data.name
+        job_data = {
+            "status": "processing",
+            "requestedAt": datetime.utcnow().isoformat(),
+            "name": name,
+            "integration": "cats_api"
+        }
+        job_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="hello",
+            entity_version=ENTITY_VERSION,
+            entity=job_data
+        )
+        return jsonify({"technical_id": job_id}), 200
+    except Exception as e:
+        logger.exception("Error in post_cats: %s", e)
         return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == "__main__":

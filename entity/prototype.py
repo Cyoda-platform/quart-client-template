@@ -3,10 +3,11 @@ import asyncio
 import logging
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -19,6 +20,11 @@ logger.addHandler(handler)
 # Create Quart app and initialize QuartSchema
 app = Quart(__name__)
 QuartSchema(app)
+
+# Dataclass for POST request validation (use only primitives)
+@dataclass
+class EntityJobRequest:
+    message: str  # TODO: Replace with actual fields as required
 
 # In-memory store for jobs (mock persistence)
 entity_jobs = {}
@@ -56,14 +62,14 @@ async def process_entity(job: dict, data: dict):
         # TODO: Improve error handling and possibly retry logic
 
 # Endpoint to submit a new entity processing job
+# Workaround for quart-schema decorator ordering: for POST requests, @route comes first then @validate_request.
 @app.route("/entity", methods=["POST"])
-async def create_entity_job():
+@validate_request(EntityJobRequest)
+async def create_entity_job(data: EntityJobRequest):
     """
     Create a new entity processing job. Expects JSON payload.
     """
     try:
-        data = await request.get_json()
-        # TODO: Validate the incoming data according to business requirements.
         job_id = str(uuid.uuid4())
         requested_at = datetime.utcnow().isoformat() + "Z"
         
@@ -75,7 +81,7 @@ async def create_entity_job():
         }
         
         # Fire and forget the processing task.
-        asyncio.create_task(process_entity(entity_jobs[job_id], data))
+        asyncio.create_task(process_entity(entity_jobs[job_id], data.__dict__))
         
         logger.info(f"Created job with ID: {job_id}")
         return jsonify({"job_id": job_id, "status": "processing"}), 202
@@ -83,7 +89,7 @@ async def create_entity_job():
         logger.exception(e)
         return jsonify({"error": str(e)}), 500
 
-# Endpoint to fetch the status of a specific job by its job_id
+# Endpoint to fetch the status of a specific job by its job_id (no validation needed for GET without query params)
 @app.route("/entity/<job_id>", methods=["GET"])
 async def get_entity_job_status(job_id):
     """

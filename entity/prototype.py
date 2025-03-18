@@ -2,9 +2,11 @@ import asyncio
 import uuid
 import logging
 from datetime import datetime
+from dataclasses import dataclass
+from typing import Optional
 
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 
 # Setup logging
@@ -18,6 +20,11 @@ logger.addHandler(handler)
 # Initialize Quart app and QuartSchema
 app = Quart(__name__)
 QuartSchema(app)
+
+# Dataclass definition for POST request payload.
+@dataclass
+class Greeting:
+    name: Optional[str] = None
 
 # In-memory storage for job processing
 entity_jobs = {}
@@ -56,8 +63,11 @@ async def get_hello():
     """
     return jsonify({"message": "Hello World"}), 200
 
+# For POST requests, the route decorator must come first, then validate_request.
+# This is a known workaround due to an issue in the quart-schema library.
 @app.route('/hello', methods=['POST'])
-async def post_hello():
+@validate_request(Greeting)
+async def post_hello(data: Greeting):
     """
     POST /hello
     Invokes business logic to generate a greeting message.
@@ -65,8 +75,7 @@ async def post_hello():
     Additionally, it performs an external API call and fires a background task.
     """
     try:
-        data = await request.get_json() or {}
-        name = data.get("name")
+        name = data.name
         greeting = f"Hello, {name}" if name else "Hello World"
         
         # Example external API call to retrieve current UTC time
@@ -83,7 +92,7 @@ async def post_hello():
         entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
         
         # Fire and forget the processing task.
-        asyncio.create_task(process_entity(job_id, data))
+        asyncio.create_task(process_entity(job_id, data.__dict__))
         
         return jsonify({"message": greeting}), 200
     except Exception as e:

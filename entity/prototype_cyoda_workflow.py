@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 
 import httpx
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ENTITY_VERSION  # always use this constant
@@ -32,17 +32,18 @@ class EntityJobRequest:
 
 # Workflow function for processing the entity.
 # This function is applied asynchronously to the entity before it is persisted.
-# It takes the entity data as the only argument.
+# It takes the entity data as the only argument and modifies it directly.
 async def process_entity(entity: dict):
     """
-    Process the entity job using an external API.
-    The entity parameter is expected to include at least a unique 'job_id' and 'payload'.
+    Process the entity job by calling an external API
+    and modifying the entity state. This function is executed
+    asynchronously before the entity is persisted.
     """
     try:
         job_id = entity.get("job_id")
         payload = entity.get("payload", {})
         logger.info(f"Processing job_id: {job_id} with payload: {payload}")
-        # Example: calling a real external API to get a Chuck Norris joke.
+        # Example: call an external API to get a Chuck Norris joke.
         async with httpx.AsyncClient() as client:
             response = await client.get("https://api.chucknorris.io/jokes/random")
             if response.status_code == 200:
@@ -50,74 +51,53 @@ async def process_entity(entity: dict):
             else:
                 result = "Error retrieving joke."
                 logger.error(f"External API error: {response.status_code}")
-        
-        # Simulate processing delay
+        # Simulate additional processing delay
         await asyncio.sleep(1)
-
-        # Prepare updated job details with the result
         completed_at = datetime.utcnow().isoformat() + "Z"
-        updated_job = {
-            "status": "completed",
-            "completedAt": completed_at,
-            "result": result
-        }
-        logger.info(f"Completed job with ID {job_id}")
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            entity=updated_job,
-            technical_id=job_id,
-            meta={}
-        )
+        # Update the entity directly; these changes will be persisted.
+        entity["status"] = "completed"
+        entity["completedAt"] = completed_at
+        entity["result"] = result
     except Exception as e:
         logger.exception(e)
-        error_update = {
-            "status": "error",
-            "error": str(e)
-        }
-        try:
-            await entity_service.update_item(
-                token=cyoda_token,
-                entity_model="entity",
-                entity_version=ENTITY_VERSION,
-                entity=error_update,
-                technical_id=job_id,
-                meta={}
-            )
-        except Exception as inner_e:
-            logger.exception(inner_e)
+        entity["status"] = "error"
+        entity["error"] = str(e)
+    # Return the modified entity (if needed by the persistence process)
+    return entity
 
 # Endpoint to submit a new entity processing job
-# Workaround for quart-schema decorator ordering: for POST requests, @route comes first then @validate_request.
+# Workflow function process_entity is used to process the job asynchronously
 @app.route("/entity", methods=["POST"])
 @validate_request(EntityJobRequest)
 async def create_entity_job(data: EntityJobRequest):
     """
     Create a new entity processing job. Expects JSON payload.
+    The processing logic is moved to the workflow function which is invoked
+    before the entity is persisted.
     """
     try:
         job_id = str(uuid.uuid4())
         requested_at = datetime.utcnow().isoformat() + "Z"
-        # Include the original request data inside the job payload
+        # Prepare the initial job entity.
         job = {
             "status": "processing",
             "requestedAt": requested_at,
             "job_id": job_id,
             "payload": data.__dict__
         }
-        # Call the add_item service with the workflow function.
-        # The workflow function will be applied to the entity before it is persisted.
+        # Call add_item service with the workflow function.
+        # The workflow function process_entity will execute asynchronously
+        # and update the job before it is persisted.
         id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="entity",
             entity_version=ENTITY_VERSION,
             entity=job,
-            workflow=process_entity  # Workflow function applied to the entity asynchronously before persistence
+            workflow=process_entity  # Workflow function applied before persisting the entity.
         )
         logger.info(f"Created job with ID: {job_id}")
-        # Return only the id in the response as the result will be retrieved in a separate endpoint
-        return jsonify({"job_id": id, "status": "processing"}), 202
+        # Return the job identifier.
+        return jsonify({"job_id": id}), 202
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": str(e)}), 500

@@ -17,7 +17,7 @@ formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# Import required external service and constants
+# External services and configurations
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
 from common.config.config import ENTITY_VERSION
@@ -36,67 +36,60 @@ class Greeting:
 
 async def process_hello(entity: dict) -> dict:
     # Workflow function applied to the 'hello' entity before persistence.
-    # It performs asynchronous tasks such as calling external APIs,
-    # simulating processing delay, and updating the entity state.
+    # This function performs asynchronous tasks including external API calls,
+    # simulating processing delay and updating the entity state.
     try:
-        # Call external API to retrieve current UTC time
-        async with httpx.AsyncClient() as client:
+        # Retrieve current UTC time from external API with a timeout safeguard.
+        async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get("http://worldtimeapi.org/api/timezone/Etc/UTC")
             resp.raise_for_status()
             time_data = resp.json()
-            current_time = time_data.get("utc_datetime", datetime.utcnow().isoformat())
-        entity["requestedAt"] = current_time
+            utc_time = time_data.get("utc_datetime", datetime.utcnow().isoformat())
+        entity["requestedAt"] = utc_time
 
         # Simulate processing delay
         await asyncio.sleep(2)
 
-        # Call external API to get a joke
-        async with httpx.AsyncClient() as client:
+        # Call external API to get a joke with a timeout safeguard.
+        async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get("https://api.chucknorris.io/jokes/random")
             response.raise_for_status()
             joke_data = response.json()
-            joke = joke_data.get("value")
-        entity["joke"] = joke
+        entity["joke"] = joke_data.get("value", "No joke available")
 
-        # Update entity status to completed and set completion timestamp
+        # Mark entity as completed and add completion timestamp.
         entity["status"] = "completed"
         entity["completedAt"] = datetime.utcnow().isoformat()
     except Exception as e:
-        # In case of failure, update the entity status accordingly
+        # Handle any exceptions, log the error and update entity state.
         entity["status"] = "failed"
-        logger.exception(e)
+        logger.exception("Error in process_hello workflow: %s", e)
     return entity
 
 @app.route("/hello", methods=["GET"])
 async def get_hello():
-    # GET /hello
-    # Retrieves a "Hello World" message.
+    # GET /hello - Retrieves a simple greeting message.
     return jsonify({"message": "Hello World"}), 200
 
-# For POST requests, the route decorator must come first, then validate_request.
-# This is a known workaround due to an issue in the quart-schema library.
+# For POST requests, use the decorator order recommended by quart-schema.
 @app.route("/hello", methods=["POST"])
 @validate_request(Greeting)
 async def post_hello(data: Greeting):
-    # POST /hello
-    # Invokes business logic to generate a greeting message.
-    # It optionally accepts a JSON body with a 'name' field.
-    # The workflow function performs asynchronous processing
-    # and updates the entity state before it is persisted.
+    # POST /hello - Generates a greeting and persists an entity after asynchronous workflow processing.
     try:
         name = data.name
-        greeting = f"Hello, {name}" if name else "Hello World"
+        greeting_text = f"Hello, {name}" if name else "Hello World"
 
-        # Prepare minimal entity data; further processing will be done by the workflow.
+        # Minimal entity data; additional processing will be handled by the workflow.
         job_data = {
             "status": "processing",
             "requestedAt": datetime.utcnow().isoformat(),
-            "name": data.name,
-            "greeting": greeting
+            "name": name,
+            "greeting": greeting_text
         }
-        # Add the job record through the external entity service with workflow processing.
-        # The process_hello function will be applied to the entity asynchronously
-        # before it is persisted.
+
+        # Persist the entity using the external service.
+        # The process_hello workflow function is applied to the entity asynchronously before persistence.
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="hello",
@@ -104,10 +97,11 @@ async def post_hello(data: Greeting):
             entity=job_data,
             workflow=process_hello
         )
-        # Return only the technical_id in the response.
+
+        # Return only the technical identifier.
         return jsonify({"technical_id": job_id}), 200
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Error in post_hello: %s", e)
         return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == "__main__":

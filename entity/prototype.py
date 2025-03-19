@@ -5,8 +5,9 @@ from datetime import datetime
 from typing import List
 
 import httpx
+from dataclasses import dataclass
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema  # Schema initialization
+from quart_schema import QuartSchema, validate_request, validate_querystring  # Schema initialization
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -19,6 +20,18 @@ logger.addHandler(handler)
 # Initialize Quart app and QuartSchema
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data classes for request validation
+@dataclass
+class IngestRequest:
+    source: str
+
+@dataclass
+class CrocodileQuery:
+    name: str = None
+    sex: str = None
+    age_min: int = None
+    age_max: int = None
 
 # In-memory persistence (cache)
 DATA_CACHE: List[dict] = []
@@ -35,12 +48,12 @@ async def process_entity(job_id: str, data: List[dict]):
     try:
         # Simulate processing delay
         await asyncio.sleep(1)
-        
+
         # Update in-memory cache (mock persistence)
         global DATA_CACHE
         DATA_CACHE.clear()
         DATA_CACHE.extend(data)
-        
+
         # Mark the job as complete
         ENTITY_JOBS[job_id]["status"] = "complete"
         logger.info("Ingestion job %s completed, %d records ingested", job_id, len(data))
@@ -48,8 +61,10 @@ async def process_entity(job_id: str, data: List[dict]):
         logger.exception(e)
         ENTITY_JOBS[job_id]["status"] = "failed"
 
+# For POST endpoints, route decorator comes first, then validate_request.
 @app.route("/api/crocodiles/ingest", methods=["POST"])
-async def ingest_crocodiles():
+@validate_request(IngestRequest)  # Workaround for POST: validator added after route
+async def ingest_crocodiles(data: IngestRequest):
     """
     Ingest crocodile data from the external API and store it into the in-memory cache.
     Returns a job ID for tracking the ingestion status.
@@ -60,18 +75,20 @@ async def ingest_crocodiles():
     logger.info("Starting ingestion job: %s", job_id)
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(CROCODILE_API_URL)
+            response = await client.get(data.source)
             response.raise_for_status()
-            data = response.json()
+            api_data = response.json()
 
         # Fire and forget the processing task.
         # TODO: In a production system, consider using a background task handler
-        await asyncio.create_task(process_entity(job_id, data))
+        await asyncio.create_task(process_entity(job_id, api_data))
         return jsonify({"message": "Data ingestion initiated", "job_id": job_id})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to ingest data"}), 500
 
+# For GET endpoints, validate_querystring decorator should be placed first.
+@validate_querystring(CrocodileQuery)  # Workaround for GET: validator added first
 @app.route("/api/crocodiles", methods=["GET"])
 async def get_crocodiles():
     """
@@ -87,9 +104,9 @@ async def get_crocodiles():
         sex = request.args.get("sex", type=str)
         age_min = request.args.get("age_min", type=int)
         age_max = request.args.get("age_max", type=int)
-    
+
         filtered = DATA_CACHE.copy()
-    
+
         if name:
             filtered = [item for item in filtered if name.lower() in item.get("name", "").lower()]
         if sex:
@@ -98,7 +115,7 @@ async def get_crocodiles():
             filtered = [item for item in filtered if item.get("age", 0) >= age_min]
         if age_max is not None:
             filtered = [item for item in filtered if item.get("age", 0) <= age_max]
-    
+
         logger.info("Returning %d filtered records", len(filtered))
         return jsonify(filtered)
     except Exception as e:

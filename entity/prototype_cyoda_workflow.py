@@ -28,12 +28,25 @@ QuartSchema(app)
 
 # Workflow function for the "crocodiles" entity.
 # This function takes the entity data as its only argument,
-# modifies it (e.g. by adding a processing timestamp), and returns the modified entity.
+# applies any asynchronous tasks (e.g. fetching supplementary data) and modifies the entity.
 async def process_crocodiles(entity: dict) -> dict:
-    # Add a timestamp indicating when the entity was processed.
+    # Update entity state: add a processing timestamp.
     entity["processed_at"] = datetime.utcnow().isoformat()
-    # You can add more logic here if needed.
-    logger.info("Processed entity with id: %s", entity.get("id", "unknown"))
+    # Example of additional asynchronous work:
+    # Fetch supplementary data from a secondary API (for a different entity_model).
+    try:
+        async with httpx.AsyncClient() as client:
+            # This URL is an example; in real usage, provide a valid endpoint.
+            response = await client.get("https://example.com/api/supplementary")
+            response.raise_for_status()
+            supplementary_data = response.json()
+        # Add supplementary data to the entity.
+        entity["supplementary"] = supplementary_data
+    except Exception as e:
+        logger.exception("Failed to fetch supplementary data: %s", e)
+        # Optionally, you can set a default value or continue.
+        entity["supplementary"] = {}
+    # You can perform other asynchronous tasks here.
     return entity
 
 # Start-up initialization
@@ -53,36 +66,8 @@ class CrocodileQuery:
     age_min: int = None
     age_max: int = None
 
-# Local job tracking remains unchanged
+# Local job tracking for ingestion
 ENTITY_JOBS = {}  # Stores processing job info keyed by job_id
-
-# External API URL remains unchanged for ingestion source
-CROCODILE_API_URL = "https://test-api.k6.io/public/crocodiles/"
-
-# Process external data and add each record to the external entity_service.
-# The workflow function "process_crocodiles" is applied to each entity before persistence.
-async def process_entity(job_id: str, data: List[dict]):
-    """
-    Process the external data and add each record to the external entity_service.
-    The ingestion status is tracked via the local ENTITY_JOBS.
-    """
-    try:
-        # Process each record by adding it via the external entity_service
-        for record in data:
-            # For each record, call add_item with the workflow function.
-            await entity_service.add_item(
-                token=cyoda_token,
-                entity_model="crocodiles",
-                entity_version=ENTITY_VERSION,  # always use this constant
-                entity=record,
-                workflow=process_crocodiles  # Workflow function applied to the entity
-            )
-        # Mark the job as complete
-        ENTITY_JOBS[job_id]["status"] = "complete"
-        logger.info("Ingestion job %s completed, processed %d records", job_id, len(data))
-    except Exception as e:
-        logger.exception(e)
-        ENTITY_JOBS[job_id]["status"] = "failed"
 
 # For POST endpoints, route decorator comes first, then validate_request.
 @app.route("/api/crocodiles/ingest", methods=["POST"])
@@ -90,6 +75,7 @@ async def process_entity(job_id: str, data: List[dict]):
 async def ingest_crocodiles(data: IngestRequest):
     """
     Ingest crocodile data from the external API and store it into the external entity_service.
+    Each record is processed asynchronously by the workflow function before persistence.
     Returns a job ID for tracking the ingestion status.
     """
     job_id = str(uuid.uuid4())
@@ -101,13 +87,31 @@ async def ingest_crocodiles(data: IngestRequest):
             response = await client.get(data.source)
             response.raise_for_status()
             api_data = response.json()
-        # Fire and forget the processing task.
-        # In production, consider using a background task handler.
-        asyncio.create_task(process_entity(job_id, api_data))
-        return jsonify({"message": "Data ingestion initiated", "job_id": job_id})
+        # For each record, call add_item with the workflow function.
+        tasks = [
+            entity_service.add_item(
+                token=cyoda_token,
+                entity_model="crocodiles",
+                entity_version=ENTITY_VERSION,  # always use this constant
+                entity=record,
+                workflow=process_crocodiles  # Workflow function applied just before persistence
+            )
+            for record in api_data
+        ]
+        # Await all tasks concurrently.
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        # Check for errors in results.
+        if any(isinstance(res, Exception) for res in results):
+            ENTITY_JOBS[job_id]["status"] = "failed"
+            logger.error("Ingestion job %s encountered errors", job_id)
+            return jsonify({"error": "Failed to ingest some records", "job_id": job_id}), 500
+        ENTITY_JOBS[job_id]["status"] = "complete"
+        logger.info("Ingestion job %s completed, processed %d records", job_id, len(api_data))
+        return jsonify({"message": "Data ingestion completed", "job_id": job_id})
     except Exception as e:
         logger.exception(e)
-        return jsonify({"error": "Failed to ingest data"}), 500
+        ENTITY_JOBS[job_id]["status"] = "failed"
+        return jsonify({"error": "Failed to ingest data", "job_id": job_id}), 500
 
 # For GET endpoints, validate_querystring decorator should be placed first.
 @validate_querystring(CrocodileQuery)  # Workaround for GET: validator added first

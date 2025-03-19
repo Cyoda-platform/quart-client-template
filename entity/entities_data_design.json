@@ -1,0 +1,1 @@
+{"entities": [{"entity_name": "crocodiles", "entity_data_example": {"id": "<crocodile_id>", "name": "<crocodile_name>", "sex": "<crocodile_sex>", "date_of_birth": "<date_of_birth>", "age": "<age>"}}]}

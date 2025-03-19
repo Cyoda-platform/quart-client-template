@@ -1,4 +1,4 @@
-from common.grpc_client.grpc_client import grpc_stream
+#!/usr/bin/env python3
 import asyncio
 import logging
 import uuid
@@ -26,18 +26,35 @@ logger.addHandler(handler)
 app = Quart(__name__)
 QuartSchema(app)
 
+# Workflow function for the "crocodiles" entity.
+# This function is invoked asynchronously before persisting the entity.
+# Any asynchronous task should be placed here so that the endpoint remains lightweight.
+async def process_crocodiles(entity: dict) -> dict:
+    try:
+        # Add a timestamp indicating when the entity was processed.
+        entity["processed_at"] = datetime.utcnow().isoformat()
+        # Example of additional asynchronous work:
+        # Fetch supplementary data from an external API (secondary/supplementary data).
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            # This URL is an example. Replace with the actual supplementary data endpoint.
+            response = await client.get("https://example.com/api/supplementary")
+            response.raise_for_status()
+            supplementary_data = response.json()
+        # Incorporate the supplementary data into the entity.
+        entity["supplementary"] = supplementary_data
+    except Exception as e:
+        # Log the exception; do not fail the workflow because of supplementary data issues.
+        logger.exception("Error in process_crocodiles workflow: %s", e)
+        entity["supplementary"] = {}
+    # Further asynchronous operations can be added here.
+    return entity
+
 # Other workflow functions for different entity_models can be implemented similarly.
 
 # Start-up initialization: ensures that external services are initialized before serving requests.
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
-    app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
-
-@app.after_serving
-async def shutdown():
-    app.background_task.cancel()
-    await app.background_task
 
 # Data classes for request validation
 @dataclass
@@ -79,7 +96,8 @@ async def ingest_crocodiles(data: IngestRequest):
                 entity_model="crocodiles",
                 entity_version=ENTITY_VERSION,  # Always use this constant
                 entity=record,
-                )
+                workflow=process_crocodiles  # Workflow function applied before persisting the entity
+            )
             for record in api_data
         ]
         # Await all tasks concurrently.
@@ -98,8 +116,10 @@ async def ingest_crocodiles(data: IngestRequest):
         ENTITY_JOBS[job_id]["status"] = "failed"
         return jsonify({"error": "Failed to ingest data", "job_id": job_id}), 500
 
-@validate_querystring(CrocodileQuery)
+# GET endpoint for retrieving crocodile entities.
+# It uses query parameters to optionally filter the returned records.
 @app.route("/api/crocodiles", methods=["GET"])
+@validate_querystring(CrocodileQuery)  # Validator for query string parameters.
 async def get_crocodiles():
     try:
         name = request.args.get("name", type=str)

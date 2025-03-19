@@ -35,31 +35,38 @@ async def fetch_crocodile_data(source_url: str):
     async with httpx.AsyncClient() as client:
         response = await client.get(source_url)
         response.raise_for_status()  # Raises an exception for HTTP errors
-        data = response.json()
-        return data
+        return response.json()
 
-async def process_crocodiles(entity):
-    # Workflow function applied to the crocodile entity asynchronously before persistence.
-    # You can modify the entity if needed.
-    # This function takes the entity data as its only argument.
+# Workflow function applied to the crocodile entity asynchronously before persistence.
+# You can modify the entity state here.
+async def process_crocodile(entity):
+    # For example, add a processed timestamp to the entity.
+    entity["processed_at"] = datetime.datetime.utcnow().isoformat()
+    # Additional asynchronous logic can be performed here.
+    # You can also fetch or add supplementary data from a different entity_model if needed.
     return entity
 
-async def process_crocodiles_items(data):
-    # Instead of writing to a local cache, add each item via the external service
+# Process a batch of crocodile entities.
+# For each entity, we call add_item with workflow=process_crocodile.
+async def process_crocodile_batch(data):
     entity_model = "crocodiles"
+    tasks = []
     for item in data:
-        try:
-            # Add each item to the external service using the workflow function.
-            await entity_service.add_item(
-                token=cyoda_token,
-                entity_model=entity_model,
-                entity_version=ENTITY_VERSION,
-                entity=item,
-                workflow=process_crocodiles  # Workflow function applied to the entity before persistence.
-            )
-            logger.info("Added crocodile item to external service.")
-        except Exception as e:
-            logger.exception(e)
+        tasks.append(entity_service.add_item(
+            token=cyoda_token,
+            entity_model=entity_model,
+            entity_version=ENTITY_VERSION,
+            entity=item,
+            workflow=process_crocodile  # Workflow function applied to the entity before persistence.
+        ))
+    # Run all tasks concurrently.
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    for res in results:
+        if isinstance(res, Exception):
+            logger.exception(res)
+        else:
+            logger.info("Added crocodile item with id: %s", res)
+    return results
 
 @app.before_serving
 async def startup():
@@ -71,12 +78,10 @@ async def ingest_crocodiles(data: IngestRequest):
     try:
         source = data.source if data.source else "https://test-api.k6.io/public/crocodiles/"
         fetched_data = await fetch_crocodile_data(source)
-        requested_at = datetime.datetime.utcnow().isoformat()
-        # Create a job_id
         job_id = "job-" + str(datetime.datetime.utcnow().timestamp())
         logger.info("Starting ingestion job %s", job_id)
-        # Fire and forget the processing task.
-        asyncio.create_task(process_crocodiles_items(fetched_data))
+        # Fire and forget processing of the fetched data.
+        asyncio.create_task(process_crocodile_batch(fetched_data))
         return jsonify({
             "status": "success",
             "message": "Data ingestion started",
@@ -91,7 +96,6 @@ async def ingest_crocodiles(data: IngestRequest):
 async def get_crocodiles():
     try:
         entity_model = "crocodiles"
-        # Retrieve filter parameters from query strings using standard approach
         name_filter = request.args.get("name")
         sex_filter = request.args.get("sex")
         min_age = request.args.get("min_age", type=int)
@@ -108,7 +112,6 @@ async def get_crocodiles():
             condition["max_age"] = max_age
 
         if condition:
-            # Use condition-based retrieval from the external service
             results = await entity_service.get_items_by_condition(
                 token=cyoda_token,
                 entity_model=entity_model,
@@ -116,7 +119,6 @@ async def get_crocodiles():
                 condition=condition
             )
         else:
-            # Retrieve all items if no condition is specified.
             results = await entity_service.get_items(
                 token=cyoda_token,
                 entity_model=entity_model,

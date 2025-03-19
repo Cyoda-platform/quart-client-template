@@ -73,9 +73,6 @@ async def startup():
 async def shutdown():
     app.background_task.cancel()
     await app.background_task
-    except Exception as e:
-        logger.exception("Startup error: %s", e)
-        raise
 
 # The ingest endpoint fetches external crocodile data and then defers processing to the workflow functions.
 @app.route('/api/crocodiles/ingest', methods=['POST'])

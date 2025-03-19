@@ -98,10 +98,8 @@ async def ingest_crocodiles(data: IngestRequest):
         ENTITY_JOBS[job_id]["status"] = "failed"
         return jsonify({"error": "Failed to ingest data", "job_id": job_id}), 500
 
-# GET endpoint for retrieving crocodile entities.
-# It uses query parameters to optionally filter the returned records.
+@validate_querystring(CrocodileQuery)
 @app.route("/api/crocodiles", methods=["GET"])
-@validate_querystring(CrocodileQuery)  # Validator for query string parameters.
 async def get_crocodiles():
     try:
         name = request.args.get("name", type=str)

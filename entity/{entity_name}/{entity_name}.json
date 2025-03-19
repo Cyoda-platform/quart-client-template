@@ -1,0 +1,1 @@
+{"entity_name": "NewsletterSubscription", "filtered_data": [{"email": "user1@example.com", "first_name": "John", "last_name": "Doe", "subscription_date": "2023-10-10", "interests": ["technology", "health"]}, {"email": "user2@example.com", "first_name": "Jane", "last_name": "Smith", "subscription_date": "2023-10-12", "interests": ["finance", "travel"]}]}

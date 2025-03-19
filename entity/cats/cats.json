@@ -1,0 +1,1 @@
+{"entity_name": "Cats", "data": [{"name": "Whiskers", "breed": "Siamese", "age": 3, "owner": {"name": "Alice Smith", "contact": "alice@example.com"}, "adopted": true, "adoption_date": "2021-05-15"}, {"name": "Mittens", "breed": "Maine Coon", "age": 5, "owner": {"name": "John Doe", "contact": "john@example.com"}, "adopted": false}]}

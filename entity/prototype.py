@@ -5,13 +5,34 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data classes for request validation
+@dataclass
+class IngestDataRequest:
+    # For simplicity, the request is flattened.
+    # TODO: Adjust if nested structure {"criteria": {"date": "YYYY-MM-DD"}} is needed.
+    date: str
+
+@dataclass
+class AggregateDataRequest:
+    field: str
+    operation: str
+
+@dataclass
+class GenerateReportRequest:
+    report_type: str
+    # For simplicity, the date_range is flattened.
+    # TODO: Adjust if nested structure {"date_range": {"start": "...", "end": "..."}} is needed.
+    start: str
+    end: str
 
 # Global caches for our prototype
 ingestion_store = {}  # Stores ingested product data keyed by ingestion id
@@ -44,15 +65,15 @@ async def process_ingestion(job_id: str, criteria: dict):
         }
 
 @app.route("/api/ingest_data", methods=["POST"])
-async def ingest_data():
+@validate_request(IngestDataRequest)  # Workaround: for POST, route comes first then validation decorator
+async def ingest_data(data: IngestDataRequest):
     try:
-        # Parse request; the criteria can include the date, though it's not used in this prototype
-        content = await request.get_json()
-        criteria = content.get("criteria", {})
+        # Use the validated request data
+        criteria = {"date": data.date}
         job_id = str(uuid.uuid4())
         requested_at = datetime.utcnow().isoformat()
 
-        # Track the ingestion job in a local cache (fire and forget task)
+        # Track the ingestion job in a local cache (fire and forget processing task)
         ingestion_store[job_id] = {"status": "processing", "requestedAt": requested_at}
         asyncio.create_task(process_ingestion(job_id, criteria))
 
@@ -69,10 +90,10 @@ async def ingest_data():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/api/aggregate_data", methods=["POST"])
-async def aggregate_data():
+@validate_request(AggregateDataRequest)  # Workaround: route first then validation decorator for POST endpoints
+async def aggregate_data(data: AggregateDataRequest):
     try:
-        content = await request.get_json()
-        aggregation_criteria = content.get("aggregation_criteria", {})
+        aggregation_criteria = {"field": data.field, "operation": data.operation}
         # TODO: Implement actual aggregation logic based on the criteria and ingested data.
         # For now, we simulate aggregation using a dummy value.
         dummy_result = {
@@ -95,11 +116,11 @@ async def aggregate_data():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route("/api/generate_report", methods=["POST"])
-async def generate_report():
+@validate_request(GenerateReportRequest)  # Workaround: route first then validation decorator for POST endpoints
+async def generate_report(data: GenerateReportRequest):
     try:
-        content = await request.get_json()
-        report_type = content.get("report_type", "summary")
-        date_range = content.get("date_range", {})
+        date_range = {"start": data.start, "end": data.end}
+        report_type = data.report_type
         # TODO: Use actual aggregated data and generate a report.
         # For now, we simulate report generation with a dummy URL.
         report_id = str(uuid.uuid4())

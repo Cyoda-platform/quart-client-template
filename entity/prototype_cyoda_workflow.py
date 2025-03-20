@@ -41,7 +41,7 @@ class GenerateReportRequest:
 
 PRODUCTS_API_URL = "https://www.automationexercise.com/api/products"
 
-# Actual ingestion background task function (renamed from process_ingestion)
+# Background task for ingestion fetching and update on a different entity model.
 async def actual_ingestion(job_id: str, criteria: dict):
     try:
         logger.info(f"Starting ingestion job {job_id} with criteria: {criteria}")
@@ -79,27 +79,32 @@ async def actual_ingestion(job_id: str, criteria: dict):
             meta={}
         )
 
-# Workflow function for ingestion, applied before persistence.
-async def process_ingestion(entity_data: dict):
-    # Example workflow: mark the entity as processed and trigger background ingestion.
-    entity_data["workflow_processed"] = True
-    job_id = entity_data.get("job_id")
-    criteria = entity_data.get("criteria")
+# Workflow function for ingestion.
+async def process_ingestion(entity: dict):
+    # Mark the entity as processed by workflow.
+    entity["workflow_processed"] = True
+    # Launch the asynchronous ingestion background task.
+    job_id = entity.get("job_id")
+    criteria = entity.get("criteria")
     if job_id and criteria:
+        # Fire and forget background task. Note: asynchronous tasks acting on a different entity_model.
         asyncio.create_task(actual_ingestion(job_id, criteria))
-    return entity_data
+    # Return the (possibly modified) entity state for persistence.
+    return entity
 
-# Workflow function for aggregation, applied before persistence.
-async def process_aggregation(entity_data: dict):
-    # Example workflow: mark the aggregation entity as processed.
-    entity_data["workflow_processed"] = True
-    return entity_data
+# Workflow function for aggregation.
+async def process_aggregation(entity: dict):
+    # Example: mark the aggregation entity as processed.
+    entity["workflow_processed"] = True
+    # Additional asynchronous tasks for aggregation can be placed here.
+    return entity
 
-# Workflow function for report generation, applied before persistence.
-async def process_report(entity_data: dict):
-    # Example workflow: mark the report entity as processed.
-    entity_data["workflow_processed"] = True
-    return entity_data
+# Workflow function for report generation.
+async def process_report(entity: dict):
+    # Example: mark the report entity as processed.
+    entity["workflow_processed"] = True
+    # Additional asynchronous tasks for report generation can be placed here.
+    return entity
 
 @app.route("/api/ingest_data", methods=["POST"])
 @validate_request(IngestDataRequest)
@@ -114,7 +119,7 @@ async def ingest_data(data: IngestDataRequest):
             "requested_at": requested_at,
             "criteria": criteria
         }
-        # Pass the workflow function for ingestion
+        # The workflow function process_ingestion will be invoked before persisting.
         id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="ingestion",
@@ -151,7 +156,7 @@ async def aggregate_data(data: AggregateDataRequest):
             "aggregated_at": datetime.utcnow().isoformat(),
             "criteria": aggregation_criteria
         }
-        # Pass the workflow function for aggregation
+        # The workflow function process_aggregation will be invoked before persisting.
         id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="aggregation",
@@ -182,7 +187,7 @@ async def generate_report(data: GenerateReportRequest):
             "report_url": dummy_report_url,
             "generated_at": datetime.utcnow().isoformat()
         }
-        # Pass the workflow function for report generation
+        # The workflow function process_report will be invoked before persisting.
         id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="report",

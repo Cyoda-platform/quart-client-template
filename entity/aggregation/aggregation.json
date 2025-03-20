@@ -1,0 +1,1 @@
+{"aggregation_id": "string", "aggregated_data": {"field": "string", "operation": "string", "result": 5000}, "aggregated_at": "YYYY-MM-DDTHH:MM:SS", "criteria": {"field": "string", "operation": "string"}}

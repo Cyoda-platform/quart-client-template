@@ -1,4 +1,1 @@
-{
-    "success": "false",
-    "error": "Invalid JSON entity provided."
-}
+{"entity": "some random text"}

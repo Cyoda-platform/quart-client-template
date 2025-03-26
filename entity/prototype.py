@@ -69,6 +69,7 @@ async def process_entity(entity_job, data):
         entity_job["status"] = "failed"
 
 # POST endpoints: route decorator must go first, then validation (@validate_request) workaround for quart-schema
+
 @app.route('/books', methods=['POST'])
 @validate_request(BookData)  # Works around the quart-schema ordering issue for POST requests
 async def add_book(data: BookData):
@@ -77,8 +78,8 @@ async def add_book(data: BookData):
         # Simulate external API call to create a book
         async with httpx.AsyncClient() as client:
             external_response = await client.post(f"{FAKER_API_URL}/Books", json=data.__dict__)
-            external_response.raise_for_status()  # Raise error if bad response
-            external_book = external_response.json()
+            external_response.raise_for_status()
+            _ = external_response.json()  # using external response if needed
         # Use local cache to simulate persistence
         book = {
             "id": next_book_id,
@@ -103,6 +104,19 @@ async def get_books():
     # Return local cache of books
     return jsonify(list(books_cache.values()))
 
+# New GET endpoint for retrieving a specific book from the external API
+@app.route('/books/<int:book_id>', methods=['GET'])
+async def get_book(book_id: int):
+    try:
+        async with httpx.AsyncClient() as client:
+            external_response = await client.get(f"{FAKER_API_URL}/Books/{book_id}")
+            external_response.raise_for_status()
+            external_book = external_response.json()
+        return jsonify(external_book)
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to retrieve external book data"}), 500
+
 @app.route('/books/<int:book_id>', methods=['POST'])
 @validate_request(BookData)  # Works around the quart-schema ordering issue for POST requests
 async def update_book(book_id: int, data: BookData):
@@ -114,8 +128,7 @@ async def update_book(book_id: int, data: BookData):
         async with httpx.AsyncClient() as client:
             external_response = await client.post(f"{FAKER_API_URL}/Books/{book_id}", json=data.__dict__)
             external_response.raise_for_status()
-            external_book = external_response.json()
-
+            _ = external_response.json()
         # Update local cache
         book = books_cache[book_id]
         book.update({
@@ -157,8 +170,7 @@ async def add_author(data: AuthorData):
         async with httpx.AsyncClient() as client:
             external_response = await client.post(f"{FAKER_API_URL}/Authors", json=data.__dict__)
             external_response.raise_for_status()
-            external_author = external_response.json()
-
+            _ = external_response.json()
         author = {
             "id": next_author_id,
             "name": data.name,
@@ -189,8 +201,7 @@ async def update_author(author_id: int, data: AuthorData):
         async with httpx.AsyncClient() as client:
             external_response = await client.post(f"{FAKER_API_URL}/Authors/{author_id}", json=data.__dict__)
             external_response.raise_for_status()
-            external_author = external_response.json()
-
+            _ = external_response.json()
         author = authors_cache[author_id]
         author.update({
             "name": data.name,
@@ -227,8 +238,7 @@ async def add_user(data: UserData):
         async with httpx.AsyncClient() as client:
             external_response = await client.post(f"{FAKER_API_URL}/Users", json=data.__dict__)
             external_response.raise_for_status()
-            external_user = external_response.json()
-
+            _ = external_response.json()
         user = {
             "id": next_user_id,
             "name": data.name,
@@ -258,8 +268,7 @@ async def update_user(user_id: int, data: UserData):
         async with httpx.AsyncClient() as client:
             external_response = await client.post(f"{FAKER_API_URL}/Users/{user_id}", json=data.__dict__)
             external_response.raise_for_status()
-            external_user = external_response.json()
-
+            _ = external_response.json()
         user = users_cache[user_id]
         user.update({
             "name": data.name,
@@ -296,8 +305,7 @@ async def add_task(data: TaskData):
         async with httpx.AsyncClient() as client:
             external_response = await client.post(f"{FAKER_API_URL}/Tasks", json=data.__dict__)
             external_response.raise_for_status()
-            external_task = external_response.json()
-
+            _ = external_response.json()
         task = {
             "id": next_task_id,
             "title": data.title,
@@ -328,8 +336,7 @@ async def update_task(task_id: int, data: TaskData):
         async with httpx.AsyncClient() as client:
             external_response = await client.post(f"{FAKER_API_URL}/Tasks/{task_id}", json=data.__dict__)
             external_response.raise_for_status()
-            external_task = external_response.json()
-
+            _ = external_response.json()
         task = tasks_cache[task_id]
         task.update({
             "title": data.title,
@@ -367,7 +374,6 @@ async def authentication(data: AuthenticationData):
             external_response = await client.post(f"{FAKER_API_URL}/Authentication", json=data.__dict__)
             external_response.raise_for_status()
             auth_data = external_response.json()
-
         # TODO: Implement token verification and secure session management
         return jsonify(auth_data)
     except Exception as e:

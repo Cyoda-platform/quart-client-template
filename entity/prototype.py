@@ -2,9 +2,10 @@ import asyncio
 import uuid
 from datetime import datetime
 import logging
+from dataclasses import dataclass
 
 from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 
 # Configure logging
@@ -20,6 +21,10 @@ entity_jobs = {}
 
 # External API URL - using a real API that echoes POST requests.
 EXTERNAL_API_URL = "https://postman-echo.com/post"
+
+@dataclass
+class DataQuery:
+    query: str  # Only primitive type is allowed
 
 async def process_entity(job_id: str, query: str):
     """
@@ -52,17 +57,15 @@ async def hello():
     """
     return jsonify({"message": "Hello, World!"}), 200
 
+# For POST endpoints the route decorator must come first then validation.
 @app.route("/data", methods=["POST"])
-async def data():
+@validate_request(DataQuery)  # Workaround: for POST endpoints, validation is placed after the route decorator.
+async def data(data: DataQuery):
     """
     POST /data
     Accepts a query for external data retrieval and starts async processing.
     """
-    payload = await request.get_json()
-    if not payload or "query" not in payload:
-        abort(400, description="Missing 'query' field in the request body.")
-
-    query = payload["query"]
+    query = data.query
 
     # Generate a unique job_id and record the job in the local cache.
     job_id = str(uuid.uuid4())

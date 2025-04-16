@@ -1,0 +1,10 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "message": "Hello, John!"
+            },
+            "entity_name": "last_message"
+        }
+    ]
+}

@@ -29,9 +29,15 @@ class LastMessageResponse:
     last_message: str
 
 async def process_last_message(entity_data):
-    # This function can modify the entity_data if needed
-    # Example: Adding a timestamp or changing the message
-    entity_data['processed'] = True  # Just an example modification
+    # Modify the entity data as needed before persistence
+    entity_data['processed'] = True  # Example modification
+
+    # Log the message generation for tracking or debugging
+    logger.info(f"Processing entity data: {entity_data}")
+
+    # Fire and forget async task can be handled here if needed
+    # await some_async_function(entity_data)  # Example of an async operation
+
     return entity_data
 
 @app.route('/api/hello', methods=['POST'])
@@ -45,8 +51,8 @@ async def say_hello(data: HelloRequest):
     # Prepare data to be stored in the external service
     entity_data = {"message": message}
 
+    # Store the last message using the external service
     try:
-        # Store the last message using the external service
         last_message_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="last_message",
@@ -54,32 +60,38 @@ async def say_hello(data: HelloRequest):
             entity=entity_data,
             workflow=process_last_message  # Pass the workflow function
         )
-        
-        # Log the message generation
-        logger.info(f"Generated message: {message} with ID: {last_message_id}")
 
         return jsonify({"message": message, "id": last_message_id})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to store the message"}), 500
 
+async def process_get_last_message(entity_data):
+    # Logic for processing and retrieving the last message can be added here
+    # For now, just an example to modify state or add supplementary data
+    last_message_items = await entity_service.get_items(
+        token=cyoda_token,
+        entity_model="last_message",
+        entity_version=ENTITY_VERSION,
+    )
+
+    if last_message_items:
+        last_message = last_message_items[-1].get('message', "No message generated yet.")
+    else:
+        last_message = "No message generated yet."
+
+    entity_data['last_message'] = last_message  # Add last message to entity data
+    return entity_data
+
 @app.route('/api/hello', methods=['GET'])
 @validate_querystring(HelloRequest)  # Validation must be first for GET requests
 async def get_last_message():
+    entity_data = {}  # Create an empty entity data structure
     try:
-        # Retrieve the last message from the external service
-        last_message_items = await entity_service.get_items(
-            token=cyoda_token,
-            entity_model="last_message",
-            entity_version=ENTITY_VERSION,
-        )
+        # Use workflow function to process and retrieve the last message
+        await process_get_last_message(entity_data)
         
-        if last_message_items:
-            last_message = last_message_items[-1].get('message', "No message generated yet.")
-        else:
-            last_message = "No message generated yet."
-        
-        return jsonify({"last_message": last_message})
+        return jsonify({"last_message": entity_data.get('last_message', "No message generated yet.")})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve the message"}), 500

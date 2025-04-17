@@ -46,19 +46,27 @@ async def post_calculate(data: CalculateRequest):
     if len(data.numbers) != 2:
         return jsonify({"error": "Two numbers are required."}), 400
 
-    result = None
-    if data.operation == "add":
-        result = sum(data.numbers)
-    elif data.operation == "subtract":
-        result = data.numbers[0] - data.numbers[1]
-    else:
-        return jsonify({"error": "Unsupported operation."}), 400
-
+    result = await process_calculation(data.operation, data.numbers)
     return jsonify({"result": result})
+
+async def process_calculation(operation, numbers):
+    if operation == "add":
+        return sum(numbers)
+    elif operation == "subtract":
+        return numbers[0] - numbers[1]
+    else:
+        raise ValueError("Unsupported operation.")
 
 async def process_example_entity(entity_data):
     # Example workflow function that can modify the entity state
     entity_data['processed'] = True  # Modify entity data as needed
+    # Here we can add additional logic or fire-and-forget tasks
+    await perform_additional_tasks(entity_data)
+
+async def perform_additional_tasks(entity_data):
+    # Example of an async operation that could be performed
+    logger.info(f"Performing additional tasks for entity: {entity_data['name']}")
+    await asyncio.sleep(1)  # Simulate an async task
 
 @app.route('/start_process', methods=['POST'])
 @validate_request(HelloRequest)  # Validation must be last in POST

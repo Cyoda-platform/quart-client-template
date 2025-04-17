@@ -1,6 +1,6 @@
 ```python
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_querystring
+from quart_schema import QuartSchema, validate_request, validate_querystring
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -30,18 +30,21 @@ class ProcessInput:
     input_data: str
 
 async def process_entity(entity):
-    # Modify the entity data as needed
-    entity["processed"] = True
-    
-    # Simulate some asynchronous processing
-    await asyncio.sleep(5)
+    # Process the entity data 
+    try:
+        entity["processed"] = True
+        # Simulate some asynchronous processing
+        await asyncio.sleep(5)
+        # Optionally add a timestamp
+        entity["processed_at"] = datetime.datetime.utcnow().isoformat()
+        
+        # If additional entities need to be created, do it here
+        # Example: await entity_service.add_item(...)
 
-    # Optionally, you can fetch or add supplementary data related to the entity
-    # For example, let's say we want to add a timestamp
-    entity["processed_at"] = datetime.datetime.utcnow().isoformat()
-    
-    # If you need to add a different entity, you can do so here
-    # e.g., await entity_service.add_item(...)
+    except Exception as e:
+        logger.error(f"Error processing entity: {e}")
+        # Handle exceptions that may occur during processing
+        entity["error"] = str(e)
 
 @app.route("/hello", methods=["GET"])
 @validate_querystring(HelloResponse)  # Workaround: validation must be first for GET requests
@@ -49,6 +52,7 @@ async def hello():
     return jsonify({"message": "Hello, World!"})
 
 @app.route("/process", methods=["POST"])
+@validate_request(ProcessInput)  # Validate request body against ProcessInput schema
 async def process():
     data = await request.get_json()
     input_data = data.get("input_data")
@@ -58,11 +62,11 @@ async def process():
 
     job_id = str(uuid.uuid4())
 
+    # Prepare the entity with the input data
+    entity = {"input_data": input_data}  # Adjust as needed
+
     # Call to external service to add the job
     try:
-        # Prepare the entity with the input data
-        entity = {"input_data": input_data}  # Adjust as needed
-        
         await entity_service.add_item(
             token=cyoda_token,
             entity_model="entity_name",

@@ -1,8 +1,7 @@
-Here's a prototype implementation of the `prototype.py` file for the "Hello World" app using Quart and httpx. This implementation incorporates the specified requirements and uses mock data where necessary. 
-
 ```python
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
+from dataclasses import dataclass
 import httpx
 import asyncio
 import logging
@@ -19,30 +18,37 @@ QuartSchema(app)
 # In-memory cache for demonstration purposes
 entity_job = {}
 
-@app.route('/hello', methods=['GET'])
-async def get_hello():
-    return jsonify({"message": "Hello, World!"})
+@dataclass
+class HelloRequest:
+    name: str
 
-@app.route('/hello', methods=['POST'])
-async def post_hello():
-    data = await request.get_json()
-    name = data.get("name", "World")
+@dataclass
+class CalculateRequest:
+    operation: str
+    numbers: list
+
+@app.route('/hello', methods=['GET'])
+@validate_querystring(HelloRequest)  # Workaround for validation order issue
+async def get_hello():
+    name = request.args.get('name', 'World')
     return jsonify({"message": f"Hello, {name}!"})
 
+@app.route('/hello', methods=['POST'])
+@validate_request(HelloRequest)  # Validation must be last in POST
+async def post_hello(data: HelloRequest):
+    return jsonify({"message": f"Hello, {data.name}!"})
+
 @app.route('/calculate', methods=['POST'])
-async def post_calculate():
-    data = await request.get_json()
-    operation = data.get("operation")
-    numbers = data.get("numbers", [])
-    
-    if len(numbers) != 2:
+@validate_request(CalculateRequest)  # Validation must be last in POST
+async def post_calculate(data: CalculateRequest):
+    if len(data.numbers) != 2:
         return jsonify({"error": "Two numbers are required."}), 400
 
     result = None
-    if operation == "add":
-        result = sum(numbers)
-    elif operation == "subtract":
-        result = numbers[0] - numbers[1]
+    if data.operation == "add":
+        result = sum(data.numbers)
+    elif data.operation == "subtract":
+        result = data.numbers[0] - data.numbers[1]
     else:
         return jsonify({"error": "Unsupported operation."}), 400
 
@@ -61,25 +67,17 @@ async def process_entity(entity_id, data):
         logger.exception(e)
 
 @app.route('/start_process', methods=['POST'])
-async def start_process():
-    data = await request.get_json()
-    entity_id = data.get("entity_id")
-
+@validate_request(HelloRequest)  # Validation must be last in POST
+async def start_process(data: HelloRequest):
+    entity_id = data.name  # Using name as entity_id for demonstration
     requested_at = datetime.now()
     entity_job[entity_id] = {"status": "processing", "requestedAt": requested_at}
 
     # Fire and forget the processing task
-    await asyncio.create_task(process_entity(entity_id, data))
+    await asyncio.create_task(process_entity(entity_id, data.__dict__))
 
     return jsonify({"status": "processing", "entity_id": entity_id})
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Notes:
-- The `/hello` and `/calculate` endpoints are implemented as per the provided requirements.
-- The `process_entity` function illustrates how to handle an asynchronous task, with a placeholder for the actual external API call.
-- Logging is set up to capture exceptions and information during processing.
-- The in-memory cache (`entity_job`) serves as a mock for persistence.
-- The API call in `process_entity` uses a placeholder URL (`https://api.example.com/process`) to indicate where a real API would be called. This should be replaced with the actual endpoint when integrating with a real API.

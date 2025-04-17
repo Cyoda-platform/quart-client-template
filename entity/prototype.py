@@ -1,8 +1,7 @@
-Here is a prototype implementation of the `prototype.py` file for the "Hello World" app using Quart and httpx for asynchronous HTTP requests. The code adheres to the functional requirements specified earlier.
-
 ```python
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
+from dataclasses import dataclass
 import httpx
 import logging
 import asyncio
@@ -18,14 +17,18 @@ logger.setLevel(logging.INFO)
 # In-memory cache to mock persistence
 entity_job = {}
 
+@dataclass
+class GreetRequest:
+    name: str
+
 @app.route('/hello', methods=['GET'])
 async def hello():
     return jsonify({"message": "Hello, World!"})
 
 @app.route('/greet', methods=['POST'])
-async def greet():
-    data = await request.get_json()
-    name = data.get("name", "").strip()
+@validate_request(GreetRequest)  # Validation for POST request
+async def greet(data: GreetRequest):
+    name = data.name.strip()
     
     if not name:
         return jsonify({"error": "Name is required."}), 400
@@ -52,6 +55,20 @@ async def greet():
 
     return jsonify({"message": message})
 
+@app.route('/greet', methods=['GET'])
+@validate_querystring(GreetRequest)  # Workaround: Validation first for GET request
+async def greet_get():
+    name = request.args.get('name')
+    
+    if not name:
+        return jsonify({"error": "Name is required."}), 400
+
+    # Log the request
+    logger.info(f"Greet GET request received for name: {name}")
+
+    message = f"Hello, {name}!"
+    return jsonify({"message": message})
+
 async def process_entity(entity_job, data):
     # TODO: Implement actual processing logic
     logger.info(f"Processing entity for {data['name']}")
@@ -61,12 +78,3 @@ async def process_entity(entity_job, data):
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Key Points:
-- **Logging**: The implementation uses Python's logging module to log relevant information.
-- **In-memory Cache**: A simple dictionary (`entity_job`) is used to mock persistence.
-- **Asynchronous Processing**: The `process_entity` function simulates a processing task.
-- **Error Handling**: Basic error handling is in place for missing names.
-- **TODO Comments**: Any uncertain parts or areas requiring further implementation are marked with TODO comments. 
-
-This prototype is designed to validate the user experience and identify gaps in the requirements before further development.

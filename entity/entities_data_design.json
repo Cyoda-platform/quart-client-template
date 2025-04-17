@@ -1,0 +1,10 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "name": "string"
+            },
+            "entity_name": "greet_entity"
+        }
+    ]
+}

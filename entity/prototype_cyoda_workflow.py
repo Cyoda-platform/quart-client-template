@@ -74,14 +74,24 @@ async def greet_get():
 async def process_entity(data):
     # Placeholder for processing logic
     logger.info(f"Processing entity for {data['name']}")
-    
+
     # Simulate processing (e.g., modifying the entity state)
     data['greeting'] = f"Hello, {data['name']}!"
-    
-    # Optionally, you could fetch or create additional entities if needed.
-    # Example of creating a supplementary entity (pseudo-code):
-    # supplementary_entity_data = {"info": "Additional info"}
-    # await entity_service.add_item(token=cyoda_token, entity_model="supplementary_entity", entity_version=ENTITY_VERSION, entity=supplementary_entity_data)
+
+    # Simulate fetching or creating additional entities if needed.
+    try:
+        supplementary_entity_data = {"info": f"Additional info for {data['name']}"}
+        # Make sure to use a different entity_model for supplementary entities
+        await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="supplementary_entity",
+            entity_version=ENTITY_VERSION,
+            entity=supplementary_entity_data,
+            workflow=None  # No workflow for supplementary entities
+        )
+    except Exception as e:
+        logger.exception("Error adding supplementary entity")
+        # Handle the error appropriately, but do not prevent the main entity from being processed.
 
     await asyncio.sleep(2)  # Simulate a processing delay
     logger.info(f"Finished processing entity for {data['name']}")

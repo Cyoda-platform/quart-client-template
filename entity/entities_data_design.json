@@ -1,0 +1,32 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "name": "string"
+            },
+            "entity_name": "hello_request"
+        },
+        {
+            "entity_data_example": {
+                "numbers": [
+                    0,
+                    0
+                ],
+                "operation": "string"
+            },
+            "entity_name": "calculate_request"
+        },
+        {
+            "entity_data_example": {
+                "message": "Hello, World!"
+            },
+            "entity_name": "hello_response"
+        },
+        {
+            "entity_data_example": {
+                "result": 0
+            },
+            "entity_name": "calculate_response"
+        }
+    ]
+}

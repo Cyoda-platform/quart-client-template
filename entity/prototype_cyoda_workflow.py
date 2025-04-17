@@ -1,6 +1,6 @@
 ```python
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart_schema import QuartSchema, validate_querystring
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -29,12 +29,19 @@ class HelloResponse:
 class ProcessInput:
     input_data: str
 
-async def process_entity(data):
-    # TODO: Implement actual processing logic here
-    await asyncio.sleep(5)  # Simulate processing time
+async def process_entity(entity):
     # Modify the entity data as needed
-    data["processed"] = True
-    logger.info(f"Processed entity with data: {data}")
+    entity["processed"] = True
+    
+    # Simulate some asynchronous processing
+    await asyncio.sleep(5)
+
+    # Optionally, you can fetch or add supplementary data related to the entity
+    # For example, let's say we want to add a timestamp
+    entity["processed_at"] = datetime.datetime.utcnow().isoformat()
+    
+    # If you need to add a different entity, you can do so here
+    # e.g., await entity_service.add_item(...)
 
 @app.route("/hello", methods=["GET"])
 @validate_querystring(HelloResponse)  # Workaround: validation must be first for GET requests
@@ -50,12 +57,12 @@ async def process():
         return jsonify({"error": "Invalid input"}), 400
 
     job_id = str(uuid.uuid4())
-    requested_at = datetime.datetime.utcnow().isoformat()
-    
+
     # Call to external service to add the job
     try:
-        # Assuming `data` contains the necessary information to create an entity
+        # Prepare the entity with the input data
         entity = {"input_data": input_data}  # Adjust as needed
+        
         await entity_service.add_item(
             token=cyoda_token,
             entity_model="entity_name",

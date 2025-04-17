@@ -1,10 +1,9 @@
-Here’s a prototype implementation for the specified requirements using Quart and `httpx`. This is a basic working prototype that uses in-memory storage for caching and mocks some aspects where specific implementations were not detailed. 
-
 ```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 
 # Setup logging
@@ -18,10 +17,21 @@ QuartSchema(app)
 # In-memory cache for crocodile data
 crocodile_cache = {}
 
+@dataclass
+class IngestRequest:
+    api_url: str
+
+@dataclass
+class FilterQuery:
+    name: str = None
+    sex: str = None
+    age_min: int = None
+    age_max: int = None
+
 @app.route('/api/crocodiles/ingest', methods=['POST'])
-async def ingest_crocodile_data():
-    data = await request.get_json()
-    api_url = data.get('api_url')
+@validate_request(IngestRequest)  # Validation should be last for POST requests
+async def ingest_crocodile_data(data: IngestRequest):
+    api_url = data.api_url
 
     if not api_url:
         return jsonify({"message": "API URL is required"}), 400
@@ -47,8 +57,8 @@ async def ingest_crocodile_data():
         logger.exception(e)
         return jsonify({"message": "Error ingesting data"}), 500
 
-
 @app.route('/api/crocodiles', methods=['GET'])
+@validate_querystring(FilterQuery)  # Validation should be first for GET requests
 async def get_crocodile_data():
     name = request.args.get('name')
     sex = request.args.get('sex')
@@ -70,17 +80,6 @@ async def get_crocodile_data():
 
     return jsonify({"crocodiles": filtered_crocodiles}), 200
 
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Notes and TODOs:
-- The API endpoint for ingesting data uses a real API (`https://test-api.k6.io/public/crocodiles/`) to fetch the data.
-- The cache is implemented as a simple dictionary (`crocodile_cache`), which acts as in-memory storage.
-- The exception handling and logging are set up to catch and log errors during data ingestion.
-- Appropriate checks are in place for the required API URL and filtering criteria.
-- The `QuartSchema(app)` is included without any specific request validation as specified.
-- There are no persistent storage implementations (like SQLAlchemy) in this prototype.
-
-This prototype can be further expanded upon based on feedback and further requirements.

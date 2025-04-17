@@ -1,0 +1,24 @@
+Index: entity/sales_data_entity/connections/connections.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># Here is a Python code snippet that defines functions for each of the specified endpoints of the Sales Data API. Each function takes input parameters as needed and returns raw data from the corresponding endpoint. The public function `ingest_data(...)` is called to demonstrate its usage in the `main` method.\n# \n# ```python\nimport requests\nimport logging\n\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\nAPI_BASE_URL = \"https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/CP-3345-datasets/data/v2/apptestfiles/test2\"\n\ndef get_sales_list():\n    \"\"\"Fetch the list of sales records.\"\"\"\n    endpoint = f\"{API_BASE_URL}/sales\"\n    response = requests.get(endpoint)\n    response.raise_for_status()\n    return response.json()\n\ndef add_sales_record(sale_data):\n    \"\"\"Add a new sales record.\"\"\"\n    endpoint = f\"{API_BASE_URL}/sales\"\n    response = requests.post(endpoint, json=sale_data)\n    response.raise_for_status()\n    return response.json()\n\ndef get_sales_record(transaction_id):\n    \"\"\"Get a specific sales record by transaction ID.\"\"\"\n    endpoint = f\"{API_BASE_URL}/sales/{transaction_id}\"\n    response = requests.get(endpoint)\n    response.raise_for_status()\n    return response.json()\n\ndef ingest_data(code=None, country=None, name=None):\n    \"\"\"Function to ingest data from the sales API.\"\"\"\n    logger.info(\"Ingesting data...\")\n    try:\n        sales_data = get_sales_list()  # Example call to get sales list\n        logger.info(f\"Sales data ingested: {sales_data}\")\n        return sales_data\n    except Exception as e:\n        logger.error(f\"Error ingesting data: {e}\")\n        return None\n\ndef main():\n    # Testing the ingest_data function\n    result = ingest_data()\n    print(\"Ingested Data:\", result)\n\nif __name__ == \"__main__\":\n    main()\n# ```\n# \n# This code includes the following functionality:\n# - `get_sales_list()`: Fetches a list of sales records.\n# - `add_sales_record(sale_data)`: Adds a new sales record by sending a POST request with the sales data.\n# - `get_sales_record(transaction_id)`: Retrieves a specific sales record based on the transaction ID.\n# - `ingest_data()`: The main function that calls `get_sales_list()` and logs the response.\n# - `main()`: Tests the `ingest_data()` function and outputs the ingested data.\n# \n# Please review the code and confirm if it meets your requirements.
+===================================================================
+diff --git a/entity/sales_data_entity/connections/connections.py b/entity/sales_data_entity/connections/connections.py
+--- a/entity/sales_data_entity/connections/connections.py	(revision 8035cd2cfd7d5cc545c5e21b181266a7c45d829c)
++++ b/entity/sales_data_entity/connections/connections.py	(date 1736366578182)
+@@ -1,13 +1,12 @@
+ # Here is a Python code snippet that defines functions for each of the specified endpoints of the Sales Data API. Each function takes input parameters as needed and returns raw data from the corresponding endpoint. The public function `ingest_data(...)` is called to demonstrate its usage in the `main` method.
+-# 
+-# ```python
++#
+ import requests
+ import logging
+ 
+ logging.basicConfig(level=logging.INFO)
+ logger = logging.getLogger(__name__)
+ 
+-API_BASE_URL = "https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/CP-3345-datasets/data/v2/apptestfiles/test2"
++API_BASE_URL = "https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/CP-3345-datasets/data/v2/apptestfiles/test2/sales.csv"
+ 
+ def get_sales_list():
+     """Fetch the list of sales records."""

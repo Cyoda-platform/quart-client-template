@@ -1,0 +1,13 @@
+Index: entity/raw_data_entity/raw_data_entity.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>\"[{\"brpCode\":\"7080005051286\",\"brpName\":\"Å Energi Vannkraft AS\",\"country\":\"FI\",\"businessId\":\"882973972\",\"codingScheme\":\"GS1\",\"validityStart\":\"2016-12-31T23:00:00\",\"validityEnd\":\"2026-12-31T23:00:00\"}]\"
+===================================================================
+diff --git a/entity/raw_data_entity/raw_data_entity.json b/entity/raw_data_entity/raw_data_entity.json
+--- a/entity/raw_data_entity/raw_data_entity.json	(revision 9a16c89673ad0a10620fb43ca0207bbc2a4ad250)
++++ b/entity/raw_data_entity/raw_data_entity.json	(date 1735308675302)
+@@ -1,1 +1,1 @@
+-"[{"brpCode":"7080005051286","brpName":"Å Energi Vannkraft AS","country":"FI","businessId":"882973972","codingScheme":"GS1","validityStart":"2016-12-31T23:00:00","validityEnd":"2026-12-31T23:00:00"}]"
+\ No newline at end of file
++[{"brpCode":"7080005051286","brpName":"Å Energi Vannkraft AS","country":"FI","businessId":"882973972","codingScheme":"GS1","validityStart":"2016-12-31T23:00:00","validityEnd":"2026-12-31T23:00:00"}]
+\ No newline at end of file

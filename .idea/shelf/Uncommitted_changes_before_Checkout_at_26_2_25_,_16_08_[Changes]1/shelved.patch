@@ -1,0 +1,54 @@
+Index: requirements.txt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>Quart==0.19.9\nHypercorn==0.17.3\nquart-cors==0.7.0\nquart-openapi==1.7.2\njsonschema==4.23.0\n#grpc\ngrpcio==1.64.1\ngrpcio-tools==1.64.1\nprotobuf==5.27.3\npython-dotenv==1.0.1\nrequests==2.32.3\n#pandas==2.2.3\n#scikit-learn==1.5.2\naiofiles==24.1.0\naiohttp==3.11.11\nquart-schema[pydantic]==0.21.0
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/requirements.txt b/requirements.txt
+--- a/requirements.txt	(revision e4f39b22d9f09c515f650ecf52547eec5d02eb14)
++++ b/requirements.txt	(date 1740589464942)
+@@ -12,5 +12,5 @@
+ #pandas==2.2.3
+ #scikit-learn==1.5.2
+ aiofiles==24.1.0
+-aiohttp==3.11.11
++aiohttp==3.8.6
+ quart-schema[pydantic]==0.21.0
+\ No newline at end of file
+Index: entity/subscriber/test.py
+===================================================================
+diff --git a/entity/subscriber/test.py b/entity/subscriber/test.py
+new file mode 100644
+--- /dev/null	(date 1740589522671)
++++ b/entity/subscriber/test.py	(date 1740589522671)
+@@ -0,0 +1,28 @@
++import asyncio
++import httpx
++
++
++async def fetch(url):
++    async with httpx.AsyncClient() as client:
++        response = await client.get(url)
++        return response.json()
++
++
++async def main():
++    urls = [
++        "https://jsonplaceholder.typicode.com/posts/1",
++        "https://jsonplaceholder.typicode.com/posts/2",
++        "https://jsonplaceholder.typicode.com/posts/3"
++    ]
++
++    # Create and schedule tasks for concurrent execution
++    tasks = [asyncio.create_task(fetch(url)) for url in urls]
++    results = await asyncio.gather(*tasks)
++
++    # Print the fetched JSON data
++    for result in results:
++        print(result)
++
++
++if __name__ == "__main__":
++    asyncio.run(main())
+\ No newline at end of file

@@ -1,0 +1,16 @@
+Index: entity/raw_feedback_entity/connections/connections.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import requests\n\nAPI_BASE_URL = \"https://virtserver.swaggerhub.com/VICTORIASAGDIEVA_1/feedback/1.0.0\"\n\n\ndef get_user_feedback():\n    \"\"\"Fetch user feedback from the API.\"\"\"\n    response = requests.get(f\"{API_BASE_URL}/feedback\")\n    if response.status_code == 200:\n        return response.json()\n    else:\n        response.raise_for_status()\n\n\ndef analyze_sentiment(comments):\n    \"\"\"Analyze sentiment of user feedback comments.\"\"\"\n    response = requests.post(\n        f\"{API_BASE_URL}/feedback/sentiment\", json={\"comments\": comments}\n    )\n    if response.status_code == 200:\n        return response.json()\n    else:\n        response.raise_for_status()\n\n\ndef generate_summary_report():\n    \"\"\"Generate a summary report of user feedback.\"\"\"\n    response = requests.get(f\"{API_BASE_URL}/feedback/report\")\n    if response.status_code == 200:\n        return response.json()\n    else:\n        response.raise_for_status()\n\n\ndef ingest_data():\n    \"\"\"Ingest data by fetching user feedback, analyzing sentiment, and generating a report.\"\"\"\n    feedback_data = get_user_feedback()\n    sentiment_results = analyze_sentiment(\n        [feedback[\"comment\"] for feedback in feedback_data]\n    )\n    summary_report = generate_summary_report()\n    return feedback_data, sentiment_results, summary_report\n\n\ndef main():\n    try:\n        feedback_data, sentiment_results, summary_report = ingest_data()\n        print(\"Feedback Data:\", feedback_data)\n        print(\"Sentiment Results:\", sentiment_results)\n        print(\"Summary Report:\", summary_report)\n    except Exception as e:\n        print(f\"Error: {e}\")\n\n\nif __name__ == \"__main__\":\n    main()\n
+===================================================================
+diff --git a/entity/raw_feedback_entity/connections/connections.py b/entity/raw_feedback_entity/connections/connections.py
+--- a/entity/raw_feedback_entity/connections/connections.py	(revision c20d8571666a8998a7ff95d27017f9a54b74c1a4)
++++ b/entity/raw_feedback_entity/connections/connections.py	(date 1735849531854)
+@@ -1,6 +1,6 @@
+ import requests
+ 
+-API_BASE_URL = "https://virtserver.swaggerhub.com/VICTORIASAGDIEVA_1/feedback/1.0.0"
++API_BASE_URL = "https://www.yelp.com/"
+ 
+ 
+ def get_user_feedback():

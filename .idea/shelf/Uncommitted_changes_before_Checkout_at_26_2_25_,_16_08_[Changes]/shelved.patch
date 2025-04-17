@@ -1,0 +1,55 @@
+Index: entity/subscriber/workflow.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import asyncio\nimport datetime\n\n# Simulate email sending workflow\nasync def process_send_welcome_email(entity):\n    try:\n        # Simulate sending a welcome email (replace with real email integration)\n        await asyncio.sleep(0.1)\n        print(f\"Welcome email sent to {entity['email']}\")\n    except Exception as e:\n        # Log exception if needed\n        print(f\"Error sending welcome email to {entity['email']}: {e}\")\n\n# Process entity to mark it as processed\ndef process_mark_as_processed(entity):\n    entity[\"workflowProcessed\"] = True\n    entity[\"processedAt\"] = datetime.datetime.utcnow().isoformat()
+===================================================================
+diff --git a/entity/subscriber/workflow.py b/entity/subscriber/workflow.py
+--- a/entity/subscriber/workflow.py	(revision e4f39b22d9f09c515f650ecf52547eec5d02eb14)
++++ b/entity/subscriber/workflow.py	(date 1740587124180)
+@@ -1,8 +1,11 @@
+ import asyncio
+ import datetime
++import logging
+ 
++logger = logging.getLogger('django')
+ # Simulate email sending workflow
+ async def process_send_welcome_email(entity):
++    logger.info("process_send_welcome_email")
+     try:
+         # Simulate sending a welcome email (replace with real email integration)
+         await asyncio.sleep(0.1)
+@@ -13,5 +16,6 @@
+ 
+ # Process entity to mark it as processed
+ def process_mark_as_processed(entity):
++    logger.info("process_mark_as_processed")
+     entity["workflowProcessed"] = True
+     entity["processedAt"] = datetime.datetime.utcnow().isoformat()
+\ No newline at end of file
+Index: entity/email_stats/workflow.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import asyncio\nimport datetime\n\n# Business logic: mark the entity as processed\ndef process_mark_as_processed(entity):\n    entity[\"workflowProcessed\"] = True\n    entity[\"processedAt\"] = datetime.datetime.utcnow().isoformat()\n\n# Business logic: log email stats\nasync def process_log_email_stats(entity):\n    try:\n        await asyncio.sleep(0.1)\n        print(f\"Email stats processed for record {entity.get('id', 'unknown')} with totalEmailsSent: {entity.get('totalEmailsSent', 0)}\")\n    except Exception as e:\n        print(f\"Error in log_email_stats: {e}\")
+===================================================================
+diff --git a/entity/email_stats/workflow.py b/entity/email_stats/workflow.py
+--- a/entity/email_stats/workflow.py	(revision e4f39b22d9f09c515f650ecf52547eec5d02eb14)
++++ b/entity/email_stats/workflow.py	(date 1740587033377)
+@@ -1,13 +1,18 @@
+ import asyncio
+ import datetime
++import logging
++
++logger = logging.getLogger('django')
+ 
+ # Business logic: mark the entity as processed
+ def process_mark_as_processed(entity):
++    logger.info("process_mark_as_processed")
+     entity["workflowProcessed"] = True
+     entity["processedAt"] = datetime.datetime.utcnow().isoformat()
+ 
+ # Business logic: log email stats
+ async def process_log_email_stats(entity):
++    logger.info("process_log_email_stats")
+     try:
+         await asyncio.sleep(0.1)
+         print(f"Email stats processed for record {entity.get('id', 'unknown')} with totalEmailsSent: {entity.get('totalEmailsSent', 0)}")

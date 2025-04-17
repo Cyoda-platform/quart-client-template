@@ -4,7 +4,6 @@ from quart_schema import QuartSchema, validate_request, validate_querystring
 from dataclasses import dataclass
 import logging
 import asyncio
-from datetime import datetime
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
 from common.config.config import ENTITY_VERSION
@@ -39,12 +38,9 @@ async def greet(data: GreetRequest):
     # Log the request
     logger.info(f"Greet request received for name: {name}")
 
-    # Create a greeting message
-    message = f"Hello, {name}!"
-
     # Prepare data for external service
     entity_data = {"name": name}
-    
+
     # Call to external service to add the item
     try:
         job_id = await entity_service.add_item(
@@ -59,7 +55,7 @@ async def greet(data: GreetRequest):
         logger.exception("Error adding item to entity service")
         return jsonify({"error": "Failed to process the request."}), 500
 
-    return jsonify({"message": message, "job_id": job_id})
+    return jsonify({"message": f"Hello, {name}!", "job_id": job_id})
 
 @app.route('/greet', methods=['GET'])
 @validate_querystring(GreetRequest)  # Workaround: Validation first for GET request
@@ -78,7 +74,16 @@ async def greet_get():
 async def process_entity(data):
     # Placeholder for processing logic
     logger.info(f"Processing entity for {data['name']}")
-    await asyncio.sleep(5)  # Simulate a processing delay
+    
+    # Simulate processing (e.g., modifying the entity state)
+    data['greeting'] = f"Hello, {data['name']}!"
+    
+    # Optionally, you could fetch or create additional entities if needed.
+    # Example of creating a supplementary entity (pseudo-code):
+    # supplementary_entity_data = {"info": "Additional info"}
+    # await entity_service.add_item(token=cyoda_token, entity_model="supplementary_entity", entity_version=ENTITY_VERSION, entity=supplementary_entity_data)
+
+    await asyncio.sleep(2)  # Simulate a processing delay
     logger.info(f"Finished processing entity for {data['name']}")
 
 if __name__ == '__main__':

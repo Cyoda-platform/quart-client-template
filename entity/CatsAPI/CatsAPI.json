@@ -1,0 +1,43 @@
+{
+    "data_example": [
+        {
+            "breeds": [
+                {
+                    "description": "A breed of domestic cat, typically characterized by its striking blue almond-shaped eyes.",
+                    "id": 1,
+                    "name": "Siamese"
+                }
+            ],
+            "height": 600,
+            "id": 1,
+            "url": "https://example.com/cat1.jpg",
+            "width": 800
+        },
+        {
+            "breeds": [
+                {
+                    "description": "A long-haired breed of cat characterized by its round face and short muzzle.",
+                    "id": 2,
+                    "name": "Persian"
+                }
+            ],
+            "height": 768,
+            "id": 2,
+            "url": "https://example.com/cat2.jpg",
+            "width": 1024
+        },
+        {
+            "breeds": [
+                {
+                    "description": "Known for their large size and tufted ears, they are one of the oldest natural breeds in North America.",
+                    "id": 3,
+                    "name": "Maine Coon"
+                }
+            ],
+            "height": 480,
+            "id": 3,
+            "url": "https://example.com/cat3.jpg",
+            "width": 640
+        }
+    ]
+}

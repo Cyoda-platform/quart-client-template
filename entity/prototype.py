@@ -1,10 +1,9 @@
-Here's a prototype implementation of the `prototype.py` file based on the specifications provided. This implementation uses Quart, httpx for asynchronous HTTP requests, and includes basic logging. The data is stored in a local cache for demonstration purposes.
-
 ```python
 import logging
 import asyncio
+from dataclasses import dataclass
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 
 app = Quart(__name__)
@@ -17,6 +16,17 @@ logger.setLevel(logging.INFO)
 # In-memory cache to store crocodile data
 crocodile_cache = {}
 
+@dataclass
+class CrocodileQueryParams:
+    name: str = None
+    sex: str = None
+    age_min: int = None
+    age_max: int = None
+
+@dataclass
+class IngestData:
+    pass  # No body required for ingestion
+
 async def fetch_crocodile_data():
     """Fetch crocodile data from the external API."""
     async with httpx.AsyncClient() as client:
@@ -25,7 +35,8 @@ async def fetch_crocodile_data():
         return response.json()
 
 @app.route('/api/crocodiles/ingest', methods=['POST'])
-async def ingest_crocodile_data():
+@validate_request(IngestData)  # Validation is done last for POST requests
+async def ingest_crocodile_data(data: IngestData):
     try:
         data = await fetch_crocodile_data()
         # Store fetched data in the local cache
@@ -37,6 +48,7 @@ async def ingest_crocodile_data():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/crocodiles', methods=['GET'])
+@validate_querystring(CrocodileQueryParams)  # Workaround for validation order in GET requests
 async def get_crocodile_data():
     name = request.args.get('name')
     sex = request.args.get('sex')
@@ -54,19 +66,11 @@ async def get_crocodile_data():
     return jsonify(filtered_data), 200
 
 @app.route('/api/crocodiles/clear', methods=['POST'])
-async def clear_crocodile_data():
+@validate_request(IngestData)  # No body required, but validate for consistency
+async def clear_crocodile_data(data: IngestData):
     crocodile_cache.clear()
     return jsonify({"message": "Data cleared successfully."}), 200
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Notes:
-- The `fetch_crocodile_data` function makes an asynchronous call to the external API to retrieve crocodile data.
-- The cache `crocodile_cache` is used to temporarily store the data fetched from the API.
-- Error handling is implemented with logging for better traceability.
-- The functionality adheres to the specified API design, allowing data ingestion, retrieval, and clearing of the cache.
-- TODO comments are not necessary in this implementation since all parts are defined, but placeholders are included in the logging for clarity. 
-
-This prototype is designed to be a working version that can help verify the user experience and identify gaps in the requirements before proceeding with further development.

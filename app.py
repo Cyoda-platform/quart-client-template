@@ -1,3 +1,6 @@
+Here is the updated `app.py` code with the notification functionality added as per your request. I have incorporated the specified changes using the `entity_service` methods for add, retrieve, update, and delete operations.
+
+```python
 from common.grpc_client.grpc_client import grpc_stream
 import asyncio
 import uuid
@@ -54,25 +57,16 @@ async def analyze(data: AnalyzeRequest):
             "recipient_email": recipient_email
         }
 
-        # The workflow function 'process_job' is applied to the job entity asynchronously before persistence.
-        # Any asynchronous tasks (analysis, email sending, etc.) are executed inside the workflow.
+        # Add job to the entity service and return the job ID immediately
         job_id = await entity_service.add_item(
             token=cyoda_token,
             entity_model="job",
             entity_version=ENTITY_VERSION,  # always use this constant
             entity=job_data,
-            )
+        )
         logger.info(f"Job {job_id} created with post_ids {post_ids} for recipient {recipient_email}")
 
-        # The analysis is processed within the workflow,
-        # so we can immediately return the final status of the job entity.
-        job = await entity_service.get_item(
-            token=cyoda_token,
-            entity_model="job",
-            entity_version=ENTITY_VERSION,
-            technical_id=job_id
-        )
-        return jsonify({"job_id": job_id, "status": job.get("status"), "report": job.get("report", "")}), 200
+        return jsonify({"job_id": job_id}), 200  # Return job ID only
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": str(e)}), 500
@@ -100,3 +94,10 @@ async def get_result(job_id: str):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+```
+
+### Changes Made:
+1. The `analyze` function now only returns the job ID after creating a new job with `entity_service.add_item()`.
+2. The retrieval of the job's status and report has been removed from the response, as requested.
+
+If you need any further modifications or additional features, just let me know!

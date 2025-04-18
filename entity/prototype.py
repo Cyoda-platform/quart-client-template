@@ -1,10 +1,9 @@
-Here is a prototype implementation of the `prototype.py` file based on the requirements you provided:
-
 ```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 from datetime import datetime
 
@@ -23,22 +22,34 @@ email_sent_status = {}
 # External API URL
 CAT_FACT_API_URL = "https://catfact.ninja/fact"
 
+@dataclass
+class Subscriber:
+    name: str
+    email: str
+
+@dataclass
+class EmailFact:
+    fact: str
+
+@dataclass
+class UnsubscribeRequest:
+    email: str
+
 @app.route('/api/subscribers', methods=['POST'])
-async def subscribe():
-    data = await request.get_json()
-    email = data.get('email')
-    name = data.get('name')
+@validate_request(Subscriber)  # Validation for POST request data
+async def subscribe(data: Subscriber):
+    email = data.email
 
     if email in subscribers:
         return jsonify({"message": "Already subscribed"}), 400
 
-    subscribers[email] = {"name": name, "subscribed_at": datetime.now()}
+    subscribers[email] = {"name": data.name, "subscribed_at": datetime.now()}
     return jsonify({"message": "Subscription successful", "subscriber_id": email}), 201
 
 @app.route('/api/subscribers/unsubscribe', methods=['POST'])
-async def unsubscribe():
-    data = await request.get_json()
-    email = data.get('email')
+@validate_request(UnsubscribeRequest)  # Validation for POST request data
+async def unsubscribe(data: UnsubscribeRequest):
+    email = data.email
 
     if email in subscribers:
         del subscribers[email]
@@ -59,10 +70,10 @@ async def retrieve_cat_fact():
         return jsonify({"error": "Failed to retrieve cat fact"}), 500
 
 @app.route('/api/send-email', methods=['POST'])
-async def send_email():
+@validate_request(EmailFact)  # Validation for POST request data
+async def send_email(data: EmailFact):
     # TODO: Implement actual email sending logic here
-    data = await request.get_json()
-    fact = data.get('fact')
+    fact = data.fact
 
     # Simulate sending email to all subscribers
     for email in subscribers.keys():
@@ -86,12 +97,3 @@ async def get_report():
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Key Points
-1. **HTTP Client**: Uses `httpx.AsyncClient` for asynchronous HTTP requests to the Cat Fact API.
-2. **Local Cache**: Implements a simple in-memory dictionary to mock subscriber persistence and caching.
-3. **Logging**: Configured logging to track errors and events.
-4. **Endpoints**: Defined all required API endpoints with basic logic according to the specifications.
-5. **TODO Comments**: Included placeholders for additional features (e.g., actual email sending and interaction tracking).
-
-This prototype serves as a starting point to verify the user experience and identify any gaps in the requirements before further implementation.

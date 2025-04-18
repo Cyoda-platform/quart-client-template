@@ -1,10 +1,10 @@
-Here's a prototype implementation for your application using Quart and `httpx.AsyncClient`. This prototype will allow you to verify the user experience and identify any gaps in the requirements. The implementation uses local caching for persistence and integrates the external API for data ingestion.
-
 ```python
 from quart import Quart, request, jsonify
 import httpx
 import asyncio
 import logging
+from dataclasses import dataclass
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 app = Quart(__name__)
 QuartSchema(app)  # Initialize QuartSchema for future use
@@ -16,6 +16,17 @@ logger.setLevel(logging.INFO)
 # Local cache for crocodile data
 crocodile_cache = {}
 
+@dataclass
+class CrocodileIngest:
+    refresh: bool = False  # optional field for ingestion
+
+@dataclass
+class CrocodileQuery:
+    name: str = None  # optional
+    sex: str = None  # optional
+    min_age: int = None  # optional
+    max_age: int = None  # optional
+
 async def fetch_crocodile_data():
     async with httpx.AsyncClient() as client:
         response = await client.get("https://test-api.k6.io/public/crocodiles/")
@@ -24,19 +35,19 @@ async def fetch_crocodile_data():
 
 async def process_entity(entity_job, data):
     # TODO: Implement actual processing logic here
-    # This is a stub to simulate processing
     await asyncio.sleep(1)  # Simulate processing time
     logger.info(f"Processed data: {data}")
 
 @app.route('/api/crocodiles/ingest', methods=['POST'])
-async def ingest_crocodile_data():
+@validate_request(CrocodileIngest)  # Validation for POST request
+async def ingest_crocodile_data(data: CrocodileIngest):
     try:
         # Fetch data from external API
-        data = await fetch_crocodile_data()
-        total_records = len(data)
+        ingested_data = await fetch_crocodile_data()
+        total_records = len(ingested_data)
 
         # Store data in local cache
-        for crocodile in data:
+        for crocodile in ingested_data:
             crocodile_cache[crocodile['id']] = crocodile
 
         logger.info(f"Ingested {total_records} crocodile records.")
@@ -46,7 +57,9 @@ async def ingest_crocodile_data():
         return jsonify({"error": "Data ingestion failed"}), 500
 
 @app.route('/api/crocodiles/', methods=['GET'])
+@validate_querystring(CrocodileQuery)  # Validation for GET request
 async def get_crocodiles():
+    # Accessing parameters directly from request.args
     name = request.args.get('name')
     sex = request.args.get('sex')
     min_age = request.args.get('min_age', type=int)
@@ -70,12 +83,3 @@ async def get_crocodiles():
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
-
-### Key Points:
-- The prototype uses `httpx.AsyncClient` to fetch data from the external API.
-- Local caching is simulated using a dictionary (`crocodile_cache`).
-- Basic filtering logic is implemented in the `get_crocodiles` endpoint.
-- The logging mechanism is set up to capture and log exceptions.
-- TODO comments are included to indicate where further implementation is needed.
-
-This prototype should serve as a starting point for verifying the user experience and identifying any gaps in the requirements. Please feel free to run it and provide feedback!

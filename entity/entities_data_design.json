@@ -1,0 +1,38 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "refresh": true
+            },
+            "entity_name": "crocodile_ingest"
+        },
+        {
+            "entity_data_example": {
+                "max_age": 10,
+                "min_age": 1,
+                "name": "Crocodile A",
+                "sex": "M"
+            },
+            "entity_name": "crocodile_query"
+        },
+        {
+            "entity_data_example": {
+                "crocodiles": [
+                    {
+                        "age": 5,
+                        "id": 1,
+                        "name": "Crocodile A",
+                        "sex": "M"
+                    },
+                    {
+                        "age": 3,
+                        "id": 2,
+                        "name": "Crocodile B",
+                        "sex": "F"
+                    }
+                ]
+            },
+            "entity_name": "crocodile_response"
+        }
+    ]
+}

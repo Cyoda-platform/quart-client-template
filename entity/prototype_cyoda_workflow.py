@@ -32,28 +32,34 @@ class CrocodileQuery:
 
 async def fetch_crocodile_data():
     async with httpx.AsyncClient() as client:
-        response = await client.get("https://test-api.k6.io/public/crocodiles/")
-        response.raise_for_status()  # Raise an error for bad responses
-        return response.json()
+        try:
+            response = await client.get("https://test-api.k6.io/public/crocodiles/")
+            response.raise_for_status()  # Raise an error for bad responses
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error occurred: {e}")
+            return []
+        except Exception as e:
+            logger.error(f"An error occurred while fetching crocodile data: {e}")
+            return []
 
 async def process_crocodile(entity):
-    # Fetch external data and modify the entity before persistence
-    # Here you can change the entity's state or add related entities
+    # Process the crocodile entity before persistence
     entity['processed'] = True  # Marking the entity as processed
 
-    # Fetch additional data if needed
+    # Fetch additional data and modify the entity state
     additional_data = await fetch_crocodile_data()
-    # For example, you might want to log or modify entity based on additional data
     if additional_data:
-        entity['additional_info'] = additional_data[:1]  # Just an example modification
-
+        entity['additional_info'] = additional_data[:1]  # Example modification
+    
+    # Perform any other necessary transformations here
     return entity
 
 @app.route('/api/crocodiles/ingest', methods=['POST'])
 @validate_request(CrocodileIngest)  # Validation for POST request
 async def ingest_crocodile_data(data: CrocodileIngest):
     try:
-        # Fetch data from external API
+        # Fetch data from the external API
         ingested_data = await fetch_crocodile_data()
         total_records = len(ingested_data)
 

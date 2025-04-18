@@ -1,7 +1,6 @@
 ```python
 from quart import Quart, request, jsonify
 import httpx
-import asyncio
 import logging
 from dataclasses import dataclass
 from quart_schema import QuartSchema, validate_request, validate_querystring
@@ -38,9 +37,16 @@ async def fetch_crocodile_data():
         return response.json()
 
 async def process_crocodile(entity):
-    # Example workflow function to modify the crocodile entity
+    # Fetch external data and modify the entity before persistence
     # Here you can change the entity's state or add related entities
     entity['processed'] = True  # Marking the entity as processed
+
+    # Fetch additional data if needed
+    additional_data = await fetch_crocodile_data()
+    # For example, you might want to log or modify entity based on additional data
+    if additional_data:
+        entity['additional_info'] = additional_data[:1]  # Just an example modification
+
     return entity
 
 @app.route('/api/crocodiles/ingest', methods=['POST'])

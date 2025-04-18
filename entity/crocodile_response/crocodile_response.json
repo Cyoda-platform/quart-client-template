@@ -1,0 +1,16 @@
+{
+    "crocodiles": [
+        {
+            "age": 5,
+            "id": 1,
+            "name": "Crocodile A",
+            "sex": "M"
+        },
+        {
+            "age": 3,
+            "id": 2,
+            "name": "Crocodile B",
+            "sex": "F"
+        }
+    ]
+}

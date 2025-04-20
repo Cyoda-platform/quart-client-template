@@ -25,9 +25,9 @@ spec:
       labels:
         app.kubernetes.io/name: {{ .Values.name }}
     spec:
-      {{- if .Values.hostAliases }}
+      {{- if .Values.global.hostAliases }}
       hostAliases:
-        {{ toYaml .Values.hostAliases | nindent 8 }}
+        {{ toYaml .Values.global.hostAliases | nindent 8 }}
       {{- end }}
       {{- if .Values.nodeSelector }}
       nodeSelector: {{- .Values.nodeSelector | toYaml | nindent 8 }}
@@ -111,7 +111,7 @@ spec:
             - secretRef:
                 name: {{ . }}
              {{- end }}
-    {{- with .Values.hostAliases }}
+    {{- with .Values.global.hostAliases }}
       hostAliases:
 {{ toYaml . | indent 8 }}
     {{- end }}

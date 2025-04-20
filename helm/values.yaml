@@ -1,16 +1,14 @@
 name: cyoda-client
 
-registry:
-  host: "REGISTRY_HOST_VAR"
-  username: "REGISTRY_USERNAME_VAR"
-  password: "REGISTRY_PASSWORD_VAR"
 imagePullSecret:
   enabled: true
 
+enabled: true
 useNamespaceForIngress: false
 
-enabled: true
-imagePullSecrets: []
+imagePullSecrets:
+  - name: regcred
+
 container:
   env:
     vars:

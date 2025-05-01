@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
@@ -7,7 +7,7 @@ import uuid
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -22,6 +22,12 @@ entity_store: Dict[str, Dict] = {}
 STATE_INITIALIZED = "initialized"
 STATE_TRIGGERED = "triggered"
 STATE_COMPLETED = "completed"
+
+
+@dataclass
+class TriggerRequest:
+    triggerSource: str = "api_call"
+    customMessage: str = "Hello World"
 
 
 async def process_entity(entity_id: str, custom_message: str):
@@ -64,7 +70,8 @@ async def process_entity(entity_id: str, custom_message: str):
 
 
 @app.route("/api/hello-world/trigger", methods=["POST"])
-async def trigger_hello_world():
+@validate_request(TriggerRequest)  # validation last for POST per workaround
+async def trigger_hello_world(data: TriggerRequest):
     """
     POST endpoint to trigger the Hello World workflow.
     Expects JSON body with optional fields:
@@ -72,9 +79,8 @@ async def trigger_hello_world():
       - customMessage: string (optional, default "Hello World")
     Returns entityId, workflowState, and initial message.
     """
-    data = await request.get_json(force=True)
-    trigger_source = data.get("triggerSource", "api_call")
-    custom_message = data.get("customMessage", "Hello World")
+    trigger_source = data.triggerSource
+    custom_message = data.customMessage
 
     entity_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat() + "Z"
@@ -101,6 +107,7 @@ async def trigger_hello_world():
     ), 202
 
 
+# GET endpoint has no request body, no validation needed per spec
 @app.route("/api/hello-world/<string:entity_id>", methods=["GET"])
 async def get_hello_world(entity_id: str):
     """
@@ -130,4 +137,3 @@ if __name__ == "__main__":
     )
 
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

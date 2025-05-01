@@ -1,6 +1,6 @@
 {
-    "description": "Workflow for processing hello entity, including status updates and external greeting fetch.",
-    "name": "hello_workflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+    "description": "Workflow for processing 'hello' entity including status updates and external greeting fetch",
+    "name": "hello_entity_workflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
     "transitions": [
         {
             "automated": true,

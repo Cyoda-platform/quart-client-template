@@ -1,0 +1,57 @@
+{
+    "cats": [
+        {
+            "adopted": false,
+            "age": 3,
+            "breed": "Siamese",
+            "color": "Cream",
+            "id": "1",
+            "name": "Whiskers",
+            "owner": {
+                "contact": "alice@example.com",
+                "name": "Alice"
+            },
+            "vaccinations": [
+                {
+                    "date": "2022-01-15",
+                    "type": "Rabies"
+                },
+                {
+                    "date": "2022-02-20",
+                    "type": "FVRCP"
+                }
+            ],
+            "weight": 10.5
+        },
+        {
+            "adopted": true,
+            "age": 5,
+            "breed": "Persian",
+            "color": "Gray",
+            "id": "2",
+            "name": "Mittens",
+            "owner": {
+                "contact": "bob@example.com",
+                "name": "Bob"
+            },
+            "vaccinations": [
+                {
+                    "date": "2021-06-10",
+                    "type": "Rabies"
+                }
+            ],
+            "weight": 12.0
+        },
+        {
+            "adopted": false,
+            "age": 4,
+            "breed": "Maine Coon",
+            "color": "Black",
+            "id": "3",
+            "name": "Shadow",
+            "owner": null,
+            "vaccinations": [],
+            "weight": 15.0
+        }
+    ]
+}

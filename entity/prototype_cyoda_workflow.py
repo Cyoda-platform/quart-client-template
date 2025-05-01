@@ -1,10 +1,32 @@
-Certainly! I've updated the code to include the new `workflow` parameter for `entity_service.add_item`. I've implemented the workflow function `process_hello` following the naming convention you specified (`process_{entity_name}`). The `create_greeting` endpoint now passes this workflow function when adding an item.
+Thank you for the clarification and the important constraints regarding the workflow function! Yes, it absolutely makes sense to move all async logic that can be executed before persistence into the workflow function, which will keep endpoint code minimal and robust.
 
-Here is the complete updated code with the requested changes:
+---
+
+### Key points & approach:
+- Move the call to any async process (like external API calls, enrichment, etc.) inside the workflow function `process_hello`.
+- Since the workflow runs **before persistence**, it cannot update the same entity via `entity_service.update_item` or add/delete/update the same entity_model — but it *can* modify the entity dict directly, and the modified entity will be persisted.
+- For async tasks that require access to the entity ID: since the entity does not have an ID yet at workflow execution time, such updates should be done by modifying the entity state in the workflow, or by adding supplementary entities of a different model if needed.
+- To replace fire-and-forget tasks, we can `await` async calls inside the workflow, then set entity attributes accordingly.
+- Because the workflow supports async code, it can do API calls, fetch data, enrich the entity, etc.
+
+---
+
+### What changes in practice?
+
+- Remove async `process_entity` external processing function.
+- Move all logic inside `process_hello`.
+- The endpoint simply calls `entity_service.add_item` with `workflow=process_hello` and returns the created ID.
+- The workflow function:
+  - Calls external API to fetch greeting.
+  - Sets entity status and greeting message.
+- No further updates needed after persistence.
+
+---
+
+### Updated full code:
 
 ```python
 from dataclasses import dataclass
-import asyncio
 import logging
 import uuid
 from datetime import datetime
@@ -51,93 +73,44 @@ async def fetch_external_greeting(name: str) -> str:
             # Fallback greeting if external call fails
             return f"Hello, {name}!"
 
-async def process_entity(technical_id: str, data: dict):
-    """
-    Simulates processing triggered by POST /hello.
-    Generates a greeting message, possibly calling external APIs,
-    then updates the entity_service with the result.
-    """
-    try:
-        name = data.get("name") or "World"
-        greeting = await fetch_external_greeting(name)
-        update_data = {
-            "greeting": greeting,
-            "status": "completed",
-            "requestedAt": data.get("requestedAt").isoformat() if data.get("requestedAt") else None,
-            "name": name
-        }
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="hello",
-            entity_version=ENTITY_VERSION,
-            entity=update_data,
-            technical_id=technical_id,
-            meta={}
-        )
-        logger.info(f"Greeting generated and updated for messageId={technical_id}")
-    except Exception as e:
-        logger.exception(e)
-        fail_data = {
-            "status": "failed"
-        }
-        try:
-            await entity_service.update_item(
-                token=cyoda_token,
-                entity_model="hello",
-                entity_version=ENTITY_VERSION,
-                entity=fail_data,
-                technical_id=technical_id,
-                meta={}
-            )
-        except Exception as ex:
-            logger.exception(ex)
-
-# New workflow function for 'hello' entity
+# Workflow function for 'hello' entity
 async def process_hello(entity: dict) -> dict:
     """
     Workflow function applied to the 'hello' entity before persistence.
-    This function can modify the entity or trigger async tasks.
-    Here, we kick off the processing task asynchronously after saving the initial entity.
+    This function asynchronously enriches the entity by fetching external greetings,
+    sets the greeting and status directly on the entity dict.
     """
     try:
-        # Extract relevant data from the entity
-        name = entity.get("name", "World")
-        requested_at_iso = entity.get("requestedAt")
-        requested_at = datetime.fromisoformat(requested_at_iso) if requested_at_iso else datetime.utcnow()
-        # Generate a technical_id to represent this entity instance
-        # Since entity_service.add_item returns the ID after persistence,
-        # and we cannot add/update/delete same entity_model here (to avoid recursion),
-        # we just trigger processing outside, so no additional persistence here.
-        # Thus, we just schedule the async process_entity task after saving initial entity.
-        # Note: Because this workflow is called before persistence, we don't have the ID yet,
-        # so we cannot schedule the processing here reliably.
-        # Therefore, we assume the caller schedules the processing after add_item returns.
-
-        # Possibly add or modify the entity state here if needed
-        # For example, ensure status is 'processing' before persistence
-        entity["status"] = "processing"
-        # Return the potentially modified entity to be persisted
-        return entity
+        name = entity.get("name") or "World"
+        greeting = await fetch_external_greeting(name)
+        entity["greeting"] = greeting
+        entity["status"] = "completed"
+        # Ensure requestedAt remains ISO8601 string
+        if "requestedAt" in entity:
+            if isinstance(entity["requestedAt"], datetime):
+                entity["requestedAt"] = entity["requestedAt"].isoformat()
+        else:
+            entity["requestedAt"] = datetime.utcnow().isoformat()
     except Exception as e:
         logger.exception(f"Exception in process_hello workflow: {e}")
-        # Return entity unchanged on failure
-        return entity
+        entity["status"] = "failed"
+        entity["greeting"] = None
+    return entity
 
 @app.route("/hello", methods=["POST"])
 @validate_request(HelloRequest)  # validation last for POST (workaround issue)
 async def create_greeting(data: HelloRequest):
-    message_id = str(uuid.uuid4())
     requested_at = datetime.utcnow()
 
     initial_data = {
-        "status": "processing",
+        "status": "processing",   # Initial state set here but will be overwritten by workflow
         "requestedAt": requested_at.isoformat(),
         "greeting": None,
         "name": data.name or "World"
     }
 
     try:
-        # Add initial item with workflow function, get technical_id (message_id)
+        # Add item with workflow function which does all async processing and enrichment
         id_created = await entity_service.add_item(
             token=cyoda_token,
             entity_model="hello",
@@ -145,15 +118,12 @@ async def create_greeting(data: HelloRequest):
             entity=initial_data,
             workflow=process_hello
         )
-        # Fire and forget processing task after persistence
-        asyncio.create_task(process_entity(id_created, {"name": data.name, "messageId": id_created, "requestedAt": requested_at}))
         return jsonify({"messageId": id_created})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to create greeting"}), 500
 
 @app.route("/hello/<message_id>", methods=["GET"])
-# validation first for GET (workaround issue), no body validation needed here
 async def get_greeting(message_id):
     try:
         record = await entity_service.get_item(
@@ -183,12 +153,17 @@ if __name__ == '__main__':
 
 ---
 
-### Explanation of changes:
+### Summary of changes:
 
-- Added the `process_hello` async function as the workflow function for the `"hello"` entity model.
-- Updated the call to `entity_service.add_item` in `create_greeting` to include `workflow=process_hello`.
-- The workflow function `process_hello` modifies the entity's `"status"` to `"processing"` before persistence.
-- The actual asynchronous processing (`process_entity`) is still scheduled after the entity is added, since the workflow function runs before the entity is persisted and does not have the technical ID yet (which is needed for further updates).
-- The rest of the code remains unchanged, maintaining the original logic.
+- Removed separate `process_entity` function and all fire-and-forget `asyncio.create_task` calls.
+- Moved all async enrichment logic into `process_hello` workflow function.
+- `process_hello` fetches external greeting asynchronously, sets entity attributes `"greeting"` and `"status"`.
+- Endpoint `/hello` just calls `entity_service.add_item` with workflow and returns the ID.
+- This respects the constraint: no `add/update/delete` on the same entity_model inside workflow, only direct entity mutation.
+- The entity persists with enriched data immediately after workflow returns.
 
-Let me know if you need any further adjustments!
+---
+
+This approach makes the controller very clean and robust, and fully leverages the new workflow feature to handle all entity-related async logic before persistence.
+
+If you want, I can help you with tests or further improvements!

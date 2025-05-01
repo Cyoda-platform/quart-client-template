@@ -1,31 +1,89 @@
-import asyncio
-import logging
-
-from quart import Quart
-from quart_schema import QuartSchema
 from common.grpc_client.grpc_client import grpc_stream
-from common.repository.cyoda.cyoda_init import init_cyoda
-from app_init.app_init import cyoda_token
+from dataclasses import dataclass
+import logging
+from datetime import datetime
 
-logging.basicConfig(level=logging.INFO)
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
+from common.config.config import ENTITY_VERSION
+from common.repository.cyoda.cyoda_init import init_cyoda
+from app_init.app_init import cyoda_token, entity_service
+
+import httpx
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
-# Blueprint registration requires a Blueprint object as first argument
-# app.register_blueprint(blueprint, url_prefix='/api/entity_name')
+
+@dataclass
+class HelloRequest:
+    name: str = None  # optional string
+
+EXTERNAL_API_URL = "https://httpbin.org/get"
 
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
     app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
 
-
 @app.after_serving
 async def shutdown():
     app.background_task.cancel()
     await app.background_task
 
-#put_application_code_here
+@app.route("/hello", methods=["POST"])
+@validate_request(HelloRequest)
+async def post_hello(data: HelloRequest):
+    """
+    POST /hello
+    Minimal controller: calls add_item with workflow function to handle async processing.
+    Returns the persisted entity ID or error response.
+    """
+    entity_name = "hello_message"
+    try:
+        entity = {"name": data.name}
+        entity_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model=entity_name,
+            entity_version=ENTITY_VERSION,
+            entity=entity,
+            )
+        return jsonify({"entityId": entity_id})
+    except Exception:
+        logger.exception("Failed to add hello message")
+        return jsonify({"error": "Failed to add hello message"}), 500
+
+@app.route("/hello", methods=["GET"])
+async def get_hello():
+    """
+    GET /hello
+    Returns the most recent greeting message or default if none available.
+    """
+    entity_name = "hello_message"
+    try:
+        items = await entity_service.get_items(
+            token=cyoda_token,
+            entity_model=entity_name,
+            entity_version=ENTITY_VERSION,
+        )
+        if not items:
+            return jsonify({"message": "Hello, World!"})
+        # Return the most recent message by createdAt descending safely
+        latest_item = max(items, key=lambda x: x.get("createdAt", ""))
+        return jsonify({"message": latest_item.get("message", "Hello, World!")})
+    except Exception:
+        logger.exception("Failed to retrieve greeting messages")
+        return jsonify({"message": "Hello, World!"})
 
 if __name__ == '__main__':
+    import sys
+    import logging
+
+    logging.basicConfig(
+        stream=sys.stdout,
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+    )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

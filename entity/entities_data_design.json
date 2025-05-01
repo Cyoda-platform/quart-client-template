@@ -1,0 +1,14 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "greeting": "string",
+                "messageId": "string",
+                "name": "string",
+                "requestedAt": "string",
+                "status": "string"
+            },
+            "entity_name": "hello"
+        }
+    ]
+}

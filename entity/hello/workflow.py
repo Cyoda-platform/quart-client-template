@@ -8,17 +8,12 @@ logger.setLevel(logging.INFO)
 
 
 async def process_set_status(entity: dict, status: str):
-    """
-    Set the processing status on the entity.
-    """
+    # Set the processing status on the entity.
     entity["status"] = status
 
 
 async def process_set_requested_at(entity: dict):
-    """
-    Ensure requestedAt is an ISO8601 string.
-    If missing, set to current UTC time.
-    """
+    # Ensure requestedAt is an ISO8601 string.
     if "requestedAt" in entity:
         if isinstance(entity["requestedAt"], datetime):
             entity["requestedAt"] = entity["requestedAt"].isoformat()
@@ -27,9 +22,7 @@ async def process_set_requested_at(entity: dict):
 
 
 async def process_fetch_greeting(entity: dict):
-    """
-    Fetch external greeting asynchronously and set on entity.
-    """
+    # Fetch external greeting asynchronously and set on entity.
     try:
         name = entity.get("name") or "World"
         async with httpx.AsyncClient() as client:

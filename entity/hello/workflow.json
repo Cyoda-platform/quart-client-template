@@ -1,12 +1,12 @@
 {
-    "description": "Workflow for processing 'hello' entity with status updates and external greeting retrieval",
+    "description": "Workflow for processing 'hello' entity including status tracking and external greeting retrieval",
     "name": "hello_entity_workflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
     "transitions": [
         {
             "automated": true,
-            "description": "Set status to processing and ensure requestedAt timestamp",
+            "description": "Set status to processing and set requestedAt timestamp",
             "end_state": "Processing_started",
-            "end_state_description": "Processing started with timestamp set",
+            "end_state_description": "Processing started and timestamp set",
             "name": "start_processing",
             "processes": {
                 "externalized_processors": [
@@ -52,7 +52,7 @@
         },
         {
             "automated": true,
-            "description": "Fetch external greeting and update entity",
+            "description": "Fetch external greeting from API and update entity",
             "end_state": "Greeting_fetched",
             "end_state_description": "External greeting fetched and set on entity",
             "name": "fetch_greeting",
@@ -77,7 +77,7 @@
                 "schedule_transition_processors": []
             },
             "start_state": "Processing_started",
-            "start_state_description": "Processing started with timestamp set",
+            "start_state_description": "Processing started and timestamp set",
             "transition_criteria": {
                 "condition_criteria": [],
                 "externalized_criteria": []
@@ -85,7 +85,7 @@
         },
         {
             "automated": true,
-            "description": "Set status to completed indicating workflow finished",
+            "description": "Set status to completed indicating successful workflow completion",
             "end_state": "Processing_completed",
             "end_state_description": "Processing completed successfully",
             "name": "complete_processing",

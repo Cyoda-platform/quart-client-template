@@ -1,12 +1,12 @@
 {
-    "description": "Workflow for processing 'hello' entity including status updates and external greeting fetch",
+    "description": "Workflow for processing 'hello' entity with status updates and external greeting retrieval",
     "name": "hello_entity_workflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
     "transitions": [
         {
             "automated": true,
-            "description": "Set status to processing and set requestedAt timestamp",
+            "description": "Set status to processing and ensure requestedAt timestamp",
             "end_state": "Processing_started",
-            "end_state_description": "Processing started and timestamp set",
+            "end_state_description": "Processing started with timestamp set",
             "name": "start_processing",
             "processes": {
                 "externalized_processors": [
@@ -52,9 +52,9 @@
         },
         {
             "automated": true,
-            "description": "Fetch external greeting and set it on the entity",
+            "description": "Fetch external greeting and update entity",
             "end_state": "Greeting_fetched",
-            "end_state_description": "External greeting fetched and set",
+            "end_state_description": "External greeting fetched and set on entity",
             "name": "fetch_greeting",
             "processes": {
                 "externalized_processors": [
@@ -77,7 +77,7 @@
                 "schedule_transition_processors": []
             },
             "start_state": "Processing_started",
-            "start_state_description": "Processing started and timestamp set",
+            "start_state_description": "Processing started with timestamp set",
             "transition_criteria": {
                 "condition_criteria": [],
                 "externalized_criteria": []
@@ -85,7 +85,7 @@
         },
         {
             "automated": true,
-            "description": "Set status to completed indicating processing finished",
+            "description": "Set status to completed indicating workflow finished",
             "end_state": "Processing_completed",
             "end_state_description": "Processing completed successfully",
             "name": "complete_processing",
@@ -110,7 +110,7 @@
                 "schedule_transition_processors": []
             },
             "start_state": "Greeting_fetched",
-            "start_state_description": "External greeting fetched and set",
+            "start_state_description": "External greeting fetched and set on entity",
             "transition_criteria": {
                 "condition_criteria": [],
                 "externalized_criteria": []

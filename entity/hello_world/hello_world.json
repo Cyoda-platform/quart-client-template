@@ -1,0 +1,8 @@
+{
+    "completedAt": "2024-06-01T12:01:00Z",
+    "entityId": "123e4567-e89b-12d3-a456-426614174000",
+    "message": "Hello World \u2014 Quote: \"Be yourself; everyone else is already taken.\"",
+    "requestedAt": "2024-06-01T12:00:00Z",
+    "triggerSource": "api_call",
+    "workflowState": "completed"
+}

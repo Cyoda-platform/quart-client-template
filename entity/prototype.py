@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 import uuid
@@ -6,7 +6,7 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,9 +14,12 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+@dataclass
+class HelloRequest:
+    name: str = None  # Optional: name to personalize greeting
+
 # In-memory cache to mock persistence: messageId -> {"greeting": str, "createdAt": datetime}
 entity_job = {}
-
 
 async def fetch_external_greeting(name: str) -> str:
     """
@@ -28,7 +31,6 @@ async def fetch_external_greeting(name: str) -> str:
     """
     async with httpx.AsyncClient() as client:
         try:
-            # Using a public API to get a random quote as a placeholder external call
             r = await client.get("https://api.quotable.io/random")
             r.raise_for_status()
             data = r.json()
@@ -38,7 +40,6 @@ async def fetch_external_greeting(name: str) -> str:
             logger.exception(e)
             # Fallback greeting if external call fails
             return f"Hello, {name}!"
-
 
 async def process_entity(entity_cache: dict, data: dict):
     """
@@ -57,13 +58,9 @@ async def process_entity(entity_cache: dict, data: dict):
         message_id = data.get("messageId")
         entity_cache[message_id]["status"] = "failed"
 
-
 @app.route("/hello", methods=["POST"])
-async def create_greeting():
-    data = await request.get_json()
-    if data is None:
-        data = {}
-
+@validate_request(HelloRequest)  # validation last for POST (workaround issue)
+async def create_greeting(data: HelloRequest):
     message_id = str(uuid.uuid4())
     requested_at = datetime.utcnow()
 
@@ -75,12 +72,12 @@ async def create_greeting():
     }
 
     # Fire and forget processing task
-    asyncio.create_task(process_entity(entity_job, {"name": data.get("name"), "messageId": message_id}))
+    asyncio.create_task(process_entity(entity_job, {"name": data.name, "messageId": message_id}))
 
     return jsonify({"messageId": message_id})
 
-
 @app.route("/hello/<message_id>", methods=["GET"])
+# validation first for GET (workaround issue), no body validation needed here
 async def get_greeting(message_id):
     record = entity_job.get(message_id)
     if not record:
@@ -94,7 +91,5 @@ async def get_greeting(message_id):
         "greeting": record["greeting"]
     })
 
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

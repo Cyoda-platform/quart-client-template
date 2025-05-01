@@ -1,31 +1,88 @@
-import asyncio
-import logging
-
-from quart import Quart
-from quart_schema import QuartSchema
 from common.grpc_client.grpc_client import grpc_stream
-from common.repository.cyoda.cyoda_init import init_cyoda
-from app_init.app_init import cyoda_token
+from dataclasses import dataclass
+import logging
+from datetime import datetime
 
-logging.basicConfig(level=logging.INFO)
+import httpx
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
+
+from common.config.config import ENTITY_VERSION
+from common.repository.cyoda.cyoda_init import init_cyoda
+from app_init.app_init import entity_service, cyoda_token
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
-# Blueprint registration requires a Blueprint object as first argument
-# app.register_blueprint(blueprint, url_prefix='/api/entity_name')
+
+@dataclass
+class HelloRequest:
+    name: str = None  # Optional: name to personalize greeting
 
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
     app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
 
-
 @app.after_serving
 async def shutdown():
     app.background_task.cancel()
     await app.background_task
 
-#put_application_code_here
+@app.route("/hello", methods=["POST"])
+@validate_request(HelloRequest)
+async def create_greeting(data: HelloRequest):
+    requested_at = datetime.utcnow()
+
+    initial_data = {
+        "status": "processing",   # Initial state; will be updated by workflow
+        "requestedAt": requested_at.isoformat(),
+        "greeting": None,
+        "name": data.name or "World"
+    }
+
+    try:
+        id_created = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model="hello",
+            entity_version=ENTITY_VERSION,
+            entity=initial_data,
+            )
+        return jsonify({"messageId": id_created})
+    except Exception as e:
+        logger.exception(f"Failed to create greeting: {e}")
+        return jsonify({"error": "Failed to create greeting"}), 500
+
+@app.route("/hello/<message_id>", methods=["GET"])
+async def get_greeting(message_id):
+    try:
+        record = await entity_service.get_item(
+            token=cyoda_token,
+            entity_model="hello",
+            entity_version=ENTITY_VERSION,
+            technical_id=message_id
+        )
+        if not record:
+            return jsonify({"error": "messageId not found"}), 404
+
+        status = record.get("status")
+        if status != "completed":
+            return jsonify({"messageId": message_id, "status": status}), 202
+
+        greeting = record.get("greeting")
+        if not greeting:
+            # Defensive: if greeting missing for completed status, indicate error
+            return jsonify({"error": "Greeting data missing"}), 500
+
+        return jsonify({
+            "messageId": message_id,
+            "greeting": greeting
+        })
+    except Exception as e:
+        logger.exception(f"Failed to retrieve greeting: {e}")
+        return jsonify({"error": "Failed to retrieve greeting"}), 500
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

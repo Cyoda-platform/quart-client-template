@@ -10,6 +10,7 @@
             "laser pointer",
             "catnip mouse"
         ],
+        "fluffiness": "high",
         "isIndoor": true,
         "name": "Whiskers",
         "owner": {

@@ -1,0 +1,7 @@
+{
+    "greeting": "string",
+    "messageId": "string",
+    "name": "string",
+    "requestedAt": "string",
+    "status": "string"
+}

@@ -1,0 +1,35 @@
+{
+    "config": {
+        "adopted": true,
+        "adoptionDate": "2021-05-20",
+        "age": 3,
+        "breed": "Siamese",
+        "color": "brown",
+        "favoriteToys": [
+            "feather wand",
+            "laser pointer",
+            "catnip mouse"
+        ],
+        "isIndoor": true,
+        "name": "Whiskers",
+        "owner": {
+            "contact": {
+                "email": "johndoe@example.com",
+                "phone": "555-1234"
+            },
+            "name": "John Doe"
+        },
+        "vaccinations": [
+            {
+                "dateAdministered": "2022-01-15",
+                "type": "Rabies"
+            },
+            {
+                "dateAdministered": "2022-06-10",
+                "type": "FVRCP"
+            }
+        ],
+        "weight": 10.5
+    },
+    "entity": "cat"
+}

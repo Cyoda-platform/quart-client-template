@@ -1,0 +1,11 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "createdAt": "2024-06-01T12:00:00Z",
+                "message": "Hello, World!"
+            },
+            "entity_name": "hello_message"
+        }
+    ]
+}

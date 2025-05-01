@@ -1,18 +1,30 @@
-Certainly! I've updated the call to `entity_service.add_item` to include the new required `workflow` parameter. I also implemented the workflow function `process_hello_message_workflow` following the naming convention (`process_hello_message` → `process_hello_message_workflow`), which asynchronously applies any needed changes to the entity before persistence.
+Absolutely, moving all the async processing logic into the workflow function (`process_hello_message_workflow`) is the correct and clean approach. The workflow function is designed to handle async enrichment and modification of the entity *before* it is persisted, so your controller (endpoint) remains minimal and focused only on request/response handling. This makes the codebase more maintainable, testable, and robust.
 
-Since your existing `process_hello_message` function is a background task that stores the greeting message after fetching external data, I separated concerns:
+---
 
-- The **workflow function** `process_hello_message_workflow` takes the entity (dict) as input, modifies or enriches it asynchronously, and returns it to be persisted by `add_item`.
+### What to move into the workflow function?
 
-- The **background task** `process_hello_message` manages the job lifecycle and triggers adding the entity with the workflow.
+- External API calls (e.g., fetching data from httpbin.org)
+- Enriching or modifying the entity data (adding the greeting message, timestamps, etc)
+- Adding supplementary entities of different entity_models if needed (allowed by your rules)
+- Any asynchronous logic related to the entity before saving
 
-This fits the new `entity_service.add_item` signature: it applies the workflow function to the entity before saving.
+---
 
-Here is the **complete updated code** with the new workflow function and adjusted usage:
+### What stays in the endpoint?
+
+- Input validation (which you already have via `@validate_request`)
+- Minimal orchestration: call `entity_service.add_item` with the entity and workflow function
+- Immediate response with job info or confirmation
+
+---
+
+### Updated Code
+
+Here is the fully updated code with **all async logic moved inside the workflow function**. The endpoint just calls `add_item` with the workflow, and the workflow handles everything asynchronously before persistence.
 
 ```python
 from dataclasses import dataclass
-import asyncio
 import logging
 from datetime import datetime
 
@@ -22,6 +34,8 @@ from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
 
+import httpx
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -30,20 +44,14 @@ QuartSchema(app)
 
 @dataclass
 class HelloRequest:
-    name: str = None  # optional string, primitive type
+    name: str = None  # optional string
 
-# We will store job statuses locally since entity_service doesn't support partial updates or job tracking
-_jobs = {}
-
-# Simulated external API for demonstration: httpbin.org/get to simulate external call
 EXTERNAL_API_URL = "https://httpbin.org/get"
 
-import httpx
 
 async def fetch_external_data(name: str) -> str:
     """
     Simulate external API call that could e.g. personalize or enrich the greeting.
-    Here we call httpbin.org/get and use the origin IP as dummy data.
     """
     async with httpx.AsyncClient() as client:
         try:
@@ -52,82 +60,77 @@ async def fetch_external_data(name: str) -> str:
             data = response.json()
             origin_ip = data.get("origin", "unknown origin")
             return f"Hello, {name}! Your origin IP is {origin_ip}."
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to fetch external data")
-            # Fallback greeting if external API fails
             return f"Hello, {name}!"
 
-async def process_hello_message_workflow(entity: dict) -> dict:
+
+async def process_hello_message(entity: dict) -> dict:
     """
     Workflow function applied to the entity asynchronously before persistence.
-    This example enriches the entity with a 'message' field by fetching external data,
-    and adds a timestamp 'createdAt'.
+
+    This function:
+    - fetches external data asynchronously
+    - enriches/modifies entity before saving
+    - can add supplementary entities of different entity_models
     """
     name = entity.get("name")
     if name:
+        # Fetch external data asynchronously to enrich entity
         message = await fetch_external_data(name)
     else:
         message = "Hello, World!"
-    # Add/modify fields on the entity
+
     entity["message"] = message
     entity["createdAt"] = datetime.utcnow().isoformat()
+
+    # Example: Add supplementary entity of a different model (allowed)
+    # await entity_service.add_item(
+    #     token=cyoda_token,
+    #     entity_model="hello_message_log",
+    #     entity_version=ENTITY_VERSION,
+    #     entity={"name": name or "", "message": message, "loggedAt": entity["createdAt"]},
+    # )
+
     return entity
 
-async def process_hello_message(entity_job: dict, data: dict, job_id: str):
-    """
-    Background task to process greeting message asynchronously.
-    Stores the final greeting as an entity in entity_service using the workflow.
-    """
-    try:
-        entity_name = "hello_message"
-        # Prepare the entity with initial data (e.g., name)
-        entity = {"name": data.get("name")}
-        # Add item to external entity_service with workflow function applied
-        item_id = await entity_service.add_item(
-            token=cyoda_token,
-            entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
-            entity=entity,
-            workflow=process_hello_message_workflow,
-        )
-        # Update job status
-        entity_job["status"] = "completed"
-        entity_job["completedAt"] = datetime.utcnow().isoformat()
-        entity_job["item_id"] = item_id
-        _jobs[job_id] = entity_job
-        logger.info(f"Greeting processed and saved with id {item_id}: {entity.get('message', '')}")
-    except Exception as e:
-        entity_job["status"] = "failed"
-        _jobs[job_id] = entity_job
-        logger.exception("Failed to add greeting message to entity_service")
 
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
 
+
 @app.route("/hello", methods=["POST"])
-@validate_request(HelloRequest)  # validation last in POST method (workaround for quart-schema issue)
+@validate_request(HelloRequest)
 async def post_hello(data: HelloRequest):
     """
     POST /hello
-    Accepts optional JSON body with "name" field.
-    Triggers background processing of greeting message.
-    Returns immediate status with job id.
+
+    Minimal controller:
+    - Calls add_item with workflow function which does all async processing
+    - Returns immediately the persisted entity ID
     """
-    job_id = datetime.utcnow().isoformat()
-    entity_job = {"status": "processing", "requestedAt": job_id}
-    _jobs[job_id] = entity_job
-    # Fire and forget background processing
-    asyncio.create_task(process_hello_message(entity_job, data.__dict__, job_id))
-    # Return job status and id immediately
-    return jsonify({"jobId": job_id, "status": entity_job["status"]})
+    entity_name = "hello_message"
+    try:
+        entity = {"name": data.name}
+        entity_id = await entity_service.add_item(
+            token=cyoda_token,
+            entity_model=entity_name,
+            entity_version=ENTITY_VERSION,
+            entity=entity,
+            workflow=process_hello_message,
+        )
+        return jsonify({"entityId": entity_id})
+    except Exception as e:
+        logger.exception("Failed to add hello message")
+        return jsonify({"error": "Failed to add hello message"}), 500
+
 
 @app.route("/hello", methods=["GET"])
 async def get_hello():
     """
     GET /hello
-    Returns the last generated greeting message.
-    Fetch last added greeting message from entity_service.
+    Returns the most recent greeting message.
     """
     entity_name = "hello_message"
     try:
@@ -141,21 +144,9 @@ async def get_hello():
         # Return the most recent message by createdAt descending
         latest_item = max(items, key=lambda x: x.get("createdAt", ""))
         return jsonify({"message": latest_item.get("message", "Hello, World!")})
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to retrieve greeting messages")
         return jsonify({"message": "Hello, World!"})
-
-@app.route("/hello/job/<job_id>", methods=["GET"])
-async def get_job_status(job_id):
-    """
-    GET /hello/job/<job_id>
-    Returns the status of a previously submitted greeting job,
-    including the saved entity id if completed.
-    """
-    job = _jobs.get(job_id)
-    if not job:
-        return jsonify({"error": "Job ID not found"}), 404
-    return jsonify(job)
 
 
 if __name__ == '__main__':
@@ -172,11 +163,33 @@ if __name__ == '__main__':
 
 ---
 
-### Summary of changes:
+### Explanation:
 
-- Added `process_hello_message_workflow(entity: dict) -> dict` which asynchronously enriches the entity before saving.
-- Updated `process_hello_message` to call `entity_service.add_item` with the new `workflow` argument set to `process_hello_message_workflow`.
-- The initial entity passed to `add_item` contains just the `name` field; the workflow enriches it with `message` and `createdAt` before persistence.
-- The rest of the code is unchanged and will work with the updated `entity_service.add_item` interface.
+- **`process_hello_message`** is now the single async workflow function that handles:
+  - fetching external data,
+  - enriching the entity with a greeting message and timestamp,
+  - optionally adding supplementary entities (commented example),
+  - then returns the modified entity for persistence.
 
-Let me know if you want me to adjust or extend this!
+- The **POST `/hello` endpoint** becomes very simple:
+  - It creates the initial entity data (`{"name": data.name}`)
+  - Calls `entity_service.add_item` passing the workflow function as `workflow=process_hello_message`
+  - Returns the new entity ID immediately after persistence.
+
+- The **GET `/hello` endpoint** remains unchanged, just retrieving the latest greeting.
+
+- Removed all explicit background tasks and job tracking from the controller code—async workflow function is now the sole place for async logic.
+
+---
+
+### Benefits of this approach:
+
+- Clear separation of concerns: controller handles HTTP, workflow handles processing.
+- No infinite recursion since workflow cannot update the same entity_model.
+- Easy to test workflow functions independently.
+- No "fire and forget" background tasks needed.
+- Scales naturally with the entity service’s async workflow model.
+
+---
+
+If you want, I can also help you implement supplementary entities inside the workflow or improve error handling/logging further. Let me know!

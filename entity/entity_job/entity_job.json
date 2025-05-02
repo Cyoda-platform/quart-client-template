@@ -1,0 +1,13 @@
+{
+    "completedAt": "2024-06-01T12:05:00Z",
+    "requestedAt": "2024-06-01T12:00:00Z",
+    "result": {
+        "city": "London",
+        "processedAt": "2024-06-01T12:04:59Z",
+        "temperature_celsius": 15.0,
+        "temperature_fahrenheit": 59.0,
+        "weather_description": "light rain"
+    },
+    "status": "completed",
+    "technical_id": "123e4567-e89b-12d3-a456-426614174000"
+}

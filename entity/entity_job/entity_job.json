@@ -1,0 +1,9 @@
+{
+    "requestedAt": "2024-06-01T11:59:00Z",
+    "result": {
+        "externalSummary": "Apple is a fruit.",
+        "processedAt": "2024-06-01T12:00:00Z",
+        "query": "apple"
+    },
+    "status": "completed"
+}

@@ -1,0 +1,22 @@
+{
+    "entityId": "entity_123",
+    "workflowDefinition": {
+        "states": [
+            "Created",
+            "HelloSent",
+            "Completed"
+        ],
+        "transitions": [
+            {
+                "event": "StartGreeting",
+                "from": "Created",
+                "to": "HelloSent"
+            },
+            {
+                "event": "Complete",
+                "from": "HelloSent",
+                "to": "Completed"
+            }
+        ]
+    }
+}

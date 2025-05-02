@@ -1,0 +1,57 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "entityId": "entity_123",
+                "event": "StartGreeting",
+                "parameters": {
+                    "language": "en"
+                }
+            },
+            "entity_name": "workflow_start_request"
+        },
+        {
+            "entity_data_example": {
+                "entityId": "entity_123",
+                "workflowDefinition": {
+                    "states": [
+                        "Created",
+                        "HelloSent",
+                        "Completed"
+                    ],
+                    "transitions": [
+                        {
+                            "event": "StartGreeting",
+                            "from": "Created",
+                            "to": "HelloSent"
+                        },
+                        {
+                            "event": "Complete",
+                            "from": "HelloSent",
+                            "to": "Completed"
+                        }
+                    ]
+                }
+            },
+            "entity_name": "workflow_update_request"
+        },
+        {
+            "entity_data_example": {
+                "currentState": "HelloSent",
+                "entityId": "entity_123",
+                "history": [
+                    {
+                        "state": "Created",
+                        "timestamp": "2024-06-01T12:00:00Z"
+                    },
+                    {
+                        "state": "HelloSent",
+                        "timestamp": "2024-06-01T12:01:00Z"
+                    }
+                ],
+                "message": "Hello World"
+            },
+            "entity_name": "entity_state_response"
+        }
+    ]
+}

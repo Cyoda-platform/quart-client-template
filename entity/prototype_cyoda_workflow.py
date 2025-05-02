@@ -1,14 +1,61 @@
-Here's the updated complete code for `entity/prototype_cyoda.py` with the `workflow` parameter added to the `entity_service.add_item` call, and the corresponding workflow function implemented following the naming convention `process_entity_job` (prefix `process_` + entity model name `entity_job`). The workflow function applies any needed processing on the entity before it is persisted.
+Yes, moving all business logic and asynchronous tasks into the `process_{entity_name}` workflow function is indeed a better, more robust design. It keeps endpoints lightweight, with the workflow function orchestrating all entity state changes and related async operations before persistence.
+
+---
+
+## What to move?
+
+Currently, inside the `/process-data` endpoint and the helper `process_entity` function, the logic does:
+
+- Create a "processing" entity_job with initial state.
+- Then asynchronously call `process_entity` which:
+  - Fetches external data.
+  - Updates the entity_job status and result by calling back to `entity_service.update_item`.
+
+---
+
+## What must change?
+
+The workflow function runs right before the entity is persisted **on add** (and could be used on update too, but here we focus on add).
+
+- The workflow function receives the entity data dict.
+- It can modify it directly.
+- It can get/add other entities of *different* models, but **cannot** modify/add/delete the same entity model to avoid infinite recursion.
+- It can run async code.
+- The entity state it modifies will be saved after the workflow function completes.
+
+---
+
+## Our approach
+
+- Move all logic that does the external API call and sets the status/result into the workflow function.
+- The endpoint only calls `entity_service.add_item` with the initial entity data and the workflow function.
+- The workflow function:
+  - Sets initial timestamps.
+  - Calls the external API.
+  - Updates the entity dict's state with results.
+  - Does not call `entity_service.update_item` on the same model (forbidden).
+- Because the workflow runs *before* persistence, the entity saved will already have the final state.
+
+---
+
+## How to handle async calls after creation?
+
+If some logic requires long-running background processes or fire-and-forget tasks after persistence, those can be triggered outside the workflow function or by some other mechanism (e.g., event handlers). But the current logic fits well inside the workflow since it is async.
+
+---
+
+# Updated example code
+
+Here is the fully updated `entity/prototype_cyoda.py`:
 
 ```python
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict
 
-import asyncio
 import httpx
 import logging
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ENTITY_VERSION
@@ -21,9 +68,11 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
+
 
 @dataclass
 class InputData:
@@ -50,90 +99,55 @@ async def fetch_external_data(query: str) -> Dict:
             logger.exception(e)
             return {"error": str(e)}
 
+
 # Workflow function for 'entity_job' entity_model
 async def process_entity_job(entity: dict) -> dict:
     """
     Workflow function applied to entity_job entities before persistence.
-    This function can modify the entity state asynchronously.
-    Here we just add a createdAt timestamp as an example.
+    This function:
+    - expects 'query' field in entity
+    - adds createdAt timestamp
+    - fetches external data asynchronously
+    - updates entity state with status/result fields
     """
+
     entity["createdAt"] = datetime.utcnow().isoformat() + "Z"
-    # You can add other initialization or validation logic here
-    return entity
 
+    query = entity.get("query")
+    if not query:
+        # Missing query: fail immediately
+        entity["status"] = "failed"
+        entity["result"] = {"error": "Missing required field 'query'"}
+        entity["processedAt"] = datetime.utcnow().isoformat() + "Z"
+        return entity
 
-async def process_entity(job_id: str, input_data: dict):
-    """
-    Simulate business logic:
-    - Fetch external data based on input query
-    - Update entity_service item with results and status
-    """
-    try:
-        query = input_data.get("query")
-        if not query:
-            raise ValueError("Missing required field 'query' in inputData")
+    entity["status"] = "processing"  # Mark as processing before external call
 
-        logger.info(f"Processing job {job_id} with query: {query}")
+    # Fetch external data asynchronously
+    external_data = await fetch_external_data(query)
 
-        external_data = await fetch_external_data(query)
-
-        if "error" in external_data:
-            update_data = {
-                "status": "failed",
-                "result": {"error": external_data["error"]},
-                "query": query,
-                "processedAt": datetime.utcnow().isoformat() + "Z",
-            }
-        else:
-            update_data = {
-                "status": "completed",
-                "result": {
-                    "query": query,
-                    "externalSummary": external_data["abstract"],
-                    "processedAt": datetime.utcnow().isoformat() + "Z",
-                },
-            }
-
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="entity_job",
-            entity_version=ENTITY_VERSION,
-            entity=update_data,
-            technical_id=job_id,
-            meta={},
-        )
-
-        logger.info(f"Job {job_id} completed with status {update_data['status']}")
-
-    except Exception as e:
-        logger.exception(e)
-        update_data = {
-            "status": "failed",
-            "result": {"error": str(e)},
-            "processedAt": datetime.utcnow().isoformat() + "Z",
+    if "error" in external_data:
+        entity["status"] = "failed"
+        entity["result"] = {"error": external_data["error"]}
+    else:
+        entity["status"] = "completed"
+        entity["result"] = {
+            "query": query,
+            "externalSummary": external_data["abstract"],
         }
-        try:
-            await entity_service.update_item(
-                token=cyoda_token,
-                entity_model="entity_job",
-                entity_version=ENTITY_VERSION,
-                entity=update_data,
-                technical_id=job_id,
-                meta={},
-            )
-        except Exception as ex:
-            logger.exception(ex)
+
+    entity["processedAt"] = datetime.utcnow().isoformat() + "Z"
+
+    return entity
 
 
 @app.route("/process-data", methods=["POST"])
 @validate_request(InputData)  # Validation last for POST requests (issue workaround)
 async def post_process_data(data: InputData):
-    input_data = {"query": data.query}
-
-    # Create a new job entity with initial status 'processing'
-    initial_data = {
-        "status": "processing",
-        "requestedAt": datetime.utcnow().isoformat() + "Z",
+    # Prepare initial entity with input query included
+    entity_data = {
+        "query": data.query,
+        # No need for initial status, workflow will handle it
     }
 
     try:
@@ -141,15 +155,14 @@ async def post_process_data(data: InputData):
             token=cyoda_token,
             entity_model="entity_job",
             entity_version=ENTITY_VERSION,
-            entity=initial_data,
-            workflow=process_entity_job  # <-- Added workflow function here
+            entity=entity_data,
+            workflow=process_entity_job  # <-- workflow takes over all async logic
         )
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to create job"}), 500
 
-    asyncio.create_task(process_entity(job_id, input_data))
-
+    # Immediately return created job id and 'processing' status
     return jsonify({"processId": job_id, "status": "processing"}), 202
 
 
@@ -189,10 +202,28 @@ if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added `process_entity_job` async function as the workflow function for the entity model `"entity_job"`.
-- Passed `workflow=process_entity_job` to `entity_service.add_item` inside `/process-data` endpoint.
-- Example behavior in `process_entity_job`: add a `"createdAt"` timestamp to the entity before persistence.
-- No other logic changed; this follows your requirement of adding the workflow parameter and implementation.
+---
 
-Let me know if you want the workflow function to perform any other initialization or processing!
+# Explanation
+
+- All async processing logic including external API calls and status/result setting moved to `process_entity_job`.
+- The endpoint just calls `add_item` with the raw input entity data (including the query).
+- The workflow function modifies the entity in-place before persistence.
+- No calls to `update_item` inside the workflow function to avoid recursion.
+- The workflow function returns the modified entity dict; the entity service persists the final state.
+- The endpoint returns immediately after job creation with status `"processing"`.
+- The client can fetch the job result later by querying the `/results/<process_id>` endpoint.
+
+---
+
+# Benefits
+
+- Clear separation of concerns: endpoints only handle HTTP, validation, and response.
+- Workflow functions handle async data enrichment and entity state management.
+- No background task or fire-and-forget needed here — the workflow function runs before persistence.
+- Easy to reason about entity state changes (all inside workflow).
+- Avoids infinite loops or race conditions caused by update calls inside workflow functions.
+
+---
+
+If you want me to help refactor further or add more complex workflows, just ask!

@@ -1,16 +1,25 @@
-Certainly! Below is the updated complete code which includes the new `workflow` parameter in the `entity_service.add_item` call, and a corresponding workflow function `process_entity` renamed and adapted as `process_entity` to match the naming convention `process_{entity_name}`. This function will be passed as the workflow argument to `add_item`.
-
-### Key changes:
-- Added `workflow` parameter to `entity_service.add_item` calls.
-- Implemented `process_entity` workflow function as per requirements.
-- Ensured the workflow function takes the entity data as a single argument and modifies it asynchronously before persistence.
-- Used `process_entity` as the workflow function for the `"entity"` entity model.
+Thank you for the clarification and guidance. Yes, moving the business logic from the endpoint handlers into the workflow function (`process_entity`) is indeed the right approach. This will keep controllers thin and focused on request/response management while the workflow function handles all entity state transitions and related async operations right before persisting the entity.
 
 ---
 
+### Strategy for refactoring:
+
+- Move all async tasks (including external API calls, state transitions, message generation) into the `process_entity` workflow function.
+- The `start_workflow` endpoint will simply inject the event and parameters into the entity and call `entity_service.add_item` or `entity_service.update_item` with the workflow function.
+- For existing entities, instead of running a fire-and-forget background task, we will update the entity with the event/parameters, and then call `update_item` passing the workflow function, so `process_entity` will run before persistence and update the entity state.
+- We will **not** call `entity_service.add/update/delete` on the current entity inside the workflow function (to avoid infinite recursion), but we can call those on other entities if needed.
+- The workflow function will:
+  - Read the event and parameters from the entity (assumed temporarily stored)
+  - Process the state transition, external calls, message updates, etc.
+  - Remove temporary fields before returning the entity to be persisted.
+
+---
+
+### Here is the fully refactored code with all async logic moved into `process_entity` workflow:
+
 ```python
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 
 import asyncio
 import logging
@@ -50,13 +59,13 @@ def get_next_state(current_state: str, event: str, workflow_def: dict) -> str:
     for t in workflow_def.get("transitions", []):
         if t["from"] == current_state and t["event"] == event:
             return t["to"]
-    return current_state  # no transition, remain in current state
+    return current_state  # no transition found, remain in current state
 
 # Workflow function for entity model 'entity'
 async def process_entity(entity: dict) -> dict:
     """
     Workflow function applied to the 'entity' before persistence.
-    Modifies entity state and message asynchronously.
+    Handles state transitions, external async calls, and message updates.
     """
     entity_id = entity.get("entityId")
     if not entity_id:
@@ -65,28 +74,33 @@ async def process_entity(entity: dict) -> dict:
 
     workflow_def = workflows.get(entity_id, default_workflow)
 
-    # Simulate external call (e.g., Trino query)
-    async with httpx.AsyncClient() as client:
-        try:
-            trino_response = await client.get(TRINO_MOCK_API)
-            trino_data = trino_response.json()
-            # trino_data can be used if needed
-        except Exception as e:
-            logger.warning(f"Failed to fetch Trino mock data: {e}")
-
-    current_state = entity.get("currentState", "Created")
-    # For initial workflow run, event may be passed in params or stored in entity
-    # Since this function receives only entity, assume event is stored in entity temporarily.
+    # Read event and parameters injected into the entity
     event = entity.get("_pendingEvent")
+    parameters = entity.get("_pendingParameters", {})
+
+    # If no event, just return entity without changes
     if not event:
-        # If no event, nothing to do, just return entity
         return entity
 
+    current_state = entity.get("currentState", "Created")
+
+    # Simulate external API call before state transition (e.g., Trino query)
+    try:
+        async with httpx.AsyncClient() as client:
+            trino_response = await client.get(TRINO_MOCK_API)
+            trino_response.raise_for_status()
+            trino_data = trino_response.json()
+            # We could store/use trino_data if needed, e.g. entity['trinoData'] = trino_data
+    except Exception as e:
+        logger.warning(f"Failed to fetch Trino mock data for entity {entity_id}: {e}")
+
+    # Determine the next state based on current state and event
     next_state = get_next_state(current_state, event, workflow_def)
 
+    # Construct message based on next state
     message = ""
     if next_state == "HelloSent":
-        lang = entity.get("_pendingParameters", {}).get("language", "en").lower()
+        lang = str(parameters.get("language", "en")).lower()
         greetings = {
             "en": "Hello World",
             "es": "Hola Mundo",
@@ -100,55 +114,18 @@ async def process_entity(entity: dict) -> dict:
     else:
         message = f"Transitioned to state '{next_state}'."
 
+    # Update entity state and append to history
     entity["currentState"] = next_state
     entity.setdefault("history", []).append(
         {"state": next_state, "timestamp": datetime.utcnow().isoformat()}
     )
     entity["message"] = message
 
-    # Clean up temporary keys so they are not persisted
+    # Clean up temporary event/parameter fields so they're not persisted
     entity.pop("_pendingEvent", None)
     entity.pop("_pendingParameters", None)
 
     return entity
-
-async def process_entity_event(entity_id: str, event: str, params: dict):
-    """
-    Helper function to process an existing entity with event and params.
-    This function updates the entity and persists it via update_item.
-    """
-    try:
-        entity = await entity_service.get_item(
-            token=cyoda_token,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            technical_id=entity_id,
-        )
-        if not entity:
-            logger.info(f"Entity {entity_id} not found at processing start.")
-            return
-
-        # Inject event and params into entity to be used by workflow function if needed
-        entity["_pendingEvent"] = event
-        entity["_pendingParameters"] = params
-
-        # Apply the workflow function to update the entity before persistence
-        updated_entity = await process_entity(entity)
-
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            entity=updated_entity,
-            technical_id=entity_id,
-            meta={},
-        )
-
-        logger.info(f"Processed entity {entity_id}: event={event}, new_state={updated_entity.get('currentState')}")
-
-    except Exception as e:
-        logger.exception(e)
-
 
 @dataclass
 class WorkflowStartRequest:
@@ -156,14 +133,12 @@ class WorkflowStartRequest:
     event: str
     parameters: Optional[Dict[str, str]] = None
 
-
 @dataclass
 class WorkflowUpdateRequest:
     entityId: str
     workflowDefinition: Dict[str, Any]
 
-
-# POST endpoints: validation decorator must go after route decorator (issue workaround)
+# POST endpoint to start or continue a workflow
 @app.route("/workflow/start", methods=["POST"])
 @validate_request(WorkflowStartRequest)
 async def start_workflow(data: WorkflowStartRequest):
@@ -179,29 +154,40 @@ async def start_workflow(data: WorkflowStartRequest):
     )
 
     if not entity:
-        # create new entity with initial state
+        # Create new entity with initial state and pending event/parameters
         new_entity = {
             "entityId": entity_id,
             "currentState": "Created",
             "history": [{"state": "Created", "timestamp": datetime.utcnow().isoformat()}],
             "message": "",
-            # Store event and parameters to be used by workflow function
+            # Inject event and parameters for workflow function
             "_pendingEvent": event,
             "_pendingParameters": parameters,
         }
-        # Pass the workflow function as a parameter to add_item
+        # Add item with workflow function to process entity before persisting
         await entity_service.add_item(
             token=cyoda_token,
             entity_model="entity",
             entity_version=ENTITY_VERSION,
             entity=new_entity,
-            workflow=process_entity,  # Workflow function applied asynchronously before persistence
+            workflow=process_entity,
         )
         entity = new_entity
 
     else:
-        # For existing entity, process event asynchronously
-        asyncio.create_task(process_entity_event(entity_id, event, parameters))
+        # For existing entity, inject event and parameters, then update entity with workflow function
+        entity["_pendingEvent"] = event
+        entity["_pendingParameters"] = parameters
+
+        await entity_service.update_item(
+            token=cyoda_token,
+            entity_model="entity",
+            entity_version=ENTITY_VERSION,
+            entity=entity,
+            technical_id=entity_id,
+            workflow=process_entity,
+            meta={},
+        )
 
     return jsonify(
         {
@@ -211,7 +197,7 @@ async def start_workflow(data: WorkflowStartRequest):
         }
     )
 
-
+# POST endpoint to update workflow definition for an entity
 @app.route("/workflow/update", methods=["POST"])
 @validate_request(WorkflowUpdateRequest)
 async def update_workflow(data: WorkflowUpdateRequest):
@@ -226,8 +212,7 @@ async def update_workflow(data: WorkflowUpdateRequest):
     logger.info(f"Workflow updated for entity {entity_id}")
     return jsonify({"entityId": entity_id, "status": "Workflow updated successfully"})
 
-
-# GET endpoint: validation decorator must go before route decorator (issue workaround)
+# GET endpoint to get current state and history of an entity
 @app.route("/entity/<string:entity_id>/state", methods=["GET"])
 async def get_entity_state(entity_id):
     entity = await entity_service.get_item(
@@ -248,7 +233,6 @@ async def get_entity_state(entity_id):
         }
     )
 
-
 if __name__ == '__main__':
     import sys
 
@@ -263,11 +247,21 @@ if __name__ == '__main__':
 
 ---
 
-### Explanation
-- The new `process_entity` function is the workflow function for the `"entity"` model and is passed to `add_item`.
-- When creating a new entity, the event and parameters are stored temporarily inside the entity dictionary under `_pendingEvent` and `_pendingParameters`.
-- The workflow function reads these, processes the state transition, and removes these temp keys before the entity is persisted.
-- For existing entities, the `process_entity_event` helper function retrieves the entity, injects the event/parameters, applies the workflow function, then updates the entity.
-- This way, the workflow function is always applied before persistence, fulfilling the new API contract.
+### Summary of improvements:
 
-Let me know if you need any further adjustments!
+- The endpoint `/workflow/start` no longer contains any business logic or async calls.
+- It simply injects the event and parameters into the entity and calls `add_item` or `update_item` with `workflow=process_entity`.
+- The `process_entity` workflow function handles:
+  - External API calls (e.g., Trino mock)
+  - State transition logic
+  - Message generation
+  - History tracking
+- No more fire-and-forget background tasks.
+- The controller is "freed" from workflow logic and async handling.
+- The workflow function can also be extended to get/add supplementary entities of a different entity_model if needed, without changing the current entity via `add/update/delete`.
+
+---
+
+If you want, I can help you extend the workflow function with calls to add supplementary entities or other async logic while respecting the "no modification via update_item/add_item on the same entity" rule.
+
+Please let me know if you want further refinements!

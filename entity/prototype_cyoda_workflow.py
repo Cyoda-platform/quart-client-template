@@ -1,32 +1,11 @@
-Thank you for the clarification and guidance. Yes, moving the business logic from the endpoint handlers into the workflow function (`process_entity`) is indeed the right approach. This will keep controllers thin and focused on request/response management while the workflow function handles all entity state transitions and related async operations right before persisting the entity.
-
----
-
-### Strategy for refactoring:
-
-- Move all async tasks (including external API calls, state transitions, message generation) into the `process_entity` workflow function.
-- The `start_workflow` endpoint will simply inject the event and parameters into the entity and call `entity_service.add_item` or `entity_service.update_item` with the workflow function.
-- For existing entities, instead of running a fire-and-forget background task, we will update the entity with the event/parameters, and then call `update_item` passing the workflow function, so `process_entity` will run before persistence and update the entity state.
-- We will **not** call `entity_service.add/update/delete` on the current entity inside the workflow function (to avoid infinite recursion), but we can call those on other entities if needed.
-- The workflow function will:
-  - Read the event and parameters from the entity (assumed temporarily stored)
-  - Process the state transition, external calls, message updates, etc.
-  - Remove temporary fields before returning the entity to be persisted.
-
----
-
-### Here is the fully refactored code with all async logic moved into `process_entity` workflow:
-
-```python
 from dataclasses import dataclass
 from typing import Dict, Any, Optional
 
-import asyncio
 import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import entity_service, cyoda_token
@@ -51,15 +30,18 @@ default_workflow = {
 
 TRINO_MOCK_API = "https://httpbin.org/delay/1"  # simulates 1 second delay
 
+
 @app.before_serving
 async def startup():
     await init_cyoda(cyoda_token)
+
 
 def get_next_state(current_state: str, event: str, workflow_def: dict) -> str:
     for t in workflow_def.get("transitions", []):
         if t["from"] == current_state and t["event"] == event:
             return t["to"]
     return current_state  # no transition found, remain in current state
+
 
 # Workflow function for entity model 'entity'
 async def process_entity(entity: dict) -> dict:
@@ -86,11 +68,11 @@ async def process_entity(entity: dict) -> dict:
 
     # Simulate external API call before state transition (e.g., Trino query)
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=5.0) as client:
             trino_response = await client.get(TRINO_MOCK_API)
             trino_response.raise_for_status()
             trino_data = trino_response.json()
-            # We could store/use trino_data if needed, e.g. entity['trinoData'] = trino_data
+            # Optional: store/use trino_data if needed
     except Exception as e:
         logger.warning(f"Failed to fetch Trino mock data for entity {entity_id}: {e}")
 
@@ -116,9 +98,12 @@ async def process_entity(entity: dict) -> dict:
 
     # Update entity state and append to history
     entity["currentState"] = next_state
-    entity.setdefault("history", []).append(
-        {"state": next_state, "timestamp": datetime.utcnow().isoformat()}
-    )
+    entity.setdefault("history", [])
+    # Avoid duplicate consecutive states in history
+    if not entity["history"] or entity["history"][-1].get("state") != next_state:
+        entity["history"].append(
+            {"state": next_state, "timestamp": datetime.utcnow().isoformat()}
+        )
     entity["message"] = message
 
     # Clean up temporary event/parameter fields so they're not persisted
@@ -127,16 +112,19 @@ async def process_entity(entity: dict) -> dict:
 
     return entity
 
+
 @dataclass
 class WorkflowStartRequest:
     entityId: str
     event: str
     parameters: Optional[Dict[str, str]] = None
 
+
 @dataclass
 class WorkflowUpdateRequest:
     entityId: str
     workflowDefinition: Dict[str, Any]
+
 
 # POST endpoint to start or continue a workflow
 @app.route("/workflow/start", methods=["POST"])
@@ -197,6 +185,7 @@ async def start_workflow(data: WorkflowStartRequest):
         }
     )
 
+
 # POST endpoint to update workflow definition for an entity
 @app.route("/workflow/update", methods=["POST"])
 @validate_request(WorkflowUpdateRequest)
@@ -211,6 +200,7 @@ async def update_workflow(data: WorkflowUpdateRequest):
 
     logger.info(f"Workflow updated for entity {entity_id}")
     return jsonify({"entityId": entity_id, "status": "Workflow updated successfully"})
+
 
 # GET endpoint to get current state and history of an entity
 @app.route("/entity/<string:entity_id>/state", methods=["GET"])
@@ -233,6 +223,7 @@ async def get_entity_state(entity_id):
         }
     )
 
+
 if __name__ == '__main__':
     import sys
 
@@ -243,25 +234,3 @@ if __name__ == '__main__':
     )
 
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Summary of improvements:
-
-- The endpoint `/workflow/start` no longer contains any business logic or async calls.
-- It simply injects the event and parameters into the entity and calls `add_item` or `update_item` with `workflow=process_entity`.
-- The `process_entity` workflow function handles:
-  - External API calls (e.g., Trino mock)
-  - State transition logic
-  - Message generation
-  - History tracking
-- No more fire-and-forget background tasks.
-- The controller is "freed" from workflow logic and async handling.
-- The workflow function can also be extended to get/add supplementary entities of a different entity_model if needed, without changing the current entity via `add/update/delete`.
-
----
-
-If you want, I can help you extend the workflow function with calls to add supplementary entities or other async logic while respecting the "no modification via update_item/add_item on the same entity" rule.
-
-Please let me know if you want further refinements!

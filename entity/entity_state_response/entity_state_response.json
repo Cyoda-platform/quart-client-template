@@ -1,0 +1,15 @@
+{
+    "currentState": "HelloSent",
+    "entityId": "entity_123",
+    "history": [
+        {
+            "state": "Created",
+            "timestamp": "2024-06-01T12:00:00Z"
+        },
+        {
+            "state": "HelloSent",
+            "timestamp": "2024-06-01T12:01:00Z"
+        }
+    ],
+    "message": "Hello World"
+}

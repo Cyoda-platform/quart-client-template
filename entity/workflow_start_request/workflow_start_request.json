@@ -1,0 +1,7 @@
+{
+    "entityId": "entity_123",
+    "event": "StartGreeting",
+    "parameters": {
+        "language": "en"
+    }
+}

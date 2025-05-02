@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 import uuid
@@ -6,7 +6,7 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -22,6 +22,10 @@ entity_job = {}
 # TODO: Replace with actual API key or another API if needed
 OPENWEATHER_API_KEY = "YOUR_OPENWEATHER_API_KEY"  # TODO: insert valid API key here
 OPENWEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
+
+@dataclass
+class ProcessData:
+    city: str  # expecting city name to query weather
 
 
 async def fetch_external_data(client: httpx.AsyncClient, city: str):
@@ -76,22 +80,21 @@ async def process_entity(entity_job: dict, job_id: str, input_data: dict):
         entity_job[job_id]["completedAt"] = datetime.utcnow().isoformat() + "Z"
         logger.exception(f"Job {job_id} failed")
 
-
+# POST route - validation last due to quart-schema issue workaround
 @app.route("/process", methods=["POST"])
-async def post_process():
+@validate_request(ProcessData)
+async def post_process(data: ProcessData):
     """Accept input data, start processing asynchronously, return job ID."""
-    data = await request.get_json(force=True)
-
     job_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat() + "Z"
     entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
 
     # Fire and forget the processing task
-    asyncio.create_task(process_entity(entity_job, job_id, data))
+    asyncio.create_task(process_entity(entity_job, job_id, data.__dict__))
 
     return jsonify({"processId": job_id, "status": "processing"}), 202
 
-
+# GET route - validation first due to quart-schema issue workaround
 @app.route("/result/<string:process_id>", methods=["GET"])
 async def get_result(process_id):
     """Return processing status and result for the given process ID."""
@@ -109,4 +112,3 @@ async def get_result(process_id):
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

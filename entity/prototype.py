@@ -1,12 +1,12 @@
-```python
-import asyncio
-import logging
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict
 
+import asyncio
 import httpx
+import logging
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -16,6 +16,11 @@ QuartSchema(app)
 
 # In-memory cache for process jobs (mock persistence)
 entity_job: Dict[str, Dict] = {}
+
+
+@dataclass
+class InputData:
+    query: str  # expecting a simple string query for external API
 
 
 async def fetch_external_data(query: str) -> Dict:
@@ -46,7 +51,6 @@ async def process_entity(job_store: dict, job_id: str, input_data: dict):
     - Store results in the job_store with status update
     """
     try:
-        # Example: expect input_data to have a 'query' field for external API call
         query = input_data.get("query")
         if not query:
             raise ValueError("Missing required field 'query' in inputData")
@@ -55,12 +59,10 @@ async def process_entity(job_store: dict, job_id: str, input_data: dict):
 
         external_data = await fetch_external_data(query)
 
-        # Simulate some processing/calculation with external_data
         if "error" in external_data:
             job_store[job_id]["status"] = "failed"
             job_store[job_id]["result"] = {"error": external_data["error"]}
         else:
-            # Example result combining input and external abstract
             result = {
                 "query": query,
                 "externalSummary": external_data["abstract"],
@@ -78,29 +80,22 @@ async def process_entity(job_store: dict, job_id: str, input_data: dict):
 
 
 @app.route("/process-data", methods=["POST"])
-async def post_process_data():
-    data = await request.get_json(force=True)
-    if not data:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
+@validate_request(InputData)  # Validation last for POST requests (issue workaround)
+async def post_process_data(data: InputData):
+    input_data = {"query": data.query}
 
-    input_data = data.get("inputData")
-    if not isinstance(input_data, dict):
-        return jsonify({"error": "Missing or invalid 'inputData' object"}), 400
-
-    # Generate simple processId (timestamp + counter) - in real app use UUID
     process_id = f"job_{int(datetime.utcnow().timestamp() * 1000)}"
     requested_at = datetime.utcnow().isoformat() + "Z"
 
-    # Initialize job status in cache
     entity_job[process_id] = {"status": "processing", "requestedAt": requested_at}
 
-    # Fire and forget processing task
     asyncio.create_task(process_entity(entity_job, process_id, input_data))
 
     return jsonify({"processId": process_id, "status": "processing"}), 202
 
 
 @app.route("/results/<process_id>", methods=["GET"])
+# Validation first for GET requests (issue workaround)
 async def get_results(process_id):
     job = entity_job.get(process_id)
     if not job:
@@ -124,4 +119,3 @@ if __name__ == "__main__":
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

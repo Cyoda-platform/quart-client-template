@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 import uuid
@@ -6,7 +6,7 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -20,19 +20,18 @@ entity_job = {}
 # Example external API: https://api.agify.io/?name=michael (predicts age by name)
 EXTERNAL_API_URL = "https://api.agify.io"
 
+@dataclass
+class InputData:
+    name: str  # primitive type as per requirements
+
 async def process_entity(entity_job, process_id, input_data):
     try:
-        # Call external API with input data (assumes input_data has a 'name' field)
-        name = input_data.get("name")
-        if not name:
-            raise ValueError("Missing required field 'name' in input data")
-
+        name = input_data.name
         async with httpx.AsyncClient() as client:
             response = await client.get(EXTERNAL_API_URL, params={"name": name})
             response.raise_for_status()
             api_data = response.json()
 
-        # Simple business logic: augment external data with timestamp
         result = {
             "name": name,
             "predicted_age": api_data.get("age"),
@@ -49,14 +48,14 @@ async def process_entity(entity_job, process_id, input_data):
         entity_job[process_id]["result"] = None
         logger.exception(f"Error processing processId={process_id}: {e}")
 
+# POST endpoint: validation last due to quart-schema library issue workaround
 @app.route("/process-data", methods=["POST"])
-async def process_data():
-    data = await request.get_json()
+@validate_request(InputData)
+async def process_data(data: InputData):
     process_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat() + "Z"
     entity_job[process_id] = {"status": "processing", "requestedAt": requested_at, "result": None}
 
-    # Fire and forget the processing task
     asyncio.create_task(process_entity(entity_job, process_id, data))
 
     return jsonify({
@@ -65,6 +64,7 @@ async def process_data():
         "result": None
     }), 202
 
+# GET endpoint: validation first due to quart-schema library issue workaround
 @app.route("/results/<process_id>", methods=["GET"])
 async def get_results(process_id):
     job = entity_job.get(process_id)
@@ -79,4 +79,3 @@ async def get_results(process_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

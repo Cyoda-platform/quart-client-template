@@ -1,0 +1,10 @@
+{
+    "processId": "123e4567-e89b-12d3-a456-426614174000",
+    "result": {
+        "count": 1234,
+        "name": "michael",
+        "predicted_age": 35,
+        "processedAt": "2024-06-01T12:01:00Z"
+    },
+    "status": "completed"
+}

@@ -1,8 +1,8 @@
 import threading
-from typing import List, Any
+from typing import List
 
 from common.repository.crud_repository import CrudRepository
-from common.util.utils import *
+from common.utils.utils import *
 
 logger = logging.getLogger('django')
 
@@ -10,6 +10,7 @@ cache = {}
 
 
 class InMemoryRepository(CrudRepository):
+
     _instance = None
     _lock = threading.Lock()
 
@@ -22,6 +23,9 @@ class InMemoryRepository(CrudRepository):
         return cls._instance
 
     def __init__(self):
+        pass
+
+    async def get_transitions(self, meta, technical_id):
         pass
 
     async def get_meta(self, token, entity_model, entity_version):

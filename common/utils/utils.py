@@ -12,7 +12,8 @@ import httpx
 import jsonschema
 from jsonschema import validate
 
-from common.config.config import PROJECT_DIR, REPOSITORY_NAME
+from common.auth.cyoda_auth import CyodaAuthService
+from common.config.config import CYODA_API_URL
 
 logger = logging.getLogger(__name__)
 
@@ -305,7 +306,7 @@ Here is an example JSON data structure for the entity `data_analysis_job`, refle
 This JSON structure provides a comprehensive overview of the analysis conducted on the London Houses data, reflecting the required business app_init for the `data_analysis_job` entity.   """
     output_data = parse_json(input_data)
 
-    print(output_data)
+    logger.info(output_data)
 
 if __name__ == "__main__":
     main()
@@ -426,24 +427,28 @@ async def send_get_request(token: str, api_url: str, path: str) -> Optional[Any]
 
 
 async def send_request(headers, url, method, data=None, json=None):
-    async with httpx.AsyncClient(timeout=15.0) as client:
+    async with httpx.AsyncClient(timeout=150.0) as client:
         method = method.upper()
         if method == 'GET':
             response = await client.get(url, headers=headers)
             # Only process GET responses with status 200 or 404 as in your original code
             if response.status_code in (200, 404):
-                content = response.json() if 'application/json' in response.headers.get('Content-Type', '') else response.text
+                content = response.json() if 'application/json' in response.headers.get('Content-Type',
+                                                                                        '') else response.text
             else:
                 content = None
         elif method == 'POST':
             response = await client.post(url, headers=headers, data=data, json=json)
-            content = response.json() if 'application/json' in response.headers.get('Content-Type', '') else response.text
+            content = response.json() if 'application/json' in response.headers.get('Content-Type',
+                                                                                    '') else response.text
         elif method == 'PUT':
             response = await client.put(url, headers=headers, data=data, json=json)
-            content = response.json() if 'application/json' in response.headers.get('Content-Type', '') else response.text
+            content = response.json() if 'application/json' in response.headers.get('Content-Type',
+                                                                                    '') else response.text
         elif method == 'DELETE':
             response = await client.delete(url, headers=headers)
-            content = response.json() if 'application/json' in response.headers.get('Content-Type', '') else response.text
+            content = response.json() if 'application/json' in response.headers.get('Content-Type',
+                                                                                    '') else response.text
         else:
             raise ValueError("Unsupported HTTP method")
 
@@ -454,7 +459,7 @@ async def send_request(headers, url, method, data=None, json=None):
 
 
 async def send_post_request(token: str, api_url: str, path: str, data=None, json=None) -> Optional[Any]:
-    url = f"{api_url}/{path}"
+    url = f"{api_url}/{path}" if path else api_url
     token = f"Bearer {token}" if not token.startswith('Bearer') else token
     headers = {
         "Content-Type": "application/json",
@@ -518,38 +523,6 @@ def clean_formatting(text):
     """
     # Replace any sequence of newlines (and carriage returns) with a single space
     return re.sub(r'[\r\n]+', ' ', text)
-# def clean_formatting(text):
-#     """
-#     This function simulates the behavior of text pasted into Google search:
-#     - Removes leading and trailing whitespace.
-#     - Condenses multiple spaces into a single space.
-#     - Keeps alphanumeric characters and spaces only, removing other characters.
-#
-#     :param answer: The input string to be cleaned
-#     :return: A cleaned string
-#     """
-#     # Remove leading and trailing whitespace
-#     text = text.strip()
-#
-#     # Condense multiple spaces into a single space
-#     text = re.sub(r'\s+', ' ', text)
-#
-#     # Remove non-alphanumeric characters (excluding spaces)
-#     text = re.sub(r'[^\w\s]', '', text)
-#
-#     return text
-
-
-def get_project_file_name(chat_id, file_name):
-    return f"{PROJECT_DIR}/{chat_id}/{REPOSITORY_NAME}/{file_name}"
-
-
-def custom_serializer(obj):
-    if isinstance(obj, queue.Queue):
-        # Convert queue to list
-        return list(obj.queue)
-    raise TypeError(f"Type {type(obj)} not serializable")
-
 
 def format_json_if_needed(data, key):
     value = data.get(key)
@@ -558,5 +531,75 @@ def format_json_if_needed(data, key):
         formatted_json = json.dumps(value, indent=4)
         data[key] = f"```json \n{formatted_json}\n```"
     else:
-        print(f"Data at {key} is not a valid JSON object: {value}")  # Optionally log this or handle it
+        logger.error(f"Data at {key} is not a valid JSON object: {value}")  # Optionally log this or handle it
     return data
+
+def _invalidate_tokens(cyoda_auth_service: CyodaAuthService):
+    """Delegate token invalidation to the provided token service."""
+    cyoda_auth_service.invalidate_tokens()
+
+async def send_cyoda_request(
+        cyoda_auth_service: CyodaAuthService,
+        method: str,
+        path: str,
+        data: Any = None,
+        base_url: str = CYODA_API_URL
+) -> dict:
+    """
+    Send an HTTP request to the Cyoda API with automatic retry on 401.
+    """
+    token = cyoda_auth_service.get_access_token()
+    for attempt in range(2):
+        try:
+            if method.lower() == "get":
+                resp = await send_get_request(token, base_url, path)
+            elif method.lower() == "post":
+                resp = await send_post_request(token, base_url, path, data=data)
+            elif method.lower() == "put":
+                resp = await send_put_request(token, base_url, path, data=data)
+            elif method.lower() == "delete":
+                resp = await send_delete_request(token, base_url, path)
+            else:
+                raise ValueError(f"Unsupported HTTP method: {method}")
+            # todo check here
+        except Exception as exc:
+            msg = str(exc)
+            if attempt == 0 and ("401" in msg or "Unauthorized" in msg):
+                logger.warning(f"Request to {path} failed with 401; invalidating tokens and retrying")
+                _invalidate_tokens(cyoda_auth_service=cyoda_auth_service)
+                token = cyoda_auth_service.get_access_token()
+                continue
+            raise
+        status = resp.get("status") if isinstance(resp, dict) else None
+        if attempt == 0 and status == 401:
+            logger.warning(f"Response from {path} returned status 401; invalidating tokens and retrying")
+            _invalidate_tokens(cyoda_auth_service=cyoda_auth_service)
+            token = cyoda_auth_service.get_access_token()
+            continue
+        return resp
+    raise RuntimeError(f"Failed request {method.upper()} {path} after retry")
+
+def custom_serializer(obj):
+    if isinstance(obj, queue.Queue):
+        # Convert queue to list
+        return list(obj.queue)
+    if not isinstance(obj, dict):
+        # Convert the object to a dictionary. Customize as needed.
+        return obj.__dict__
+    raise TypeError(f"Type {type(obj)} not serializable")
+
+def parse_entity(model_cls, resp: Any) -> Any:
+    try:
+        if model_cls:
+            if isinstance(resp, list):
+
+                return [model_cls.model_validate(item) for item in resp]
+
+            else:
+                if not isinstance(resp, model_cls):
+                    return model_cls.model_validate(resp)
+                return resp
+        return resp
+    except Exception as e:
+        logger.exception(e)
+        return None

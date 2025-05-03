@@ -122,7 +122,7 @@ class CrudRepository(Repository):
         pass
 
     @abstractmethod
-    async def update(self, meta, id, entity: Any) -> Any:
+    async def update(self, meta, technical_id, entity: Any) -> Any:
         """
         Saves all given entities.
         """
@@ -132,5 +132,12 @@ class CrudRepository(Repository):
     async def update_all(self, meta, entities: List[Any]) -> List[Any]:
         """
         Saves all given entities.
+        """
+        pass
+
+    @abstractmethod
+    async def get_transitions(self, meta, technical_id):
+        """
+        Gets next transitions
         """
         pass

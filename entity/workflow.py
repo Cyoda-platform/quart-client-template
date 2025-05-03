@@ -34,8 +34,7 @@ find_and_import_workflows()
 
 #data={'entityId': 'ee965a32-4df6-11b2-b48d-f20bdf753a91', 'id': 'e37b9e72-c7b4-4ed3-9fa7-85ab6d85e4b1', 'payload': {'data': {'data_source': {'data_retrieval_method': 'GET', 'source_name': 'External API', 'source_url': 'https://api.example.com/data'}, 'job_id': 'job_001', 'job_name': 'Data Processing Job', 'recipients': [{'email': 'admin@example.com', 'name': 'Admin User'}, {'email': 'analyst@example.com', 'name': 'Data Analyst'}], 'report': {'distribution_info': {'communication_method': 'Email', 'sent_at': '2023-10-01T17:40:00Z'}, 'generated_at': '2023-10-01T17:35:00Z', 'report_id': 'report_001', 'report_title': 'Monthly Data Processing Report'}, 'request_parameters': {'code': '7080005051286', 'country': 'FI', 'name': ''}}, 'type': 'TREE'}, 'processorId': '1fbb8b6e-c2c7-11ef-a99c-ce3d8f1a57a3', 'processorName': 'ingest_raw_data', 'requestId': 'e37b9e72-c7b4-4ed3-9fa7-85ab6d85e4b1', 'success': True, 'transactionId': 'bb537de0-c2f2-11ef-b48d-f20bdf753a91', 'warnings': []}
 #processor_name='ingest_raw_data'
-async def process_event(token, data, processor_name):
-    meta = {"token": token}
+async def process_event(data, processor_name):
     payload_data = data['payload']['data']
     if processor_name in process_dispatch:
         #todo

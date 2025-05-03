@@ -1,0 +1,39 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "name": "michael"
+            },
+            "entity_name": "input_data"
+        },
+        {
+            "entity_data_example": {
+                "requestedAt": "2024-06-01T12:00:00Z",
+                "result": null,
+                "status": "processing"
+            },
+            "entity_name": "entity_job_result"
+        },
+        {
+            "entity_data_example": {
+                "processId": "123e4567-e89b-12d3-a456-426614174000",
+                "result": null,
+                "status": "processing"
+            },
+            "entity_name": "process_response"
+        },
+        {
+            "entity_data_example": {
+                "processId": "123e4567-e89b-12d3-a456-426614174000",
+                "result": {
+                    "count": 1234,
+                    "name": "michael",
+                    "predicted_age": 35,
+                    "processedAt": "2024-06-01T12:01:00Z"
+                },
+                "status": "completed"
+            },
+            "entity_name": "result_response"
+        }
+    ]
+}

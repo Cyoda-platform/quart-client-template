@@ -1,0 +1,40 @@
+{
+    "description": "Evaluate alert rules on new weather data and send notifications if conditions met",
+    "name": "alert_rule_evaluation_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Trigger evaluation of alert rules when new weather data arrives",
+            "end_state": "alert_rule_evaluation_in_progress",
+            "end_state_description": "Alert rule evaluation in progress",
+            "name": "start_alert_rule_evaluation",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_evaluate_alert_rules"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Complete alert rule evaluation and send notifications",
+            "end_state": "alert_rule_evaluation_completed",
+            "end_state_description": "Alert rule evaluation completed",
+            "name": "complete_alert_rule_evaluation",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_send_notifications"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "alert_rule_evaluation_in_progress",
+            "start_state_description": "Alert rule evaluation in progress"
+        }
+    ]
+}

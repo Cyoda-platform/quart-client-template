@@ -1,22 +1,44 @@
-Certainly! I've updated the code to pass the workflow function `process_entity` as the new required argument to `entity_service.add_item`. The `process_entity` function is already implemented and matches the requirement of a workflow function that asynchronously processes the entity data before persistence.
+Absolutely! Moving the asynchronous processing logic into the workflow function is the best approach for separation of concerns and cleaner controller code. This will keep the endpoint lightweight, only responsible for validating and accepting the request, while all data enrichment and processing happen inside the workflow function before persistence.
 
-The main changes are:
-- Added `workflow=process_entity` argument to `entity_service.add_item` call.
-- Adjusted the call accordingly.
+---
 
-Here is the complete updated code for your `entity/prototype_cyoda.py`:
+### What to move:
+
+- The entire weather data fetching logic, including error handling, status updates, timestamps, etc., belongs in the workflow function `process_entity_job`.
+- The endpoint just prepares the initial entity with `"status": "processing"` and submits it to `entity_service.add_item` with the workflow function.
+- The workflow function will update the entity in-place (`entity['status'] = ...` etc.) with the fetched data or error states.
+- No async fire-and-forget tasks needed in the endpoint.
+
+---
+
+### Naming:
+
+- Since your entity model for this job is `"entity_job"` (from your original example), the workflow function must be named `process_entity_job`.
+
+---
+
+### Implementation details:
+
+- The workflow function signature is `async def process_entity_job(entity: dict) -> dict`.
+- It receives the entity dict, modifies it directly, and returns it.
+- It can invoke any async logic needed (e.g., `fetch_weather_data`).
+- It **cannot** add/update/delete the same entity model to avoid recursion.
+- It **can** add/get other entities if needed.
+
+---
+
+### Updated code with all async logic moved into `process_entity_job` workflow function:
 
 ```python
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional
 
-import asyncio
 import logging
 import uuid
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ENTITY_VERSION
@@ -45,7 +67,6 @@ class FetchWeatherRequest:
     data_type: str  # "current", "forecast", or "historical"
 
 
-# Helper: build weather API url and params based on data_type
 def build_openweather_url(location: Location, data_type: str):
     params = {"appid": "YOUR_OPENWEATHERMAP_API_KEY", "units": "metric"}
 
@@ -58,13 +79,12 @@ def build_openweather_url(location: Location, data_type: str):
         raise ValueError("Location must include either city or latitude+longitude")
 
     if data_type == "current":
-        url = f"https://api.openweathermap.org/data/2.5/weather"
+        url = "https://api.openweathermap.org/data/2.5/weather"
     elif data_type == "forecast":
-        url = f"https://api.openweathermap.org/data/2.5/forecast"
+        url = "https://api.openweathermap.org/data/2.5/forecast"
     elif data_type == "historical":
-        # OpenWeather free API does not support historical, so we fallback or mock
-        # TODO: Implement historical data with paid API or alternative
-        raise NotImplementedError("Historical data_type is not supported in prototype")
+        # Historical data not supported in this prototype
+        raise NotImplementedError("Historical data_type is not supported")
     else:
         raise ValueError(f"Unsupported data_type: {data_type}")
 
@@ -79,142 +99,117 @@ async def fetch_weather_data(location: Location, data_type: str):
         return r.json()
 
 
-async def process_entity(entity_data: dict):
+async def process_entity_job(entity: dict):
     """
-    Workflow function to process the entity asynchronously before persistence.
-    It takes the entity_data as the only argument, modifies the entity,
-    and can perform additional async operations.
+    Workflow function for 'entity_job' model.
+    Processes the entity before persistence:
+    - Fetches weather data based on the entity's location and data_type.
+    - Updates entity status and data fields accordingly.
     """
-
-    request_id = entity_data.get("request_id")
-    location = entity_data.get("location")
-    data_type = entity_data.get("data_type")
-
-    # Defensive check if required keys exist
-    if not request_id or not location or not data_type:
-        logger.error("Entity data missing required keys for processing")
-        return entity_data  # Return as is
-
-    # Convert location dict back to Location dataclass for convenience
-    loc_obj = Location(
-        city=location.get("city"),
-        latitude=location.get("latitude"),
-        longitude=location.get("longitude"),
-    )
-
     try:
-        logger.info(f"Processing request {request_id} for location={loc_obj} data_type={data_type}")
-        data = await fetch_weather_data(loc_obj, data_type)
+        request_id = entity.get("request_id", "<unknown>")
+        location_dict = entity.get("location", {})
+        data_type = entity.get("data_type")
 
-        # Update entity data
-        entity_data.update({
-            "status": "completed",
-            "requestedAt": datetime.utcnow().isoformat(),
-            "weather_data": data,
-            "error_message": None,
-        })
+        # Convert dict to Location instance for convenience
+        location = Location(
+            city=location_dict.get("city"),
+            latitude=location_dict.get("latitude"),
+            longitude=location_dict.get("longitude"),
+        )
 
-        logger.info(f"Completed request {request_id}")
+        logger.info(f"[process_entity_job] Processing request {request_id} for location={location} data_type={data_type}")
+
+        # Fetch the weather data asynchronously
+        weather_data = await fetch_weather_data(location, data_type)
+
+        # Update entity in-place
+        entity["status"] = "completed"
+        entity["requestedAt"] = datetime.utcnow().isoformat()
+        entity["weather_data"] = weather_data
+        entity["error_message"] = None
+
+        logger.info(f"[process_entity_job] Completed request {request_id}")
 
     except NotImplementedError as nie:
-        entity_data.update({
-            "status": "failed",
-            "requestedAt": datetime.utcnow().isoformat(),
-            "weather_data": None,
-            "error_message": str(nie),
-        })
-        logger.info(f"Request {request_id} failed: {nie}")
+        entity["status"] = "failed"
+        entity["requestedAt"] = datetime.utcnow().isoformat()
+        entity["weather_data"] = None
+        entity["error_message"] = str(nie)
+        logger.info(f"[process_entity_job] Request failed: {nie}")
 
     except Exception as e:
-        entity_data.update({
-            "status": "failed",
-            "requestedAt": datetime.utcnow().isoformat(),
-            "weather_data": None,
-            "error_message": "Failed to fetch or process weather data.",
-        })
-        logger.exception(f"Exception processing request {request_id}: {e}")
+        entity["status"] = "failed"
+        entity["requestedAt"] = datetime.utcnow().isoformat()
+        entity["weather_data"] = None
+        entity["error_message"] = "Failed to fetch or process weather data."
+        logger.exception(f"[process_entity_job] Exception processing request: {e}")
 
-    return entity_data
+    return entity
 
 
 @app.route("/weather/fetch", methods=["POST"])
 @validate_request(FetchWeatherRequest)
 async def fetch_weather(data: FetchWeatherRequest):
-    try:
-        location = data.location
-        data_type = data.data_type
+    # Validate location minimally
+    location = data.location
+    if not (location.city or (location.latitude is not None and location.longitude is not None)):
+        return jsonify({"message": "Location must include 'city' or both 'latitude' and 'longitude'"}), 400
 
-        # Validate location keys minimally
-        if not (location.city or (location.latitude is not None and location.longitude is not None)):
-            return jsonify({"message": "Location must include 'city' or both 'latitude' and 'longitude'"}), 400
+    # Prepare initial entity data with status processing and no weather_data yet
+    request_id = str(uuid.uuid4())
+    requested_at = datetime.utcnow().isoformat()
 
-        request_id = str(uuid.uuid4())
-        requested_at = datetime.utcnow().isoformat()
+    entity_data = {
+        "request_id": request_id,
+        "status": "processing",
+        "requestedAt": requested_at,
+        "location": {
+            "city": location.city,
+            "latitude": location.latitude,
+            "longitude": location.longitude,
+        },
+        "data_type": data.data_type,
+        "weather_data": None,
+        "error_message": None,
+    }
 
-        # Prepare initial entity data with status processing and no weather_data yet
-        entity_data = {
-            "request_id": request_id,
-            "status": "processing",
-            "requestedAt": requested_at,
-            "location": {
-                "city": location.city,
-                "latitude": location.latitude,
-                "longitude": location.longitude,
-            },
-            "data_type": data_type,
-            "weather_data": None,
-            "error_message": None,
-        }
+    # Add item with workflow function to process the entity asynchronously before persistence
+    add_id = await entity_service.add_item(
+        token=cyoda_token,
+        entity_model="entity_job",
+        entity_version=ENTITY_VERSION,
+        entity=entity_data,
+        workflow=process_entity_job,
+    )
 
-        # Add item to entity_service to store initial request and get technical_id
-        # Now passing workflow function as required
-        add_id = await entity_service.add_item(
-            token=cyoda_token,
-            entity_model="entity_job",
-            entity_version=ENTITY_VERSION,
-            entity=entity_data,
-            workflow=process_entity,
-        )
-
-        # Fire and forget processing task with add_id as technical_id
-        # Processing is handled inside the workflow function passed, so no need to create task here
-        # The async workflow will be invoked by entity_service.add_item
-
-        return jsonify({"request_id": add_id, "status": "processing", "message": "Request accepted"}), 202
-
-    except Exception as e:
-        logger.exception(f"Exception in /weather/fetch endpoint: {e}")
-        return jsonify({"message": "Internal server error"}), 500
+    return jsonify({"request_id": add_id, "status": "processing", "message": "Request accepted"}), 202
 
 
 @app.route("/weather/result/<request_id>", methods=["GET"])
 async def get_weather_result(request_id):
-    try:
-        job = await entity_service.get_item(
-            token=cyoda_token,
-            entity_model="entity_job",
-            entity_version=ENTITY_VERSION,
-            technical_id=request_id
-        )
-        if not job:
-            return jsonify({"message": "Request ID not found"}), 404
+    job = await entity_service.get_item(
+        token=cyoda_token,
+        entity_model="entity_job",
+        entity_version=ENTITY_VERSION,
+        technical_id=request_id,
+    )
+    if not job:
+        return jsonify({"message": "Request ID not found"}), 404
 
-        response = {
-            "request_id": job.get("request_id", request_id),
-            "location": job.get("location"),
-            "data_type": job.get("data_type"),
-            "status": job.get("status"),
-        }
+    response = {
+        "request_id": job.get("request_id", request_id),
+        "location": job.get("location"),
+        "data_type": job.get("data_type"),
+        "status": job.get("status"),
+    }
 
-        if job.get("status") == "completed":
-            response["weather_data"] = job.get("weather_data")
-        elif job.get("status") == "failed":
-            response["error_message"] = job.get("error_message")
+    if job.get("status") == "completed":
+        response["weather_data"] = job.get("weather_data")
+    elif job.get("status") == "failed":
+        response["error_message"] = job.get("error_message")
 
-        return jsonify(response)
-    except Exception as e:
-        logger.exception(f"Exception in /weather/result endpoint: {e}")
-        return jsonify({"message": "Internal server error"}), 500
+    return jsonify(response)
 
 
 if __name__ == '__main__':
@@ -230,11 +225,26 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Explanation:
-- The new `process_entity` function is adapted as the workflow function that takes the entity data dict, processes it asynchronously (fetches weather data), updates entity fields accordingly, and returns the updated entity.
-- The call to `entity_service.add_item` now includes the `workflow=process_entity` parameter as required.
-- The previous `process_entity` function signature changed from `(request_id, location, data_type)` to `(entity_data)` to match the new workflow function interface requirement (takes only the entity data as argument).
-- The code no longer needs to manually create the background task because the workflow function is called by `entity_service.add_item` internally before persistence.
-- The rest of the code is unchanged except for adapting the workflow function to the new signature and usage.
+---
 
-Let me know if you want me to help with any other changes!
+### Summary of changes:
+
+- **`process_entity_job`**:
+  - Contains all async processing before persistence.
+  - Fetches weather data and updates the entity status.
+  - Handles errors and updates entity fields accordingly.
+
+- **`fetch_weather` endpoint**:
+  - Only validates input.
+  - Prepares initial entity with `"status": "processing"`.
+  - Calls `entity_service.add_item` with the `workflow=process_entity_job`.
+  - Returns request ID immediately without any fire-and-forget tasks.
+
+- **`get_weather_result` endpoint**:
+  - Reads persisted entity and returns status and data.
+
+---
+
+This approach makes your controllers clean and declarative, and all processing logic resides inside workflow functions, which are executed asynchronously before the entity is persisted, exactly as required.
+
+Let me know if you'd like me to help with further improvements!

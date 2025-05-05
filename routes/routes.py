@@ -1,38 +1,31 @@
-from common.grpc_client.grpc_client import grpc_stream
 from dataclasses import dataclass
+from datetime import datetime
 import logging
 import uuid
-from datetime import datetime
 
-import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
-
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
+from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
-from common.repository.cyoda.cyoda_init import init_cyoda
-from app_init.app_init import entity_service, cyoda_token
+from common.service.entity_service_interface import EntityService
 
+# Logger setup
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+# Blueprint initialization
+routes_bp = Blueprint("routes", __name__)
 
-@app.before_serving
-async def startup():
-    await init_cyoda(cyoda_token)
-    app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
+# BeanFactory and service initialization
+factory = BeanFactory(config={"CHAT_REPOSITORY": "cyoda"})
+entity_service: EntityService = factory.get_services()["entity_service"]
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-@app.after_serving
-async def shutdown():
-    app.background_task.cancel()
-    await app.background_task
 
 @dataclass
 class ProcessDataRequest:
     postId: str  # expecting postId as string for external API param
 
-@app.route("/process-data", methods=["POST"])
+@routes_bp.route("/process-data", methods=["POST"])
 @validate_request(ProcessDataRequest)  # validation last in post method (issue workaround)
 async def process_data(data: ProcessDataRequest):
     job_id = str(uuid.uuid4())
@@ -50,22 +43,22 @@ async def process_data(data: ProcessDataRequest):
 
     # Add item with workflow function which will perform async processing before persistence
     await entity_service.add_item(
-        token=cyoda_token,
+        token=cyoda_auth_service,
         entity_model="entity_job",
         entity_version=ENTITY_VERSION,
         entity=initial_entity,
-        )
+    )
 
     # No need for explicit asyncio.create_task or background tasks here
     # Workflow handles async processing before persistence
 
     return jsonify({"processId": job_id, "status": "processing"}), 202
 
-@app.route("/results/<process_id>", methods=["GET"])
+@routes_bp.route("/results/<process_id>", methods=["GET"])
 async def get_results(process_id):
     try:
         job = await entity_service.get_item(
-            token=cyoda_token,
+            token=cyoda_auth_service,
             entity_model="entity_job",
             entity_version=ENTITY_VERSION,
             technical_id=process_id,
@@ -84,6 +77,3 @@ async def get_results(process_id):
         "message": job.get("message"),
     }
     return jsonify(resp), 200
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

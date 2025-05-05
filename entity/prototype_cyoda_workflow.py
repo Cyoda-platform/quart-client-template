@@ -1,17 +1,55 @@
-Certainly! Below is the updated complete code with the required changes:
-- Added a workflow function `process_entity_job` for the `entity_job` entity.
-- Modified the call to `entity_service.add_item` to include the `workflow` argument.
-- The `workflow` function asynchronously processes the entity before persistence (per your description).
+Understood! The goal is to shift as much asynchronous and processing logic as possible from the endpoint handler into the workflow function `process_entity_job`, which is executed asynchronously just before the entity is persisted. This will clean the controller code and encapsulate business logic inside the workflow.
+
+---
+
+### What should be moved?
+
+- The external API call (`fetch_external_data`)
+- The processing/calculation logic (`process_entity`)
+- The state updates on the entity (`status`, `result`, etc.)
+- The updating of related entities with different entity models (if any)
+
+---
+
+### What must stay outside?
+
+- The initial creation / receipt of the entity in the endpoint (getting request data, generating `job_id`, calling `add_item` with the initial entity and workflow function)
+- The fire-and-forget asyncio task creation should be removed since `workflow` now handles async logic before persistence.
+
+---
+
+### Important constraints:
+
+- We **cannot** call `add_item/update_item/delete_item` on the **same** entity/model inside the workflow function to avoid recursion.
+- We **can** call add/update/delete on **different** entity models inside the workflow function.
+- The workflow function receives the entity dict and returns the modified entity dict.
+- The workflow function can be async.
+
+---
+
+### Approach:
+
+- In the endpoint `/process-data`, generate `job_id` and prepare the initial entity with minimal fields like `status='processing'`, `requestedAt`, etc.
+- Call `add_item` with the workflow function `process_entity_job`.
+- The workflow function:
+  - Calls external API async
+  - Updates the entity dict fields depending on success/failure
+  - Calculates results
+  - Optionally stores supplementary data as secondary entities (if applicable)
+- No need to launch an explicit background task.
+
+---
+
+### Complete updated code with all async logic moved to the workflow function:
 
 ```python
 from dataclasses import dataclass
-import asyncio
 import logging
 import uuid
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from common.config.config import ENTITY_VERSION
@@ -34,9 +72,7 @@ class ProcessDataRequest:
 
 async def fetch_external_data(some_param: str) -> dict:
     """
-    Example external API call.
-    Using a real public API for demonstration: JSONPlaceholder posts.
-    TODO: Replace with real business external API and parameters.
+    External API call example.
     """
     url = f"https://jsonplaceholder.typicode.com/posts/{some_param}"
     async with httpx.AsyncClient() as client:
@@ -48,35 +84,33 @@ async def fetch_external_data(some_param: str) -> dict:
             logger.exception(f"Failed to fetch external data: {e}")
             return {}
 
-async def process_entity(job_id: str, input_data: dict):
+# Workflow function for entity_job
+async def process_entity_job(entity: dict) -> dict:
     """
-    Perform business logic:
-    - Fetch external data (mocked here with JSONPlaceholder)
-    - Perform simple calculation (count number of words in title + body)
-    - Store results in entity_service
+    Workflow function applied before persisting entity_job.
+    Handles async fetching and processing logic.
+    Modifies entity dict in place to update state and results.
     """
-    try:
-        logger.info(f"Start processing job {job_id}")
-        post_id = str(input_data.get("postId", "1"))  # default to "1" if missing
+    logger.info(f"Workflow process_entity_job started for technical_id={entity.get('technical_id')}")
 
+    try:
+        # Add requestedAt if missing
+        if "requestedAt" not in entity or entity["requestedAt"] is None:
+            entity["requestedAt"] = datetime.utcnow().isoformat()
+
+        # Extract postId input parameter from entity or fallback
+        input_data = entity.get("inputData", {})
+        post_id = str(input_data.get("postId", "1"))
+
+        # Fetch external data async
         external_data = await fetch_external_data(post_id)
         if not external_data:
-            # Update job status to failed in entity_service
-            await entity_service.update_item(
-                token=cyoda_token,
-                entity_model="entity_job",
-                entity_version=ENTITY_VERSION,
-                technical_id=job_id,
-                entity={
-                    "status": "failed",
-                    "message": "Failed to retrieve external data",
-                    "result": None,
-                    "requestedAt": None,
-                },
-                meta={},
-            )
-            return
+            entity["status"] = "failed"
+            entity["message"] = "Failed to retrieve external data"
+            entity["result"] = None
+            return entity
 
+        # Perform calculation: count words in title + body
         title = external_data.get("title", "")
         body = external_data.get("body", "")
         word_count = len((title + " " + body).split())
@@ -86,58 +120,36 @@ async def process_entity(job_id: str, input_data: dict):
             "wordCount": word_count,
         }
 
-        # Update job status to completed in entity_service
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="entity_job",
-            entity_version=ENTITY_VERSION,
-            technical_id=job_id,
-            entity={
-                "status": "completed",
-                "message": None,
-                "result": result,
-                "requestedAt": None,
-            },
-            meta={},
-        )
-        logger.info(f"Completed job {job_id}")
+        # Update entity status and results
+        entity["status"] = "completed"
+        entity["message"] = None
+        entity["result"] = result
+
+        # Example: add supplementary raw data entity of different model
+        # For example, store raw external_data as entity_raw_data model with reference to this job
+        # Avoid infinite recursion by not modifying current entity_job
+        try:
+            await entity_service.add_item(
+                token=cyoda_token,
+                entity_model="entity_raw_data",
+                entity_version=ENTITY_VERSION,
+                entity={
+                    "jobId": entity.get("technical_id"),
+                    "rawData": external_data,
+                    "timestamp": datetime.utcnow().isoformat(),
+                },
+            )
+        except Exception as e:
+            logger.warning(f"Failed to add supplementary entity_raw_data: {e}")
+
     except Exception as e:
-        logger.exception(e)
-        await entity_service.update_item(
-            token=cyoda_token,
-            entity_model="entity_job",
-            entity_version=ENTITY_VERSION,
-            technical_id=job_id,
-            entity={
-                "status": "failed",
-                "message": "Internal processing error",
-                "result": None,
-                "requestedAt": None,
-            },
-            meta={},
-        )
+        logger.exception(f"Exception in workflow process_entity_job: {e}")
+        entity["status"] = "failed"
+        entity["message"] = "Internal processing error"
+        entity["result"] = None
 
-# New workflow function for entity_job
-async def process_entity_job(entity: dict) -> dict:
-    """
-    Workflow function to be applied to entity_job entity before persistence.
-    This function receives the entity dict, can modify it asynchronously,
-    and must return the updated entity dict.
-
-    NOTE: Cannot add/update/delete entity of the same entity_model here to avoid recursion.
-    """
-    logger.info(f"Running workflow process_entity_job for entity with technical_id={entity.get('technical_id')}")
-    # For example, add a timestamp if not present
-    if "requestedAt" not in entity or entity["requestedAt"] is None:
-        entity["requestedAt"] = datetime.utcnow().isoformat()
-
-    # Potentially modify other fields or add derived data here
-    # Just an example modification:
-    if "status" not in entity:
-        entity["status"] = "processing"
-
-    # Return the possibly modified entity
     return entity
+
 
 @app.route("/process-data", methods=["POST"])
 @validate_request(ProcessDataRequest)  # validation last in post method (issue workaround)
@@ -145,24 +157,30 @@ async def process_data(data: ProcessDataRequest):
     job_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat()
 
-    # Add initial job record to entity_service with workflow function
+    # Initial entity includes inputData so workflow can access original inputs
+    initial_entity = {
+        "status": "processing",
+        "requestedAt": requested_at,
+        "message": None,
+        "result": None,
+        "technical_id": job_id,
+        "inputData": data.__dict__,  # pass original inputs for workflow
+    }
+
+    # Add item with workflow function which will perform async processing before persistence
     await entity_service.add_item(
         token=cyoda_token,
         entity_model="entity_job",
         entity_version=ENTITY_VERSION,
-        entity={
-            "status": "processing",
-            "requestedAt": requested_at,
-            "message": None,
-            "result": None,
-            "technical_id": job_id,  # store id in entity if needed, though id is managed externally
-        },
-        workflow=process_entity_job,  # Added workflow function here
+        entity=initial_entity,
+        workflow=process_entity_job,
     )
-    # Fire and forget processing task
-    asyncio.create_task(process_entity(job_id, data.__dict__))
+
+    # No need for explicit asyncio.create_task or background tasks here
+    # Workflow handles async processing before persistence
 
     return jsonify({"processId": job_id, "status": "processing"}), 202
+
 
 @app.route("/results/<process_id>", methods=["GET"])
 async def get_results(process_id):
@@ -188,14 +206,36 @@ async def get_results(process_id):
     }
     return jsonify(resp), 200
 
+
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added `process_entity_job(entity: dict) -> dict` async function.
-- Passed `workflow=process_entity_job` argument to `entity_service.add_item` in the `/process-data` route.
-- This workflow function modifies the entity dictionary asynchronously before persistence.
-- Other logic and code remain unchanged.
+---
 
-Let me know if you want me to clarify or adjust anything!
+### Explanation:
+
+- The endpoint `/process-data` just generates the `job_id`, prepares the initial entity (including the original input data under `"inputData"`), and calls `add_item` with the workflow `process_entity_job`.
+- The workflow function `process_entity_job`:
+  - Adds timestamp if missing
+  - Extracts inputs from the entity
+  - Calls external API async
+  - Calculates results
+  - Updates the entity dict fields (`status`, `message`, `result`)
+  - Adds supplementary entity (`entity_raw_data`) with raw fetched data as an example of adding other entity models
+  - Handles exceptions and updates failure state accordingly
+- The explicit fire-and-forget task with `asyncio.create_task` is removed.
+- The `/results/<process_id>` endpoint remains unchanged.
+
+---
+
+### Benefits:
+
+- Controller is clean and minimal.
+- All business logic and async processing reside inside the workflow function.
+- The workflow function runs asynchronously before the entity is persisted, so the entity state is always consistent.
+- This approach aligns with your design requirements and avoids infinite recursion by not modifying the same entity via service calls.
+
+---
+
+If you want, I can help you further modularize or add more detailed error handling/logging. Let me know!

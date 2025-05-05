@@ -1,48 +1,3 @@
-Understood! The goal is to shift as much asynchronous and processing logic as possible from the endpoint handler into the workflow function `process_entity_job`, which is executed asynchronously just before the entity is persisted. This will clean the controller code and encapsulate business logic inside the workflow.
-
----
-
-### What should be moved?
-
-- The external API call (`fetch_external_data`)
-- The processing/calculation logic (`process_entity`)
-- The state updates on the entity (`status`, `result`, etc.)
-- The updating of related entities with different entity models (if any)
-
----
-
-### What must stay outside?
-
-- The initial creation / receipt of the entity in the endpoint (getting request data, generating `job_id`, calling `add_item` with the initial entity and workflow function)
-- The fire-and-forget asyncio task creation should be removed since `workflow` now handles async logic before persistence.
-
----
-
-### Important constraints:
-
-- We **cannot** call `add_item/update_item/delete_item` on the **same** entity/model inside the workflow function to avoid recursion.
-- We **can** call add/update/delete on **different** entity models inside the workflow function.
-- The workflow function receives the entity dict and returns the modified entity dict.
-- The workflow function can be async.
-
----
-
-### Approach:
-
-- In the endpoint `/process-data`, generate `job_id` and prepare the initial entity with minimal fields like `status='processing'`, `requestedAt`, etc.
-- Call `add_item` with the workflow function `process_entity_job`.
-- The workflow function:
-  - Calls external API async
-  - Updates the entity dict fields depending on success/failure
-  - Calculates results
-  - Optionally stores supplementary data as secondary entities (if applicable)
-- No need to launch an explicit background task.
-
----
-
-### Complete updated code with all async logic moved to the workflow function:
-
-```python
 from dataclasses import dataclass
 import logging
 import uuid
@@ -81,10 +36,9 @@ async def fetch_external_data(some_param: str) -> dict:
             resp.raise_for_status()
             return resp.json()
         except httpx.HTTPError as e:
-            logger.exception(f"Failed to fetch external data: {e}")
+            logger.warning(f"Failed to fetch external data: {e}")
             return {}
 
-# Workflow function for entity_job
 async def process_entity_job(entity: dict) -> dict:
     """
     Workflow function applied before persisting entity_job.
@@ -150,7 +104,6 @@ async def process_entity_job(entity: dict) -> dict:
 
     return entity
 
-
 @app.route("/process-data", methods=["POST"])
 @validate_request(ProcessDataRequest)  # validation last in post method (issue workaround)
 async def process_data(data: ProcessDataRequest):
@@ -181,7 +134,6 @@ async def process_data(data: ProcessDataRequest):
 
     return jsonify({"processId": job_id, "status": "processing"}), 202
 
-
 @app.route("/results/<process_id>", methods=["GET"])
 async def get_results(process_id):
     try:
@@ -192,7 +144,7 @@ async def get_results(process_id):
             technical_id=process_id,
         )
     except Exception as e:
-        logger.exception(e)
+        logger.warning(f"Error retrieving process_id {process_id}: {e}")
         return jsonify({"message": "processId not found"}), 404
 
     if not job:
@@ -206,36 +158,5 @@ async def get_results(process_id):
     }
     return jsonify(resp), 200
 
-
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- The endpoint `/process-data` just generates the `job_id`, prepares the initial entity (including the original input data under `"inputData"`), and calls `add_item` with the workflow `process_entity_job`.
-- The workflow function `process_entity_job`:
-  - Adds timestamp if missing
-  - Extracts inputs from the entity
-  - Calls external API async
-  - Calculates results
-  - Updates the entity dict fields (`status`, `message`, `result`)
-  - Adds supplementary entity (`entity_raw_data`) with raw fetched data as an example of adding other entity models
-  - Handles exceptions and updates failure state accordingly
-- The explicit fire-and-forget task with `asyncio.create_task` is removed.
-- The `/results/<process_id>` endpoint remains unchanged.
-
----
-
-### Benefits:
-
-- Controller is clean and minimal.
-- All business logic and async processing reside inside the workflow function.
-- The workflow function runs asynchronously before the entity is persisted, so the entity state is always consistent.
-- This approach aligns with your design requirements and avoids infinite recursion by not modifying the same entity via service calls.
-
----
-
-If you want, I can help you further modularize or add more detailed error handling/logging. Let me know!

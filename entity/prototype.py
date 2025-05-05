@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
@@ -6,13 +6,17 @@ import uuid
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+@dataclass
+class CatRequest:
+    type: str = "fact"  # Optional, default to "fact"
 
 # In-memory store for results: resultId -> result data
 entity_job = {}
@@ -92,8 +96,8 @@ async def process_entity(job_id: str, request_data: dict):
         }
 
 @app.route("/api/cats/hello-world", methods=["POST"])
-async def post_hello_world():
-    data = await request.get_json(force=True, silent=True) or {}
+@validate_request(CatRequest)  # Validation last in POST method (issue workaround)
+async def post_hello_world(data: CatRequest):
     job_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat() + "Z"
 
@@ -104,7 +108,7 @@ async def post_hello_world():
     }
 
     # Fire and forget the processing task
-    asyncio.create_task(process_entity(job_id, data))
+    asyncio.create_task(process_entity(job_id, data.__dict__))
 
     return jsonify({
         "status": "success",
@@ -113,6 +117,7 @@ async def post_hello_world():
     }), 202
 
 @app.route("/api/cats/result/<result_id>", methods=["GET"])
+# No validation needed for GET without parameters
 async def get_result(result_id):
     job = entity_job.get(result_id)
     if not job:
@@ -129,4 +134,3 @@ async def get_result(result_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

@@ -1,0 +1,13 @@
+{
+    "active_flag": true,
+    "condition_type": "temperature_above",
+    "contact_info": "user@example.com",
+    "location": {
+        "city": "San Francisco",
+        "latitude": 37.7749,
+        "longitude": -122.4194
+    },
+    "notification_method": "email",
+    "threshold_value": 75,
+    "user_id": "12345"
+}

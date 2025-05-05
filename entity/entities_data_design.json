@@ -1,0 +1,22 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "requestedAt": "2024-06-01T12:00:00Z",
+                "result": {
+                    "content": {
+                        "catData": {
+                            "fact": "Cats sleep 70% of their lives.",
+                            "imageUrl": "https://cdn2.thecatapi.com/images/MTY3ODIyMQ.jpg"
+                        },
+                        "helloWorldMessage": "Hello World"
+                    },
+                    "resultId": "123e4567-e89b-12d3-a456-426614174000",
+                    "timestamp": "2024-06-01T12:05:00Z"
+                },
+                "status": "completed"
+            },
+            "entity_name": "cat_job"
+        }
+    ]
+}

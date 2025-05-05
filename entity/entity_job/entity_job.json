@@ -1,0 +1,42 @@
+{
+    "data_type": "current",
+    "error_message": null,
+    "location": {
+        "city": "London",
+        "latitude": 51.5074,
+        "longitude": -0.1278
+    },
+    "request_id": "123e4567-e89b-12d3-a456-426614174000",
+    "requestedAt": "2024-06-01T12:00:00Z",
+    "status": "completed",
+    "weather_data": {
+        "clouds": {
+            "all": 0
+        },
+        "dt": 1625235600,
+        "main": {
+            "feels_like": 14.0,
+            "humidity": 60,
+            "pressure": 1012,
+            "temp": 15.0,
+            "temp_max": 17.0,
+            "temp_min": 13.0
+        },
+        "name": "London",
+        "sys": {
+            "country": "GB"
+        },
+        "weather": [
+            {
+                "description": "clear sky",
+                "icon": "01d",
+                "id": 800,
+                "main": "Clear"
+            }
+        ],
+        "wind": {
+            "deg": 80,
+            "speed": 3.6
+        }
+    }
+}

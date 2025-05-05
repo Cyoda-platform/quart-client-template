@@ -1,4 +1,6 @@
-```python
+from dataclasses import dataclass
+from typing import Optional, Union
+
 import asyncio
 import logging
 import uuid
@@ -6,7 +8,7 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,16 +25,27 @@ entity_jobs = {}
 OPENWEATHER_API_KEY = "YOUR_OPENWEATHERMAP_API_KEY"
 OPENWEATHER_API_URL = "https://api.openweathermap.org/data/2.5"
 
+@dataclass
+class Location:
+    city: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+@dataclass
+class FetchWeatherRequest:
+    location: Location
+    data_type: str  # "current", "forecast", or "historical"
+
+
 # Helper: build weather API url and params based on data_type
-def build_openweather_url(location, data_type):
+def build_openweather_url(location: Location, data_type: str):
     params = {"appid": OPENWEATHER_API_KEY, "units": "metric"}
 
-    if "city" in location and location["city"]:
-        q = location["city"]
-        params["q"] = q
-    elif "latitude" in location and "longitude" in location:
-        params["lat"] = location["latitude"]
-        params["lon"] = location["longitude"]
+    if location.city:
+        params["q"] = location.city
+    elif location.latitude is not None and location.longitude is not None:
+        params["lat"] = location.latitude
+        params["lon"] = location.longitude
     else:
         raise ValueError("Location must include either city or latitude+longitude")
 
@@ -50,7 +63,7 @@ def build_openweather_url(location, data_type):
     return url, params
 
 
-async def fetch_weather_data(location, data_type):
+async def fetch_weather_data(location: Location, data_type: str):
     url, params = build_openweather_url(location, data_type)
     async with httpx.AsyncClient(timeout=10.0) as client:
         r = await client.get(url, params=params)
@@ -58,7 +71,7 @@ async def fetch_weather_data(location, data_type):
         return r.json()
 
 
-async def process_entity(request_id, location, data_type):
+async def process_entity(request_id: str, location: Location, data_type: str):
     try:
         logger.info(f"Processing request {request_id} for location={location} data_type={data_type}")
         data = await fetch_weather_data(location, data_type)
@@ -79,22 +92,14 @@ async def process_entity(request_id, location, data_type):
 
 
 @app.route("/weather/fetch", methods=["POST"])
-async def fetch_weather():
+@validate_request(FetchWeatherRequest)  # Put last in POST route per quart-schema issue workaround
+async def fetch_weather(data: FetchWeatherRequest):
     try:
-        data = await request.get_json()
-        if not data:
-            return jsonify({"message": "Missing JSON body"}), 400
-
-        location = data.get("location")
-        data_type = data.get("data_type")
-
-        if not location or not isinstance(location, dict):
-            return jsonify({"message": "Missing or invalid 'location' field"}), 400
-        if not data_type or not isinstance(data_type, str):
-            return jsonify({"message": "Missing or invalid 'data_type' field"}), 400
+        location = data.location
+        data_type = data.data_type
 
         # Validate location keys minimally
-        if not (location.get("city") or (location.get("latitude") is not None and location.get("longitude") is not None)):
+        if not (location.city or (location.latitude is not None and location.longitude is not None)):
             return jsonify({"message": "Location must include 'city' or both 'latitude' and 'longitude'"}), 400
 
         request_id = str(uuid.uuid4())
@@ -103,7 +108,11 @@ async def fetch_weather():
         entity_jobs[request_id] = {
             "status": "processing",
             "requestedAt": requested_at,
-            "location": location,
+            "location": {
+                "city": location.city,
+                "latitude": location.latitude,
+                "longitude": location.longitude,
+            },
             "data_type": data_type,
             "weather_data": None,
             "error_message": None,
@@ -119,6 +128,7 @@ async def fetch_weather():
         return jsonify({"message": "Internal server error"}), 500
 
 
+# No request parameters for GET, so no validation needed
 @app.route("/weather/result/<request_id>", methods=["GET"])
 async def get_weather_result(request_id):
     job = entity_jobs.get(request_id)

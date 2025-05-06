@@ -1,0 +1,78 @@
+{
+    "description": "Workflow to send retrieved pet details to specified email addresses",
+    "name": "PetDetailsEmailSender_Workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Validate email details and recipient information",
+            "end_state": "Email_details_validated",
+            "end_state_description": "Email details validated",
+            "name": "validate_email_details",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_email_details"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Prepare email content with pet details",
+            "end_state": "Email_content_prepared",
+            "end_state_description": "Email content prepared",
+            "name": "prepare_email_content",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_prepare_email_content"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Email_details_validated",
+            "start_state_description": "Email details validated"
+        },
+        {
+            "automated": true,
+            "description": "Send the pet details email to recipient",
+            "end_state": "Email_sent",
+            "end_state_description": "Email has been sent to recipient",
+            "name": "send_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Email_content_prepared",
+            "start_state_description": "Email content prepared"
+        },
+        {
+            "automated": true,
+            "description": "Handle failure in sending email",
+            "end_state": "Email_send_failed",
+            "end_state_description": "Failed to send email",
+            "name": "handle_failure",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_handle_failure"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Email_details_validated",
+            "start_state_description": "Email details validated"
+        }
+    ]
+}

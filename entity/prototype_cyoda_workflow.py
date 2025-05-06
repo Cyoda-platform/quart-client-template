@@ -160,8 +160,6 @@ async def process_weather(entity):
         entity['fetched_at'] = datetime.utcnow().isoformat() + "Z"
         entity['status'] = 'completed'
 
-        # Trigger alert evaluation as a secondary entity add (allowed because different entity_model)
-        # Use fire-and-forget to not block workflow persistence
         import asyncio
         asyncio.create_task(process_alert_evaluation(entity['weather_id']))
 
@@ -183,8 +181,6 @@ async def process_alert(entity):
 async def create_or_update_alert(data: AlertRequest):
     try:
         alert = data.__dict__
-
-        # Only prepare alert entity, persistence and workflow will handle id/status
         await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="alert",
@@ -192,7 +188,6 @@ async def create_or_update_alert(data: AlertRequest):
             entity=alert,
             workflow=process_alert
         )
-
         return jsonify({"status": "success", "alert_id": alert.get("alert_id"), "message": "Alert created/updated successfully"})
     except Exception as e:
         logger.exception(e)
@@ -209,7 +204,6 @@ async def weather_fetch(data: WeatherFetchRequest):
             "status": "queued",
             "requestedAt": datetime.utcnow().isoformat() + "Z"
         }
-
         await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="weather",
@@ -217,7 +211,6 @@ async def weather_fetch(data: WeatherFetchRequest):
             entity=entity,
             workflow=process_weather
         )
-
         return jsonify({"status": "success", "weather_id": entity["weather_id"], "message": "Weather data fetch initiated"})
     except Exception as e:
         logger.exception(e)

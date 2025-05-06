@@ -1,0 +1,21 @@
+{
+    "alert_id": "123e4567-e89b-12d3-a456-426614174000",
+    "conditions": [
+        {
+            "operator": "gt",
+            "type": "temperature",
+            "value": 30
+        }
+    ],
+    "name": "High Temperature Alert",
+    "notification_channels": [
+        "email",
+        "sms"
+    ],
+    "notification_targets": {
+        "email": "user@example.com",
+        "sms": "+1234567890"
+    },
+    "status": "active",
+    "user_id": "user-001"
+}

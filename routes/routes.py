@@ -1,12 +1,15 @@
+Certainly! Below is a refactored version of your `routes.py` converted to use a `Blueprint` and fixing the import references to `entity_service` and `cyoda_token` according to your description and example. The main app logic, startup, and shutdown tasks are removed from this file as requested.
+
+```python
+# routes/routes.py
+
 from common.grpc_client.grpc_client import grpc_stream
 from dataclasses import dataclass
 import logging
 from datetime import datetime
-from typing import Optional
 import uuid
-import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 from common.config.config import ENTITY_VERSION
 from common.repository.cyoda.cyoda_init import init_cyoda
 from app_init.app_init import cyoda_token, entity_service
@@ -14,8 +17,7 @@ from app_init.app_init import cyoda_token, entity_service
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint("routes", __name__)
 
 # In-memory job status tracking dictionary
 entity_job: dict = {}
@@ -26,17 +28,7 @@ CAT_FACT_API_URL = "https://catfact.ninja/fact"
 class EmptyBody:
     pass
 
-@app.before_serving
-async def startup():
-    await init_cyoda(cyoda_token)
-    app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
-
-@app.after_serving
-async def shutdown():
-    app.background_task.cancel()
-    await app.background_task
-
-@app.route("/catfact/fetch", methods=["POST"])
+@routes_bp.route("/catfact/fetch", methods=["POST"])
 @validate_request(EmptyBody)
 async def fetch_catfact(data: EmptyBody):
     """
@@ -56,7 +48,7 @@ async def fetch_catfact(data: EmptyBody):
             entity_model="CatFact",
             entity_version=ENTITY_VERSION,
             entity=initial_entity,
-            )
+        )
     except Exception as e:
         logger.exception(f"Failed to add CatFact entity: {e}")
         entity_job[job_id]["status"] = "failed"
@@ -71,7 +63,7 @@ async def fetch_catfact(data: EmptyBody):
         "entityId": entity_id,
     }), 202
 
-@app.route("/catfact/latest", methods=["GET"])
+@routes_bp.route("/catfact/latest", methods=["GET"])
 async def get_latest_catfact():
     """
     GET endpoint to retrieve the most recently fetched cat fact.
@@ -96,7 +88,7 @@ async def get_latest_catfact():
         logger.exception(f"Failed to retrieve latest cat fact: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/catfact/<string:catFactId>", methods=["GET"])
+@routes_bp.route("/catfact/<string:catFactId>", methods=["GET"])
 async def get_catfact(catFactId: str):
     """
     GET endpoint to retrieve a stored cat fact by its ID.
@@ -118,7 +110,7 @@ async def get_catfact(catFactId: str):
         logger.exception(f"Failed to retrieve cat fact {catFactId}: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/catfact/job/<string:jobId>", methods=["GET"])
+@routes_bp.route("/catfact/job/<string:jobId>", methods=["GET"])
 async def get_job_status(jobId: str):
     """
     GET endpoint to check the status of a cat fact fetch job.
@@ -127,6 +119,44 @@ async def get_job_status(jobId: str):
     if not job:
         return jsonify({"error": "Job not found", "jobId": jobId}), 404
     return jsonify(job)
+```
 
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
+---
+
+### What was done:
+- Replaced `app.route` decorators with `routes_bp.route` for all endpoints.
+- Removed startup and shutdown logic (`before_serving`, `after_serving`) and `app` creation.
+- Imported `cyoda_token` and `entity_service` directly from `app_init.app_init` as per your example.
+- Kept all endpoint code and annotations intact in their original order and position.
+- Added `routes_bp = Blueprint("routes", __name__)` at the top.
+- You will need to register this blueprint in your `app.py`:
+
+```python
+from quart import Quart
+from quart_schema import QuartSchema
+from app_init.app_init import cyoda_token, entity_service
+from common.repository.cyoda.cyoda_init import init_cyoda
+import asyncio
+from common.grpc_client.grpc_client import grpc_stream
+from routes.routes import routes_bp
+
+app = Quart(__name__)
+QuartSchema(app)
+app.register_blueprint(routes_bp)
+
+@app.before_serving
+async def startup():
+    await init_cyoda(cyoda_token)
+    app.background_task = asyncio.create_task(grpc_stream(cyoda_token))
+
+@app.after_serving
+async def shutdown():
+    app.background_task.cancel()
+    await app.background_task
+
+# Your app run logic here...
+```
+
+---
+
+If you want me to help with the `app.py` setup or any other part, just let me know!

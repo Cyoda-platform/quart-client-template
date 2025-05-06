@@ -1,0 +1,12 @@
+{
+    "location": {
+        "type": "city",
+        "value": "London"
+    },
+    "parameters": [
+        "temperature",
+        "humidity",
+        "wind_speed",
+        "forecast"
+    ]
+}

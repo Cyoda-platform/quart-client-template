@@ -3,9 +3,8 @@ import logging
 import uuid
 from datetime import datetime
 
-import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,8 +12,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -25,10 +23,7 @@ class WeatherFetchRequest:
     location: dict
     data_type: str
 
-OPENWEATHER_API_KEY = "your_openweathermap_api_key"  # Replace with your actual key
-OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
-
-@app.route("/weather/fetch", methods=["POST"])
+@routes_bp.route("/weather/fetch", methods=["POST"])
 @validate_request(WeatherFetchRequest)
 async def weather_fetch(data: WeatherFetchRequest):
     try:
@@ -60,7 +55,7 @@ async def weather_fetch(data: WeatherFetchRequest):
         logger.exception(e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route("/weather/<weather_id>", methods=["GET"])
+@routes_bp.route("/weather/<weather_id>", methods=["GET"])
 async def weather_get(weather_id):
     try:
         record = await entity_service.get_item(
@@ -100,6 +95,3 @@ async def weather_get(weather_id):
     except Exception as e:
         logger.exception(e)
         return jsonify({"status": "error", "message": str(e)}), 500
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

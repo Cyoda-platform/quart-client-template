@@ -1,0 +1,38 @@
+{
+    "alerts_triggered": [
+        {
+            "alert_id": "123e4567-e89b-12d3-a456-426614174000",
+            "notification_status": "sent",
+            "triggered_conditions": [
+                {
+                    "condition_type": "temperature",
+                    "operator": "greater_than",
+                    "threshold": 30.0
+                }
+            ]
+        }
+    ],
+    "data_type": "current",
+    "fetched_at": "2024-06-01T12:00:00Z",
+    "location": {
+        "city": "New York",
+        "latitude": 40.7128,
+        "longitude": -74.006
+    },
+    "status": "completed",
+    "weather_data": {
+        "main": {
+            "humidity": 60,
+            "temp": 32.5
+        },
+        "rain": {
+            "1h": 0.0
+        },
+        "weather": [
+            {
+                "description": "clear sky"
+            }
+        ]
+    },
+    "weather_id": "987f6543-e21b-43d1-b456-426614174abc"
+}

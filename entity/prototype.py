@@ -1,0 +1,169 @@
+```python
+import asyncio
+import csv
+import io
+import logging
+from datetime import datetime
+from typing import Dict, List, Optional
+
+import httpx
+from quart import Quart, jsonify, request, Response
+from quart_schema import QuartSchema
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+app = Quart(__name__)
+QuartSchema(app)
+
+# In-memory storage for search results: searchId -> data
+entity_job: Dict[str, Dict] = {}
+
+PRH_API_BASE = "https://avoindata.prh.fi/opendata-ytj-api/v3"
+LEI_API_BASE = "https://api.gleif.org/api/v1/lei-records"  # Official LEI data source (GLEIF)
+
+# Helper to generate unique searchId
+def generate_search_id() -> str:
+    return datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+
+# Query PRH API companies endpoint by companyName
+async def query_prh_companies(client: httpx.AsyncClient, company_name: str, max_results: int) -> List[dict]:
+    params = {"name": company_name, "page": 1}
+    companies = []
+    while len(companies) < max_results:
+        r = await client.get(f"{PRH_API_BASE}/companies", params=params)
+        r.raise_for_status()
+        data = r.json()
+        page_results = data.get("results") or data.get("companies") or []
+        if not page_results:
+            break
+        companies.extend(page_results)
+        # PRH API pagination: we assume 100 per page max, increase page if more needed
+        if "totalResults" in data and len(companies) >= data["totalResults"]:
+            break
+        params["page"] += 1
+        if params["page"] > 5:  # safety limit to avoid too many pages
+            break
+    return companies[:max_results]
+
+# Filter active companies from PRH results
+def filter_active_companies(companies: List[dict]) -> List[dict]:
+    active_companies = []
+    for comp in companies:
+        # Business status is nested under 'businessLines' or 'businessStatus' or 'businessStatusCode'
+        # According to PRH API docs, status is under 'businessStatus'
+        status = comp.get("businessStatus")
+        # Some companies may have multiple names; filter only active names
+        if status and status.lower() == "active":
+            active_companies.append(comp)
+    return active_companies
+
+# Query GLEIF API for LEI by Business ID (assuming Business ID maps to LEI search)
+async def query_lei(client: httpx.AsyncClient, business_id: str) -> Optional[str]:
+    # GLEIF API search by entity legal name or LEI itself - no direct Business ID integration,
+    # so here we try to query by exact business ID as legal name (approximation)
+    # TODO: Clarify exact mapping from Finnish Business ID to LEI or find a direct API
+    params = {"filter[entity.legalName]": business_id}
+    try:
+        r = await client.get(LEI_API_BASE, params=params)
+        r.raise_for_status()
+        data = r.json()
+        records = data.get("data", [])
+        if records:
+            # Return the first LEI found
+            return records[0].get("id")
+    except Exception as e:
+        logger.exception(f"Failed to query LEI for business ID {business_id}: {e}")
+    return None
+
+# Extract required fields from PRH company data
+def extract_company_data(company: dict, lei: Optional[str]) -> dict:
+    # Extract fields according to requirements
+    return {
+        "companyName": company.get("name"),
+        "businessId": company.get("businessId"),
+        "companyType": company.get("companyForm"),
+        "registrationDate": company.get("registrationDate"),
+        "status": company.get("businessStatus") or "Inactive",
+        "LEI": lei or "Not Available",
+    }
+
+# Background processing of the search + enrichment
+async def process_entity(entity_job: Dict[str, Dict], search_id: str, company_name: str, max_results: int):
+    async with httpx.AsyncClient(timeout=30) as client:
+        try:
+            companies = await query_prh_companies(client, company_name, max_results)
+            active_companies = filter_active_companies(companies)
+            results = []
+            for comp in active_companies:
+                # Use businessId to query LEI
+                lei = await query_lei(client, comp.get("businessId", ""))
+                data = extract_company_data(comp, lei)
+                results.append(data)
+            entity_job[search_id]["status"] = "completed"
+            entity_job[search_id]["results"] = results
+            entity_job[search_id]["completedAt"] = datetime.utcnow().isoformat()
+            logger.info(f"Completed processing searchId={search_id} with {len(results)} results")
+        except Exception as e:
+            entity_job[search_id]["status"] = "failed"
+            entity_job[search_id]["error"] = str(e)
+            logger.exception(f"Error processing searchId={search_id}: {e}")
+
+@app.route("/api/companies/search", methods=["POST"])
+async def companies_search():
+    try:
+        data = await request.get_json()
+        company_name = data.get("companyName")
+        max_results = data.get("maxResults", 50)
+        if not company_name or not isinstance(company_name, str):
+            return jsonify({"error": "companyName is required and must be a string"}), 400
+        search_id = generate_search_id()
+        entity_job[search_id] = {
+            "status": "processing",
+            "requestedAt": datetime.utcnow().isoformat(),
+            "results": None,
+        }
+        # Fire and forget processing
+        asyncio.create_task(process_entity(entity_job, search_id, company_name, max_results))
+        return jsonify({
+            "searchId": search_id,
+            "totalCompanies": None,
+            "message": "Search started and enrichment is processing in background"
+        })
+    except Exception as e:
+        logger.exception(f"Error in /api/companies/search: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+@app.route("/api/companies/results/<string:search_id>", methods=["GET"])
+async def companies_results(search_id):
+    job = entity_job.get(search_id)
+    if not job:
+        return jsonify({"error": "searchId not found"}), 404
+    status = job.get("status")
+    if status == "processing":
+        return jsonify({"searchId": search_id, "status": "processing", "message": "Results not ready yet"}), 202
+    if status == "failed":
+        return jsonify({"searchId": search_id, "status": "failed", "error": job.get("error")}), 500
+    results = job.get("results", [])
+
+    accept = request.headers.get("Accept", "application/json")
+    if "text/csv" in accept:
+        # Return CSV
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=[
+            "companyName", "businessId", "companyType", "registrationDate", "status", "LEI"
+        ])
+        writer.writeheader()
+        for row in results:
+            writer.writerow(row)
+        return Response(output.getvalue(), mimetype="text/csv")
+    else:
+        # Default JSON
+        return jsonify({"searchId": search_id, "results": results})
+
+
+if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+```

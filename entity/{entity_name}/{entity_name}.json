@@ -1,0 +1,16 @@
+{
+    "data": {
+        "attributes": {
+            "attribute1": "value1",
+            "attribute2": "value2",
+            "attribute3": 123
+        },
+        "created_at": "2023-10-04T12:00:00Z",
+        "description": "This is a sample description for the entity.",
+        "id": "1234567890",
+        "name": "Example Entity",
+        "status": "active",
+        "updated_at": "2023-10-04T12:00:00Z"
+    },
+    "entity_name": "{entity_name}"
+}

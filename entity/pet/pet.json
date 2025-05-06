@@ -1,0 +1,9 @@
+{
+    "category": "Dogs",
+    "id": 123,
+    "name": "Doggie",
+    "photoUrls": [
+        "https://example.com/photo1.jpg"
+    ],
+    "status": "available"
+}

@@ -1,12 +1,12 @@
 {
     "entityDetails": {
-        "body": "Here are the details of your pet:\n\n- Name: Buddy\n- Category: Dog\n- Status: Available\n- Age: 3 years\n- Weight: 25.5 lbs\n\nThank you for using our service!",
+        "body": "Dear User,\n\nHere are the details of your pet:\n- Name: Buddy\n- Category: Dog\n- Status: Available\n- Age: 3 years\n- Weight: 25.5 lbs\n\nThank you for using our service!\n\nBest Regards,\nPet Service Team",
         "emailId": "email_001",
         "errorDetails": null,
         "recipientEmail": "recipient@example.com",
         "sentAt": null,
         "status": "pending",
-        "subject": "Retrieved Pet Details",
+        "subject": "Your Pet Details",
         "triggeredAt": null
     },
     "entityName": "PetDetailsEmailSender"

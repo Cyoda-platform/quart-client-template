@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import asyncio
 import logging
 import uuid
 from datetime import datetime
@@ -48,7 +47,7 @@ class WeatherFetchRequest:
     location: dict
     data_type: str
 
-OPENWEATHER_API_KEY = "your_openweathermap_api_key"  # TODO: Replace with your actual API key
+OPENWEATHER_API_KEY = "your_openweathermap_api_key"  # Replace with your actual API key
 OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
 
 async def fetch_weather(location, data_type):
@@ -162,6 +161,8 @@ async def process_weather(entity):
         entity['status'] = 'completed'
 
         # Trigger alert evaluation as a secondary entity add (allowed because different entity_model)
+        # Use fire-and-forget to not block workflow persistence
+        import asyncio
         asyncio.create_task(process_alert_evaluation(entity['weather_id']))
 
     except Exception as e:
@@ -173,7 +174,6 @@ async def process_weather(entity):
     return entity
 
 async def process_alert(entity):
-    # Just ensure alert_id and status, no heavy logic here
     entity['alert_id'] = entity.get('alert_id') or str(uuid.uuid4())
     entity.setdefault('status', 'active')
     return entity
@@ -183,35 +183,17 @@ async def process_alert(entity):
 async def create_or_update_alert(data: AlertRequest):
     try:
         alert = data.__dict__
-        alert_id = alert.get("alert_id") or str(uuid.uuid4())
-        alert["alert_id"] = alert_id
 
-        # Add or update alert with workflow
-        existing_alert = await entity_service.get_item(
+        # Only prepare alert entity, persistence and workflow will handle id/status
+        await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="alert",
             entity_version=ENTITY_VERSION,
-            technical_id=alert_id
+            entity=alert,
+            workflow=process_alert
         )
-        if existing_alert:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="alert",
-                entity_version=ENTITY_VERSION,
-                entity=alert,
-                technical_id=alert_id,
-                meta={}
-            )
-        else:
-            await entity_service.add_item(
-                token=cyoda_auth_service,
-                entity_model="alert",
-                entity_version=ENTITY_VERSION,
-                entity=alert,
-                workflow=process_alert
-            )
 
-        return jsonify({"status": "success", "alert_id": alert_id, "message": "Alert created/updated successfully"})
+        return jsonify({"status": "success", "alert_id": alert.get("alert_id"), "message": "Alert created/updated successfully"})
     except Exception as e:
         logger.exception(e)
         return jsonify({"status": "error", "message": str(e)}), 500

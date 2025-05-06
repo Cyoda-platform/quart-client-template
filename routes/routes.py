@@ -2,8 +2,8 @@ from dataclasses import dataclass
 import logging
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -11,8 +11,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -28,7 +27,7 @@ class PetIdRequest:
 def is_valid_pet_id(pet_id):
     return isinstance(pet_id, int) and pet_id > 0
 
-@app.route("/pets/details", methods=["POST"])
+@routes_bp.route("/pets/details", methods=["POST"])
 @validate_request(PetIdRequest)
 async def retrieve_pet_details(data: PetIdRequest):
     pet_id = data.petId
@@ -48,7 +47,7 @@ async def retrieve_pet_details(data: PetIdRequest):
             entity_model=PET_ENTITY_NAME,
             entity_version=ENTITY_VERSION,
             entity=initial_entity,
-            )
+        )
     except Exception as e:
         logger.exception(f"Failed to initiate pet details processing for petId {pet_id}: {e}")
         return jsonify({"error": "Failed to initiate pet details request."}), 500
@@ -58,7 +57,7 @@ async def retrieve_pet_details(data: PetIdRequest):
         "petId": pet_id
     }), 202
 
-@app.route("/pets/details/<int:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/details/<int:pet_id>", methods=["GET"])
 async def get_cached_pet_details(pet_id):
     try:
         item = await entity_service.get_item(
@@ -91,13 +90,3 @@ async def get_cached_pet_details(pet_id):
 
     # status == 'ready' or otherwise return the pet data
     return jsonify(item), 200
-
-
-if __name__ == '__main__':
-    import sys
-    import logging
-
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

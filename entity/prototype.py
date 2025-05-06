@@ -1,12 +1,12 @@
-```python
+from dataclasses import dataclass
+from datetime import datetime
 import asyncio
 import logging
 import uuid
-from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,12 +23,19 @@ OPENWEATHERMAP_API_KEY = "YOUR_OPENWEATHERMAP_API_KEY"  # TODO: Replace with you
 OPENWEATHERMAP_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 
+@dataclass
+class Location:
+    type: str  # e.g. "city", "coordinates", "zipcode"
+    value: str  # e.g. "London", "51.5074,-0.1278", "90210"
+
+
+@dataclass
+class FetchWeatherRequest:
+    location: Location
+    parameters: list = None  # Optional list of requested data fields
+
+
 async def fetch_weather_from_api(location_type: str, location_value: str, parameters: list):
-    """
-    Call OpenWeatherMap API with location data.
-    Supports 'city' and 'coordinates' location types.
-    TODO: Extend with zipcode or other types if needed.
-    """
     params = {"appid": OPENWEATHERMAP_API_KEY, "units": "metric"}
 
     if location_type == "city":
@@ -49,14 +56,12 @@ async def fetch_weather_from_api(location_type: str, location_value: str, parame
         resp.raise_for_status()
         data = resp.json()
 
-    # Extract requested parameters with fallback
     result = {}
     main = data.get("main", {})
     wind = data.get("wind", {})
     weather = data.get("weather", [{}])[0]
 
     if not parameters:
-        # If no parameters specified, return all defaults
         parameters = ["temperature", "humidity", "wind_speed", "forecast"]
 
     if "temperature" in parameters:
@@ -71,14 +76,11 @@ async def fetch_weather_from_api(location_type: str, location_value: str, parame
     return result
 
 
-async def process_entity(job_id: str, data: dict):
-    """
-    Background task: fetch weather data, update job and results cache.
-    """
+async def process_entity(job_id: str, data: FetchWeatherRequest):
     try:
-        location_type = data["location"]["type"]
-        location_value = data["location"]["value"]
-        parameters = data.get("parameters", [])
+        location_type = data.location.type
+        location_value = data.location.value
+        parameters = data.parameters if data.parameters else []
 
         weather_data = await fetch_weather_from_api(location_type, location_value, parameters)
 
@@ -98,8 +100,8 @@ async def process_entity(job_id: str, data: dict):
 
 
 @app.route("/weather/fetch", methods=["POST"])
-async def fetch_weather():
-    data = await request.get_json(force=True)
+@validate_request(FetchWeatherRequest)  # validation must go last for POST requests (issue workaround)
+async def fetch_weather(data: FetchWeatherRequest):
     job_id = str(uuid.uuid4())
     entity_job[job_id] = {
         "status": "processing",
@@ -114,6 +116,7 @@ async def fetch_weather():
 
 
 @app.route("/weather/results/<string:request_id>", methods=["GET"])
+# Validation for GET requests must go first, but here no query params to validate, so no @validate_querystring needed (issue workaround)
 async def get_weather_results(request_id):
     job = entity_job.get(request_id)
     if job is None:
@@ -127,7 +130,6 @@ async def get_weather_results(request_id):
 
     result = entity_results.get(request_id)
     if not result:
-        # This should not happen if job is completed, but just in case
         return jsonify({"error": "Results not found"}), 404
 
     return jsonify(result)

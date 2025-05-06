@@ -4,8 +4,8 @@ import uuid
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,19 +13,18 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class CatFetchRequest:
     type: str  # "image" or "fact"
 
 
-@app.route("/cats/fetch", methods=["POST"])
+@routes_bp.route("/cats/fetch", methods=["POST"])
 @validate_request(CatFetchRequest)
 async def cats_fetch(data: CatFetchRequest):
     """
@@ -49,7 +48,7 @@ async def cats_fetch(data: CatFetchRequest):
             entity_model="CatFetchRequest",
             entity_version=ENTITY_VERSION,
             entity=entity_dict,
-            )
+        )
 
         return jsonify({"requestId": entity_id})
 
@@ -58,7 +57,7 @@ async def cats_fetch(data: CatFetchRequest):
         return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route("/cats/result/<string:request_id>", methods=["GET"])
+@routes_bp.route("/cats/result/<string:request_id>", methods=["GET"])
 async def cats_result(request_id: str):
     """
     GET /cats/result/{requestId}
@@ -94,9 +93,3 @@ async def cats_result(request_id: str):
     except Exception as e:
         logger.exception(f"Error in /cats/result/{request_id} endpoint: {e}")
         return jsonify({"error": "Internal server error"}), 500
-
-
-if __name__ == '__main__':
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

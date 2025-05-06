@@ -1,0 +1,14 @@
+{
+    "completedAt": "2024-06-01T12:30:45.987654",
+    "results": [
+        {
+            "LEI": "5493001KJTIIGC8Y1R12",
+            "businessId": "1234567-8",
+            "companyName": "Acme Corporation Oy",
+            "companyType": "Limited Company",
+            "registrationDate": "2001-05-15",
+            "status": "Active"
+        }
+    ],
+    "searchId": "20240601123045987654"
+}

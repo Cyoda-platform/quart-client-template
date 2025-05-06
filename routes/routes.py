@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-import asyncio
 import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,8 +12,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -32,7 +30,7 @@ class HelloRequest:
     type: str  # expected values: "image", "fact", "greeting"
 
 
-@app.route("/api/cats/hello", methods=["POST"])
+@routes_bp.route("/api/cats/hello", methods=["POST"])
 @validate_request(HelloRequest)
 async def cats_hello_post(data: HelloRequest):
     """
@@ -48,14 +46,14 @@ async def cats_hello_post(data: HelloRequest):
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
             entity=entity_data,
-            )
+        )
         return jsonify({"id": entity_id})
     except Exception as e:
         logger.exception("Error in cats_hello_post: %s", e)
         return jsonify({"message": "Internal server error", "data": None}), 500
 
 
-@app.route("/api/cats/hello/result", methods=["GET"])
+@routes_bp.route("/api/cats/hello/result", methods=["GET"])
 async def cats_hello_get():
     """
     Returns the most recent hello_request entity.
@@ -89,14 +87,3 @@ async def cats_hello_get():
     except Exception as e:
         logger.exception("Error in cats_hello_get: %s", e)
         return jsonify({"message": "Internal server error", "data": None}), 500
-
-
-if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(
-        stream=sys.stdout,
-        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-        level=logging.INFO,
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

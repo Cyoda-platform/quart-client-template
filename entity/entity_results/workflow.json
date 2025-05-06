@@ -1,0 +1,199 @@
+{
+    "description": "Workflow to fetch weather data and store results with status updates",
+    "name": "weather_data_fetch_workflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Set the initial processing state",
+            "end_state": "Processing",
+            "end_state_description": "Entity job is processing",
+            "name": "set_initial_state",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_set_initial_state",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Fetch weather data from external API",
+            "end_state": "Weather_data_fetched",
+            "end_state_description": "Weather data has been fetched",
+            "name": "fetch_weather_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_fetch_weather_data",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Entity job is processing",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Add supplementary entity_results entity",
+            "end_state": "Results_entity_added",
+            "end_state_description": "Supplementary results entity added",
+            "name": "add_results_entity",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_add_results_entity",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Weather_data_fetched",
+            "start_state_description": "Weather data has been fetched",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Set status to completed on success",
+            "end_state": "Completed",
+            "end_state_description": "Entity job completed successfully",
+            "name": "set_success_state",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_set_success_state",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Results_entity_added",
+            "start_state_description": "Supplementary results entity added",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Set status to failed on error",
+            "end_state": "Failed",
+            "end_state_description": "Entity job failed",
+            "name": "set_failure_state",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_set_failure_state",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Entity job is processing",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        }
+    ],
+    "workflow_criteria": {
+        "condition_criteria": [
+            {
+                "condition": {
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_MODEL_VAR",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ],
+                    "group_condition_operator": "AND"
+                },
+                "description": "Workflow criteria",
+                "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR"
+            }
+        ],
+        "externalized_criteria": []
+    }
+}

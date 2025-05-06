@@ -4,8 +4,8 @@ import logging
 import uuid
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,8 +13,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -36,7 +35,7 @@ class FetchWeatherRequest:
     parameters: list = None  # Optional list of requested data fields
 
 
-@app.route("/weather/fetch", methods=["POST"])
+@routes_bp.route("/weather/fetch", methods=["POST"])
 @validate_request(FetchWeatherRequest)
 async def fetch_weather(data: FetchWeatherRequest):
     # Compose initial entity_job data
@@ -63,7 +62,7 @@ async def fetch_weather(data: FetchWeatherRequest):
         return jsonify({"error": "Failed to register job"}), 500
 
 
-@app.route("/weather/results/<string:request_id>", methods=["GET"])
+@routes_bp.route("/weather/results/<string:request_id>", methods=["GET"])
 async def get_weather_results(request_id):
     try:
         job = await entity_service.get_item(
@@ -101,7 +100,3 @@ async def get_weather_results(request_id):
         return jsonify({"error": "Results not found"}), 404
 
     return jsonify(result)
-
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

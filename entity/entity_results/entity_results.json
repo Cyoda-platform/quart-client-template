@@ -1,0 +1,14 @@
+{
+    "data": {
+        "forecast": "light rain",
+        "humidity": 82,
+        "temperature": 15.3,
+        "wind_speed": 5.1
+    },
+    "location": {
+        "type": "city",
+        "value": "London"
+    },
+    "request_id": "123e4567-e89b-12d3-a456-426614174000",
+    "timestamp": "2024-06-01T12:34:56Z"
+}

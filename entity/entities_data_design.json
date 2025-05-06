@@ -1,0 +1,16 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": "Dog",
+                "name": "Fluffy",
+                "petId": 123,
+                "photoUrls": [
+                    "https://example.com/photo1.jpg"
+                ],
+                "status": "available"
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

@@ -4,6 +4,7 @@ import os
 
 from common.config.config import CHAT_REPOSITORY
 from common.grpc_client.grpc_client import GrpcClient
+from common.repository.cyoda.cyoda_init import CyodaInitService
 from common.repository.cyoda.cyoda_repository import CyodaRepository
 from common.repository.in_memory_db import InMemoryRepository
 from common.service.service import EntityServiceImpl
@@ -14,24 +15,38 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 class BeanFactory:
+    _instance = None
+    _initialized = False
+
+    def __new__(cls, config=None):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self, config=None):
-        """
-        Initialize the dependency container. You can pass a configuration dictionary,
-        or rely on environment variables/default values.
-        """
-        # Load configuration, allowing overrides via environment or parameter.
-        # Initialize asynchronous lock (e.g., for handling concurrent chat operations)
+        # Only run the initialization logic a single time
+        if self.__class__._initialized:
+            return
+        self.__class__._initialized = True
+
+        # === your existing init logic ===
         self.chat_lock = asyncio.Lock()
 
         try:
-            # Create the repository based on configuration.
             self.cyoda_auth_service = CyodaAuthService()
-            self.entity_repository = self._create_repository(repo_type=CHAT_REPOSITORY, cyoda_auth_service=self.cyoda_auth_service)
-            self.entity_service = EntityServiceImpl(repository=self.entity_repository)
+            self.entity_repository = self._create_repository(
+                repo_type=CHAT_REPOSITORY,
+                cyoda_auth_service=self.cyoda_auth_service
+            )
+            self.entity_service = EntityServiceImpl(
+                repository=self.entity_repository
+            )
             self.grpc_client = GrpcClient(auth=self.cyoda_auth_service)
-
+            self.cyoda_init_service = CyodaInitService(
+                cyoda_repository=self.entity_repository,
+                cyoda_auth_service=self.cyoda_auth_service
+            )
         except Exception as e:
-            # Replace print with a proper logging framework in production.
             logger.exception("Error during BeanFactory initialization:", e)
             raise
 

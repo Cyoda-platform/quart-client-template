@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
@@ -6,13 +6,17 @@ from typing import Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+@dataclass
+class CatRequest:
+    type: Optional[str] = "fact"  # "fact" or "image"
 
 # In-memory local cache for last result (mock persistence)
 last_result: Optional[dict] = None
@@ -74,14 +78,14 @@ async def process_entity(entity_job: dict, data: dict):
 
 
 @app.route("/api/cat/hello", methods=["POST"])
-async def cat_hello_post():
+@validate_request(CatRequest)  # validation must be last decorator in POST due to quart-schema issue workaround
+async def cat_hello_post(data: CatRequest):
     """
     POST endpoint to trigger external data retrieval and compose "Hello World" + cat data.
     Business logic happens here.
     """
     try:
-        data = await request.get_json(force=True, silent=True) or {}
-        cat_type = data.get("type", "fact")
+        cat_type = data.type or "fact"
         if cat_type not in ["fact", "image"]:
             return jsonify({"error": "Invalid type value, must be 'fact' or 'image'"}), 400
 
@@ -91,7 +95,7 @@ async def cat_hello_post():
         }
 
         # Fire and forget processing task
-        asyncio.create_task(process_entity(entity_job, data))
+        asyncio.create_task(process_entity(entity_job, data.__dict__))
 
         # Return immediate response indicating processing started
         return jsonify({
@@ -126,4 +130,3 @@ if __name__ == '__main__':
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

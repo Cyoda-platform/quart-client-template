@@ -1,20 +1,28 @@
-```python
+from dataclasses import dataclass
+from typing import Optional
+
 import asyncio
 import csv
 import io
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import httpx
 from quart import Quart, jsonify, request, Response
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Input dataclass for POST /api/companies/search
+@dataclass
+class CompanySearchRequest:
+    companyName: str
+    maxResults: Optional[int] = 50
 
 # In-memory storage for search results: searchId -> data
 entity_job: Dict[str, Dict] = {}
@@ -50,18 +58,13 @@ async def query_prh_companies(client: httpx.AsyncClient, company_name: str, max_
 def filter_active_companies(companies: List[dict]) -> List[dict]:
     active_companies = []
     for comp in companies:
-        # Business status is nested under 'businessLines' or 'businessStatus' or 'businessStatusCode'
-        # According to PRH API docs, status is under 'businessStatus'
         status = comp.get("businessStatus")
-        # Some companies may have multiple names; filter only active names
         if status and status.lower() == "active":
             active_companies.append(comp)
     return active_companies
 
-# Query GLEIF API for LEI by Business ID (assuming Business ID maps to LEI search)
+# Query GLEIF API for LEI by Business ID
 async def query_lei(client: httpx.AsyncClient, business_id: str) -> Optional[str]:
-    # GLEIF API search by entity legal name or LEI itself - no direct Business ID integration,
-    # so here we try to query by exact business ID as legal name (approximation)
     # TODO: Clarify exact mapping from Finnish Business ID to LEI or find a direct API
     params = {"filter[entity.legalName]": business_id}
     try:
@@ -70,7 +73,6 @@ async def query_lei(client: httpx.AsyncClient, business_id: str) -> Optional[str
         data = r.json()
         records = data.get("data", [])
         if records:
-            # Return the first LEI found
             return records[0].get("id")
     except Exception as e:
         logger.exception(f"Failed to query LEI for business ID {business_id}: {e}")
@@ -78,7 +80,6 @@ async def query_lei(client: httpx.AsyncClient, business_id: str) -> Optional[str
 
 # Extract required fields from PRH company data
 def extract_company_data(company: dict, lei: Optional[str]) -> dict:
-    # Extract fields according to requirements
     return {
         "companyName": company.get("name"),
         "businessId": company.get("businessId"),
@@ -96,7 +97,6 @@ async def process_entity(entity_job: Dict[str, Dict], search_id: str, company_na
             active_companies = filter_active_companies(companies)
             results = []
             for comp in active_companies:
-                # Use businessId to query LEI
                 lei = await query_lei(client, comp.get("businessId", ""))
                 data = extract_company_data(comp, lei)
                 results.append(data)
@@ -110,20 +110,17 @@ async def process_entity(entity_job: Dict[str, Dict], search_id: str, company_na
             logger.exception(f"Error processing searchId={search_id}: {e}")
 
 @app.route("/api/companies/search", methods=["POST"])
-async def companies_search():
+@validate_request(CompanySearchRequest)  # Validation last for POST (workaround for quart-schema issue)
+async def companies_search(data: CompanySearchRequest):
     try:
-        data = await request.get_json()
-        company_name = data.get("companyName")
-        max_results = data.get("maxResults", 50)
-        if not company_name or not isinstance(company_name, str):
-            return jsonify({"error": "companyName is required and must be a string"}), 400
+        company_name = data.companyName
+        max_results = data.maxResults or 50
         search_id = generate_search_id()
         entity_job[search_id] = {
             "status": "processing",
             "requestedAt": datetime.utcnow().isoformat(),
             "results": None,
         }
-        # Fire and forget processing
         asyncio.create_task(process_entity(entity_job, search_id, company_name, max_results))
         return jsonify({
             "searchId": search_id,
@@ -136,6 +133,7 @@ async def companies_search():
 
 @app.route("/api/companies/results/<string:search_id>", methods=["GET"])
 async def companies_results(search_id):
+    # No request body or query validation needed for this GET endpoint
     job = entity_job.get(search_id)
     if not job:
         return jsonify({"error": "searchId not found"}), 404
@@ -148,7 +146,6 @@ async def companies_results(search_id):
 
     accept = request.headers.get("Accept", "application/json")
     if "text/csv" in accept:
-        # Return CSV
         output = io.StringIO()
         writer = csv.DictWriter(output, fieldnames=[
             "companyName", "businessId", "companyType", "registrationDate", "status", "LEI"
@@ -158,12 +155,9 @@ async def companies_results(search_id):
             writer.writerow(row)
         return Response(output.getvalue(), mimetype="text/csv")
     else:
-        # Default JSON
         return jsonify({"searchId": search_id, "results": results})
-
 
 if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

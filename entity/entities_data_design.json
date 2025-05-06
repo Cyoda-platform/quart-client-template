@@ -1,0 +1,25 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "type": "fact"
+            },
+            "entity_name": "hello_request"
+        },
+        {
+            "entity_data_example": {
+                "data": "Cats sleep 70% of their lives.",
+                "message": "Hello, Cat Lover!"
+            },
+            "entity_name": "hello_response"
+        },
+        {
+            "entity_data_example": {
+                "data": "Cats sleep 70% of their lives.",
+                "message": "Hello, Cat Lover!",
+                "timestamp": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "hello_result"
+        }
+    ]
+}

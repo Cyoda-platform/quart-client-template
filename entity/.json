@@ -1,0 +1,33 @@
+{
+    "entityDetails": {
+        "age": 3,
+        "category": "Dog",
+        "id": "12345",
+        "name": "Buddy",
+        "owner": {
+            "contact": {
+                "email": "johndoe@example.com",
+                "phone": "123-456-7890"
+            },
+            "ownerId": "67890",
+            "ownerName": "John Doe"
+        },
+        "photoUrls": [
+            "https://example.com/photo1.jpg",
+            "https://example.com/photo2.jpg"
+        ],
+        "status": "available",
+        "tags": [
+            {
+                "id": "1",
+                "name": "Friendly"
+            },
+            {
+                "id": "2",
+                "name": "Playful"
+            }
+        ],
+        "weight": 25.5
+    },
+    "entityName": "Pet"
+}

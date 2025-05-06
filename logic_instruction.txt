@@ -1,12 +1,9 @@
 import logging
 
-from common.config.config import ENTITY_VERSION
-from common.app_init import entity_service
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def example_name(token: str, necessary_parameters: dict):
+async def example_name(cyoda_auth_service, necessary_parameters: dict):
     """
     Example of an asynchronous function to add an entity item to the system.
     :param token: Authentication token for making requests to the entity service.
@@ -21,7 +18,7 @@ async def example_name(token: str, necessary_parameters: dict):
 
     # Add item asynchronously to the entity service
     try:
-        entity = await entity_service.add_item(token, "entity_name", ENTITY_VERSION, data)
+        entity = await entity_service.add_item(cyoda_auth_service, "entity_name", ENTITY_VERSION, data)
         logger.info(f"Entity added successfully: {entity}")
         return entity
     except Exception as e:

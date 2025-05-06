@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 import uuid
@@ -6,13 +6,25 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data classes for request validation
+@dataclass
+class Location:
+    city: str = None
+    latitude: float = None
+    longitude: float = None
+
+@dataclass
+class WeatherFetchRequest:
+    location: dict  # dynamic structure, so no nested dataclass here
+    data_type: str
 
 # In-memory cache to mock persistence: weather_id -> weather data
 weather_cache = {}
@@ -23,10 +35,6 @@ OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
 
 
 async def fetch_current_weather(location):
-    """
-    Calls OpenWeatherMap current weather data API.
-    Location can be city name or lat/lon.
-    """
     params = {"appid": OPENWEATHER_API_KEY, "units": "metric"}
 
     if location.get("city"):
@@ -44,10 +52,6 @@ async def fetch_current_weather(location):
 
 
 async def fetch_forecast_weather(location):
-    """
-    Calls OpenWeatherMap forecast API (5 day / 3 hour forecast).
-    Location can be city name or lat/lon.
-    """
     params = {"appid": OPENWEATHER_API_KEY, "units": "metric"}
 
     if location.get("city"):
@@ -65,9 +69,6 @@ async def fetch_forecast_weather(location):
 
 
 async def process_weather_fetch(job_id, payload):
-    """
-    Fire-and-forget background task to call external API, store result in cache.
-    """
     try:
         location = payload.get("location", {})
         data_type = payload.get("data_type", "current")
@@ -79,7 +80,6 @@ async def process_weather_fetch(job_id, payload):
         else:
             raise ValueError(f"Unsupported data_type: {data_type}")
 
-        # Prepare stored record
         record = {
             "weather_id": job_id,
             "location": location,
@@ -102,24 +102,10 @@ async def process_weather_fetch(job_id, payload):
 
 
 @app.route("/weather/fetch", methods=["POST"])
-async def weather_fetch():
-    """
-    POST endpoint to trigger weather data fetch.
-    """
+@validate_request(WeatherFetchRequest)  # POST validation must go last for workaround
+async def weather_fetch(data: WeatherFetchRequest):
     try:
-        payload = await request.get_json()
-
-        # Validate minimal presence of parameters
-        if not payload or "location" not in payload or "data_type" not in payload:
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "message": "Missing required fields: location and data_type",
-                    }
-                ),
-                400,
-            )
+        payload = data.__dict__
 
         job_id = str(uuid.uuid4())
         weather_cache[job_id] = {
@@ -127,7 +113,6 @@ async def weather_fetch():
             "requestedAt": datetime.utcnow().isoformat() + "Z",
         }
 
-        # Fire and forget background processing
         asyncio.create_task(process_weather_fetch(job_id, payload))
 
         return jsonify(
@@ -143,16 +128,13 @@ async def weather_fetch():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+# GET endpoint with no request validation needed as per spec (no body, no query validation)
 @app.route("/weather/<weather_id>", methods=["GET"])
 async def weather_get(weather_id):
-    """
-    GET endpoint to retrieve stored weather data by id.
-    """
     record = weather_cache.get(weather_id)
     if not record:
         return jsonify({"status": "error", "message": "weather_id not found"}), 404
 
-    # If still processing, return status
     if record.get("status") == "processing":
         return jsonify(
             {
@@ -162,7 +144,6 @@ async def weather_get(weather_id):
             }
         ), 202
 
-    # If failed
     if record.get("status") == "failed":
         return jsonify(
             {
@@ -172,7 +153,6 @@ async def weather_get(weather_id):
             }
         ), 500
 
-    # Success: return full stored record except internal status field
     response = {
         "weather_id": record["weather_id"],
         "location": record["location"],

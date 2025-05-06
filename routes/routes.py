@@ -1,16 +1,102 @@
-from datetime import timezone, datetime
+from dataclasses import dataclass
 import logging
-from quart import Blueprint, request, abort
-from quart_schema import validate, validate_querystring, tag, operation_id
+import uuid
+from datetime import datetime
+
+import httpx
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
+
 from app_init.app_init import BeanFactory
-from common.service.entity_service_interface import EntityService
+from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
-FINAL_STATES = {"FAILURE", "SUCCESS", "CANCELLED", "CANCELLED_BY_USER", "UNKNOWN", "FINISHED"}
-PROCESSING_STATE = "PROCESSING"
-routes_bp = Blueprint("routes", __name__)
+logger.setLevel(logging.INFO)
 
-factory = BeanFactory(config={"CHAT_REPOSITORY": "cyoda"})
-entity_service: EntityService = factory.get_services()["entity_service"]
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
+
+app = Quart(__name__)
+QuartSchema(app)
+
+@dataclass
+class CatFetchRequest:
+    type: str  # "image" or "fact"
 
 
+@app.route("/cats/fetch", methods=["POST"])
+@validate_request(CatFetchRequest)
+async def cats_fetch(data: CatFetchRequest):
+    """
+    POST /cats/fetch
+    Request JSON: { "type": "image" | "fact" }
+    Response JSON: { "requestId": "string" }
+    """
+    try:
+        # Validate input explicitly even if dataclass is used
+        if data.type not in ("image", "fact"):
+            return jsonify({"error": "Invalid type. Must be 'image' or 'fact'."}), 400
+
+        # Prepare a minimal entity dict for persistence
+        entity_dict = {
+            "type": data.type,
+        }
+
+        # Add item with workflow function - processing happens inside workflow
+        entity_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="CatFetchRequest",
+            entity_version=ENTITY_VERSION,
+            entity=entity_dict,
+            )
+
+        return jsonify({"requestId": entity_id})
+
+    except Exception as e:
+        logger.exception(f"Error in /cats/fetch endpoint: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@app.route("/cats/result/<string:request_id>", methods=["GET"])
+async def cats_result(request_id: str):
+    """
+    GET /cats/result/{requestId}
+    Response JSON:
+    {
+      "requestId": "string",
+      "type": "image" | "fact",
+      "data": "string",
+      "status": "processing" | "completed" | "failed",
+      "requestedAt": "ISO8601 string"
+    }
+    """
+    try:
+        entity = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="CatFetchRequest",
+            entity_version=ENTITY_VERSION,
+            entity_id=request_id,
+        )
+        if entity is None:
+            return jsonify({"error": "requestId not found"}), 404
+
+        # Defensive defaults
+        response = {
+            "requestId": request_id,
+            "type": entity.get("type", "unknown"),
+            "data": entity.get("data"),
+            "status": entity.get("status", "processing"),
+            "requestedAt": entity.get("requestedAt"),
+        }
+        return jsonify(response)
+
+    except Exception as e:
+        logger.exception(f"Error in /cats/result/{request_id} endpoint: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
+
+if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

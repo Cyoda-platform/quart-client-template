@@ -1,0 +1,56 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "companyName": "Acme Corporation",
+                "maxResults": 50
+            },
+            "entity_name": "company_search_request"
+        },
+        {
+            "entity_data_example": {
+                "completedAt": "2024-06-01T12:30:45.987654",
+                "results": [
+                    {
+                        "LEI": "5493001KJTIIGC8Y1R12",
+                        "businessId": "1234567-8",
+                        "companyName": "Acme Corporation Oy",
+                        "companyType": "Limited Company",
+                        "registrationDate": "2001-05-15",
+                        "status": "Active"
+                    }
+                ],
+                "searchId": "20240601123045987654"
+            },
+            "entity_name": "company_search_result"
+        },
+        {
+            "entity_data_example": {
+                "message": "Search and enrichment completed",
+                "searchId": "20240601123045987654",
+                "totalCompanies": 1
+            },
+            "entity_name": "company_search_response"
+        },
+        {
+            "entity_data_example": {
+                "results": [
+                    {
+                        "LEI": "5493001KJTIIGC8Y1R12",
+                        "businessId": "1234567-8",
+                        "companyName": "Acme Corporation Oy",
+                        "companyType": "Limited Company",
+                        "registrationDate": "2001-05-15",
+                        "status": "Active"
+                    }
+                ],
+                "searchId": "20240601123045987654"
+            },
+            "entity_name": "company_search_results_response_json"
+        },
+        {
+            "entity_data_example": "companyName,businessId,companyType,registrationDate,status,LEI\nAcme Corporation Oy,1234567-8,Limited Company,2001-05-15,Active,5493001KJTIIGC8Y1R12\n",
+            "entity_name": "company_search_results_response_csv"
+        }
+    ]
+}

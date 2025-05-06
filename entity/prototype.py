@@ -55,11 +55,12 @@ async def query_prh_companies(client: httpx.AsyncClient, company_name: str, max_
     return companies[:max_results]
 
 # Filter active companies from PRH results
+# Updated to use 'status' field int == 2 to indicate active (per user request)
 def filter_active_companies(companies: List[dict]) -> List[dict]:
     active_companies = []
     for comp in companies:
-        status = comp.get("businessStatus")
-        if status and status.lower() == "active":
+        status = comp.get("status")
+        if status == 2:  # 2 indicates active
             active_companies.append(comp)
     return active_companies
 
@@ -85,7 +86,8 @@ def extract_company_data(company: dict, lei: Optional[str]) -> dict:
         "businessId": company.get("businessId"),
         "companyType": company.get("companyForm"),
         "registrationDate": company.get("registrationDate"),
-        "status": company.get("businessStatus") or "Inactive",
+        # Use 'status' int field and convert 2 to 'Active' else 'Inactive'
+        "status": "Active" if company.get("status") == 2 else "Inactive",
         "LEI": lei or "Not Available",
     }
 
@@ -133,7 +135,6 @@ async def companies_search(data: CompanySearchRequest):
 
 @app.route("/api/companies/results/<string:search_id>", methods=["GET"])
 async def companies_results(search_id):
-    # No request body or query validation needed for this GET endpoint
     job = entity_job.get(search_id)
     if not job:
         return jsonify({"error": "searchId not found"}), 404

@@ -1,28 +1,3 @@
-Absolutely, moving business and async logic into the workflow functions is a cleaner, more maintainable approach. It decouples controller endpoints from heavy logic, keeps API handlers thin, and leverages the new workflow capabilities fully.
-
----
-
-### What we'll do:
-
-- The endpoint `/api/companies/search` will primarily accept and validate input, then call `entity_service.add_item` **with the workflow function only**.
-- The workflow function `process_companysearchresult` will:
-  - Perform the PRH company search API call,
-  - Filter active companies,
-  - Query LEI info for each,
-  - Compose results,
-  - Update the entity state (including `status`, `results`, timestamps),
-  - Save supplementary entities if needed (like raw data or logs) under different `entity_model`s,
-  - Handle errors by setting entity error state.
-
-- The `/api/companies/results/<search_id>` endpoint remains a simple retrieval.
-
-- We'll **not** call `entity_service.add/update/delete` on the current entity inside the workflow to avoid recursion (only modify the entity dict directly).
-
----
-
-### Updated complete code with logic moved into the workflow function
-
-```python
 from dataclasses import dataclass
 from typing import Optional
 
@@ -54,33 +29,37 @@ class CompanySearchRequest:
     companyName: str
     maxResults: Optional[int] = 50
 
-# Remove in-memory cache; all state is stored in entities now
-
 PRH_API_BASE = "https://avoindata.prh.fi/opendata-ytj-api/v3"
 LEI_API_BASE = "https://api.gleif.org/api/v1/lei-records"  # Official LEI data source (GLEIF)
 
 async def query_prh_companies(client: httpx.AsyncClient, company_name: str, max_results: int) -> list:
     params = {"name": company_name, "page": 1}
     companies = []
-    while len(companies) < max_results:
-        r = await client.get(f"{PRH_API_BASE}/companies", params=params)
-        r.raise_for_status()
-        data = r.json()
-        page_results = data.get("results", []) or data.get("companies", [])
-        if not page_results:
-            break
-        companies.extend(page_results)
-        if "totalResults" in data and len(companies) >= data["totalResults"]:
-            break
-        params["page"] += 1
-        if params["page"] > 5:  # Safety limit
-            break
+    try:
+        while len(companies) < max_results:
+            r = await client.get(f"{PRH_API_BASE}/companies", params=params)
+            r.raise_for_status()
+            data = r.json()
+            page_results = data.get("results", []) or data.get("companies", [])
+            if not page_results:
+                break
+            companies.extend(page_results)
+            if "totalResults" in data and len(companies) >= data["totalResults"]:
+                break
+            params["page"] += 1
+            if params["page"] > 5:  # Safety limit for pagination
+                break
+    except Exception as e:
+        logger.exception(f"Error querying PRH companies for '{company_name}': {e}")
+        raise
     return companies[:max_results]
 
 def filter_active_companies(companies: list) -> list:
     return [c for c in companies if c.get("status") == 2]
 
 async def query_lei(client: httpx.AsyncClient, business_id: str) -> Optional[str]:
+    if not business_id:
+        return None
     try:
         params = {"filter[entity.legalName]": business_id}
         r = await client.get(LEI_API_BASE, params=params)
@@ -103,23 +82,20 @@ def extract_company_data(company: dict, lei: Optional[str]) -> dict:
         "LEI": lei or "Not Available",
     }
 
-# Workflow function: processes the entity asynchronously before persistence
 async def process_companysearchresult(entity: dict) -> dict:
-    """
-    This function will perform the entire async enrichment workflow:
-    - Call PRH API for companies,
-    - Filter active,
-    - Query LEI for each,
-    - Compose results,
-    - Update entity state (status, results, timestamps),
-    - Handle errors gracefully.
-    """
     company_name = entity.get("companyName")
     max_results = entity.get("maxResults", 50)
-    if not company_name:
+    if not company_name or not isinstance(company_name, str) or not company_name.strip():
         entity["status"] = "failed"
-        entity["error"] = "Missing 'companyName' in entity"
+        entity["error"] = "Invalid or missing 'companyName' in entity"
         return entity
+
+    try:
+        max_results = int(max_results)
+        if max_results <= 0:
+            max_results = 50
+    except Exception:
+        max_results = 50
 
     entity["status"] = "processing"
     entity["requestedAt"] = datetime.utcnow().isoformat()
@@ -132,8 +108,6 @@ async def process_companysearchresult(entity: dict) -> dict:
             companies = await query_prh_companies(client, company_name, max_results)
             active_companies = filter_active_companies(companies)
 
-            results = []
-            # Query LEI concurrently but limit concurrency to avoid overload
             semaphore = asyncio.Semaphore(5)
 
             async def get_lei_safe(comp):
@@ -148,17 +122,13 @@ async def process_companysearchresult(entity: dict) -> dict:
             entity["results"] = results
             entity["completedAt"] = datetime.utcnow().isoformat()
 
-            # Optionally, add supplementary raw data entity (different model)
-            # E.g. raw PRH response saved as entity "companysearchraw"
-            # await entity_service.add_item(...) <- NOT allowed on current entity_model, but allowed on different models
-            # We'll just demonstrate how to do it without recursion:
-
-            # Example:
+            # Example: add supplementary raw data entity for audit/logging (no recursion risk)
+            # Commented out since optional, but shows usage pattern:
             # await entity_service.add_item(
             #     token=cyoda_auth_service,
             #     entity_model="companysearchraw",
             #     entity_version=ENTITY_VERSION,
-            #     entity={"searchId": entity.get("searchId"), "rawCompanies": companies},
+            #     entity={"searchId": entity.get("searchId"), "rawCompanies": companies, "createdAt": datetime.utcnow().isoformat()}
             # )
 
         except Exception as e:
@@ -172,16 +142,10 @@ async def process_companysearchresult(entity: dict) -> dict:
 @app.route("/api/companies/search", methods=["POST"])
 @validate_request(CompanySearchRequest)
 async def companies_search(data: CompanySearchRequest):
-    """
-    Thin controller: just add the entity with workflow function.
-    Workflow handles the entire enrichment asynchronously before persistence.
-    """
     try:
-        # Compose entity to persist
         entity = {
             "companyName": data.companyName,
             "maxResults": data.maxResults or 50,
-            # Initial status will be set by workflow
         }
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
@@ -190,12 +154,10 @@ async def companies_search(data: CompanySearchRequest):
             entity=entity,
             workflow=process_companysearchresult
         )
-
         return jsonify({
             "searchId": entity_id,
             "message": "Search started and enrichment is processing asynchronously"
         })
-
     except Exception as e:
         logger.exception(f"Error in /api/companies/search endpoint: {e}")
         return jsonify({"error": "Internal server error"}), 500
@@ -203,11 +165,6 @@ async def companies_search(data: CompanySearchRequest):
 
 @app.route("/api/companies/results/<string:search_id>", methods=["GET"])
 async def companies_results(search_id):
-    """
-    Retrieve the search results entity by technical_id == search_id.
-    Return status and results or errors.
-    Support CSV output if Accept header requests it.
-    """
     try:
         entity = await entity_service.get_item(
             token=cyoda_auth_service,
@@ -249,23 +206,3 @@ if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Key points:
-
-- **The endpoint is minimal:** it just passes the validated data as an entity and triggers the workflow.
-- **The workflow function `process_companysearchresult` is the full async enrichment pipeline.**
-- **Entity state is updated in-place on `entity` dict inside the workflow.**
-- **No infinite recursion risk** because entity_service calls are only on different models (commented example for supplementary raw data).
-- **Error handling sets `status` and `error` fields on entity.**
-- **Retrieval endpoint reads the persisted entity and returns appropriate status/errors.**
-
----
-
-This design fully uses the new workflow function mechanism, keeps controllers clean, and centralizes async logic and side effects in workflow functions.
-
-If you want, I can also help with adding supplementary entities or logging enhancements inside the workflow!
-
-Would you like me to add those?

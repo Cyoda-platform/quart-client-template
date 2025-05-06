@@ -1,29 +1,10 @@
-Absolutely, moving as much async logic as possible into the `process_{entity_name}` workflow function is a great architectural improvement. This keeps the controller/endpoints clean and offloads processing and external calls into the workflow, which runs asynchronously before persistence.
-
----
-
-### Key points for the refactor:
-- The endpoint should just prepare minimal initial entity data and call `add_item(...)` with the workflow function.
-- The workflow function `process_weather` will:
-  - Perform all async external API calls (`fetch_current_weather` or `fetch_forecast_weather`)
-  - Modify the entity's state directly (e.g. add fetched data, update status)
-  - Add secondary entities (if needed) via `entity_service.add_item` or `update_item` but **not** for the same entity_model `weather`.
-- The workflow function is async and returns the modified entity, which will be persisted automatically.
-- The endpoint returns immediately with the generated `weather_id`.
-
----
-
-### Refactored code:
-
-```python
 from dataclasses import dataclass
-import asyncio
 import logging
 import uuid
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -44,9 +25,8 @@ class WeatherFetchRequest:
     location: dict
     data_type: str
 
-OPENWEATHER_API_KEY = "your_openweathermap_api_key"  # Replace with your key
+OPENWEATHER_API_KEY = "your_openweathermap_api_key"  # Replace with your actual key
 OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
-
 
 async def fetch_current_weather(location):
     params = {"appid": OPENWEATHER_API_KEY, "units": "metric"}
@@ -59,11 +39,10 @@ async def fetch_current_weather(location):
     else:
         raise ValueError("Location must have either city or latitude & longitude")
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(f"{OPENWEATHER_BASE_URL}/weather", params=params)
         resp.raise_for_status()
         return resp.json()
-
 
 async def fetch_forecast_weather(location):
     params = {"appid": OPENWEATHER_API_KEY, "units": "metric"}
@@ -76,23 +55,23 @@ async def fetch_forecast_weather(location):
     else:
         raise ValueError("Location must have either city or latitude & longitude")
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(f"{OPENWEATHER_BASE_URL}/forecast", params=params)
         resp.raise_for_status()
         return resp.json()
 
-
-# Workflow function for 'weather' entity
 async def process_weather(entity):
     """
     Workflow function applied before persisting the weather entity.
     Executes the async fetch of weather data and updates entity state.
     """
     try:
+        # Ensure entity has weather_id and created_at
+        entity['weather_id'] = entity.get('weather_id') or str(uuid.uuid4())
         entity['created_at'] = entity.get('created_at') or datetime.utcnow().isoformat() + "Z"
+
+        # Mark as processing on workflow start
         entity['status'] = 'processing'
-        entity_id = entity.get('weather_id') or str(uuid.uuid4())
-        entity['weather_id'] = entity_id
 
         location = entity.get("location", {})
         data_type = entity.get("data_type", "current")
@@ -118,25 +97,21 @@ async def process_weather(entity):
 
     return entity
 
-
 @app.route("/weather/fetch", methods=["POST"])
 @validate_request(WeatherFetchRequest)
 async def weather_fetch(data: WeatherFetchRequest):
     try:
         payload = data.__dict__
-        # Generate weather_id here, but process_weather will ensure entity has one
         weather_id = str(uuid.uuid4())
 
-        # Prepare initial entity, minimal info; workflow will do the rest
         entity = {
             'weather_id': weather_id,
             'location': payload.get('location'),
             'data_type': payload.get('data_type'),
-            'status': 'queued',  # initial status before workflow runs
+            'status': 'queued',
             'requestedAt': datetime.utcnow().isoformat() + "Z",
         }
 
-        # Add the entity with the workflow function attached
         await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="weather",
@@ -145,7 +120,6 @@ async def weather_fetch(data: WeatherFetchRequest):
             workflow=process_weather
         )
 
-        # Return immediately
         return jsonify({
             "status": "success",
             "weather_id": weather_id,
@@ -155,7 +129,6 @@ async def weather_fetch(data: WeatherFetchRequest):
     except Exception as e:
         logger.exception(e)
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 @app.route("/weather/<weather_id>", methods=["GET"])
 async def weather_get(weather_id):
@@ -170,7 +143,7 @@ async def weather_get(weather_id):
             return jsonify({"status": "error", "message": "weather_id not found"}), 404
 
         status = record.get("status")
-        if status == "processing" or status == "queued":
+        if status in ("processing", "queued"):
             return jsonify({
                 "weather_id": weather_id,
                 "status": status,
@@ -198,38 +171,5 @@ async def weather_get(weather_id):
         logger.exception(e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
-
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-- **In the `/weather/fetch` endpoint:**
-  - We generate the `weather_id`.
-  - Create an initial minimal entity with `status: "queued"`.
-  - Call `entity_service.add_item()` passing `workflow=process_weather`.
-  - Return immediately to the client.
-
-- **In the `process_weather` workflow function:**
-  - It updates the entity’s `created_at` and `status` to `processing`.
-  - Fetches weather data asynchronously.
-  - Updates the entity's fields directly (weather data, fetched timestamp, status).
-  - If any error occurs, it updates the entity state accordingly.
-  - Returns the modified entity, which will be persisted automatically.
-
-- The GET endpoint remains mostly the same, it simply reads the persisted entity and returns appropriate responses.
-
----
-
-### Benefits:
-- All async business logic and external API calls are encapsulated in the workflow.
-- Endpoint is clean and only responsible for validation and initiating the process.
-- Workflow function directly changes entity state, so no need for separate update calls.
-- This approach avoids fire-and-forget background tasks in the controller.
-- Entity lifecycle is clearly managed via entity states (`queued`, `processing`, `completed`, `failed`).
-
----
-
-Let me know if you want me to help moving other logic or further splitting workflow steps!

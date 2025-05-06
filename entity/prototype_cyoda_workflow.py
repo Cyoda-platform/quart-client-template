@@ -1,33 +1,3 @@
-Absolutely! Moving logic into the workflow functions (i.e., `process_{entity_name}`) is a great design to keep controllers thin and robust. Since the workflow function is executed asynchronously before persistence, it fits perfectly for async tasks and complex entity state updates that should happen before saving the entity.
-
----
-
-### What to move?
-
-- The async weather fetching logic currently done inside the fire-and-forget task `process_entity` can be moved **inside** the `process_entity_job` workflow function.
-- The workflow function will:
-  - Perform the async fetch of weather data.
-  - Update the entity state (`entity_data`) with status, message, and optionally fetched results.
-  - Add supplementary entities (like "entity_results") by calling `entity_service.add_item()` with different `entity_model`.
-- The controller (`/weather/fetch` endpoint) will only:
-  - Generate a new entity object (with initial minimal state).
-  - Call `entity_service.add_item()` **once**, passing the workflow function.
-  - Return the ID immediately, without launching any background tasks.
-
----
-
-### Important
-
-- We **cannot** call `entity_service.add_item()` for the same entity model inside its own workflow function (to avoid infinite recursion).
-- But we **can** add supplementary entities with *different* `entity_model` inside the workflow function.
-- We modify the passed `entity_data` directly to update the entity state.
-- The workflow function is async, so we can `await` inside it.
-
----
-
-### Updated full example for `entity_job` with workflow function:
-
-```python
 from dataclasses import dataclass
 from datetime import datetime
 import logging
@@ -106,14 +76,12 @@ async def fetch_weather_from_api(location_type: str, location_value: str, parame
     return result
 
 
-# Workflow function for entity_job
 async def process_entity_job(entity_data: dict):
     """
-    This workflow function replaces all async logic previously done outside.
-    It fetches weather data from API, updates entity state, and adds supplementary results entity.
+    Workflow function for entity_job entity.
+    Fetches weather data, updates entity state, and adds supplementary 'entity_results' entity.
     """
     try:
-        # Extract request parameters from entity_data
         location = entity_data.get("location")
         parameters = entity_data.get("parameters", [])
 
@@ -123,32 +91,42 @@ async def process_entity_job(entity_data: dict):
         location_type = location["type"]
         location_value = location["value"]
 
-        # Update entity state to processing
+        # Set initial state
         entity_data["status"] = "processing"
         entity_data["requestedAt"] = entity_data.get("requestedAt") or datetime.utcnow().isoformat() + "Z"
         entity_data["message"] = ""
+        entity_data["persistedAt"] = datetime.utcnow().isoformat() + "Z"
 
-        # Fetch weather data
+        # Fetch weather data from external API
         weather_data = await fetch_weather_from_api(location_type, location_value, parameters)
 
-        # Prepare and add supplementary entity 'entity_results'
+        # Prepare supplementary entity_results entity
+        # Use entity_data's technical_id if exists, else generate a new UUID as request_id for results
+        request_id = entity_data.get("technical_id")
+        if not request_id:
+            # Generate a UUID for request_id and assign to entity_data for consistency
+            request_id = str(uuid.uuid4())
+            entity_data["technical_id"] = request_id
+
         result_entity = {
-            "request_id": entity_data.get("technical_id") or str(uuid.uuid4()),
+            "technical_id": request_id,  # Use same id for linking
+            "request_id": request_id,
             "location": location,
             "data": weather_data,
             "timestamp": datetime.utcnow().isoformat() + "Z",
+            "entity_version": ENTITY_VERSION
         }
 
-        # Save supplementary entity (different entity_model)
+        # Add supplementary entity_results entity
         await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="entity_results",
             entity_version=ENTITY_VERSION,
             entity=result_entity,
-            workflow=None  # no workflow for results entity
+            workflow=None  # No workflow for results entity
         )
 
-        # Update entity_job state to completed
+        # Update entity_job status to completed
         entity_data["status"] = "completed"
         entity_data["message"] = "Weather data fetched successfully"
         entity_data["completedAt"] = datetime.utcnow().isoformat() + "Z"
@@ -156,23 +134,24 @@ async def process_entity_job(entity_data: dict):
     except Exception as e:
         entity_data["status"] = "failed"
         entity_data["message"] = str(e)
+        entity_data["completedAt"] = datetime.utcnow().isoformat() + "Z"
         logger.exception("Error in process_entity_job workflow")
 
 
 @app.route("/weather/fetch", methods=["POST"])
 @validate_request(FetchWeatherRequest)
 async def fetch_weather(data: FetchWeatherRequest):
-    # Build initial entity_job data object
+    # Compose initial entity_job data
     entity_data = {
         "location": {"type": data.location.type, "value": data.location.value},
         "parameters": data.parameters or [],
         "status": "pending",
         "requestedAt": datetime.utcnow().isoformat() + "Z",
-        # Optionally, generate technical_id here or let entity_service generate it
+        # technical_id is not set here; entity_service may generate it or workflow generates if missing
     }
 
     try:
-        # Add the job entity with workflow function to perform async processing before persistence
+        # Add entity_job with workflow function that will perform all async processing before persistence
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="entity_job",
@@ -180,6 +159,7 @@ async def fetch_weather(data: FetchWeatherRequest):
             entity=entity_data,
             workflow=process_entity_job
         )
+        # Return the entity_id assigned by entity_service
         return jsonify({"request_id": entity_id, "status": "processing"}), 202
     except Exception as e:
         logger.exception(e)
@@ -203,7 +183,7 @@ async def get_weather_results(request_id):
         return jsonify({"error": "Request ID not found"}), 404
 
     status = job.get("status")
-    if status == "processing" or status == "pending":
+    if status in ("processing", "pending"):
         return jsonify({"request_id": request_id, "status": "processing"}), 202
 
     if status == "failed":
@@ -228,24 +208,3 @@ async def get_weather_results(request_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation
-
-- The endpoint `/weather/fetch` now only creates the initial entity data and calls `entity_service.add_item()` with the workflow function `process_entity_job`.
-- The workflow is responsible for all async calls:
-  - Fetching weather data.
-  - Adding supplementary `entity_results`.
-  - Updating entity status and timestamps.
-- This removes any fire-and-forget tasks or background processes from the controller.
-- The workflow modifies the entity data in place (`entity_data["status"] = "completed"` etc.), which will be persisted after the workflow finishes.
-- Adding supplementary entities with different `entity_model` (`entity_results`) is allowed.
-- The `get_weather_results` endpoint remains unchanged.
-
----
-
-If you'd like, I can help you refactor or add workflow functions for other entities as well. This pattern makes your codebase cleaner and more maintainable.
-
-Would you like me to do that?

@@ -8,8 +8,8 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request, Response
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request, Response
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -17,12 +17,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class CompanySearchRequest:
@@ -33,7 +32,7 @@ PRH_API_BASE = "https://avoindata.prh.fi/opendata-ytj-api/v3"
 LEI_API_BASE = "https://api.gleif.org/api/v1/lei-records"  # Official LEI data source (GLEIF)
 
 
-@app.route("/api/companies/search", methods=["POST"])
+@routes_bp.route("/api/companies/search", methods=["POST"])
 @validate_request(CompanySearchRequest)
 async def companies_search(data: CompanySearchRequest):
     try:
@@ -56,7 +55,7 @@ async def companies_search(data: CompanySearchRequest):
         return jsonify({"error": "Internal server error"}), 500
 
 
-@app.route("/api/companies/results/<string:search_id>", methods=["GET"])
+@routes_bp.route("/api/companies/results/<string:search_id>", methods=["GET"])
 async def companies_results(search_id):
     try:
         entity = await entity_service.get_item(
@@ -93,9 +92,3 @@ async def companies_results(search_id):
     except Exception as e:
         logger.exception(f"Error retrieving results for searchId={search_id}: {e}")
         return jsonify({"error": "Internal server error"}), 500
-
-
-if __name__ == '__main__':
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

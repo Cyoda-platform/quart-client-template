@@ -4,10 +4,9 @@ from datetime import datetime
 from typing import Optional
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
-import sys
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
@@ -18,8 +17,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class CatRequest:
@@ -30,7 +28,7 @@ ENTITY_NAME = "cat_hello_entity"
 CAT_FACT_API = "https://catfact.ninja/fact"
 CAT_IMAGE_API = "https://api.thecatapi.com/v1/images/search"
 
-@app.route("/api/cat/hello", methods=["POST"])
+@routes_bp.route("/api/cat/hello", methods=["POST"])
 @validate_request(CatRequest)
 async def cat_hello_post(data: CatRequest):
     try:
@@ -49,7 +47,7 @@ async def cat_hello_post(data: CatRequest):
             entity_model=ENTITY_NAME,
             entity_version=ENTITY_VERSION,
             entity=entity_job,
-            )
+        )
 
         return jsonify({
             "status": "processing",
@@ -57,11 +55,11 @@ async def cat_hello_post(data: CatRequest):
             "id": technical_id
         }), 202
 
-    except Exception as e:
+    except Exception:
         logger.exception("Exception in POST /api/cat/hello")
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/api/cat/hello/latest", methods=["GET"])
+@routes_bp.route("/api/cat/hello/latest", methods=["GET"])
 async def cat_hello_get_latest():
     try:
         items = await entity_service.get_items(
@@ -78,14 +76,6 @@ async def cat_hello_get_latest():
         latest_result = done_items[0].get("result", {})
         return jsonify(latest_result)
 
-    except Exception as e:
+    except Exception:
         logger.exception("Exception in GET /api/cat/hello/latest")
         return jsonify({"error": "Internal server error"}), 500
-
-if __name__ == '__main__':
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

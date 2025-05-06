@@ -1,0 +1,7 @@
+{
+    "alert_id": "123e4567-e89b-12d3-a456-426614174000",
+    "channel": "email",
+    "notification_id": "987e6543-e21b-34d3-c456-426614174999",
+    "status": "sent",
+    "timestamp": "2024-06-01T12:00:00Z"
+}

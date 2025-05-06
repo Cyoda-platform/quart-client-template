@@ -2,7 +2,7 @@ from dataclasses import dataclass
 import logging
 
 import httpx
-from quart import Blueprint, jsonify, request
+from quart import Blueprint, jsonify
 from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
@@ -34,6 +34,7 @@ async def retrieve_pet_details(data: PetIdRequest):
     if not is_valid_pet_id(pet_id):
         return jsonify({"error": "Invalid pet ID format."}), 400
 
+    # Initial entity state with minimal data and status 'processing'
     initial_entity = {
         "petId": pet_id,
         "status": "processing"
@@ -41,7 +42,7 @@ async def retrieve_pet_details(data: PetIdRequest):
 
     try:
         # Add entity with workflow that fetches and enriches data before persistence
-        id = await entity_service.add_item(
+        await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=PET_ENTITY_NAME,
             entity_version=ENTITY_VERSION,
@@ -53,17 +54,17 @@ async def retrieve_pet_details(data: PetIdRequest):
 
     return jsonify({
         "message": "Pet details request accepted and processing.",
-        "id": id
+        "petId": pet_id
     }), 202
 
-@routes_bp.route("/pets/details/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/details/<pet_id>", methods=["GET"])
 async def get_cached_pet_details(pet_id):
     try:
         item = await entity_service.get_item(
             token=cyoda_auth_service,
             entity_model=PET_ENTITY_NAME,
             entity_version=ENTITY_VERSION,
-            technical_id=pet_id
+            technical_id=str(pet_id)
         )
     except Exception as e:
         logger.exception(f"Failed to retrieve pet details for petId {pet_id}: {e}")
@@ -87,4 +88,5 @@ async def get_cached_pet_details(pet_id):
             "error": item.get("errorMessage", "Failed to retrieve pet details.")
         }), 500
 
+    # status == 'ready' or otherwise return the pet data
     return jsonify(item), 200

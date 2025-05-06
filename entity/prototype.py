@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
@@ -6,7 +6,7 @@ from typing import Dict
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -22,6 +22,9 @@ entity_job: Dict[int, dict] = {}
 
 PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
 
+@dataclass
+class PetIdRequest:
+    petId: int
 
 async def fetch_pet_from_external_api(pet_id: int) -> dict:
     """Call external Petstore API to retrieve pet details by pet ID."""
@@ -42,7 +45,6 @@ async def fetch_pet_from_external_api(pet_id: int) -> dict:
         except Exception as e:
             logger.exception(f"Unexpected error fetching pet {pet_id}: {e}")
             raise
-
 
 async def process_pet_entity(pet_id: int):
     """Fetch pet details from external API and update cache & job status."""
@@ -67,15 +69,14 @@ async def process_pet_entity(pet_id: int):
             job["error"] = str(e)
         logger.exception(f"Failed to process pet entity for petId={pet_id}")
 
-
 @app.route("/api/pets/details", methods=["POST"])
-async def post_pet_details():
+@validate_request(PetIdRequest)  # validation last on POST (issue workaround)
+async def post_pet_details(data: PetIdRequest):
     """
     Accepts JSON body with 'petId', triggers async fetch from external API,
     and returns job status or error.
     """
-    data = await request.get_json(force=True)
-    pet_id = data.get("petId")
+    pet_id = data.petId
 
     if not isinstance(pet_id, int) or pet_id <= 0:
         return jsonify({"status": "error", "message": "Invalid petId provided"}), 400
@@ -97,8 +98,8 @@ async def post_pet_details():
         "petId": pet_id
     }), 202
 
-
 @app.route("/api/pets/details/<int:pet_id>", methods=["GET"])
+# No request body, no validation needed for GET with path param (issue workaround)
 async def get_pet_details(pet_id: int):
     """Return cached pet details or appropriate error message."""
     pet_data = pet_cache.get(pet_id)
@@ -122,7 +123,6 @@ async def get_pet_details(pet_id: int):
         "status": "error",
         "message": "Pet details not found. Please fetch via POST /api/pets/details first."
     }), 404
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

@@ -1,0 +1,164 @@
+{
+    "description": "Workflow to fetch and update weather data for an entity",
+    "name": "weather_data_fetch_workflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing weather data fetch",
+            "end_state": "Processing",
+            "end_state_description": "Weather data fetch is in processing",
+            "name": "start_processing",
+            "processes": {
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Fetch current weather data from external API",
+            "end_state": "Current_weather_fetched",
+            "end_state_description": "Current weather data fetched and updated",
+            "name": "fetch_current_weather_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_fetch_current_weather",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Weather data fetch is in processing",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Fetch forecast weather data from external API",
+            "end_state": "Forecast_weather_fetched",
+            "end_state_description": "Forecast weather data fetched and updated",
+            "name": "fetch_forecast_weather_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_fetch_forecast_weather",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Weather data fetch is in processing",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Complete workflow successfully",
+            "end_state": "Completed",
+            "end_state_description": "Weather data fetch completed successfully",
+            "name": "complete_success",
+            "processes": {
+                "schedule_transition_processors": []
+            },
+            "start_state": "Current_weather_fetched",
+            "start_state_description": "Current weather data fetched and updated",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Complete workflow successfully",
+            "end_state": "Completed",
+            "end_state_description": "Weather data fetch completed successfully",
+            "name": "complete_success",
+            "processes": {
+                "schedule_transition_processors": []
+            },
+            "start_state": "Forecast_weather_fetched",
+            "start_state_description": "Forecast weather data fetched and updated",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Fail processing due to error",
+            "end_state": "Failed",
+            "end_state_description": "Weather data fetch failed with error",
+            "name": "fail_processing",
+            "processes": {
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Weather data fetch is in processing",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        }
+    ],
+    "workflow_criteria": {
+        "condition_criteria": [
+            {
+                "condition": {
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_MODEL_VAR",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ],
+                    "group_condition_operator": "AND"
+                },
+                "description": "Workflow criteria",
+                "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR"
+            }
+        ],
+        "externalized_criteria": []
+    }
+}

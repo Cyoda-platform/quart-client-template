@@ -1,0 +1,62 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "alert_id": "123e4567-e89b-12d3-a456-426614174000",
+                "conditions": [
+                    {
+                        "operator": "gt",
+                        "type": "temperature",
+                        "value": 30
+                    }
+                ],
+                "name": "High Temperature Alert",
+                "notification_channels": [
+                    "email",
+                    "sms"
+                ],
+                "notification_targets": {
+                    "email": "user@example.com",
+                    "sms": "+1234567890"
+                },
+                "status": "active",
+                "user_id": "user-001"
+            },
+            "entity_name": "alert"
+        },
+        {
+            "entity_data_example": {
+                "alert_id": "123e4567-e89b-12d3-a456-426614174000",
+                "channel": "email",
+                "notification_id": "987e6543-e21b-34d3-c456-426614174999",
+                "status": "sent",
+                "timestamp": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "notifications_history"
+        },
+        {
+            "entity_data_example": {
+                "additional_data": {},
+                "alerts_triggered": [
+                    {
+                        "alert_id": "123e4567-e89b-12d3-a456-426614174000",
+                        "notification_channels": [
+                            "email"
+                        ],
+                        "notification_status": "sent",
+                        "user_id": "user-001"
+                    }
+                ],
+                "job_id": "abc12345-def6-7890-abcd-ef1234567890",
+                "location": "New York",
+                "processed_at": "2024-06-01T11:05:00Z",
+                "rain_forecast": false,
+                "requestedAt": "2024-06-01T11:00:00Z",
+                "status": "completed",
+                "temperature": 28.5,
+                "timestamp": "2024-06-01T10:00:00Z"
+            },
+            "entity_name": "weather_processing_jobs"
+        }
+    ]
+}

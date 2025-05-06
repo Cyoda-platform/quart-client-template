@@ -1,6 +1,33 @@
-Certainly! I've updated the code to add the required workflow function parameter in the call to `entity_service.add_item` and implemented the `process_cat_hello_entity` workflow function accordingly. The workflow function follows the prefix `process_` + entity name as requested, is asynchronous, takes the entity data as its only argument, and modifies the entity state before persistence.
+Got it! The goal is to move all business logic, including async calls and fire-and-forget tasks, from the endpoint handler into the workflow function `process_{entity_name}` that runs asynchronously before the entity is persisted. This will keep controllers lightweight and make the code more robust.
 
-Here is the complete updated code:
+### Key points and constraints:
+- The workflow function receives the entity dict, can modify it directly (changing state).
+- It can make async calls and await them.
+- It can call `entity_service` methods for *other* entity_models but **not** for the current entity_model (to avoid recursion).
+- Any async side-effect tasks (like fire-and-forget updates) should be done inside the workflow function.
+- The workflow function replaces the need for explicit `asyncio.create_task()` in the endpoint.
+
+---
+
+### What to move:
+
+In the current code, the async task `process_entity`:
+- fetches cat fact or image
+- updates the entity_job via `entity_service.update_item`
+
+We cannot call `update_item` on the current entity inside the workflow function (would cause recursion). So instead, inside workflow we should:
+
+- fetch the cat fact or image
+- update the current entity's fields to final state (status, result, completedAt, etc)
+- the updated entity dict will be persisted by the service after workflow returns
+
+Thus, the entire processing flow happens in the workflow function, no separate async task needed.
+
+The endpoint becomes very simple: just calls `add_item` with the initial entity (status=processing), passes workflow function, and immediately returns.
+
+---
+
+### Updated code with all logic moved into `process_cat_hello_entity`
 
 ```python
 from dataclasses import dataclass
@@ -63,60 +90,55 @@ async def process_cat_hello_entity(entity: dict) -> dict:
     """
     Workflow function applied to the entity asynchronously before persistence.
     This function modifies the entity state before it is persisted.
-    For example, we can add or modify fields here.
+    It performs the external calls and updates the entity to final state (done).
     """
     try:
-        # Example: Add a field 'workflow_processedAt' with current UTC time
+        # Add a field 'workflow_processedAt' with current UTC time
         entity["workflow_processedAt"] = datetime.utcnow().isoformat() + "Z"
-        # You can further modify the entity here or add related entities as needed.
-        
-        # Return the modified entity to be persisted
-        return entity
-    except Exception as e:
-        logger.exception("Exception in workflow function process_cat_hello_entity")
-        # In case of error, just return the entity unchanged
-        return entity
 
-async def process_entity(technical_id: str, data: dict):
-    """
-    Simulate processing job: call external API, compose result, update entity_job.
-    """
-    try:
+        # Check if entity is in initial "processing" state to avoid re-processing
+        if entity.get("status") != "processing":
+            # Already processed or in other state, do nothing
+            return entity
+
+        cat_type = entity.get("input", {}).get("type", "fact")
+
         async with httpx.AsyncClient() as client:
-            cat_type = data.get("type", "fact")
-            result = {"message": "Hello World", "catData": None}
-
             if cat_type == "image":
                 cat_data = await fetch_cat_image_url(client)
             else:
                 cat_data = await fetch_cat_fact(client)
 
-            result["catData"] = cat_data
+        result = {
+            "message": "Hello World",
+            "catData": cat_data
+        }
 
-            update_data = {
-                "status": "done",
-                "result": result,
-                "completedAt": datetime.utcnow().isoformat() + "Z"
-            }
+        # Update entity state to done with result
+        entity.update({
+            "status": "done",
+            "result": result,
+            "completedAt": datetime.utcnow().isoformat() + "Z"
+        })
 
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model=ENTITY_NAME,
-                entity_version=ENTITY_VERSION,
-                entity=update_data,
-                technical_id=technical_id,
-                meta={}
-            )
-            logger.info(f"Processing finished and entity updated for id {technical_id}")
+        return entity
+
     except Exception as e:
-        logger.exception(f"Exception in processing entity id {technical_id}")
+        logger.exception("Exception in workflow function process_cat_hello_entity")
+        # In case of error, mark entity as failed with error message
+        entity.update({
+            "status": "failed",
+            "error": str(e),
+            "completedAt": datetime.utcnow().isoformat() + "Z"
+        })
+        return entity
 
 @app.route("/api/cat/hello", methods=["POST"])
 @validate_request(CatRequest)  # validation must be last decorator in POST due to quart-schema issue workaround
 async def cat_hello_post(data: CatRequest):
     """
     POST endpoint to trigger external data retrieval and compose "Hello World" + cat data.
-    Business logic happens here.
+    Minimal logic here, all async work done in workflow function.
     """
     try:
         cat_type = data.type or "fact"
@@ -130,19 +152,15 @@ async def cat_hello_post(data: CatRequest):
             "input": data.__dict__
         }
 
-        # Add item to entity_service, returns technical_id
         technical_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=ENTITY_NAME,
             entity_version=ENTITY_VERSION,
             entity=entity_job,
-            workflow=process_cat_hello_entity  # Workflow function applied before persistence
+            workflow=process_cat_hello_entity  # Workflow function handles all async logic
         )
 
-        # Fire and forget processing task to update entity_job later
-        asyncio.create_task(process_entity(technical_id, data.__dict__))
-
-        # Return immediate response indicating processing started with id
+        # Immediately return accepted response with id
         return jsonify({
             "status": "processing",
             "message": "Request accepted and processing started",
@@ -159,7 +177,6 @@ async def cat_hello_get_latest():
     No external calls here, just cached response.
     """
     try:
-        # Retrieve all items and find the latest done by completedAt timestamp
         items = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model=ENTITY_NAME,
@@ -170,7 +187,6 @@ async def cat_hello_get_latest():
             return jsonify({
                 "message": "No data available yet, please POST /api/cat/hello first"
             }), 404
-        # Sort by completedAt descending
         done_items.sort(key=lambda x: x.get("completedAt", ""), reverse=True)
         latest_result = done_items[0].get("result", {})
         return jsonify(latest_result)
@@ -191,9 +207,20 @@ if __name__ == '__main__':
 
 ---
 
-### Summary of changes:
-- Added `process_cat_hello_entity` async workflow function that receives the entity dict, modifies it (adds a timestamp field `workflow_processedAt`), and returns it.
-- In the `cat_hello_post` route, added the `workflow=process_cat_hello_entity` argument in the `entity_service.add_item()` call as required.
-- Left the rest of the code unchanged.
+### What changed:
+- Removed the separate `process_entity` async task and all `asyncio.create_task` calls.
+- `process_cat_hello_entity` does all async processing inside workflow:
+  - fetch cat fact/image
+  - update entity fields to `done` with results or `failed` on error
+- Controller (`cat_hello_post`) only prepares initial entity and calls `add_item` with workflow function.
+- GET endpoint unchanged.
 
-Let me know if you'd like me to adjust the workflow function logic or add any other features!
+---
+
+This approach:
+- Keeps all business logic in workflow function, decoupling persistence and processing.
+- Avoids problematic recursion by not calling update on the same entity_model inside workflow.
+- Makes controller very thin and robust.
+- Uses the new workflow processing feature exactly as intended.
+
+If you want, I can help you with further improvements or test cases!

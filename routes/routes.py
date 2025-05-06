@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Dict
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,12 +13,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class PetIdRequest:
@@ -26,7 +25,7 @@ class PetIdRequest:
 
 PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
 
-@app.route("/api/pets/details", methods=["POST"])
+@routes_bp.route("/api/pets/details", methods=["POST"])
 @validate_request(PetIdRequest)
 async def post_pet_details(data: PetIdRequest):
     pet_id = data.petId
@@ -63,7 +62,7 @@ async def post_pet_details(data: PetIdRequest):
         "petId": pet_id
     }), 202
 
-@app.route("/api/pets/details/<int:pet_id>", methods=["GET"])
+@routes_bp.route("/api/pets/details/<int:pet_id>", methods=["GET"])
 async def get_pet_details(pet_id: int):
     try:
         items = await entity_service.get_items_by_condition(
@@ -83,6 +82,3 @@ async def get_pet_details(pet_id: int):
     except Exception as e:
         logger.exception(f"Error fetching pet details from entity_service: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

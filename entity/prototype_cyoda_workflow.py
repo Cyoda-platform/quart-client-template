@@ -1,6 +1,63 @@
-Certainly! I've updated the code to add the required `workflow` parameter to all calls to `entity_service.add_item`. Also, I implemented the workflow function `process_alert` (for the `alert` entity) as an example, with the function name following the `process_{entity_name}` convention (lowercase underscore). Since you didn't specify workflows for other entity models, I only implemented this one as an example. You can add more workflows similarly.
+Understood. We should move as much async logic as possible from the endpoints into dedicated `process_{entity_name}` workflow functions which are invoked automatically right before entity persistence on `add_item`. This aligns with the design you described: workflow functions get the entity dict, can modify it, and can add supplementary entities of other models but **must not** add/update/delete the same entity model to avoid recursion.
 
-Here is the complete updated code with the required changes:
+---
+
+### What can be moved into workflow functions?
+
+1. **`process_alert`**:  
+   Endpoint logic in `/alerts` POST that sets default `"status": "active"` and maybe any normalization or validation that can be done just before persistence.
+
+2. **`process_weather_processing_jobs`**:  
+   The logic that sets the job status to `"processing"`, triggers the async alert evaluation and notification sending, and finally updates job status to `"completed"` or `"failed"` — this is currently in the `process_weather_data` async task started by the endpoint.  
+   This entire async processing logic fits *perfectly* into the `process_weather_processing_jobs` workflow function, because the workflow supports async code and runs just before persistence.  
+   
+   Since the workflow function cannot update the same entity (to avoid recursion), the solution is:  
+   - Modify the incoming job entity's state directly (e.g. update `status`, timestamps)  
+   - For updating the job status later (e.g. `"completed"` after processing), we can use `entity_service.update_item` since it's a different call and different entity model. The entity model is the same (`weather_processing_jobs`), so we must be careful. But per your instructions, updating the same entity model inside workflow will cause infinite recursion.  
+   
+   So the workaround:  
+   - We **cannot** call `add_item/update_item/delete_item` on the same entity model inside the workflow function.  
+   - But the workflow runs *before* persistence of the new entity. So we can modify the entity in-place for the initial status `"processing"`.  
+   - For the final status updates, we can spawn a separate background task outside workflow or in workflow but via other means (e.g. external worker), but this contradicts your requirement to move everything into workflow.  
+   
+   Possible approach:  
+   - In the workflow, immediately set entity status `"processing"` and fire off a background `asyncio.create_task` that runs the evaluation and notification sending, and upon completion updates the job entity (via `update_item`) — this is **allowed** since the background task is outside the main workflow call stack.  
+   - Because the workflow function itself does not call `update_item` on the same entity synchronously, no recursion.  
+   
+   So, move all processing logic into `process_weather_processing_jobs`, spawn background task inside it to do async tasks and update job status.
+
+3. **`process_notifications_history`**:  
+   The notification sending is currently in `evaluate_alerts_for_weather_data`. Since notifications_history entities are created in that function, and it calls `add_item` with `workflow=None`.  
+   We can create a `process_notifications_history` workflow function to handle additional processing (e.g. logging, enrichment, retries).  
+   
+   But since the sending is done *before* persistence of notifications_history, moving sending itself into the workflow is problematic (it would delay persistence). However, per your requirement that async tasks should be moved into workflows, we can:
+   - Move the sending logic into `process_notifications_history` workflow function.  
+   - That means the `add_item` call for notifications_history will trigger sending notification *before* persistence.  
+   - This is acceptable if the notification sending must happen synchronously before persistence. Otherwise, we can fire & forget inside workflow.  
+   
+   So the best design is:  
+   - Keep notification sending inside workflow function `process_notifications_history`.  
+   - From other workflows or business code, just add notifications_history entities with workflow=process_notifications_history and no sending logic there.  
+   
+4. **`process_alert`**:  
+   Currently has minimal logic; keep it for normalization and validation.
+
+---
+
+### Implementation plan:
+
+- Move alert creation logic into `process_alert` (e.g. set status `"active"` if missing).
+- Move weather job processing into `process_weather_processing_jobs`:
+  - Set `"processing"` status.
+  - Spawn background task to evaluate alerts, send notifications, and update job status.
+- Move notification sending into `process_notifications_history`.
+- Simplify endpoint code to just call `add_item` with appropriate workflow, no extra async logic.
+- Ensure we never call `add/update/delete` on the same entity model inside its workflow synchronously.
+- Use background tasks inside workflow functions if needed.
+
+---
+
+### Updated code with workflows and simplified endpoints
 
 ```python
 from dataclasses import dataclass
@@ -25,10 +82,6 @@ logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
-
-# In-memory "databases" replaced by entity_service usage, so removed users_alerts, notifications_history, weather_processing_jobs
-
-# Data classes for validation
 
 @dataclass
 class Condition:
@@ -65,82 +118,133 @@ class WeatherDataRequest:
     rain_forecast: bool
     additional_data: Optional[Dict[str, Any]] = None
 
-# Workflow function for alert entity
+# -----------------------
+# Workflow functions
+# -----------------------
+
 async def process_alert(entity: Dict[str, Any]) -> None:
     """
-    Workflow function applied to 'alert' entities before persistence.
-    You can modify the entity here, e.g., normalize fields, add defaults, etc.
+    Workflow for 'alert' entity:
+    Set default status, normalize fields etc.
     """
-    # Example: Ensure status is always lowercase string
+    if "status" not in entity:
+        entity["status"] = "active"
+    if "alert_id" not in entity:
+        entity["alert_id"] = str(uuid4())
+    # Normalize status to lowercase
     if "status" in entity and isinstance(entity["status"], str):
         entity["status"] = entity["status"].lower()
-    # Add any other processing logic as needed
-    # Do NOT add/update/delete 'alert' entities here to avoid recursion
+    # Could add more normalization here
 
-# Notification sending mock
-async def send_notification(user_id: str, alert_id: str, channel: str, target: str, message: str) -> bool:
+async def process_notifications_history(entity: Dict[str, Any]) -> None:
+    """
+    Workflow for 'notifications_history':
+    Send the actual notification asynchronously before persisting.
+    """
+    user_id = entity.get("user_id")
+    alert_id = entity.get("alert_id")
+    channel = entity.get("channel")
+    status = entity.get("status")  # We can ignore or update based on sending result
+    if not all([user_id, alert_id, channel]):
+        logger.warning("Missing fields for notifications_history entity, skipping send")
+        return
+
+    # Determine target from entity if stored, else can't send
+    # We have no direct notification_targets here; assume stored or passed in entity.
+    # For demonstration, we assume entity has 'target' field.
+    target = entity.get("target")
+    if not target:
+        logger.warning("No target found in notifications_history entity, skipping send")
+        return
+
+    message = entity.get("message", f"Alert {alert_id} triggered")
+
     try:
-        logger.info(f"Sending notification to user {user_id} via {channel} to {target}: {message}")
+        logger.info(f"Sending notification via {channel} to {target} for user {user_id}")
         if channel == "webhook":
             async with httpx.AsyncClient(timeout=10) as client:
                 resp = await client.post(target, json={"alert_id": alert_id, "message": message})
                 if resp.status_code >= 400:
                     logger.warning(f"Webhook notification failed: {resp.status_code} {resp.text}")
-                    return False
-        return True
-    except Exception as e:
-        logger.exception(e)
-        return False
-
-async def evaluate_alerts_for_weather_data(location: str, timestamp: str, temperature: float, rain_forecast: bool):
-    alerts_triggered = []
-    try:
-        # Retrieve all alerts with status active
-        condition = {"status": "active"}
-        all_active_alerts = await entity_service.get_items_by_condition(
-            token=cyoda_auth_service,
-            entity_model="alert",
-            entity_version=ENTITY_VERSION,
-            condition=condition
-        )
-        # all_active_alerts is expected to be a list of alert entities, each having user_id etc.
-        for alert in all_active_alerts:
-            user_id = alert.get("user_id")
-            if user_id is None:
-                logger.warning(f"Alert missing user_id: {alert}")
-                continue
-            conditions = alert.get("conditions", [])
-            matches = True
-            for cond in conditions:
-                ctype = cond.get("type")
-                op = cond.get("operator")
-                value = cond.get("value")
-                if ctype == "temperature":
-                    try:
-                        val = float(value)
-                        if op == "gt" and not (temperature > val):
-                            matches = False
-                        elif op == "lt" and not (temperature < val):
-                            matches = False
-                        elif op == "eq" and not (temperature == val):
-                            matches = False
-                    except Exception as e:
-                        logger.warning(f"Invalid temperature condition in alert {alert.get('alert_id')}: {e}")
-                        matches = False
-                elif ctype == "rain_forecast":
-                    val_bool = (str(value).lower() == "true")
-                    if op == "eq" and rain_forecast != val_bool:
-                        matches = False
+                    entity["status"] = "failed"
                 else:
-                    logger.warning(f"Unknown condition type: {ctype}")
-                    matches = False
+                    entity["status"] = "sent"
+        else:
+            # For email, sms, etc. just simulate send success
+            entity["status"] = "sent"
+    except Exception as e:
+        logger.exception(f"Failed to send notification: {e}")
+        entity["status"] = "failed"
+
+async def process_weather_processing_jobs(entity: Dict[str, Any]) -> None:
+    """
+    Workflow for 'weather_processing_jobs':
+    Set status to processing, spawn background task to evaluate alerts and update job status.
+    """
+    if "status" not in entity or entity["status"] == "queued":
+        entity["status"] = "processing"
+
+    # Spawn background task to do actual processing to avoid blocking persistence
+    async def background_job(job_entity: Dict[str, Any]):
+        job_id = job_entity.get("job_id")
+        if not job_id:
+            logger.error("Job entity missing job_id. Cannot process.")
+            return
+        location = job_entity.get("location")
+        timestamp = job_entity.get("timestamp")
+        temperature = job_entity.get("temperature")
+        rain_forecast = job_entity.get("rain_forecast")
+
+        try:
+            alerts_triggered = []
+            # Fetch active alerts
+            active_alerts = await entity_service.get_items_by_condition(
+                token=cyoda_auth_service,
+                entity_model="alert",
+                entity_version=ENTITY_VERSION,
+                condition={"status": "active"}
+            )
+            for alert in active_alerts:
+                user_id = alert.get("user_id")
+                if user_id is None:
+                    logger.warning(f"Alert missing user_id: {alert}")
+                    continue
+                conditions = alert.get("conditions", [])
+                matches = True
+                for cond in conditions:
+                    ctype = cond.get("type")
+                    op = cond.get("operator")
+                    value = cond.get("value")
+                    if ctype == "temperature":
+                        try:
+                            val = float(value)
+                            if op == "gt" and not (temperature > val):
+                                matches = False
+                            elif op == "lt" and not (temperature < val):
+                                matches = False
+                            elif op == "eq" and not (temperature == val):
+                                matches = False
+                        except Exception as e:
+                            logger.warning(f"Invalid temperature condition in alert {alert.get('alert_id')}: {e}")
+                            matches = False
+                    elif ctype == "rain_forecast":
+                        val_bool = (str(value).lower() == "true")
+                        if op == "eq" and rain_forecast != val_bool:
+                            matches = False
+                    else:
+                        logger.warning(f"Unknown condition type: {ctype}")
+                        matches = False
+                    if not matches:
+                        break
+
                 if not matches:
-                    break
-            if matches:
+                    continue
+
                 notification_channels = alert.get("notification_channels", [])
                 notification_targets = alert.get("notification_targets", {})
                 alert_id = alert.get("alert_id")
                 notification_results = []
+
                 for channel in notification_channels:
                     target = None
                     if isinstance(notification_targets, dict):
@@ -151,92 +255,39 @@ async def evaluate_alerts_for_weather_data(location: str, timestamp: str, temper
                         logger.warning(f"Missing notification target for channel {channel} in alert {alert_id}")
                         continue
                     message = f"Weather alert triggered for your rule '{alert.get('name')}' at {location}."
-                    success = await send_notification(user_id, alert_id, channel, target, message)
-                    notification_results.append({
-                        "channel": channel,
-                        "status": "sent" if success else "failed"
-                    })
-                    # Save notification history as an entity
-                    notification_history_obj = {
+
+                    # Create notifications_history entity; notification sending happens in its workflow
+                    notification_entity = {
                         "notification_id": str(uuid4()),
                         "alert_id": alert_id,
                         "channel": channel,
-                        "status": "sent" if success else "failed",
+                        "status": "pending",  # set pending, workflow will send and update
                         "timestamp": datetime.now(timezone.utc).isoformat(),
-                        "user_id": user_id
+                        "user_id": user_id,
+                        "target": target,
+                        "message": message
                     }
                     try:
                         await entity_service.add_item(
                             token=cyoda_auth_service,
                             entity_model="notifications_history",
                             entity_version=ENTITY_VERSION,
-                            entity=notification_history_obj,
-                            workflow=None  # No workflow specified for notifications_history
+                            entity=notification_entity,
+                            workflow=process_notifications_history
                         )
+                        notification_results.append({"channel": channel, "status": "sent"})
                     except Exception as e:
-                        logger.exception(f"Failed to save notification history: {e}")
+                        logger.exception(f"Failed to add notifications_history entity: {e}")
+                        notification_results.append({"channel": channel, "status": "failed"})
+
                 alerts_triggered.append({
                     "alert_id": alert_id,
                     "user_id": user_id,
                     "notification_channels": [r["channel"] for r in notification_results],
                     "notification_status": "sent" if all(r["status"] == "sent" for r in notification_results) else "failed"
                 })
-    except Exception as e:
-        logger.exception(e)
-    return alerts_triggered
 
-async def process_weather_data(job_id: str, data: Dict[str, Any]):
-    job_entity = {
-        "job_id": job_id,
-        "status": "processing",
-        "requestedAt": datetime.now(timezone.utc).isoformat()
-    }
-    try:
-        # Save job entity with status processing
-        await entity_service.add_item(
-            token=cyoda_auth_service,
-            entity_model="weather_processing_jobs",
-            entity_version=ENTITY_VERSION,
-            entity=job_entity,
-            workflow=None  # No workflow specified for weather_processing_jobs
-        )
-    except Exception as e:
-        logger.exception(f"Failed to save weather_processing_jobs job start: {e}")
-
-    try:
-        location = data.get("location")
-        timestamp = data.get("timestamp")
-        temperature = data.get("temperature")
-        rain_forecast = data.get("rain_forecast")
-        alerts_triggered = await evaluate_alerts_for_weather_data(location, timestamp, temperature, rain_forecast)
-        # Update job status to completed
-        job_entity_update = {
-            "status": "completed",
-            "alerts_triggered": alerts_triggered,
-            "processed_at": datetime.now(timezone.utc).isoformat()
-        }
-        # Assuming we can get technical_id by job_id for update - emulate by retrieving the job entity by condition
-        jobs = await entity_service.get_items_by_condition(
-            token=cyoda_auth_service,
-            entity_model="weather_processing_jobs",
-            entity_version=ENTITY_VERSION,
-            condition={"job_id": job_id}
-        )
-        if jobs:
-            technical_id = jobs[0].get("technical_id")
-            if technical_id:
-                await entity_service.update_item(
-                    token=cyoda_auth_service,
-                    entity_model="weather_processing_jobs",
-                    entity_version=ENTITY_VERSION,
-                    entity=job_entity_update,
-                    technical_id=technical_id,
-                    meta={}
-                )
-    except Exception as e:
-        logger.exception(e)
-        # Update job status to failed
-        try:
+            # Update weather_processing_jobs entity status to completed
             jobs = await entity_service.get_items_by_condition(
                 token=cyoda_auth_service,
                 entity_model="weather_processing_jobs",
@@ -250,14 +301,49 @@ async def process_weather_data(job_id: str, data: Dict[str, Any]):
                         token=cyoda_auth_service,
                         entity_model="weather_processing_jobs",
                         entity_version=ENTITY_VERSION,
-                        entity={"status": "failed", "error": str(e)},
+                        entity={
+                            "status": "completed",
+                            "alerts_triggered": alerts_triggered,
+                            "processed_at": datetime.now(timezone.utc).isoformat()
+                        },
                         technical_id=technical_id,
                         meta={}
                     )
-        except Exception as ex:
-            logger.exception(f"Failed to update weather_processing_jobs to failed: {ex}")
+        except Exception as exc:
+            logger.exception(f"Exception in background job processing weather data: {exc}")
+            # Update job status to failed
+            try:
+                jobs = await entity_service.get_items_by_condition(
+                    token=cyoda_auth_service,
+                    entity_model="weather_processing_jobs",
+                    entity_version=ENTITY_VERSION,
+                    condition={"job_id": job_id}
+                )
+                if jobs:
+                    technical_id = jobs[0].get("technical_id")
+                    if technical_id:
+                        await entity_service.update_item(
+                            token=cyoda_auth_service,
+                            entity_model="weather_processing_jobs",
+                            entity_version=ENTITY_VERSION,
+                            entity={
+                                "status": "failed",
+                                "error": str(exc),
+                                "processed_at": datetime.now(timezone.utc).isoformat()
+                            },
+                            technical_id=technical_id,
+                            meta={}
+                        )
+            except Exception as e2:
+                logger.exception(f"Failed to update weather_processing_jobs to failed: {e2}")
 
-# POST routes with @validate_request last (workaround issue)
+    # Fire and forget background task
+    asyncio.create_task(background_job(entity.copy()))
+
+# -----------------------
+# Endpoint handlers (simplified)
+# -----------------------
+
 @app.route("/alerts", methods=["POST"])
 @validate_request(CreateAlertRequest)
 async def create_alert(data: CreateAlertRequest):
@@ -268,18 +354,16 @@ async def create_alert(data: CreateAlertRequest):
             "conditions": [cond.__dict__ for cond in data.conditions],
             "notification_channels": data.notification_channels,
             "notification_targets": data.notification_targets.__dict__ if data.notification_targets else {},
-            "status": "active",
-            "alert_id": str(uuid4())
+            # "status" and "alert_id" set in workflow
         }
-        alert_id = await entity_service.add_item(
+        await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="alert",
             entity_version=ENTITY_VERSION,
             entity=alert_obj,
             workflow=process_alert
         )
-        # alert_id returned is technical_id, but we keep alert_id in entity as unique field
-        return jsonify({"alert_id": alert_obj["alert_id"], "status": "active"}), 201
+        return jsonify({"alert_id": alert_obj.get("alert_id"), "status": "active"}), 201
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to create alert"}), 500
@@ -288,7 +372,6 @@ async def create_alert(data: CreateAlertRequest):
 @validate_request(UpdateAlertRequest)
 async def update_alert(data: UpdateAlertRequest, alert_id):
     try:
-        # Retrieve alert by alert_id field using condition
         alerts = await entity_service.get_items_by_condition(
             token=cyoda_auth_service,
             entity_model="alert",
@@ -301,7 +384,6 @@ async def update_alert(data: UpdateAlertRequest, alert_id):
         technical_id = alert_entity.get("technical_id")
         if technical_id is None:
             return jsonify({"error": "Alert technical ID missing"}), 500
-        # Prepare updated fields
         updated = {}
         if data.name is not None:
             updated["name"] = data.name
@@ -312,8 +394,7 @@ async def update_alert(data: UpdateAlertRequest, alert_id):
         if data.notification_targets is not None:
             updated["notification_targets"] = data.notification_targets.__dict__
         if not updated:
-            return jsonify({"alert_id": alert_id, "status": "updated"}), 200  # nothing to update
-        # Merge with existing alert_entity fields to avoid overwriting fields with empty
+            return jsonify({"alert_id": alert_id, "status": "updated"}), 200
         alert_entity.update(updated)
         await entity_service.update_item(
             token=cyoda_auth_service,
@@ -392,9 +473,8 @@ async def post_weather_data(data: WeatherDataRequest):
             entity_model="weather_processing_jobs",
             entity_version=ENTITY_VERSION,
             entity=job_entity,
-            workflow=None  # No workflow specified for weather_processing_jobs
+            workflow=process_weather_processing_jobs
         )
-        asyncio.create_task(process_weather_data(job_id, data.__dict__))
         return jsonify({"job_id": job_id, "status": "queued", "requestedAt": requested_at}), 200
     except Exception as e:
         logger.exception(e)
@@ -426,11 +506,17 @@ if __name__ == '__main__':
 
 ---
 
-### Summary of changes:
-- Added an async workflow function `process_alert` for the `alert` entity.
-- Added `workflow=process_alert` in all `entity_service.add_item` calls where `entity_model="alert"`.
-- For other models (`weather_processing_jobs`, `notifications_history`), passed `workflow=None` to be explicit (you can remove this if default is None).
-- The workflow function modifies the entity in-place before persistence, as requested.
-- No changes were made to update or delete calls because the workflow applies only to `add_item`.
+### Explanation:
 
-If you want me to implement workflows for other entities as well, just let me know!
+- **Endpoints now only prepare data and call `add_item()` or `update_item()`**.
+- **`process_alert`** sets default fields and normalizes the alert before persistence.
+- **`process_weather_processing_jobs`** sets status to processing and immediately spawns a background task to do alert evaluation and notification creation.
+  - Background task uses `entity_service` to fetch alerts and add notification entities with workflow `process_notifications_history`.
+  - Background task updates the job status once done or on failure.
+- **`process_notifications_history`** sends the notification and updates the notification entity status accordingly before persistence.
+- No workflow calls `add/update/delete` on its own entity model synchronously — avoiding infinite recursion.
+- All async logic and fire-and-forget tasks moved into workflows, making controllers slim and robust.
+
+---
+
+If you want me to further break down workflows or add tests/examples, just ask!

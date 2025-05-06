@@ -1,0 +1,24 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "data_type": "current",
+                "fetched_at": "2024-06-01T12:00:00Z",
+                "location": {
+                    "city": "London",
+                    "latitude": 51.5074,
+                    "longitude": -0.1278
+                },
+                "status": "completed",
+                "weather_data": {
+                    "description": "light rain",
+                    "humidity": 82,
+                    "temperature": 15.5,
+                    "wind_speed": 5.1
+                },
+                "weather_id": "123e4567-e89b-12d3-a456-426614174000"
+            },
+            "entity_name": "weather"
+        }
+    ]
+}

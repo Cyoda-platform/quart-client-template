@@ -1,59 +1,3 @@
-Absolutely! Moving the async logic and complex processing into the workflow function is a cleaner, more modular approach. It keeps controllers lightweight and delegates entity-specific processing to the workflow function, which is designed exactly for that.
-
----
-
-### What to move:
-- The external API call (`fetch_pet_from_external_api`)
-- The async update of the pet entity after fetching the external data (`entity_service.update_item`)
-- The fire-and-forget background task `process_pet_request`
-
----
-
-### What NOT to do inside the workflow:
-- Do NOT call `entity_service.add/update/delete` on the **same** entity model (`pet`) inside `process_pet` to avoid infinite recursion.
-- But you **can** `get` or `add` entities of **other** entity models if needed.
-
----
-
-### Approach:
-- Move all the external API fetching and updating logic inside `process_pet`.
-- The controller only calls `add_item` with initial entity data (e.g., `{"status": "processing", "petId": pet_id}`) and passes `workflow=process_pet`.
-- The workflow function fetches external data, and updates the pet entity via `entity_service.update_item` **because this is a different entity** (update on same model is disallowed inside workflow).
-  - Actually, per your rule, you **cannot** update the same entity model inside workflow either (infinite recursion).
-  - So to update the same entity, we must modify the entity **in place** before persistence.
-  - But we cannot perform async operations that update the same entity after persistence inside the workflow.
-- To resolve this:
-  - Since the workflow is applied *before* persistence, we can:
-    - Call the external API inside the workflow,
-    - Modify the `entity` in-place with the fetched external data,
-    - Return it so it gets persisted with the full data.
-
-- No need for a separate update after persistence.
-
----
-
-### So the workflow will:
-- Receive the `entity` with `status: "processing"` and `petId`.
-- Call external API to fetch pet details.
-- If successful, update the `entity` with full details and set status to `"ready"` (or similar).
-- If failed, set `entity` status to `"error"` with error message.
-- Return the modified `entity` which will be persisted.
-
----
-
-### Controller:
-- Just calls `add_item` with minimal data + `workflow=process_pet`.
-- Returns 202 Accepted that pet is being processed.
-
----
-
-### This eliminates the need for fire-and-forget tasks, external update calls, and keeps everything in one atomic workflow step.
-
----
-
-## Here is the fully updated code following your requirements:
-
-```python
 from dataclasses import dataclass
 import logging
 
@@ -209,19 +153,3 @@ if __name__ == '__main__':
                         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- `process_pet` is now responsible for fetching from external API and enriching the entity before adding it to the DB.
-- The entity is persisted **once** after `process_pet` returns.
-- The controller simply triggers `add_item` with minimal data and the workflow.
-- Removed any fire-and-forget or post-persistence update tasks.
-- The GET endpoint remains unchanged to query the stored entity.
-- This approach ensures atomic and robust processing within the workflow function itself.
-
----
-
-Let me know if you want me to help refactor any other entities or add additional error handling!

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import asyncio
 import logging
 import uuid
@@ -5,13 +6,40 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+@dataclass
+class AlertCondition:
+    condition_type: str
+    operator: str
+    threshold: float or bool
+
+@dataclass
+class NotificationDetails:
+    email: str = None
+    sms: str = None
+    webhook_url: str = None
+
+@dataclass
+class AlertRequest:
+    alert_id: str = None
+    user_id: str = None
+    location: dict = None
+    conditions: list = None
+    notification_channels: list = None
+    notification_details: NotificationDetails = None
+    message_template: str = None
+
+@dataclass
+class WeatherFetchRequest:
+    location: dict
+    data_type: str
 
 # Mock persistence
 weather_cache = {}
@@ -39,7 +67,6 @@ async def fetch_weather(location, data_type):
 
 
 async def process_alert_evaluation(weather_id):
-    """Evaluate alerts against weather data and send notifications if conditions met"""
     entity = weather_cache.get(weather_id)
     if not entity:
         logger.error(f"Weather data not found for id: {weather_id}")
@@ -49,7 +76,6 @@ async def process_alert_evaluation(weather_id):
     weather_data = entity.get("weather_data", {})
     alerts_triggered = []
 
-    # For simplicity, iterate all alerts and evaluate conditions synchronously
     for alert_id, alert in alerts_cache.items():
         if alert.get("location") != location or alert.get("status") != "active":
             continue
@@ -61,12 +87,9 @@ async def process_alert_evaluation(weather_id):
                 operator = cond.get("operator")
                 threshold = cond.get("threshold")
 
-                # Extract actual value from weather_data - simplified example for temperature and rain
                 if condition_type == "temperature":
                     actual = weather_data.get("main", {}).get("temp")
                 elif condition_type == "rain":
-                    # OpenWeatherMap uses 'rain' key with '1h' or '3h' volume in mm
-                    rain_volume = 0
                     rain_info = weather_data.get("rain", {})
                     actual = rain_info.get("1h", 0) or rain_info.get("3h", 0) or 0
                 else:
@@ -90,12 +113,11 @@ async def process_alert_evaluation(weather_id):
                 logger.exception(f"Error evaluating alert condition: {e}")
 
         if triggered_conditions:
-            # TODO: Integrate real notification service (email, SMS, webhook)
             logger.info(f"Alert {alert_id} triggered for weather {weather_id} with conditions: {triggered_conditions}")
             alerts_triggered.append({
                 "alert_id": alert_id,
                 "triggered_conditions": triggered_conditions,
-                "notification_status": "sent"  # Assume sent for prototype
+                "notification_status": "sent"
             })
 
     entity["alerts_triggered"] = alerts_triggered
@@ -114,7 +136,6 @@ async def process_weather_fetch(entity):
 
         weather_cache[entity['weather_id']] = entity
 
-        # Fire and forget alert evaluation
         await asyncio.create_task(process_alert_evaluation(entity['weather_id']))
 
     except Exception as e:
@@ -126,17 +147,18 @@ async def process_weather_fetch(entity):
 
 
 @app.route("/alerts", methods=["POST"])
-async def create_or_update_alert():
+@validate_request(AlertRequest)  # POST validation must go last for workaround
+async def create_or_update_alert(data: AlertRequest):
     try:
-        data = await request.get_json()
-        if not data or "user_id" not in data or "conditions" not in data:
+        alert = data.__dict__
+        if not alert.get("user_id") or not alert.get("conditions"):
             return jsonify({"status": "error", "message": "Missing required fields"}), 400
 
-        alert_id = data.get("alert_id") or str(uuid.uuid4())
-        data["alert_id"] = alert_id
-        data.setdefault("status", "active")
+        alert_id = alert.get("alert_id") or str(uuid.uuid4())
+        alert["alert_id"] = alert_id
+        alert.setdefault("status", "active")
 
-        alerts_cache[alert_id] = data
+        alerts_cache[alert_id] = alert
 
         return jsonify({"status": "success", "alert_id": alert_id, "message": "Alert created/updated successfully"})
     except Exception as e:
@@ -145,21 +167,17 @@ async def create_or_update_alert():
 
 
 @app.route("/weather/fetch", methods=["POST"])
-async def weather_fetch():
+@validate_request(WeatherFetchRequest)  # POST validation must go last for workaround
+async def weather_fetch(data: WeatherFetchRequest):
     try:
-        data = await request.get_json()
-        if not data or "location" not in data or "data_type" not in data:
-            return jsonify({"status": "error", "message": "Missing required fields"}), 400
-
         entity = {
-            "location": data.get("location"),
-            "data_type": data.get("data_type")
+            "location": data.location,
+            "data_type": data.data_type
         }
 
         entity["weather_id"] = str(uuid.uuid4())
         weather_cache[entity["weather_id"]] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat() + "Z"}
 
-        # Fire and forget
         await asyncio.create_task(process_weather_fetch(entity))
 
         return jsonify({"status": "success", "weather_id": entity["weather_id"], "message": "Weather data fetch started and alerts evaluation triggered"})
@@ -168,6 +186,7 @@ async def weather_fetch():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+# GET endpoint with no validation needed as per spec (no body, no query validation)
 @app.route("/weather/<weather_id>", methods=["GET"])
 async def get_weather(weather_id):
     entity = weather_cache.get(weather_id)
@@ -176,11 +195,12 @@ async def get_weather(weather_id):
     return jsonify(entity)
 
 
+# GET endpoint with no validation needed (path param only)
 @app.route("/alerts/<user_id>", methods=["GET"])
 async def get_user_alerts(user_id):
     user_alerts = [alert for alert in alerts_cache.values() if alert.get("user_id") == user_id]
     return jsonify(user_alerts)
 
 
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+if __name__ == "__main__":
+    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

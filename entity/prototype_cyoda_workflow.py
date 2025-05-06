@@ -1,31 +1,3 @@
-Absolutely! Moving all the asynchronous tasks and business logic into the workflow function is a great design decision. It makes the endpoint handlers (controllers) clean and keeps the domain logic and side-effects closer to the entity lifecycle, which improves maintainability and robustness.
-
----
-
-### What we'll do:
-
-- Move the logic of fetching cat image or fact inside the workflow function `process_catfetchrequest`.
-- The workflow function will:
-  - Modify the entity state directly (`entity['status']`, `entity['data']`, `entity['requestedAt']`).
-  - Fetch the cat image/fact asynchronously.
-  - If needed, add supplementary entities of different entity models.
-- The endpoint `/cats/fetch` will be reduced to just validating input and calling `add_item` with the workflow function.
-- We will **not** update the entity after `add_item` because the workflow function updates the entity state before persistence. The service will persist the entity state after the workflow function completes.
-- We will still keep the `/cats/result` endpoint as is, to fetch the entity from persistent storage.
-
----
-
-### Important notes:
-
-- We **cannot** call `entity_service.add/update/delete` on the same entity inside the workflow to avoid infinite recursion.
-- We **can** call those methods on **different** entity models in the workflow if needed.
-- The workflow function can be `async` and can perform any async code.
-
----
-
-### Here's the updated full code with all logic moved into the workflow function:
-
-```python
 from dataclasses import dataclass
 import logging
 import uuid
@@ -58,46 +30,52 @@ async def process_catfetchrequest(entity: dict):
     Workflow function applied to CatFetchRequest entity asynchronously before persistence.
     It fetches the requested data ('image' or 'fact') and updates the entity in-place.
     """
-    # Initialize state
-    entity.setdefault("status", "processing")
-    entity.setdefault("data", None)
-    if "requestedAt" not in entity:
-        entity["requestedAt"] = datetime.utcnow().isoformat() + "Z"
-
-    requested_type = entity.get("type")
-    if requested_type not in ("image", "fact"):
-        entity["status"] = "failed"
-        entity["data"] = "Invalid type requested"
-        logger.warning(f"Invalid type in workflow: {requested_type}")
-        return
-
-    # Define async functions inside workflow to fetch data
-    async def fetch_cat_image() -> str:
-        url = "https://api.thecatapi.com/v1/images/search"
-        async with httpx.AsyncClient() as client:
-            try:
-                resp = await client.get(url, timeout=10)
-                resp.raise_for_status()
-                data = resp.json()
-                return data[0]["url"]
-            except Exception as e:
-                logger.exception(f"Error fetching cat image: {e}")
-                return ""
-
-    async def fetch_cat_fact() -> str:
-        url = "https://catfact.ninja/fact"
-        async with httpx.AsyncClient() as client:
-            try:
-                resp = await client.get(url, timeout=10)
-                resp.raise_for_status()
-                data = resp.json()
-                return data.get("fact", "")
-            except Exception as e:
-                logger.exception(f"Error fetching cat fact: {e}")
-                return ""
-
-    # Fetch data according to type
+    # Initialize state safely
     try:
+        entity.setdefault("status", "processing")
+        entity.setdefault("data", None)
+        if "requestedAt" not in entity:
+            entity["requestedAt"] = datetime.utcnow().isoformat() + "Z"
+
+        requested_type = entity.get("type")
+        if requested_type not in ("image", "fact"):
+            entity["status"] = "failed"
+            entity["data"] = "Invalid type requested"
+            logger.warning(f"Invalid type in workflow: {requested_type}")
+            return
+
+        async def fetch_cat_image() -> str:
+            url = "https://api.thecatapi.com/v1/images/search"
+            async with httpx.AsyncClient() as client:
+                try:
+                    resp = await client.get(url, timeout=10)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    if isinstance(data, list) and data and "url" in data[0]:
+                        return data[0]["url"]
+                    logger.warning("Unexpected response structure from cat image API")
+                    return ""
+                except Exception as e:
+                    logger.exception(f"Error fetching cat image: {e}")
+                    return ""
+
+        async def fetch_cat_fact() -> str:
+            url = "https://catfact.ninja/fact"
+            async with httpx.AsyncClient() as client:
+                try:
+                    resp = await client.get(url, timeout=10)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    fact = data.get("fact") if isinstance(data, dict) else None
+                    if fact:
+                        return fact
+                    logger.warning("Unexpected response structure from cat fact API")
+                    return ""
+                except Exception as e:
+                    logger.exception(f"Error fetching cat fact: {e}")
+                    return ""
+
+        # Fetch data according to type
         if requested_type == "image":
             result = await fetch_cat_image()
         else:  # "fact"
@@ -115,6 +93,7 @@ async def process_catfetchrequest(entity: dict):
         entity["status"] = "failed"
         entity["data"] = "Exception during workflow execution"
 
+
 @app.route("/cats/fetch", methods=["POST"])
 @validate_request(CatFetchRequest)
 async def cats_fetch(data: CatFetchRequest):
@@ -124,12 +103,16 @@ async def cats_fetch(data: CatFetchRequest):
     Response JSON: { "requestId": "string" }
     """
     try:
+        # Validate input explicitly even if dataclass is used
+        if data.type not in ("image", "fact"):
+            return jsonify({"error": "Invalid type. Must be 'image' or 'fact'."}), 400
+
         # Prepare a minimal entity dict for persistence
         entity_dict = {
             "type": data.type,
         }
 
-        # Add item with workflow function - all processing happens inside workflow
+        # Add item with workflow function - processing happens inside workflow
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="CatFetchRequest",
@@ -168,13 +151,15 @@ async def cats_result(request_id: str):
         if entity is None:
             return jsonify({"error": "requestId not found"}), 404
 
-        return jsonify({
+        # Defensive defaults
+        response = {
             "requestId": request_id,
-            "type": entity.get("type"),
+            "type": entity.get("type", "unknown"),
             "data": entity.get("data"),
-            "status": entity.get("status"),
+            "status": entity.get("status", "processing"),
             "requestedAt": entity.get("requestedAt"),
-        })
+        }
+        return jsonify(response)
 
     except Exception as e:
         logger.exception(f"Error in /cats/result/{request_id} endpoint: {e}")
@@ -185,22 +170,3 @@ if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- The entire async fetching logic moved inside `process_catfetchrequest` workflow function.
-- The workflow function modifies the entity dict in-place (`entity['data']`, `entity['status']`, `entity['requestedAt']`).
-- The `entity_service.add_item` call triggers this workflow before persisting the entity.
-- The `/cats/fetch` endpoint is now a simple, clean controller that just calls `add_item`.
-- The `/cats/result` endpoint returns the persisted entity without relying on in-memory caches.
-- No fire-and-forget or background tasks needed anymore — the workflow function fully replaces that pattern.
-- Error handling inside the workflow updates entity state to `"failed"` and includes error messages in the `data` field.
-
----
-
-This approach fully embraces the new workflow system and significantly improves code organization, testability, and state consistency.
-
-Let me know if you want me to help with any further refactoring or tests!

@@ -60,7 +60,7 @@ def filter_active_companies(companies: List[dict]) -> List[dict]:
     active_companies = []
     for comp in companies:
         status = comp.get("status")
-        if status == 2:  # 2 indicates active
+        if status == "2":  # 2 indicates active
             active_companies.append(comp)
     return active_companies
 

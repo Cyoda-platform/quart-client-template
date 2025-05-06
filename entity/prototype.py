@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 import uuid
@@ -6,13 +6,17 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+@dataclass
+class CatFetchRequest:
+    type: str  # "image" or "fact"
 
 # In-memory storage for fetched cat data results.
 # Structure: {request_id: {"type": str, "data": str, "requestedAt": datetime, "status": str}}
@@ -78,15 +82,15 @@ async def process_entity(request_id: str, requested_type: str):
 
 
 @app.route("/cats/fetch", methods=["POST"])
-async def cats_fetch():
+@validate_request(CatFetchRequest)  # validation last for POST (issue workaround)
+async def cats_fetch(data: CatFetchRequest):
     """
     POST /cats/fetch
     Request JSON: { "type": "image" | "fact" }
     Response JSON: { "requestId": "string" }
     """
     try:
-        data = await request.get_json(force=True)
-        requested_type = data.get("type")
+        requested_type = data.type
         if requested_type not in ("image", "fact"):
             return jsonify({"error": "Invalid type. Must be 'image' or 'fact'."}), 400
 
@@ -112,6 +116,7 @@ async def cats_fetch():
 
 
 @app.route("/cats/result/<string:request_id>", methods=["GET"])
+# No request body or query validation needed here as per requirements
 async def cats_result(request_id: str):
     """
     GET /cats/result/{requestId}

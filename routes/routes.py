@@ -1,25 +1,22 @@
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
-import asyncio
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request
 import logging
 from datetime import datetime, timezone
 from uuid import uuid4
-import httpx
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 @dataclass
 class Condition:
@@ -56,7 +53,7 @@ class WeatherDataRequest:
     rain_forecast: bool
     additional_data: Optional[Dict[str, Any]] = None
 
-@app.route("/alerts", methods=["POST"])
+@routes_bp.route("/alerts", methods=["POST"])
 @validate_request(CreateAlertRequest)
 async def create_alert(data: CreateAlertRequest):
     try:
@@ -72,13 +69,13 @@ async def create_alert(data: CreateAlertRequest):
             entity_model="alert",
             entity_version=ENTITY_VERSION,
             entity=alert_obj,
-            )
+        )
         return jsonify({"alert_id": alert_obj.get("alert_id"), "status": "active"}), 201
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to create alert"}), 500
 
-@app.route("/alerts/<alert_id>", methods=["POST"])
+@routes_bp.route("/alerts/<alert_id>", methods=["POST"])
 @validate_request(UpdateAlertRequest)
 async def update_alert(data: UpdateAlertRequest, alert_id):
     try:
@@ -119,7 +116,7 @@ async def update_alert(data: UpdateAlertRequest, alert_id):
         logger.exception(e)
         return jsonify({"error": "Failed to update alert"}), 500
 
-@app.route("/alerts/<alert_id>/delete", methods=["POST"])
+@routes_bp.route("/alerts/<alert_id>/delete", methods=["POST"])
 async def delete_alert(alert_id):
     try:
         alerts = await entity_service.get_items_by_condition(
@@ -148,7 +145,7 @@ async def delete_alert(alert_id):
         logger.exception(e)
         return jsonify({"error": "Failed to delete alert"}), 500
 
-@app.route("/users/<user_id>/alerts", methods=["GET"])
+@routes_bp.route("/users/<user_id>/alerts", methods=["GET"])
 async def get_user_alerts(user_id):
     try:
         alerts = await entity_service.get_items_by_condition(
@@ -162,7 +159,7 @@ async def get_user_alerts(user_id):
         logger.exception(e)
         return jsonify([]), 200
 
-@app.route("/weather/data", methods=["POST"])
+@routes_bp.route("/weather/data", methods=["POST"])
 @validate_request(WeatherDataRequest)
 async def post_weather_data(data: WeatherDataRequest):
     try:
@@ -183,13 +180,13 @@ async def post_weather_data(data: WeatherDataRequest):
             entity_model="weather_processing_jobs",
             entity_version=ENTITY_VERSION,
             entity=job_entity,
-            )
+        )
         return jsonify({"job_id": job_id, "status": "queued", "requestedAt": requested_at}), 200
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to process weather data"}), 500
 
-@app.route("/users/<user_id>/notifications", methods=["GET"])
+@routes_bp.route("/users/<user_id>/notifications", methods=["GET"])
 async def get_notifications(user_id):
     try:
         notifications = await entity_service.get_items_by_condition(
@@ -202,12 +199,3 @@ async def get_notifications(user_id):
     except Exception as e:
         logger.exception(e)
         return jsonify([]), 200
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        level=logging.INFO,
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

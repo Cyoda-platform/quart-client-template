@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass
+from typing import Dict, Any
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -20,6 +21,17 @@ entity_jobs: Dict[str, Dict[str, Any]] = {}
 
 # Example external API: use a public API for demonstration, e.g. JSONPlaceholder
 EXTERNAL_API_URL = "https://jsonplaceholder.typicode.com/todos/1"
+
+
+@dataclass
+class TriggerWorkflowRequest:
+    event_type: str
+    payload: Dict[str, Any]  # dynamic dict accepted
+
+
+@dataclass
+class ProcessDataRequest:
+    input_data: Dict[str, Any]  # dynamic dict accepted
 
 
 async def fetch_external_data() -> Dict[str, Any]:
@@ -108,19 +120,13 @@ async def process_data(job_id: str, entity_id: str, input_data: Dict[str, Any]):
 
 
 @app.route("/api/entity/<string:entity_id>/trigger", methods=["POST"])
-async def trigger_workflow(entity_id):
-    data = await request.get_json(force=True)
-    event_type = data.get("event_type")
-    payload = data.get("payload", {})
-
-    if not event_type:
-        return jsonify({"status": "error", "message": "Missing event_type"}), 400
-
+@validate_request(TriggerWorkflowRequest)  # Validation last for POST method (issue workaround)
+async def trigger_workflow(entity_id, data: TriggerWorkflowRequest):
     job_id = f"job-{datetime.utcnow().timestamp()}-{entity_id}"
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat() + "Z"}
 
     # Fire and forget the processing task
-    asyncio.create_task(process_workflow(job_id, entity_id, event_type, payload))
+    asyncio.create_task(process_workflow(job_id, entity_id, data.event_type, data.payload))
 
     return jsonify(
         {
@@ -131,6 +137,7 @@ async def trigger_workflow(entity_id):
     )
 
 
+# No validation decorator for GET without query params - per spec
 @app.route("/api/entity/<string:entity_id>/state", methods=["GET"])
 async def get_entity_state(entity_id):
     state = entities_state.get(entity_id)
@@ -147,17 +154,12 @@ async def get_entity_state(entity_id):
 
 
 @app.route("/api/entity/<string:entity_id>/process", methods=["POST"])
-async def submit_data_for_processing(entity_id):
-    data = await request.get_json(force=True)
-    input_data = data.get("input_data")
-
-    if not isinstance(input_data, dict):
-        return jsonify({"status": "error", "message": "input_data must be an object"}), 400
-
+@validate_request(ProcessDataRequest)  # Validation last for POST method (issue workaround)
+async def submit_data_for_processing(entity_id, data: ProcessDataRequest):
     job_id = f"proc-{datetime.utcnow().timestamp()}-{entity_id}"
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat() + "Z"}
 
-    asyncio.create_task(process_data(job_id, entity_id, input_data))
+    asyncio.create_task(process_data(job_id, entity_id, data.input_data))
 
     return jsonify({"status": "success", "message": "Processing started", "job_id": job_id})
 
@@ -173,4 +175,3 @@ if __name__ == "__main__":
     )
 
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

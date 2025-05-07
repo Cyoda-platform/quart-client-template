@@ -126,4 +126,3 @@ async def get_pet_details(pet_id: int):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

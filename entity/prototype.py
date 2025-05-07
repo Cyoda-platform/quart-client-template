@@ -1,12 +1,12 @@
-```python
+from dataclasses import dataclass, field
+from typing import Optional, List, Dict
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -17,25 +17,38 @@ QuartSchema(app)
 # In-memory cache to mock persistence: {search_id: {"status": str, "flights": list, "requested_at": datetime}}
 search_cache = {}
 
-# Airport Gap API base URL and key (replace with your API key if needed)
 AIRPORT_GAP_BASE = "https://airportgap.dev-tester.com/api"
-# TODO: For real usage, add API key or auth if required by Airport Gap
 
-# Placeholder for flight search external API
-# Airport Gap API does NOT provide real flight schedules/pricing.
-# For prototype, use AviationStack API free tier for flight info simulation.
-# You must get an API key at https://aviationstack.com/
 AVIATIONSTACK_API_KEY = "YOUR_AVIATIONSTACK_API_KEY"  # TODO: Replace with your real key
 AVIATIONSTACK_BASE = "http://api.aviationstack.com/v1"
 
-# NOTE: AviationStack free tier might have limitations and delayed data,
-# so this prototype aims to mimic flight search UX based on this.
+
+@dataclass
+class Passengers:
+    adults: int = 1
+    children: int = 0
+    infants: int = 0
+
+
+@dataclass
+class Filters:
+    airlines: Optional[List[str]] = field(default_factory=list)
+    max_price: Optional[float] = None
+    stops: Optional[int] = None
+
+
+@dataclass
+class FlightSearchRequest:
+    departure_airport: str
+    arrival_airport: str
+    departure_date: str
+    return_date: Optional[str] = None
+    passengers: Passengers = field(default_factory=Passengers)
+    filters: Optional[Filters] = None
+    sort_by: Optional[str] = None
 
 
 async def fetch_airport_info(iata_code: str, client: httpx.AsyncClient) -> Optional[dict]:
-    """
-    Validate airport IATA code using Airport Gap API
-    """
     try:
         url = f"{AIRPORT_GAP_BASE}/airports/{iata_code}"
         resp = await client.get(url)
@@ -53,20 +66,14 @@ async def fetch_flights(
     departure_iata: str,
     arrival_iata: str,
     departure_date: str,
-    passengers: dict,
+    passengers: Passengers,
     client: httpx.AsyncClient,
 ) -> list:
-    """
-    Fetch flights from external API (AviationStack) for prototype.
-    This is a simplification: AviationStack free tier doesn't support date or passenger filtering.
-    We'll filter manually by departure airport and arrival airport codes.
-    """
     try:
         params = {
             "access_key": AVIATIONSTACK_API_KEY,
             "dep_iata": departure_iata,
             "arr_iata": arrival_iata,
-            # No direct date filter supported in free tier - TODO: improve with better API
         }
         url = f"{AVIATIONSTACK_BASE}/flights"
         resp = await client.get(url, params=params)
@@ -77,7 +84,6 @@ async def fetch_flights(
         data = resp.json()
         flights_raw = data.get("data", [])
 
-        # Filter flights by departure_date (approximate, as API returns timestamps)
         filtered_flights = []
         for f in flights_raw:
             dep_time = f.get("departure", {}).get("scheduled")
@@ -91,7 +97,6 @@ async def fetch_flights(
             except Exception:
                 continue
 
-            # Build flight info model
             flight = {
                 "flight_number": f.get("flight", {}).get("iata") or f.get("flight", {}).get("number"),
                 "airline": f.get("airline", {}).get("name"),
@@ -112,27 +117,22 @@ async def fetch_flights(
         return []
 
 
-async def process_search(search_id: str, data: dict):
-    """
-    Background task to validate airports, query flights, store results.
-    """
+async def process_search(search_id: str, data: FlightSearchRequest):
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            # Validate airports
-            dep_airport = await fetch_airport_info(data["departure_airport"], client)
-            arr_airport = await fetch_airport_info(data["arrival_airport"], client)
+            dep_airport = await fetch_airport_info(data.departure_airport, client)
+            arr_airport = await fetch_airport_info(data.arrival_airport, client)
             if not dep_airport or not arr_airport:
                 search_cache[search_id]["status"] = "error"
                 search_cache[search_id]["message"] = "Invalid departure or arrival airport code."
                 logger.info(f"Invalid airports for search_id {search_id}")
                 return
 
-            # Fetch flights
             flights = await fetch_flights(
-                data["departure_airport"],
-                data["arrival_airport"],
-                data["departure_date"],
-                data.get("passengers", {"adults": 1}),
+                data.departure_airport,
+                data.arrival_airport,
+                data.departure_date,
+                data.passengers,
                 client,
             )
 
@@ -142,7 +142,6 @@ async def process_search(search_id: str, data: dict):
                 logger.info(f"No flights found for search_id {search_id}")
                 return
 
-            # Store results
             search_cache[search_id]["status"] = "completed"
             search_cache[search_id]["flights"] = flights
             logger.info(f"Search {search_id} completed with {len(flights)} flights.")
@@ -154,15 +153,8 @@ async def process_search(search_id: str, data: dict):
 
 
 @app.route("/api/flights/search", methods=["POST"])
-async def search_flights():
-    data = await request.get_json(force=True)
-
-    # Basic input validation (minimal for prototype)
-    required_fields = ["departure_airport", "arrival_airport", "departure_date", "passengers"]
-    for field in required_fields:
-        if field not in data:
-            return jsonify({"search_id": None, "status": "error", "message": f"Missing field: {field}"}), 400
-
+@validate_request(FlightSearchRequest)  # validation last in POST route - issue workaround
+async def search_flights(data: FlightSearchRequest):
     search_id = f"search_{int(datetime.utcnow().timestamp() * 1000)}"
     search_cache[search_id] = {
         "status": "processing",
@@ -170,20 +162,25 @@ async def search_flights():
         "requested_at": datetime.utcnow(),
     }
 
-    # Fire and forget processing task
     asyncio.create_task(process_search(search_id, data))
 
     return jsonify({"search_id": search_id, "status": "processing", "result_count": 0})
 
 
+# GET route with no request body - no validation needed
 @app.route("/api/flights/search/<string:search_id>", methods=["GET"])
 async def get_search_results(search_id: str):
     record = search_cache.get(search_id)
     if not record:
-        return jsonify({"search_id": search_id, "flights": [], "status": "error", "message": "Search ID not found"}), 404
+        return (
+            jsonify({"search_id": search_id, "flights": [], "status": "error", "message": "Search ID not found"}),
+            404,
+        )
 
     if record["status"] == "processing":
-        return jsonify({"search_id": search_id, "flights": [], "status": "processing", "message": "Search is still processing"})
+        return jsonify(
+            {"search_id": search_id, "flights": [], "status": "processing", "message": "Search is still processing"}
+        )
 
     if record["status"] in ("error", "no_results"):
         return jsonify(
@@ -195,14 +192,7 @@ async def get_search_results(search_id: str):
             }
         )
 
-    # Completed: return flights list
-    return jsonify(
-        {
-            "search_id": search_id,
-            "flights": record.get("flights", []),
-            "status": "completed",
-        }
-    )
+    return jsonify({"search_id": search_id, "flights": record.get("flights", []), "status": "completed"})
 
 
 if __name__ == "__main__":

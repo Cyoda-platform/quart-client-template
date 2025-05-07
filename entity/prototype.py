@@ -1,4 +1,6 @@
-```python
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
 import asyncio
 import logging
 import uuid
@@ -6,13 +8,27 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data classes for request validation
+
+@dataclass
+class CreateEntityRequest:
+    entity_type: str
+    initial_data: Optional[Dict[str, Any]] = field(default_factory=dict)
+    workflow: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class TriggerEventRequest:
+    event_name: str
+    event_data: Optional[Dict[str, Any]] = field(default_factory=dict)
+
 
 # In-memory data stores (mock persistence)
 entities = {}
@@ -106,12 +122,12 @@ async def process_entity_event(entity_id: str, event_name: str, event_data: dict
 
 
 @app.route("/entities", methods=["POST"])
-async def create_entity():
+@validate_request(CreateEntityRequest)  # Validation last for POST (workaround)
+async def create_entity(data: CreateEntityRequest):
     try:
-        data = await request.get_json(force=True)
-        entity_type = data.get("entity_type")
-        initial_data = data.get("initial_data", {})
-        workflow = data.get("workflow")
+        entity_type = data.entity_type
+        initial_data = data.initial_data or {}
+        workflow = data.workflow
 
         if not entity_type or not workflow:
             return jsonify({"error": "Missing required fields: entity_type or workflow"}), 400
@@ -135,11 +151,11 @@ async def create_entity():
 
 
 @app.route("/entities/<entity_id>/events", methods=["POST"])
-async def trigger_event(entity_id):
+@validate_request(TriggerEventRequest)  # Validation last for POST (workaround)
+async def trigger_event(data: TriggerEventRequest, entity_id):
     try:
-        data = await request.get_json(force=True)
-        event_name = data.get("event_name")
-        event_data = data.get("event_data", {})
+        event_name = data.event_name
+        event_data = data.event_data or {}
 
         if not event_name:
             return jsonify({"error": "Missing required field: event_name"}), 400
@@ -163,6 +179,7 @@ async def trigger_event(entity_id):
         return jsonify({"error": "Internal server error"}), 500
 
 
+# GET requests have validation first (workaround for quart-schema issue)
 @app.route("/entities/<entity_id>", methods=["GET"])
 async def get_entity(entity_id):
     try:
@@ -199,4 +216,3 @@ async def get_entity_history(entity_id):
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

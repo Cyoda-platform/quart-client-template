@@ -1,0 +1,46 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "current_state": "completed",
+                "data": {
+                    "event_type": "event_example",
+                    "external_data": {
+                        "completed": false,
+                        "id": 1,
+                        "title": "delectus aut autem",
+                        "userId": 1
+                    },
+                    "hello_message": "Hello World!",
+                    "payload_received": {
+                        "key1": "value1",
+                        "key2": "value2"
+                    },
+                    "processed_at": "2024-06-01T12:00:00Z"
+                },
+                "entity_id": "entity123",
+                "last_updated": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "entity"
+        },
+        {
+            "entity_data_example": {
+                "event_type": "user_signup",
+                "payload": {
+                    "email": "johndoe@example.com",
+                    "username": "johndoe"
+                }
+            },
+            "entity_name": "trigger_workflow_request"
+        },
+        {
+            "entity_data_example": {
+                "input_data": {
+                    "param1": "value1",
+                    "param2": "value2"
+                }
+            },
+            "entity_name": "process_data_request"
+        }
+    ]
+}

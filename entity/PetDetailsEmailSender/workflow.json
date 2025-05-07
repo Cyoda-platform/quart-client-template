@@ -1,5 +1,5 @@
 {
-    "description": "Workflow to send retrieved pet details to specified email addresses",
+    "description": "Workflow to send retrieved pet details to specified email addresses with deliveryStatus tracking",
     "name": "PetDetailsEmailSender_Workflow",
     "transitions": [
         {
@@ -22,6 +22,24 @@
         },
         {
             "automated": true,
+            "description": "Set deliveryStatus to pending",
+            "end_state": "Delivery_pending_set",
+            "end_state_description": "Delivery status set to pending",
+            "name": "set_delivery_pending",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_delivery_pending"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Email_details_validated",
+            "start_state_description": "Email details validated"
+        },
+        {
+            "automated": true,
             "description": "Prepare email content with pet details",
             "end_state": "Email_content_prepared",
             "end_state_description": "Email content prepared",
@@ -35,8 +53,8 @@
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Email_details_validated",
-            "start_state_description": "Email details validated"
+            "start_state": "Delivery_pending_set",
+            "start_state_description": "Delivery status set to pending"
         },
         {
             "automated": true,
@@ -58,6 +76,24 @@
         },
         {
             "automated": true,
+            "description": "Set deliveryStatus to sent",
+            "end_state": "Delivery_sent_set",
+            "end_state_description": "Delivery status set to sent",
+            "name": "set_delivery_sent",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_delivery_sent"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Email_sent",
+            "start_state_description": "Email has been sent to recipient"
+        },
+        {
+            "automated": true,
             "description": "Handle failure in sending email",
             "end_state": "Email_send_failed",
             "end_state_description": "Failed to send email",
@@ -73,6 +109,24 @@
             },
             "start_state": "Email_details_validated",
             "start_state_description": "Email details validated"
+        },
+        {
+            "automated": true,
+            "description": "Set deliveryStatus to failed",
+            "end_state": "Delivery_failed_set",
+            "end_state_description": "Delivery status set to failed",
+            "name": "set_delivery_failed",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_delivery_failed"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Email_send_failed",
+            "start_state_description": "Failed to send email"
         }
     ]
 }

@@ -1,0 +1,91 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "current_state": "pending",
+                "data": {
+                    "amount": 100.0,
+                    "customer_id": "cust123"
+                },
+                "entity_id": "123e4567-e89b-12d3-a456-426614174000",
+                "entity_type": "order",
+                "workflow": {
+                    "states": [
+                        "pending",
+                        "processed",
+                        "shipped"
+                    ],
+                    "transitions": [
+                        {
+                            "event": "process_order",
+                            "from": "pending",
+                            "to": "processed"
+                        },
+                        {
+                            "event": "ship_order",
+                            "from": "processed",
+                            "to": "shipped"
+                        }
+                    ]
+                },
+                "workflow_status": "created"
+            },
+            "entity_name": "entity"
+        },
+        {
+            "entity_data_example": {
+                "event_data": {
+                    "approved": true
+                },
+                "event_name": "process_order"
+            },
+            "entity_name": "trigger_event_request"
+        },
+        {
+            "entity_data_example": {
+                "entity_type": "order",
+                "initial_data": {
+                    "amount": 100.0,
+                    "customer_id": "cust123"
+                },
+                "workflow": {
+                    "states": [
+                        "pending",
+                        "processed",
+                        "shipped"
+                    ],
+                    "transitions": [
+                        {
+                            "event": "process_order",
+                            "from": "pending",
+                            "to": "processed"
+                        },
+                        {
+                            "event": "ship_order",
+                            "from": "processed",
+                            "to": "shipped"
+                        }
+                    ]
+                }
+            },
+            "entity_name": "create_entity_request"
+        },
+        {
+            "entity_data_example": {
+                "event": "process_order",
+                "from_state": "pending",
+                "metadata": {
+                    "event_data": {
+                        "approved": true
+                    },
+                    "external_results": {
+                        "age": 30
+                    }
+                },
+                "timestamp": "2024-01-01T12:00:00Z",
+                "to_state": "processed"
+            },
+            "entity_name": "entity_history_entry"
+        }
+    ]
+}

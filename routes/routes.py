@@ -1,42 +1,31 @@
-import asyncio
+from datetime import timezone, datetime
 import logging
+import asyncio
 import uuid
-from datetime import datetime
 from typing import Any, Dict, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate, validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
-
-from dataclasses import dataclass, field
-
-@dataclass
-class CreateEntityRequest:
-    entity_type: str
-    initial_data: Optional[Dict[str, Any]] = field(default_factory=dict)
-    workflow: Dict[str, Any] = field(default_factory=dict)
-
-@dataclass
-class TriggerEventRequest:
-    event_name: str
-    event_data: Optional[Dict[str, Any]] = field(default_factory=dict)
-
 entity_histories = {}
 
 EXTERNAL_API_URL = "https://api.agify.io"  # Mock external data source
+
+def now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 def create_entity_id() -> str:
     return str(uuid.uuid4())
@@ -55,10 +44,8 @@ async def query_external_data(event_data: dict) -> dict:
             return {}
 
 async def process_entity_event(entity: dict) -> dict:
-    # Extract event info injected by endpoint
     event_info = entity.pop("_event_info", None)
     if not event_info:
-        # No event info, no processing needed
         return entity
 
     event_name = event_info.get("event_name")
@@ -68,7 +55,6 @@ async def process_entity_event(entity: dict) -> dict:
     workflow = entity.get("workflow", {})
     transitions = workflow.get("transitions", [])
 
-    # Determine valid transition
     transition = next(
         (t for t in transitions if t.get("from") == current_state and t.get("event") == event_name),
         None,
@@ -80,10 +66,8 @@ async def process_entity_event(entity: dict) -> dict:
     else:
         new_state = transition.get("to")
 
-    # Query external data asynchronously and safely
     results = await query_external_data(event_data)
 
-    # Update entity data and state
     updated_data = entity.get("data", {})
     updated_data.update(event_data)
     updated_data.update(results)
@@ -91,7 +75,6 @@ async def process_entity_event(entity: dict) -> dict:
     entity["current_state"] = new_state
     entity["workflow_status"] = "updated"
 
-    # Maintain local history
     entity_id = entity.get("technical_id") or entity.get("id")
     if entity_id:
         history_entry = {
@@ -103,14 +86,13 @@ async def process_entity_event(entity: dict) -> dict:
         }
         entity_histories.setdefault(entity_id, []).append(history_entry)
 
-    # Add supplementary entity asynchronously (fire and forget)
     raw_event_entity = {
         "event_name": event_name,
         "event_data": event_data,
         "entity_id": entity_id,
         "timestamp": now_iso(),
     }
-    # Protect fire-and-forget from unhandled exceptions
+
     async def add_raw_event():
         try:
             await entity_service.add_item(
@@ -126,7 +108,20 @@ async def process_entity_event(entity: dict) -> dict:
 
     return entity
 
-@app.route("/entities", methods=["POST"])
+from dataclasses import dataclass, field
+
+@dataclass
+class CreateEntityRequest:
+    entity_type: str
+    initial_data: Optional[Dict[str, Any]] = field(default_factory=dict)
+    workflow: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class TriggerEventRequest:
+    event_name: str
+    event_data: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+@routes_bp.route("/entities", methods=["POST"])
 @validate_request(CreateEntityRequest)
 async def create_entity(data: CreateEntityRequest):
     try:
@@ -144,7 +139,6 @@ async def create_entity(data: CreateEntityRequest):
             "data": initial_data.copy(),
         }
 
-        # Set current_state to first state if available
         states = workflow.get("states", [])
         if states:
             entity_dict["current_state"] = states[0]
@@ -154,7 +148,7 @@ async def create_entity(data: CreateEntityRequest):
             entity_model="entity",
             entity_version=ENTITY_VERSION,
             entity=entity_dict,
-            )
+        )
 
         entity_histories[entity_id] = []
 
@@ -163,7 +157,7 @@ async def create_entity(data: CreateEntityRequest):
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/entities/<entity_id>/events", methods=["POST"])
+@routes_bp.route("/entities/<entity_id>/events", methods=["POST"])
 @validate_request(TriggerEventRequest)
 async def trigger_event(data: TriggerEventRequest, entity_id):
     try:
@@ -173,7 +167,6 @@ async def trigger_event(data: TriggerEventRequest, entity_id):
         if not event_name:
             return jsonify({"error": "Missing required field: event_name"}), 400
 
-        # Fetch current entity
         entity = await entity_service.get_item(
             token=cyoda_auth_service,
             entity_model="entity",
@@ -183,10 +176,8 @@ async def trigger_event(data: TriggerEventRequest, entity_id):
         if not entity:
             return jsonify({"error": "Entity not found"}), 404
 
-        # Inject event info for workflow processing
         entity["_event_info"] = {"event_name": event_name, "event_data": event_data}
 
-        # Update entity with workflow that processes the event
         await entity_service.update_item(
             token=cyoda_auth_service,
             entity_model="entity",
@@ -207,7 +198,7 @@ async def trigger_event(data: TriggerEventRequest, entity_id):
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/entities/<entity_id>", methods=["GET"])
+@routes_bp.route("/entities/<entity_id>", methods=["GET"])
 async def get_entity(entity_id):
     try:
         entity = await entity_service.get_item(
@@ -232,7 +223,7 @@ async def get_entity(entity_id):
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/entities/<entity_id>/history", methods=["GET"])
+@routes_bp.route("/entities/<entity_id>/history", methods=["GET"])
 async def get_entity_history(entity_id):
     try:
         history = entity_histories.get(entity_id)
@@ -243,6 +234,3 @@ async def get_entity_history(entity_id):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

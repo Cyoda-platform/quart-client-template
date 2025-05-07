@@ -11,9 +11,14 @@ async def process_validate_email_details(entity: dict):
         entity["processingStatus"] = "failed"
         entity["processingError"] = "Invalid or missing recipient email"
         entity["processedAt"] = datetime.utcnow().isoformat()
+        entity["deliveryStatus"] = "failed"
     else:
         entity["processingStatus"] = "validated"
         entity["validatedAt"] = datetime.utcnow().isoformat()
+
+async def process_set_delivery_pending(entity: dict):
+    entity["deliveryStatus"] = "pending"
+    entity["deliveryPendingAt"] = datetime.utcnow().isoformat()
 
 async def process_prepare_email_content(entity: dict):
     pet_details = entity.get("petDetails", {})
@@ -40,13 +45,24 @@ async def process_send_email(entity: dict):
         # TODO: Implement actual email sending logic here
         # For prototype, simulate sending by setting sentAt
         entity["sentAt"] = datetime.utcnow().isoformat()
+        entity["deliveryStatus"] = "sent"
         entity["processingStatus"] = "completed"
     except Exception as e:
         logger.exception(f"Failed to send email: {e}")
+        entity["deliveryStatus"] = "failed"
         entity["processingStatus"] = "failed"
         entity["processingError"] = str(e)
         entity["processedAt"] = datetime.utcnow().isoformat()
 
+async def process_set_delivery_sent(entity: dict):
+    entity["deliveryStatus"] = "sent"
+    entity["deliverySentAt"] = datetime.utcnow().isoformat()
+
 async def process_handle_failure(entity: dict):
+    entity["deliveryStatus"] = "failed"
     entity["processingStatus"] = "failed"
     entity["processedAt"] = datetime.utcnow().isoformat()
+
+async def process_set_delivery_failed(entity: dict):
+    entity["deliveryStatus"] = "failed"
+    entity["deliveryFailedAt"] = datetime.utcnow().isoformat()

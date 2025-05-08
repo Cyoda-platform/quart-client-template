@@ -398,18 +398,18 @@ async def tasks_list(data: TaskSearchPage):
         logger.exception(e)
         return jsonify({"message": "Failed to retrieve tasks"}), 500
 
+# Removed @validate_request decorator because dict is not supported by quart-schema
 @app.route("/tasks/create", methods=["POST"])
-@validate_request(dict)  # No schema, POST validation last; placeholder, not implemented
 async def tasks_create():
     return jsonify({"message": "Task creation not implemented in FakeRest API"}), 501
 
+# Removed @validate_request decorator because dict is not supported by quart-schema
 @app.route("/tasks/update", methods=["POST"])
-@validate_request(dict)  # No schema, POST validation last; placeholder, not implemented
 async def tasks_update():
     return jsonify({"message": "Task update not implemented in FakeRest API"}), 501
 
+# Removed @validate_request decorator because dict is not supported by quart-schema
 @app.route("/tasks/delete", methods=["POST"])
-@validate_request(dict)  # No schema, POST validation last; placeholder, not implemented
 async def tasks_delete():
     return jsonify({"message": "Task deletion not implemented in FakeRest API"}), 501
 
@@ -453,4 +453,3 @@ async def process_entity(entity_job: Dict[str, Dict[str, Any]], job_id: str, met
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

@@ -1,0 +1,29 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "entity_id": "12345",
+                "event_payload": {
+                    "name": "alice"
+                },
+                "event_type": "start_workflow"
+            },
+            "entity_name": "entity_trigger_request"
+        },
+        {
+            "entity_data_example": {
+                "created_at": "2024-06-01T12:00:00Z",
+                "entity_id": "12345",
+                "last_event_payload": {
+                    "name": "alice"
+                },
+                "last_event_type": "start_workflow",
+                "last_message": "Hello Alice! Predicted age is 30 based on 1000 samples.",
+                "status": "done",
+                "updated_at": "2024-06-01T12:05:00Z",
+                "workflow_state": "completed"
+            },
+            "entity_name": "entity"
+        }
+    ]
+}

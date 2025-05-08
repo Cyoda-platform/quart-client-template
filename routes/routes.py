@@ -2,9 +2,8 @@ from dataclasses import dataclass
 import logging
 from datetime import datetime
 
-import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -12,8 +11,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -30,7 +28,7 @@ class EventData:
     message: str = None  # optional string, primitive type
 
 
-@app.route("/api/hello-world/trigger", methods=["POST"])
+@routes_bp.route("/api/hello-world/trigger", methods=["POST"])
 @validate_request(EventData)
 async def trigger_hello_world(data: EventData):
     """
@@ -52,7 +50,7 @@ async def trigger_hello_world(data: EventData):
             entity_model="hello_world_job",
             entity_version=ENTITY_VERSION,
             entity=job_data,
-            )
+        )
 
         return jsonify({"workflow_id": workflow_id, "status": "initiated"})
 
@@ -61,7 +59,7 @@ async def trigger_hello_world(data: EventData):
         return jsonify({"error": "Failed to trigger workflow"}), 500
 
 
-@app.route("/api/hello-world/result/<string:workflow_id>", methods=["GET"])
+@routes_bp.route("/api/hello-world/result/<string:workflow_id>", methods=["GET"])
 async def get_workflow_result(workflow_id: str):
     """
     GET endpoint to retrieve workflow result by workflow_id.
@@ -89,16 +87,3 @@ async def get_workflow_result(workflow_id: str):
     except Exception as e:
         logger.exception("Failed to retrieve workflow result: %s", e)
         return jsonify({"error": "Failed to retrieve workflow result"}), 500
-
-
-if __name__ == "__main__":
-    import sys
-    import logging
-
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-    )
-
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

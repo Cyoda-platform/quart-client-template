@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
@@ -6,7 +6,7 @@ from typing import Dict
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -21,6 +21,10 @@ entity_job: Dict[str, dict] = {}
 STATE_IDLE = "idle"
 STATE_PROCESSING = "processing"
 STATE_COMPLETED = "completed"
+
+@dataclass
+class EventData:
+    message: str = None  # optional string, primitive type
 
 
 async def fetch_external_greeting() -> str:
@@ -72,14 +76,15 @@ async def process_entity(job_store: Dict[str, dict], job_id: str, event_data: di
 
 
 @app.route("/api/hello-world/trigger", methods=["POST"])
-async def trigger_hello_world():
+@validate_request(EventData)  # validation last for POST (issue workaround)
+async def trigger_hello_world(data: EventData):
     """
     POST endpoint to trigger the Hello World workflow.
     Accepts dynamic event_data JSON.
     Returns workflow_id and status.
     """
     try:
-        event_data = await request.get_json(force=True, silent=True) or {}
+        event_data = data.__dict__ if data else {}
         # Generate a simple unique workflow id using timestamp + counter
         workflow_id = f"job-{int(datetime.utcnow().timestamp()*1000)}"
 
@@ -100,6 +105,7 @@ async def trigger_hello_world():
 
 
 @app.route("/api/hello-world/result/<string:workflow_id>", methods=["GET"])
+# validation first for GET (issue workaround)
 async def get_workflow_result(workflow_id: str):
     """
     GET endpoint to retrieve workflow result by workflow_id.
@@ -130,4 +136,3 @@ if __name__ == "__main__":
     )
 
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

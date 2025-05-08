@@ -1,0 +1,37 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "description": "The Abyssinian is easy to care for, and a joy to have in your home.",
+                "id": "abys",
+                "image_url": "https://cdn2.thecatapi.com/images/0XYvRd7oD.jpg",
+                "name": "Abyssinian",
+                "origin": "Egypt",
+                "temperament": "Active, Energetic, Independent, Intelligent, Gentle"
+            },
+            "entity_name": "breeds"
+        },
+        {
+            "entity_data_example": {
+                "fact": "Cats sleep 70% of their lives."
+            },
+            "entity_name": "facts"
+        },
+        {
+            "entity_data_example": {
+                "breed_id": "abys",
+                "id": "MTY3ODIyMQ",
+                "url": "https://cdn2.thecatapi.com/images/MTY3ODIyMQ.jpg"
+            },
+            "entity_name": "images"
+        },
+        {
+            "entity_data_example": {
+                "item_id": "abys",
+                "item_type": "breed",
+                "user_id": "user123"
+            },
+            "entity_name": "favorites"
+        }
+    ]
+}

@@ -1,0 +1,199 @@
+{
+    "description": "Workflow for processing Hello World entity with external data fetch and state updates",
+    "name": "HelloWorldEntityWorkflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initialize entity state with timestamps and default values",
+            "end_state": "Initialized",
+            "end_state_description": "Entity state initialized with defaults",
+            "name": "initialize_entity",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_initialize",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Update entity state to processing started",
+            "end_state": "ProcessingStarted",
+            "end_state_description": "Entity state updated as processing started",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_start",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Initialized",
+            "start_state_description": "Entity state initialized with defaults",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Fetch external data asynchronously from external API",
+            "end_state": "ExternalDataFetched",
+            "end_state_description": "External data fetched and available in workflow",
+            "name": "fetch_external_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_fetch_external_data",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "ProcessingStarted",
+            "start_state_description": "Entity state updated as processing started",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Finalize entity with message and update workflow state to completed",
+            "end_state": "Completed",
+            "end_state_description": "Entity workflow completed with final message",
+            "name": "finalize_entity",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_finalize",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "ExternalDataFetched",
+            "start_state_description": "External data fetched and available in workflow",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Handle errors during processing and update entity state accordingly",
+            "end_state": "ErrorState",
+            "end_state_description": "Entity workflow ended in error state",
+            "name": "handle_error",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_error",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Any",
+            "start_state_description": "Any state on error",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        }
+    ],
+    "workflow_criteria": {
+        "condition_criteria": [
+            {
+                "condition": {
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_MODEL_VAR",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ],
+                    "group_condition_operator": "AND"
+                },
+                "description": "Workflow criteria",
+                "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR"
+            }
+        ],
+        "externalized_criteria": []
+    }
+}

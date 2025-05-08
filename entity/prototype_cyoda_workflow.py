@@ -1,6 +1,42 @@
-Certainly! I've updated all calls to `entity_service.add_item` to include the new `workflow` parameter, and implemented the corresponding workflow functions with the required naming convention (`process_{entity_name}` in underscore lowercase). These workflow functions accept the entity data, can modify it asynchronously before persistence, and follow the rules you specified.
+Got it! We'll move **all** the async logic currently happening in the endpoints into the workflow functions. This means:
 
-Here is the complete updated code with the new workflow functions and their usage:
+- For `/cats/breeds` POST: Instead of the endpoint firing async tasks that fetch breeds and then call `entity_service.add_item` repeatedly, the endpoint will **only** add a single "trigger" entity (e.g., a request or job entity), and the `process_breeds` workflow will take over fetching breeds and adding supplementary entities.
+- Similarly for `/cats/facts` and `/cats/images`.
+- The workflows will:
+  - Receive the initial entity (e.g., the "request" entity submitted to the POST endpoint),
+  - Run all async tasks like fetching external API data,
+  - And add supplementary entities of other models by calling `entity_service.add_item` (for different entity models only),
+  - Modify the current entity's state directly if needed.
+
+This approach keeps the endpoints thin, and moves all actual business logic to workflows.
+
+---
+
+### Key Notes:
+- Workflows cannot add/update/delete the same entity model as the current entity to avoid infinite recursion.
+- So the initial POST will add a "request" entity for the workflow to consume.
+- Workflows perform the API calls and add entities for breeds, facts, images, favorites, etc.
+- For GET endpoints, no change is necessary since they just read from entity_service.
+
+---
+
+### Implementation Plan
+
+1. Change the POST `/cats/breeds` endpoint to just add a single entity (e.g., `breeds_request`) with the filter parameters, and `workflow=process_breeds_request`.
+2. Implement `process_breeds_request` workflow function:
+   - Fetch breeds from external API,
+   - Add each breed as an entity `breeds`,
+   - Update the original request entity to mark it as processed.
+3. Similarly for `/cats/facts` POST and `/cats/images` POST:
+   - Add single request entities (`facts_request`, `images_request`),
+   - Workflows `process_facts_request`, `process_images_request` do fetching and add respective entities.
+4. For `/favorites` POST, since it’s a direct add of a favorite entity, the workflow `process_favorites` will remain the place to do any enrichment.
+5. Remove all `asyncio.create_task` calls from endpoints.
+6. GET endpoints remain unchanged.
+
+---
+
+### Full updated code below:
 
 ```python
 from dataclasses import dataclass
@@ -139,25 +175,102 @@ async def fetch_cat_images(breed_id: Optional[str], limit: int) -> List[Dict[str
         return []
 
 
-# Workflow functions to process entities asynchronously before persistence
+# ======== WORKFLOWS ========
+
+async def process_breeds_request(entity: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Workflow to process a breeds request entity.
+    Fetches breeds and adds each breed as a separate 'breeds' entity.
+    """
+    filter_data = {
+        "origin": entity.get("origin"),
+        "temperament": entity.get("temperament"),
+    }
+    breeds = await fetch_cat_breeds(filter_data)
+
+    # Add each breed as entity of model "breeds"
+    for breed in breeds:
+        try:
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="breeds",
+                entity_version=ENTITY_VERSION,
+                entity=breed,
+                workflow=process_breeds,  # can still enrich breeds entity
+            )
+        except Exception as e:
+            logger.exception(f"Failed to add breed entity: {e}")
+
+    # Mark this request entity as processed with timestamp and count
+    entity["processed_at"] = datetime.utcnow().isoformat()
+    entity["fetched_count"] = len(breeds)
+    return entity
+
+
+async def process_facts_request(entity: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Workflow to process a facts request entity.
+    Fetches facts and adds each fact as 'facts' entity.
+    """
+    count = entity.get("count", 5)
+    facts = await fetch_cat_facts(count)
+
+    for fact in facts:
+        try:
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="facts",
+                entity_version=ENTITY_VERSION,
+                entity={"fact": fact},
+                workflow=process_facts,
+            )
+        except Exception as e:
+            logger.exception(f"Failed to add fact entity: {e}")
+
+    entity["processed_at"] = datetime.utcnow().isoformat()
+    entity["fetched_count"] = len(facts)
+    return entity
+
+
+async def process_images_request(entity: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Workflow to process an images request entity.
+    Fetches images and adds each image as 'images' entity.
+    """
+    breed_id = entity.get("breed_id")
+    limit = entity.get("limit", 5)
+
+    images = await fetch_cat_images(breed_id, limit)
+
+    for image in images:
+        try:
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="images",
+                entity_version=ENTITY_VERSION,
+                entity=image,
+                workflow=process_images,
+            )
+        except Exception as e:
+            logger.exception(f"Failed to add image entity: {e}")
+
+    entity["processed_at"] = datetime.utcnow().isoformat()
+    entity["fetched_count"] = len(images)
+    return entity
+
 
 async def process_breeds(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Workflow function for 'breeds' entity_model.
-    Modify or enrich the breed entity before persistence.
+    Workflow for individual breed entity enrichment.
     """
-    # Example: Add a timestamp when this breed was processed
     entity["processed_at"] = datetime.utcnow().isoformat()
-    # Could add more logic here if needed
     return entity
 
 
 async def process_facts(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Workflow function for 'facts' entity_model.
-    Modify or enrich the fact entity before persistence.
+    Workflow for individual fact entity enrichment.
     """
-    # Example: Add a source field to the fact
     entity["source"] = "catfact.ninja"
     entity["processed_at"] = datetime.utcnow().isoformat()
     return entity
@@ -165,95 +278,46 @@ async def process_facts(entity: Dict[str, Any]) -> Dict[str, Any]:
 
 async def process_images(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Workflow function for 'images' entity_model.
-    Modify or enrich the image entity before persistence.
+    Workflow for individual image entity enrichment.
     """
-    # Example: Add a processed timestamp
     entity["processed_at"] = datetime.utcnow().isoformat()
     return entity
 
 
 async def process_favorites(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Workflow function for 'favorites' entity_model.
-    Modify or enrich the favorite entity before persistence.
+    Workflow for favorite entity enrichment.
     """
-    # Example: Add a timestamp of when favorite was added
     entity["added_at"] = datetime.utcnow().isoformat()
     return entity
 
 
-async def process_breeds_job(job_id: str, filter_data: Dict[str, Optional[str]]):
-    try:
-        breeds = await fetch_cat_breeds(filter_data)
-        # Store breeds using entity_service
-        for breed in breeds:
-            try:
-                await entity_service.add_item(
-                    token=cyoda_auth_service,
-                    entity_model="breeds",
-                    entity_version=ENTITY_VERSION,
-                    entity=breed,
-                    workflow=process_breeds,
-                )
-            except Exception as e:
-                logger.exception(e)
-        logger.info(f"Breeds job {job_id} completed with {len(breeds)} items")
-    except Exception as e:
-        logger.exception(e)
-
-
-async def process_facts_job(job_id: str, count: int):
-    try:
-        facts = await fetch_cat_facts(count)
-        # Store facts using entity_service
-        for fact in facts:
-            try:
-                await entity_service.add_item(
-                    token=cyoda_auth_service,
-                    entity_model="facts",
-                    entity_version=ENTITY_VERSION,
-                    entity={"fact": fact},
-                    workflow=process_facts,
-                )
-            except Exception as e:
-                logger.exception(e)
-        logger.info(f"Facts job {job_id} completed with {len(facts)} items")
-    except Exception as e:
-        logger.exception(e)
-
-
-async def process_images_job(job_id: str, breed_id: Optional[str], limit: int):
-    try:
-        images = await fetch_cat_images(breed_id, limit)
-        # Store images using entity_service
-        for image in images:
-            try:
-                await entity_service.add_item(
-                    token=cyoda_auth_service,
-                    entity_model="images",
-                    entity_version=ENTITY_VERSION,
-                    entity=image,
-                    workflow=process_images,
-                )
-            except Exception as e:
-                logger.exception(e)
-        logger.info(f"Images job {job_id} completed with {len(images)} items")
-    except Exception as e:
-        logger.exception(e)
-
+# ======== ENDPOINTS ========
 
 @app.route("/cats/breeds", methods=["POST"])
 @validate_request(BreedFilter)
 async def post_cats_breeds(data: BreedFilter):
-    asyncio.create_task(process_breeds_job("breeds", data.__dict__))
-    return jsonify({"message": "Breeds data fetching started"}), 202
+    """
+    Add a single breeds_request entity to trigger the workflow that fetches and stores breeds.
+    """
+    entity = data.__dict__
+    try:
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="breeds_request",
+            entity_version=ENTITY_VERSION,
+            entity=entity,
+            workflow=process_breeds_request,
+        )
+        return jsonify({"message": "Breeds request accepted"}), 202
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"message": "Failed to submit breeds request"}), 500
 
 
 @app.route("/cats/breeds", methods=["GET"])
 @validate_querystring(BreedFilter)
 async def get_cats_breeds():
-    # Retrieve all breed items
     try:
         breeds = await entity_service.get_items(
             token=cyoda_auth_service,
@@ -269,8 +333,22 @@ async def get_cats_breeds():
 @app.route("/cats/facts", methods=["POST"])
 @validate_request(FactsRequest)
 async def post_cats_facts(data: FactsRequest):
-    asyncio.create_task(process_facts_job("facts", data.count))
-    return jsonify({"message": "Cat facts fetching started"}), 202
+    """
+    Add a single facts_request entity to trigger facts fetching workflow.
+    """
+    entity = data.__dict__
+    try:
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="facts_request",
+            entity_version=ENTITY_VERSION,
+            entity=entity,
+            workflow=process_facts_request,
+        )
+        return jsonify({"message": "Facts request accepted"}), 202
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"message": "Failed to submit facts request"}), 500
 
 
 @app.route("/cats/facts", methods=["GET"])
@@ -290,8 +368,22 @@ async def get_cats_facts():
 @app.route("/cats/images", methods=["POST"])
 @validate_request(ImagesRequest)
 async def post_cats_images(data: ImagesRequest):
-    asyncio.create_task(process_images_job("images", data.breed_id, data.limit))
-    return jsonify({"message": "Cat images fetching started"}), 202
+    """
+    Add a single images_request entity to trigger images fetching workflow.
+    """
+    entity = data.__dict__
+    try:
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="images_request",
+            entity_version=ENTITY_VERSION,
+            entity=entity,
+            workflow=process_images_request,
+        )
+        return jsonify({"message": "Images request accepted"}), 202
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"message": "Failed to submit images request"}), 500
 
 
 @app.route("/cats/images", methods=["GET"])
@@ -311,6 +403,9 @@ async def get_cats_images():
 @app.route("/favorites", methods=["POST"])
 @validate_request(FavoriteRequest)
 async def post_favorites(data: FavoriteRequest):
+    """
+    Add a favorite entity, the workflow enriches it asynchronously.
+    """
     try:
         fav_id = await entity_service.add_item(
             token=cyoda_auth_service,
@@ -350,14 +445,17 @@ if __name__ == "__main__":
 
 ---
 
-### Summary of Changes:
-- Added four async workflow functions:
-  - `process_breeds` for `breeds`
-  - `process_facts` for `facts`
-  - `process_images` for `images`
-  - `process_favorites` for `favorites`
-- All `entity_service.add_item` calls now include the `workflow` parameter with the appropriate workflow function.
-- Each workflow function modifies the entity by adding a UTC ISO timestamp and some example enrichment (like a source field for facts).
-- The rest of the code remains unchanged.
+### Explanation:
 
-Let me know if you want me to customize the workflow functions further!
+- POST endpoints now only add a single *request* entity (`breeds_request`, `facts_request`, `images_request`) with the submitted data.
+- The workflow function corresponding to the request entity (`process_breeds_request`, etc.) does the heavy lifting:
+  - It fetches data from external APIs,
+  - Adds entities of other models (`breeds`, `facts`, `images`) asynchronously,
+  - Updates the request entity's state with metadata (`processed_at` and count).
+- This design fully separates the controller from the business logic.
+- Workflows enrich individual entities (`process_breeds`, etc.) as before.
+- `favorites` POST remains mostly unchanged, just enrichment moved to workflow.
+
+---
+
+If you want, I can help with adding job status querying or retries for the request entities — just ask!

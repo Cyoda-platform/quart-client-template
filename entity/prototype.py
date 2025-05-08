@@ -1,18 +1,44 @@
-```python
+from dataclasses import dataclass
+from typing import Dict, Any, List, Optional
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any, List, Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+
+@dataclass
+class BreedFilter:
+    origin: Optional[str] = None
+    temperament: Optional[str] = None
+
+
+@dataclass
+class FactsRequest:
+    count: int
+
+
+@dataclass
+class ImagesRequest:
+    breed_id: Optional[str] = None
+    limit: int = 5
+
+
+@dataclass
+class FavoriteRequest:
+    user_id: str
+    item_type: str  # "breed" | "fact" | "image"
+    item_id: str
+
 
 # Local in-memory cache / mock persistence
 breeds_cache: Dict[str, Any] = {}
@@ -33,9 +59,6 @@ if THECATAPI_KEY:
 
 
 async def fetch_cat_breeds(filter_data: Dict[str, Optional[str]]) -> List[Dict[str, Any]]:
-    """
-    Fetch cat breeds from TheCatAPI, apply simple filtering on origin and temperament.
-    """
     try:
         async with httpx.AsyncClient() as client:
             r = await client.get(f"{THECATAPI_BASE}/breeds", headers=headers, timeout=10)
@@ -71,13 +94,9 @@ async def fetch_cat_breeds(filter_data: Dict[str, Optional[str]]) -> List[Dict[s
 
 
 async def fetch_cat_facts(count: int) -> List[str]:
-    """
-    Fetch cat facts from catfact.ninja API.
-    """
     facts = []
     try:
         async with httpx.AsyncClient() as client:
-            # catfact.ninja/facts supports limit param but max 500
             limit = min(count, 500)
             r = await client.get(f"{CATFACTS_BASE}/facts?limit={limit}", timeout=10)
             r.raise_for_status()
@@ -89,9 +108,6 @@ async def fetch_cat_facts(count: int) -> List[str]:
 
 
 async def fetch_cat_images(breed_id: Optional[str], limit: int) -> List[Dict[str, Any]]:
-    """
-    Fetch cat images from TheCatAPI. Filter by breed_id if provided.
-    """
     params = {"limit": limit}
     if breed_id:
         params["breed_id"] = breed_id
@@ -101,10 +117,8 @@ async def fetch_cat_images(breed_id: Optional[str], limit: int) -> List[Dict[str
             r = await client.get(f"{THECATAPI_BASE}/images/search", headers=headers, params=params, timeout=10)
             r.raise_for_status()
             images = r.json()
-            # Map to required response format
             result = []
             for img in images:
-                # image object may contain breeds array
                 breed_ids = [b.get("id") for b in img.get("breeds", [])] if img.get("breeds") else []
                 result.append(
                     {
@@ -152,107 +166,77 @@ async def process_images_job(job_id: str, breed_id: Optional[str], limit: int):
 
 
 @app.route("/cats/breeds", methods=["POST"])
-async def post_cats_breeds():
-    data = await request.get_json(force=True)
-    filter_data = data.get("filter", {})
-    job_id = "breeds"  # single job key since we cache one result set
-    # Mark status in cache - simple approach
+@validate_request(BreedFilter)  # POST validation goes last (after route) - workaround for quart-schema issue
+async def post_cats_breeds(data: BreedFilter):
+    job_id = "breeds"
     breeds_cache["status"] = "processing"
     breeds_cache["requestedAt"] = datetime.utcnow().isoformat()
 
-    asyncio.create_task(process_breeds_job(job_id, filter_data))
+    asyncio.create_task(process_breeds_job(job_id, data.__dict__))
     return jsonify({"message": "Breeds data fetching started"}), 202
 
 
 @app.route("/cats/breeds", methods=["GET"])
+@validate_querystring(BreedFilter)  # GET validation goes first (before route) - workaround for quart-schema issue
 async def get_cats_breeds():
     breeds = breeds_cache.get("breeds")
-    # If no breeds key, return whole cache if it has data else empty list
     if breeds is None:
-        # We put breeds list under key equal to job_id in process function, so fix that
-        # Adjust to return the cached list or empty list
-        # Our process function stores under breeds_cache[job_id], job_id = "breeds"
-        breeds = breeds_cache.get("breeds") or breeds_cache.get("breeds") or breeds_cache.get("breeds")
-    # Actually process_breeds_job stores in breeds_cache["breeds"]? No, it stores in breeds_cache[job_id] where job_id = "breeds"
-    breeds = breeds_cache.get("breeds") or breeds_cache.get("breeds") or breeds_cache.get("breeds") # redundant line, fix below:
-    breeds = breeds_cache.get("breeds") or breeds_cache.get("breeds") or breeds_cache.get("breeds") # redundant line
-    
-    # Fix: In process_breeds_job, we store breeds_cache[job_id] = breeds, job_id="breeds"
-    # So we should return breeds_cache["breeds"]
-    breeds = breeds_cache.get("breeds") or breeds_cache.get("breeds") or breeds_cache.get("breeds")
-    breeds = breeds_cache.get("breeds") or breeds_cache.get("breeds") or breeds_cache.get("breeds")
-    breeds = breeds_cache.get("breeds") or breeds_cache.get("breeds") or breeds_cache.get("breeds")
-    breeds = breeds_cache.get("breeds")
-    if not breeds:
-        breeds = []
+        breeds = breeds_cache.get("breeds") or []
     return jsonify({"breeds": breeds})
 
 
 @app.route("/cats/facts", methods=["POST"])
-async def post_cats_facts():
-    data = await request.get_json(force=True)
-    count = data.get("count", 5)
-    # Mark status
+@validate_request(FactsRequest)
+async def post_cats_facts(data: FactsRequest):
     facts_cache.clear()
     facts_cache.append({"status": "processing", "requestedAt": datetime.utcnow().isoformat()})
 
-    asyncio.create_task(process_facts_job("facts", count))
+    asyncio.create_task(process_facts_job("facts", data.count))
     return jsonify({"message": "Cat facts fetching started"}), 202
 
 
 @app.route("/cats/facts", methods=["GET"])
 async def get_cats_facts():
-    # facts_cache contains list of strings or can have status dict
     if not facts_cache or isinstance(facts_cache[0], dict):
         return jsonify({"facts": []})
     return jsonify({"facts": facts_cache})
 
 
 @app.route("/cats/images", methods=["POST"])
-async def post_cats_images():
-    data = await request.get_json(force=True)
-    breed_id = data.get("breed_id")
-    limit = data.get("limit", 5)
+@validate_request(ImagesRequest)
+async def post_cats_images(data: ImagesRequest):
     images_cache.clear()
     images_cache.append({"status": "processing", "requestedAt": datetime.utcnow().isoformat()})
 
-    asyncio.create_task(process_images_job("images", breed_id, limit))
+    asyncio.create_task(process_images_job("images", data.breed_id, data.limit))
     return jsonify({"message": "Cat images fetching started"}), 202
 
 
 @app.route("/cats/images", methods=["GET"])
 async def get_cats_images():
-    # images_cache contains list of dicts or status dict
     if not images_cache or (len(images_cache) == 1 and isinstance(images_cache[0], dict)):
         return jsonify({"images": []})
     return jsonify({"images": images_cache})
 
 
 @app.route("/favorites", methods=["POST"])
-async def post_favorites():
-    data = await request.get_json(force=True)
-    user_id = data.get("user_id")
-    item_type = data.get("item_type")
-    item_id = data.get("item_id")
-    if not (user_id and item_type and item_id):
-        return jsonify({"success": False, "message": "Missing required fields"}), 400
-
-    user_favs = favorites_cache.setdefault(user_id, [])
+@validate_request(FavoriteRequest)
+async def post_favorites(data: FavoriteRequest):
+    user_favs = favorites_cache.setdefault(data.user_id, [])
 
     # TODO: In a full implementation, validate item existence in caches or external APIs.
-    user_favs.append({"item_type": item_type, "item_id": item_id})
+    user_favs.append({"item_type": data.item_type, "item_id": data.item_id})
     return jsonify({"success": True, "message": "Added to favorites"})
 
 
 @app.route("/favorites/<string:user_id>", methods=["GET"])
 async def get_favorites(user_id):
     user_favs = favorites_cache.get(user_id, [])
-    # TODO: Enrich favorites with full item details if needed. For prototype just return IDs.
     return jsonify({"favorites": user_favs})
 
 
 if __name__ == "__main__":
-    import os
+    import logging
 
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

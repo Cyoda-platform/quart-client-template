@@ -1,12 +1,12 @@
-```python
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Any
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,19 +14,13 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# Base URL for the FakeRest API
 FAKEREST_BASE = "https://fakerestapi.azurewebsites.net/api/v1"
+auth_tokens: Dict[str, Dict[str, Any]] = {}
+entity_jobs: Dict[str, Dict[str, Any]] = {}
 
-# In-memory caches / local state for prototype (no real persistence)
-auth_tokens: Dict[str, Dict[str, Any]] = {}  # token -> user info (mock)
-entity_jobs: Dict[str, Dict[str, Any]] = {}  # job_id -> status info
-
-# Simple utility to generate job ids for async tasks
 def generate_job_id() -> str:
     return datetime.utcnow().isoformat() + "-" + str(len(entity_jobs) + 1)
 
-
-# --- Helper HTTP client context manager ---
 async def fetch_external_api(method: str, url: str, json: Optional[Dict] = None) -> Dict:
     try:
         async with httpx.AsyncClient() as client:
@@ -37,84 +31,115 @@ async def fetch_external_api(method: str, url: str, json: Optional[Dict] = None)
         logger.exception(f"External API request failed: {e}")
         raise
 
+@dataclass
+class AuthLogin:
+    username: str
+    password: str
 
-# --- Authentication ---
+@dataclass
+class AuthLogout:
+    access_token: str
+
+@dataclass
+class SearchPage:
+    search: Optional[str] = None
+    page: Optional[int] = 1
+    page_size: Optional[int] = 20
+
+@dataclass
+class BookCreate:
+    title: str
+    description: str
+    author_id: int
+
+@dataclass
+class BookUpdate:
+    id: int
+    title: Optional[str] = None
+    description: Optional[str] = None
+    author_id: Optional[int] = None
+
+@dataclass
+class BookDelete:
+    id: int
+
+@dataclass
+class AuthorCreate:
+    name: str
+
+@dataclass
+class AuthorUpdate:
+    id: int
+    name: Optional[str] = None
+
+@dataclass
+class AuthorDelete:
+    id: int
+
+@dataclass
+class UserCreate:
+    name: str
+    email: str
+
+@dataclass
+class UserUpdate:
+    id: int
+    name: Optional[str] = None
+    email: Optional[str] = None
+
+@dataclass
+class UserDelete:
+    id: int
+
+@dataclass
+class TaskSearchPage:
+    search: Optional[str] = None
+    page: Optional[int] = 1
+    page_size: Optional[int] = 20
+
+@dataclass
+class ActivitiesList:
+    user_id: Optional[int] = None
+    date_range: Optional[Dict[str, str]] = None
+
+@dataclass
+class JobId:
+    job_id: str
 
 @app.route("/auth/login", methods=["POST"])
-async def login():
-    data = await request.get_json()
-    username = data.get("username")
-    password = data.get("password")
-
-    # Call external Authentication endpoint
+@validate_request(AuthLogin)  # POST validation last due to quart-schema issue workaround
+async def login(data: AuthLogin):
     try:
-        # FakeRestAPI /Authentication expects username/password in POST body
         resp = await fetch_external_api(
-            "POST", f"{FAKEREST_BASE}/Authentication", json={"userName": username, "password": password}
+            "POST", f"{FAKEREST_BASE}/Authentication", json={"userName": data.username, "password": data.password}
         )
         token = resp.get("token")
         if not token:
             return jsonify({"message": "Authentication failed"}), 401
-
-        # Mock token storage with expiry info; no user roles implemented yet
-        auth_tokens[token] = {"username": username, "expires_in": 3600, "created_at": datetime.utcnow()}
-
+        auth_tokens[token] = {"username": data.username, "expires_in": 3600, "created_at": datetime.utcnow()}
         return jsonify({"access_token": token, "expires_in": 3600})
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Authentication error"}), 500
 
-
 @app.route("/auth/logout", methods=["POST"])
-async def logout():
-    data = await request.get_json()
-    token = data.get("access_token")
+@validate_request(AuthLogout)  # POST validation last due to quart-schema issue workaround
+async def logout(data: AuthLogout):
+    token = data.access_token
     if token in auth_tokens:
         auth_tokens.pop(token)
         return jsonify({"message": "Logged out successfully"})
     else:
         return jsonify({"message": "Invalid token"}), 400
 
-
-# --- Utility: Require authentication token from header ---
-
-async def get_auth_token() -> Optional[str]:
-    auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:]
-        if token in auth_tokens:
-            return token
-    return None
-
-
-# --- Entity processing pattern for POST endpoints that invoke external APIs ---
-
-async def process_entity(entity_job: Dict[str, Dict[str, Any]], job_id: str, method: str, url: str, payload: Dict[str, Any]):
-    try:
-        entity_job[job_id]["status"] = "processing"
-        result = await fetch_external_api(method, url, json=payload)
-        entity_job[job_id]["status"] = "completed"
-        entity_job[job_id]["result"] = result
-        entity_job[job_id]["completedAt"] = datetime.utcnow().isoformat()
-    except Exception as e:
-        entity_job[job_id]["status"] = "failed"
-        entity_job[job_id]["error"] = str(e)
-        logger.exception(e)
-
-
-# --- Books ---
-
 @app.route("/books/list", methods=["POST"])
-async def books_list():
-    # Retrieve books list from external API and apply search + pagination in-app
-    data = await request.get_json()
-    search = data.get("search", "").lower()
-    page = int(data.get("page", 1))
-    page_size = int(data.get("page_size", 20))
-
+@validate_request(SearchPage)  # POST validation last
+async def books_list(data: SearchPage):
+    search = (data.search or "").lower()
+    page = data.page or 1
+    page_size = data.page_size or 20
     try:
         books = await fetch_external_api("GET", f"{FAKEREST_BASE}/Books")
-        # Filter by search (title contains)
         if search:
             books = [b for b in books if search in b.get("title", "").lower()]
         total = len(books)
@@ -126,14 +151,11 @@ async def books_list():
         logger.exception(e)
         return jsonify({"message": "Failed to retrieve books"}), 500
 
-
 @app.route("/books/create", methods=["POST"])
-async def books_create():
-    data = await request.get_json()
+@validate_request(BookCreate)  # POST validation last
+async def books_create(data: BookCreate):
     job_id = generate_job_id()
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-
-    # Fire and forget
     await asyncio.create_task(
         process_entity(
             entity_jobs,
@@ -141,74 +163,63 @@ async def books_create():
             "POST",
             f"{FAKEREST_BASE}/Books",
             {
-                "title": data.get("title"),
-                "description": data.get("description"),
-                "pageCount": 0,  # TODO: FakeRest requires pageCount, using 0 as placeholder
+                "title": data.title,
+                "description": data.description,
+                "pageCount": 0,  # TODO placeholder
                 "excerpt": "",
                 "publishDate": datetime.utcnow().isoformat(),
-                "author": data.get("author_id", 0),  # TODO: Mapping author_id to author field
+                "author": data.author_id,
             },
         )
     )
     return jsonify({"job_id": job_id, "message": "Book creation started"})
 
-
 @app.route("/books/update", methods=["POST"])
-async def books_update():
-    data = await request.get_json()
-    book_id = data.get("id")
+@validate_request(BookUpdate)  # POST validation last
+async def books_update(data: BookUpdate):
+    book_id = data.id
     if not book_id:
         return jsonify({"message": "Book id required"}), 400
     job_id = generate_job_id()
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-
-    # Fetch original book to merge fields (FakeRest requires full object on PUT)
     try:
         original = await fetch_external_api("GET", f"{FAKEREST_BASE}/Books/{book_id}")
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Book not found"}), 404
-
     payload = {
         "id": book_id,
-        "title": data.get("title", original.get("title")),
-        "description": data.get("description", original.get("description")),
+        "title": data.title or original.get("title"),
+        "description": data.description or original.get("description"),
         "pageCount": original.get("pageCount", 0),
         "excerpt": original.get("excerpt", ""),
         "publishDate": original.get("publishDate", datetime.utcnow().isoformat()),
-        "author": data.get("author_id", original.get("author", 0)),
+        "author": data.author_id or original.get("author", 0),
     }
-
     await asyncio.create_task(
         process_entity(entity_jobs, job_id, "PUT", f"{FAKEREST_BASE}/Books/{book_id}", payload)
     )
     return jsonify({"job_id": job_id, "message": "Book update started"})
 
-
 @app.route("/books/delete", methods=["POST"])
-async def books_delete():
-    data = await request.get_json()
-    book_id = data.get("id")
+@validate_request(BookDelete)  # POST validation last
+async def books_delete(data: BookDelete):
+    book_id = data.id
     if not book_id:
         return jsonify({"message": "Book id required"}), 400
     job_id = generate_job_id()
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-
     await asyncio.create_task(
         process_entity(entity_jobs, job_id, "DELETE", f"{FAKEREST_BASE}/Books/{book_id}", {})
     )
     return jsonify({"job_id": job_id, "message": "Book deletion started"})
 
-
-# --- Authors ---
-
 @app.route("/authors/list", methods=["POST"])
-async def authors_list():
-    data = await request.get_json()
-    search = data.get("search", "").lower()
-    page = int(data.get("page", 1))
-    page_size = int(data.get("page_size", 20))
-
+@validate_request(SearchPage)  # POST validation last
+async def authors_list(data: SearchPage):
+    search = (data.search or "").lower()
+    page = data.page or 1
+    page_size = data.page_size or 20
     try:
         authors = await fetch_external_api("GET", f"{FAKEREST_BASE}/Authors")
         if search:
@@ -222,20 +233,15 @@ async def authors_list():
         logger.exception(e)
         return jsonify({"message": "Failed to retrieve authors"}), 500
 
-
 @app.route("/authors/create", methods=["POST"])
-async def authors_create():
-    data = await request.get_json()
+@validate_request(AuthorCreate)  # POST validation last
+async def authors_create(data: AuthorCreate):
     job_id = generate_job_id()
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-
-    # FakeRest API for authors requires: id, idBook, firstName, lastName
-    # TODO: Mapping input fields appropriately; using name split as placeholder
-    name = data.get("name", "")
+    name = data.name
     parts = name.split(" ", 1)
     first_name = parts[0] if parts else ""
     last_name = parts[1] if len(parts) > 1 else ""
-
     await asyncio.create_task(
         process_entity(
             entity_jobs,
@@ -243,8 +249,8 @@ async def authors_create():
             "POST",
             f"{FAKEREST_BASE}/Authors",
             {
-                "id": 0,  # TODO: FakeRest requires id for authors, 0 as placeholder - might fail
-                "idBook": 0,  # TODO: Link author to book; 0 placeholder
+                "id": 0,  # TODO placeholder
+                "idBook": 0,  # TODO placeholder
                 "firstName": first_name,
                 "lastName": last_name,
             },
@@ -252,69 +258,56 @@ async def authors_create():
     )
     return jsonify({"job_id": job_id, "message": "Author creation started"})
 
-
 @app.route("/authors/update", methods=["POST"])
-async def authors_update():
-    data = await request.get_json()
-    author_id = data.get("id")
+@validate_request(AuthorUpdate)  # POST validation last
+async def authors_update(data: AuthorUpdate):
+    author_id = data.id
     if not author_id:
         return jsonify({"message": "Author id required"}), 400
     job_id = generate_job_id()
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-
-    # Fetch original author for merging fields
     try:
         original = await fetch_external_api("GET", f"{FAKEREST_BASE}/Authors/{author_id}")
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Author not found"}), 404
-
-    name = data.get("name", "")
-    if name:
-        parts = name.split(" ", 1)
+    if data.name:
+        parts = data.name.split(" ", 1)
         first_name = parts[0]
         last_name = parts[1] if len(parts) > 1 else ""
     else:
         first_name = original.get("firstName")
         last_name = original.get("lastName")
-
     payload = {
         "id": author_id,
         "idBook": original.get("idBook", 0),
         "firstName": first_name,
         "lastName": last_name,
     }
-
     await asyncio.create_task(
         process_entity(entity_jobs, job_id, "PUT", f"{FAKEREST_BASE}/Authors/{author_id}", payload)
     )
     return jsonify({"job_id": job_id, "message": "Author update started"})
 
-
 @app.route("/authors/delete", methods=["POST"])
-async def authors_delete():
-    data = await request.get_json()
-    author_id = data.get("id")
+@validate_request(AuthorDelete)  # POST validation last
+async def authors_delete(data: AuthorDelete):
+    author_id = data.id
     if not author_id:
         return jsonify({"message": "Author id required"}), 400
     job_id = generate_job_id()
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-
     await asyncio.create_task(
         process_entity(entity_jobs, job_id, "DELETE", f"{FAKEREST_BASE}/Authors/{author_id}", {})
     )
     return jsonify({"job_id": job_id, "message": "Author deletion started"})
 
-
-# --- Users ---
-
 @app.route("/users/list", methods=["POST"])
-async def users_list():
-    data = await request.get_json()
-    search = data.get("search", "").lower()
-    page = int(data.get("page", 1))
-    page_size = int(data.get("page_size", 20))
-
+@validate_request(SearchPage)  # POST validation last
+async def users_list(data: SearchPage):
+    search = (data.search or "").lower()
+    page = data.page or 1
+    page_size = data.page_size or 20
     try:
         users = await fetch_external_api("GET", f"{FAKEREST_BASE}/Users")
         if search:
@@ -323,93 +316,75 @@ async def users_list():
         start = (page - 1) * page_size
         end = start + page_size
         paged = users[start:end]
-        # Map external fields to simplified fields
-        mapped = [
-            {"id": u["id"], "name": u.get("userName", ""), "email": u.get("email", "")} for u in paged
-        ]
+        mapped = [{"id": u["id"], "name": u.get("userName", ""), "email": u.get("email", "")} for u in paged]
         return jsonify({"users": mapped, "total": total})
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Failed to retrieve users"}), 500
 
-
 @app.route("/users/create", methods=["POST"])
-async def users_create():
-    data = await request.get_json()
+@validate_request(UserCreate)  # POST validation last
+async def users_create(data: UserCreate):
     job_id = generate_job_id()
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-
-    # FakeRest requires: id, userName, password, fullName, email, avatar
-    # TODO: Password and avatar fields missing, placeholder used
     payload = {
-        "id": 0,  # TODO: id required, 0 as placeholder
-        "userName": data.get("name", ""),
-        "password": "changeme",  # TODO: no password provided, default placeholder
-        "fullName": data.get("name", ""),
-        "email": data.get("email", ""),
+        "id": 0,  # TODO placeholder
+        "userName": data.name,
+        "password": "changeme",  # TODO placeholder
+        "fullName": data.name,
+        "email": data.email,
         "avatar": "",
     }
-
     await asyncio.create_task(
         process_entity(entity_jobs, job_id, "POST", f"{FAKEREST_BASE}/Users", payload)
     )
     return jsonify({"job_id": job_id, "message": "User creation started"})
 
-
 @app.route("/users/update", methods=["POST"])
-async def users_update():
-    data = await request.get_json()
-    user_id = data.get("id")
+@validate_request(UserUpdate)  # POST validation last
+async def users_update(data: UserUpdate):
+    user_id = data.id
     if not user_id:
         return jsonify({"message": "User id required"}), 400
     job_id = generate_job_id()
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-
     try:
         original = await fetch_external_api("GET", f"{FAKEREST_BASE}/Users/{user_id}")
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "User not found"}), 404
-
     payload = {
         "id": user_id,
-        "userName": data.get("name", original.get("userName")),
+        "userName": data.name or original.get("userName"),
         "password": original.get("password", "changeme"),
-        "fullName": data.get("name", original.get("fullName")),
-        "email": data.get("email", original.get("email")),
+        "fullName": data.name or original.get("fullName"),
+        "email": data.email or original.get("email"),
         "avatar": original.get("avatar", ""),
     }
-
     await asyncio.create_task(
         process_entity(entity_jobs, job_id, "PUT", f"{FAKEREST_BASE}/Users/{user_id}", payload)
     )
     return jsonify({"job_id": job_id, "message": "User update started"})
 
-
 @app.route("/users/delete", methods=["POST"])
-async def users_delete():
-    data = await request.get_json()
-    user_id = data.get("id")
+@validate_request(UserDelete)  # POST validation last
+async def users_delete(data: UserDelete):
+    user_id = data.id
     if not user_id:
         return jsonify({"message": "User id required"}), 400
     job_id = generate_job_id()
     entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-
     await asyncio.create_task(
         process_entity(entity_jobs, job_id, "DELETE", f"{FAKEREST_BASE}/Users/{user_id}", {})
     )
     return jsonify({"job_id": job_id, "message": "User deletion started"})
 
-
-# --- Tasks ---
-
 @app.route("/tasks/list", methods=["POST"])
-async def tasks_list():
-    data = await request.get_json()
-    search = data.get("search", "").lower()
-    page = int(data.get("page", 1))
-    page_size = int(data.get("page_size", 20))
-
+@validate_request(TaskSearchPage)  # POST validation last
+async def tasks_list(data: TaskSearchPage):
+    search = (data.search or "").lower()
+    page = data.page or 1
+    page_size = data.page_size or 20
     try:
         tasks = await fetch_external_api("GET", f"{FAKEREST_BASE}/Activities")
         if search:
@@ -423,48 +398,39 @@ async def tasks_list():
         logger.exception(e)
         return jsonify({"message": "Failed to retrieve tasks"}), 500
 
-
 @app.route("/tasks/create", methods=["POST"])
+@validate_request(dict)  # No schema, POST validation last; placeholder, not implemented
 async def tasks_create():
-    # FakeRest API does not have a direct /Tasks endpoint, using /Activities as placeholder
-    # TODO: Implement real tasks API integration when available
-    data = await request.get_json()
     return jsonify({"message": "Task creation not implemented in FakeRest API"}), 501
 
-
 @app.route("/tasks/update", methods=["POST"])
+@validate_request(dict)  # No schema, POST validation last; placeholder, not implemented
 async def tasks_update():
-    # TODO: Implement real tasks API integration when available
     return jsonify({"message": "Task update not implemented in FakeRest API"}), 501
 
-
 @app.route("/tasks/delete", methods=["POST"])
+@validate_request(dict)  # No schema, POST validation last; placeholder, not implemented
 async def tasks_delete():
-    # TODO: Implement real tasks API integration when available
     return jsonify({"message": "Task deletion not implemented in FakeRest API"}), 501
 
-
-# --- User Activities ---
+@dataclass
+class ActivitiesListRequest:
+    user_id: Optional[int] = None
+    date_range: Optional[Dict[str, str]] = None
 
 @app.route("/activities/list", methods=["POST"])
-async def activities_list():
-    data = await request.get_json()
-    user_id = data.get("user_id")
-    date_range = data.get("date_range", {})
-    # FakeRest /Activities endpoint returns all activities; no filtering supported
+@validate_request(ActivitiesListRequest)  # POST validation last
+async def activities_list(data: ActivitiesListRequest):
+    user_id = data.user_id
+    # date_range ignored in prototype (TODO)
     try:
         activities = await fetch_external_api("GET", f"{FAKEREST_BASE}/Activities")
-        # Filter by user_id if provided
         if user_id is not None:
             activities = [a for a in activities if a.get("userId") == user_id]
-        # Date filtering is skipped (TODO)
         return jsonify({"activities": activities})
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Failed to retrieve activities"}), 500
-
-
-# --- Job status endpoint (optional) ---
 
 @app.route("/jobs/<job_id>", methods=["GET"])
 async def job_status(job_id):
@@ -473,6 +439,17 @@ async def job_status(job_id):
         return jsonify({"message": "Job not found"}), 404
     return jsonify(job)
 
+async def process_entity(entity_job: Dict[str, Dict[str, Any]], job_id: str, method: str, url: str, payload: Dict[str, Any]):
+    try:
+        entity_job[job_id]["status"] = "processing"
+        result = await fetch_external_api(method, url, json=payload)
+        entity_job[job_id]["status"] = "completed"
+        entity_job[job_id]["result"] = result
+        entity_job[job_id]["completedAt"] = datetime.utcnow().isoformat()
+    except Exception as e:
+        entity_job[job_id]["status"] = "failed"
+        entity_job[job_id]["error"] = str(e)
+        logger.exception(e)
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

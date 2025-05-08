@@ -1,13 +1,14 @@
-```python
+from dataclasses import dataclass
+from typing import Optional, Dict, Any
+
 import asyncio
 import logging
 import uuid
 from datetime import datetime
-from typing import Dict, Any
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,9 +16,13 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+@dataclass
+class WorkflowTrigger:
+    event_type: str
+    payload: Optional[Dict[str, Any]] = None
+
 # In-memory storage for workflow entities
 entity_jobs: Dict[str, Dict[str, Any]] = {}
-
 
 async def process_entity(job_id: str, event_type: str, payload: dict):
     """
@@ -56,23 +61,15 @@ async def process_entity(job_id: str, event_type: str, payload: dict):
         entity_jobs[job_id]["result"] = {"error": str(e)}
         logger.exception(f"Workflow {job_id} failed with exception.")
 
-
 @app.route("/workflow/trigger", methods=["POST"])
-async def trigger_workflow():
+@validate_request(WorkflowTrigger)  # Validation must be last decorator on POST - workaround for quart-schema issue
+async def trigger_workflow(data: WorkflowTrigger):
     """
     POST /workflow/trigger
     Triggers the entity workflow by sending an event.
     """
-    data = await request.get_json(force=True)
-
-    event_type = data.get("event_type")
-    payload = data.get("payload", {})
-
-    if not event_type or not isinstance(event_type, str):
-        return jsonify({
-            "status": "failed",
-            "message": "Missing or invalid 'event_type' field"
-        }), 400
+    event_type = data.event_type
+    payload = data.payload or {}
 
     job_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat() + "Z"
@@ -94,8 +91,8 @@ async def trigger_workflow():
         "message": f"Workflow triggered for event '{event_type}'."
     })
 
-
 @app.route("/workflow/result/<workflow_id>", methods=["GET"])
+# Validation workaround: validation must come first on GET routes but no validation needed here since no query params or body
 async def get_workflow_result(workflow_id):
     """
     GET /workflow/result/{workflow_id}
@@ -117,9 +114,7 @@ async def get_workflow_result(workflow_id):
         "completed_at": job["completed_at"],
     })
 
-
 if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

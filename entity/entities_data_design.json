@@ -1,0 +1,25 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "event_type": "hello_event",
+                "payload": {
+                    "key": "value"
+                }
+            },
+            "entity_name": "workflow_trigger"
+        },
+        {
+            "entity_data_example": {
+                "completed_at": "2024-01-01T12:00:10Z",
+                "result": {
+                    "message": "Hello World"
+                },
+                "started_at": "2024-01-01T12:00:00Z",
+                "status": "completed",
+                "workflow_id": "123e4567-e89b-12d3-a456-426614174000"
+            },
+            "entity_name": "workflow_result"
+        }
+    ]
+}

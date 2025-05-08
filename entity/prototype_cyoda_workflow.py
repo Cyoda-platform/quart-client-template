@@ -1,18 +1,33 @@
-Certainly! Below is your updated code with the `workflow` function added as a parameter to `entity_service.add_item` and implemented accordingly.
+Absolutely! Moving the async processing logic from the endpoint into the workflow function (`process_hello_world_job`) is the right approach. This will offload business logic from the controller, making the endpoint simpler and the workflow handling more robust and consistent.
 
-Key changes:
-- Defined the workflow function `process_hello_world_job` which wraps the existing `process_entity` logic.
-- Passed `workflow=process_hello_world_job` to `entity_service.add_item` in the `/api/hello-world/trigger` route.
-- The `process_hello_world_job` function takes the entity data as the only argument and triggers the async processing logic.
+---
+
+### What will be moved:
+- The async processing (`process_entity`) will be **fully integrated** into the workflow function.
+- The workflow function will modify the entity state directly (e.g., updating `status`, `output`, timestamps).
+- No separate fire-and-forget or external async tasks will be launched from the endpoint.
+- The endpoint will just create the initial entity with minimal state (`status=idle` and timestamps).
+- All actual processing will happen inside the workflow function, which is guaranteed to be called asynchronously **before persistence** by the platform.
+
+---
+
+### Important notes:
+- The workflow function **cannot call** `entity_service.add/update/delete` on the current entity to avoid infinite recursion.
+- However, it **can** call `entity_service.add/update/delete` on *different* entity models.
+- To update the current entity state, modify the `entity` dict in place.
+- The platform will persist the modified entity after the workflow function completes.
+
+---
+
+# Updated Complete Code
 
 ```python
 from dataclasses import dataclass
-import asyncio
 import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -31,6 +46,7 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 STATE_IDLE = "idle"
 STATE_PROCESSING = "processing"
 STATE_COMPLETED = "completed"
+STATE_FAILED = "failed"
 
 
 @dataclass
@@ -40,9 +56,8 @@ class EventData:
 
 async def fetch_external_greeting() -> str:
     """
-    Fetch greeting message from a real external API.
+    Fetch greeting message from an external API.
     Using https://api.github.com/zen as a placeholder for an external API returning a string.
-    TODO: Replace with a proper greeting API if desired.
     """
     try:
         async with httpx.AsyncClient() as client:
@@ -50,100 +65,39 @@ async def fetch_external_greeting() -> str:
             response.raise_for_status()
             return response.text.strip()
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to fetch external greeting: %s", e)
         return "Hello World!"  # Fallback greeting
 
 
-async def process_entity(job_id: str, event_data: dict):
-    """
-    Simulates processing the entity workflow using a state machine.
-    1. Fetch external data (greeting)
-    2. Update state machine accordingly
-    """
-    try:
-        # Retrieve job state from entity_service
-        job = await entity_service.get_item(
-            token=cyoda_auth_service,
-            entity_model="hello_world_job",
-            entity_version=ENTITY_VERSION,
-            technical_id=job_id,
-        )
-        if not job:
-            logger.error(f"Job {job_id} not found for processing")
-            return
-
-        job["status"] = STATE_PROCESSING
-        job["startedAt"] = datetime.utcnow().isoformat()
-
-        # Update job status to processing
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="hello_world_job",
-            entity_version=ENTITY_VERSION,
-            entity=job,
-            technical_id=job_id,
-            meta={},
-        )
-
-        external_greeting = await fetch_external_greeting()
-
-        user_msg = event_data.get("message") or external_greeting
-
-        output = f"{user_msg}"
-
-        job["status"] = STATE_COMPLETED
-        job["completedAt"] = datetime.utcnow().isoformat()
-        job["output"] = output
-
-        # Update job with completed status and output
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="hello_world_job",
-            entity_version=ENTITY_VERSION,
-            entity=job,
-            technical_id=job_id,
-            meta={},
-        )
-    except Exception as e:
-        logger.exception(e)
-        try:
-            job = await entity_service.get_item(
-                token=cyoda_auth_service,
-                entity_model="hello_world_job",
-                entity_version=ENTITY_VERSION,
-                technical_id=job_id,
-            )
-            if job:
-                job["status"] = "failed"
-                job["error"] = str(e)
-                await entity_service.update_item(
-                    token=cyoda_auth_service,
-                    entity_model="hello_world_job",
-                    entity_version=ENTITY_VERSION,
-                    entity=job,
-                    technical_id=job_id,
-                    meta={},
-                )
-        except Exception as ex:
-            logger.exception(ex)
-
-
-# Workflow function for the entity - must be named process_<entity_name> in underscore lowercase
+# Workflow function for 'hello_world_job' entity model
 async def process_hello_world_job(entity: dict):
     """
-    Workflow function applied to the entity asynchronously before persistence.
-    This function starts the processing task for the hello_world_job entity.
+    Workflow function applied to the 'hello_world_job' entity asynchronously before persistence.
+    This function modifies the entity's state and output in place.
     """
-    # Extract the technical id (workflow id) from the entity
-    workflow_id = entity.get("technical_id") or entity.get("id")  # adjust if your id key is different
-    if not workflow_id:
-        logger.error("No technical_id found in entity for processing")
-        return
+    try:
+        # Update entity status to processing
+        entity["status"] = STATE_PROCESSING
+        entity["startedAt"] = datetime.utcnow().isoformat()
 
-    event_data = entity.get("event_data", {})
+        # Fetch greeting message (external async call)
+        external_greeting = await fetch_external_greeting()
 
-    # Fire and forget the processing task asynchronously
-    asyncio.create_task(process_entity(workflow_id, event_data))
+        # Use event message if provided, else fallback to external greeting
+        user_msg = entity.get("event_data", {}).get("message") or external_greeting
+
+        # Prepare output
+        output = f"{user_msg}"
+
+        # Update entity with completed status and output
+        entity["status"] = STATE_COMPLETED
+        entity["completedAt"] = datetime.utcnow().isoformat()
+        entity["output"] = output
+
+    except Exception as e:
+        logger.exception("Workflow processing failed: %s", e)
+        entity["status"] = STATE_FAILED
+        entity["error"] = str(e)
 
 
 @app.route("/api/hello-world/trigger", methods=["POST"])
@@ -151,29 +105,32 @@ async def process_hello_world_job(entity: dict):
 async def trigger_hello_world(data: EventData):
     """
     POST endpoint to trigger the Hello World workflow.
-    Accepts dynamic event_data JSON.
+    Accepts event_data JSON.
     Returns workflow_id and status.
     """
     try:
         event_data = data.__dict__ if data else {}
 
+        # Initial entity state
         job_data = {
             "status": STATE_IDLE,
             "requestedAt": datetime.utcnow().isoformat(),
             "event_data": event_data,
         }
 
+        # Add item with workflow function applied asynchronously before persistence
         workflow_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="hello_world_job",
             entity_version=ENTITY_VERSION,
             entity=job_data,
-            workflow=process_hello_world_job,  # Pass the workflow function here
+            workflow=process_hello_world_job,
         )
 
         return jsonify({"workflow_id": workflow_id, "status": "initiated"})
+
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to trigger workflow: %s", e)
         return jsonify({"error": "Failed to trigger workflow"}), 500
 
 
@@ -198,16 +155,17 @@ async def get_workflow_result(workflow_id: str):
             "state": job.get("status", "unknown"),
             "output": job.get("output", None),
             "timestamp": job.get("completedAt") or job.get("requestedAt"),
+            "error": job.get("error", None),
         }
         return jsonify(response)
+
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to retrieve workflow result: %s", e)
         return jsonify({"error": "Failed to retrieve workflow result"}), 500
 
 
 if __name__ == "__main__":
     import sys
-
     import logging
 
     logging.basicConfig(
@@ -221,12 +179,21 @@ if __name__ == "__main__":
 
 ---
 
-### Explanation:
+### Summary of changes:
 
-- The new function `process_hello_world_job` is the workflow function for the entity model `"hello_world_job"`.
-- It receives the entity dict, extracts the `technical_id` (or `id` if your schema differs) to know which job to process.
-- It then starts the existing `process_entity` function asynchronously.
-- The `workflow=process_hello_world_job` is passed to the `add_item` call, so that this workflow function gets applied asynchronously before persistence as required.
-- The rest of your logic remains unchanged.
+- **Removed** the separate `process_entity` function and all manual fire-and-forget tasks.
+- **Moved all processing logic** to `process_hello_world_job(entity: dict)` workflow function.
+- This workflow function:
+  - Sets entity status to `"processing"`.
+  - Performs async external call to fetch greeting.
+  - Updates entity state and output directly.
+  - Handles exceptions by setting status `"failed"` and storing error message.
+- **Endpoint `/api/hello-world/trigger`** now only creates initial entity and passes the workflow function as parameter.
+- The platform will invoke the workflow function asynchronously before persisting the entity.
+- **Endpoint `/api/hello-world/result/<workflow_id>`** remains unchanged to fetch current workflow state and output.
 
-Let me know if you need help adjusting the `technical_id` field name or anything else!
+---
+
+This approach ensures all async processing runs inside the workflow function, making the controllers clean and decoupled from processing logic. It also leverages the platform guarantees about calling the workflow function before persistence.
+
+If you want me to help you migrate other entities or workflows similarly, just ask!

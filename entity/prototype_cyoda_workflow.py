@@ -1,11 +1,37 @@
-Certainly! I've updated the code to pass the workflow function `process_entity` as a parameter to `entity_service.add_item` when adding a new entity. The workflow function `process_entity` is used as described (since the entity name is `"entity"`, the workflow function is `process_entity`).
+Absolutely, moving logic from the endpoint into the workflow function `process_entity` is the right approach here. It encapsulates all async logic, side effects, and state changes inside the workflow function, makes controllers cleaner, and respects the rule that the workflow function directly modifies the entity dictionary without calling add/update/delete on the same entity.
 
-Here is the complete updated code with the workflow function parameter added and properly passed:
+---
+
+### What will be moved?
+
+- The logic that was previously in the endpoint, including:
+  - Setting initial states when creating new entity.
+  - Updating the `last_event_type`, `last_event_payload`, `updated_at`.
+  - The async task that fetches external data and updates the entity with the greeting message and status.
+
+### What will remain in the endpoint?
+
+- Minimal logic:
+  - Fetch or create a new entity (with minimal defaults).
+  - Passing incoming event data into the entity so the workflow function can use it.
+  - Calling add_item or update_item *with* the workflow function (`process_entity`) applied.
+- No fire-and-forget tasks with `asyncio.create_task()`.
+- No direct calls to external APIs or complex logic.
+
+---
+
+### Important:
+
+- Since the workflow function cannot call add/update/delete on the same entity model (to avoid infinite recursion), modifications to the entity must be done **in-place** on the passed `entity` dict.
+- If supplementary entities are needed for additional data, they can be created with add/update/delete on different `entity_model`s inside the workflow.
+
+---
+
+## Updated Complete Code
 
 ```python
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional
-import asyncio
 import logging
 from datetime import datetime
 
@@ -26,7 +52,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 app = Quart(__name__)
 QuartSchema(app)
 
-# EntityTriggerRequest for POST /entity/trigger-workflow
 @dataclass
 class EntityTriggerRequest:
     entity_id: str
@@ -39,41 +64,39 @@ async def fetch_external_data(name: str) -> Dict:
         try:
             response = await client.get(url, timeout=5.0)
             response.raise_for_status()
-            data = response.json()
-            return data
+            return response.json()
         except httpx.HTTPError as e:
             logger.exception(f"Error fetching external data: {e}")
             return {}
 
-async def process_entity(entity_data: Dict):
-    entity_id = entity_data["entity_id"]
-    event_payload = entity_data.get("event_payload", {})
-    name = event_payload.get("name", "world")  # Default to 'world' if no name provided
+async def process_entity(entity: Dict[str, Any]):
+    """
+    Workflow function that is applied to the entity before persistence.
+    Modifies the entity in-place.
+    """
+
+    # Initialization if entity is newly created
+    if "workflow_state" not in entity:
+        entity["workflow_state"] = "initialized"
+    if "status" not in entity:
+        entity["status"] = "pending"
+    if "created_at" not in entity:
+        entity["created_at"] = datetime.utcnow().isoformat()
+    if "updated_at" not in entity:
+        entity["updated_at"] = datetime.utcnow().isoformat()
+
+    # Extract needed fields from the entity or event payload
+    event_payload = entity.get("last_event_payload", {}) or {}
+    name = event_payload.get("name", "world")
+    entity_id = entity.get("entity_id")
 
     try:
-        # Retrieve current entity data
-        entity = await entity_service.get_item(
-            token=cyoda_auth_service,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            technical_id=entity_id
-        )
-        if not entity:
-            logger.error(f"Entity {entity_id} not found during processing")
-            return
-
-        entity["status"] = "processing"
+        # Update entity state to processing
         entity["workflow_state"] = "started"
+        entity["status"] = "processing"
+        entity["updated_at"] = datetime.utcnow().isoformat()
 
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            entity=entity,
-            technical_id=entity_id,
-            meta={}
-        )
-
+        # Fetch external data asynchronously
         external_data = await fetch_external_data(name)
 
         age = external_data.get("age")
@@ -83,87 +106,82 @@ async def process_entity(entity_data: Dict):
         else:
             message = f"Hello {name.capitalize()}!"
 
-        entity.update({
-            "workflow_state": "completed",
-            "last_message": message,
-            "status": "done",
-            "updated_at": datetime.utcnow().isoformat()
-        })
+        # Update entity with final state and message
+        entity["workflow_state"] = "completed"
+        entity["last_message"] = message
+        entity["status"] = "done"
+        entity["updated_at"] = datetime.utcnow().isoformat()
 
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            entity=entity,
-            technical_id=entity_id,
-            meta={}
-        )
-        logger.info(f"Processed entity {entity_id} with message: {message}")
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error in process_entity workflow for entity_id={entity_id}: {e}")
+        entity["workflow_state"] = "error"
+        entity["status"] = "error"
+        entity["last_message"] = f"Processing failed: {str(e)}"
+        entity["updated_at"] = datetime.utcnow().isoformat()
 
-# POST endpoint: validation must come after route decorator (issue workaround)
+
 @app.route('/entity/trigger-workflow', methods=['POST'])
 @validate_request(EntityTriggerRequest)
 async def trigger_workflow(data: EntityTriggerRequest):
-    entity_id = data.entity_id
-    event_type = data.event_type
-    event_payload = data.event_payload or {}
 
+    entity_id = data.entity_id
     now_iso = datetime.utcnow().isoformat()
 
-    # Attempt to get existing entity, if not found create new
+    # Try to get existing entity
     entity = await entity_service.get_item(
         token=cyoda_auth_service,
         entity_model="entity",
         entity_version=ENTITY_VERSION,
         technical_id=entity_id
     )
+
     if not entity:
+        # Create a new entity minimal skeleton
         entity = {
             "entity_id": entity_id,
+            "created_at": now_iso,
+            "updated_at": now_iso,
+            "status": "pending",
             "workflow_state": "initialized",
             "last_message": "",
-            "status": "pending",
-            "created_at": now_iso,
-            "updated_at": now_iso
         }
-        # Add entity via service with workflow function parameter
-        try:
+
+    # Update event data inside the entity; the workflow function will use it
+    entity["last_event_type"] = data.event_type
+    entity["last_event_payload"] = data.event_payload or {}
+    entity["updated_at"] = now_iso
+
+    # Persist entity with workflow function applied before actual persistence
+    # The workflow function will modify the entity in-place and can do async operations
+    try:
+        if not await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="entity",
+            entity_version=ENTITY_VERSION,
+            technical_id=entity_id
+        ):
+            # New entity: use add_item with workflow
             await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model="entity",
                 entity_version=ENTITY_VERSION,
                 entity=entity,
-                workflow=process_entity  # Passing the workflow function here
+                workflow=process_entity
             )
-        except Exception as e:
-            logger.exception(e)
-            return jsonify({"status": "error", "message": "Failed to create entity"}), 500
-
-    # Update last event info
-    entity["last_event_type"] = event_type
-    entity["last_event_payload"] = event_payload
-    entity["updated_at"] = now_iso
-
-    try:
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            entity=entity,
-            technical_id=entity_id,
-            meta={}
-        )
+        else:
+            # Existing entity: use update_item with workflow
+            await entity_service.update_item(
+                token=cyoda_auth_service,
+                entity_model="entity",
+                entity_version=ENTITY_VERSION,
+                entity=entity,
+                technical_id=entity_id,
+                meta={},
+                workflow=process_entity
+            )
     except Exception as e:
-        logger.exception(e)
-        return jsonify({"status": "error", "message": "Failed to update entity"}), 500
-
-    asyncio.create_task(process_entity({
-        "entity_id": entity_id,
-        "event_type": event_type,
-        "event_payload": event_payload
-    }))
+        logger.exception(f"Failed to persist entity {entity_id} with workflow: {e}")
+        return jsonify({"status": "error", "message": "Failed to process entity"}), 500
 
     return jsonify({
         "status": "success",
@@ -171,9 +189,9 @@ async def trigger_workflow(data: EntityTriggerRequest):
         "message": "Hello World processing started"
     }), 202
 
-# GET endpoint: no validation needed, no body, no query parameters
+
 @app.route('/entity/<string:entity_id>/status', methods=['GET'])
-async def get_entity_status(entity_id):
+async def get_entity_status(entity_id: str):
     try:
         entity = await entity_service.get_item(
             token=cyoda_auth_service,
@@ -182,7 +200,7 @@ async def get_entity_status(entity_id):
             technical_id=entity_id
         )
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Failed to retrieve entity {entity_id}: {e}")
         return jsonify({"status": "error", "message": "Failed to retrieve entity"}), 500
 
     if not entity:
@@ -194,14 +212,34 @@ async def get_entity_status(entity_id):
         "last_message": entity.get("last_message", "")
     }), 200
 
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-**Summary of the change:**
+---
 
-- When adding a new entity with `entity_service.add_item`, now passing the `workflow=process_entity` argument.
-- The `process_entity` function name follows the required naming convention: `process_` + entity name in underscore lowercase (`entity`).
+## Explanation of changes
 
-Let me know if you need further adjustments!
+- **All async logic moved into `process_entity`**:
+  - This function modifies the entity in-place.
+  - It fetches external data, updates status, messages, timestamps.
+- **Endpoint is much simpler**:
+  - Just fetches or creates the entity (minimal defaults).
+  - Updates event information inside the entity dictionary.
+  - Calls `add_item` or `update_item` passing the workflow function.
+  - No fire-and-forget or background tasks needed.
+- **`process_entity` is always called before persistence**:
+  - Changes to the entity dict inside `process_entity` are persisted automatically.
+- **Error handling** is done inside `process_entity`:
+  - If it fails, it updates entity status and message accordingly.
+- **No recursion or infinite loops**:
+  - `process_entity` does not call `add/update/delete` on the same entity model.
+  - It only modifies the entity dict passed in-place.
+
+---
+
+This design fully leverages the new workflow function parameter, removes complex logic from controllers, and makes the system more robust and maintainable.
+
+Let me know if you'd like me to help with anything else!

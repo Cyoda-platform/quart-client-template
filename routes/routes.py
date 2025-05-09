@@ -1,19 +1,17 @@
 from dataclasses import dataclass, field
 from typing import Optional
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, request, jsonify, abort
+from quart_schema import validate_request, validate_querystring
 import asyncio
 import logging
 from datetime import datetime
-import httpx
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -122,7 +120,7 @@ async def process_health_check_job(job_id: str, cat_id: str, health_data: dict):
         entity_jobs[job_id]["error"] = str(e)
         logger.exception(e)
 
-@app.route("/cats", methods=["GET"])
+@routes_bp.route("/cats", methods=["GET"])
 @validate_querystring(CatFilter)
 async def list_cats():
     state = request.args.get("state")
@@ -176,7 +174,7 @@ async def list_cats():
         cats = []
     return jsonify(cats)
 
-@app.route("/cats", methods=["POST"])
+@routes_bp.route("/cats", methods=["POST"])
 @validate_request(CatData)
 async def create_update_cat(data: CatData):
     requested_at = datetime.utcnow().isoformat() + "Z"
@@ -185,14 +183,14 @@ async def create_update_cat(data: CatData):
     asyncio.create_task(process_cat_job(job_id, data.__dict__))
     return jsonify({"success": True, "job_id": job_id, "message": "Cat creation/update processing started"}), 202
 
-@app.route("/cats/job/<job_id>", methods=["GET"])
+@routes_bp.route("/cats/job/<job_id>", methods=["GET"])
 async def get_cat_job_status(job_id):
     job = entity_jobs.get(job_id)
     if not job:
         return jsonify({"error": "Job not found"}), 404
     return jsonify(job)
 
-@app.route("/adoptions", methods=["POST"])
+@routes_bp.route("/adoptions", methods=["POST"])
 @validate_request(AdoptionData)
 async def submit_adoption(data: AdoptionData):
     requested_at = datetime.utcnow().isoformat() + "Z"
@@ -201,7 +199,7 @@ async def submit_adoption(data: AdoptionData):
     asyncio.create_task(process_adoption_job(job_id, data.__dict__))
     return jsonify({"success": True, "job_id": job_id, "message": "Adoption request processing started"}), 202
 
-@app.route("/adoptions/<adoption_id>", methods=["GET"])
+@routes_bp.route("/adoptions/<adoption_id>", methods=["GET"])
 async def get_adoption_status(adoption_id):
     adoption = await entity_service.get_item(
         token=cyoda_auth_service,
@@ -213,7 +211,7 @@ async def get_adoption_status(adoption_id):
         return jsonify({"error": "Adoption not found"}), 404
     return jsonify(adoption)
 
-@app.route("/cats/<cat_id>/health-check", methods=["POST"])
+@routes_bp.route("/cats/<cat_id>/health-check", methods=["POST"])
 @validate_request(HealthCheckData)
 async def update_health_check(cat_id, data: HealthCheckData):
     requested_at = datetime.utcnow().isoformat() + "Z"
@@ -222,7 +220,7 @@ async def update_health_check(cat_id, data: HealthCheckData):
     asyncio.create_task(process_health_check_job(job_id, cat_id, data.__dict__))
     return jsonify({"success": True, "job_id": job_id, "message": "Health check processing started"}), 202
 
-@app.route("/cats/<cat_id>", methods=["GET"])
+@routes_bp.route("/cats/<cat_id>", methods=["GET"])
 async def get_cat(cat_id):
     cat = await entity_service.get_item(
         token=cyoda_auth_service,
@@ -233,14 +231,3 @@ async def get_cat(cat_id):
     if not cat:
         return jsonify({"error": "Cat not found"}), 404
     return jsonify(cat)
-
-if __name__ == '__main__':
-    import sys
-    import logging.config
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s %(levelname)s %(name)s - %(message)s',
-        stream=sys.stdout,
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

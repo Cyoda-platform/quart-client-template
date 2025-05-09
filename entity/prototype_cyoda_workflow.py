@@ -1,6 +1,17 @@
-Certainly! I've updated the code to include the new `workflow` parameter in the call to `entity_service.add_item`. The workflow function is implemented as `process_hello_post_request` according to your naming convention (prefix `process_` followed by the underscore lowercase entity name `hello_post_request`). This function matches the signature and asynchronously processes the entity before it is persisted.
+Understood. The key is to move all asynchronous logic related to processing the entity **before persistence** into the workflow function `process_hello_post_request`. This means:
 
-Here is the complete updated code with the requested changes:
+- The POST endpoint will be simplified to only calling `entity_service.add_item` with the workflow function.
+- The workflow function will:
+  - Set initial state fields
+  - Perform async calls like fetching external data
+  - Store related entities or supplementary data via `entity_service.add_item` for other entity models (allowed)
+  - Update the current entity state directly by modifying the `entity` dict argument (which will then be persisted automatically)
+- We **cannot** call `entity_service.add/update/delete` on the current entity inside the workflow function (to avoid recursion), but we can mutate the entity dict directly.
+- Fire-and-forget async tasks like `process_entity` logic must be moved inside the workflow.
+
+---
+
+### Here is the fully refactored code with the above approach:
 
 ```python
 from dataclasses import dataclass
@@ -50,55 +61,55 @@ async def fetch_external_greeting(name: Optional[str]) -> str:
         logger.exception(e)
         return f"Hello {name}"
 
-async def process_entity(job_id: str, data: dict):
-    try:
-        name = data.get("name")
-        greeting = await fetch_external_greeting(name)
-        # Store greeting via entity_service instead of local cache
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="hello_post_request",
-            entity_version=ENTITY_VERSION,
-            entity={"greeting": greeting},
-            technical_id=job_id,
-            meta={}
-        )
-        # Update status
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="hello_post_request",
-            entity_version=ENTITY_VERSION,
-            entity={"status": "completed", "completedAt": datetime.utcnow().isoformat()},
-            technical_id=job_id,
-            meta={}
-        )
-    except Exception as e:
-        logger.exception(e)
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="hello_post_request",
-            entity_version=ENTITY_VERSION,
-            entity={"status": "failed", "error": str(e)},
-            technical_id=job_id,
-            meta={}
-        )
-
-# Workflow function to be applied before persisting the entity
+# Workflow function applied to the entity before persistence
 async def process_hello_post_request(entity: dict) -> dict:
     """
-    Workflow function applied to the hello_post_request entity asynchronously before persistence.
-    You can mutate this entity or perform any async operations needed.
+    This workflow function:
+    - Sets initial entity state
+    - Performs async external call to enrich data
+    - Stores supplementary entity of a different model (allowed)
+    - Updates current entity state directly
     """
-    # For example, you can set an initial status or modify fields here
-    entity.setdefault("status", "processing")
-    entity.setdefault("requestedAt", datetime.utcnow().isoformat())
-    # Add any other pre-persistence processing here if needed
+    try:
+        # Initial state for this entity
+        entity['status'] = 'processing'
+        entity['requestedAt'] = datetime.utcnow().isoformat()
+
+        # Fetch external greeting asynchronously and enrich entity
+        name = entity.get('name')
+        greeting = await fetch_external_greeting(name)
+        entity['greeting'] = greeting
+
+        # Add supplementary raw data entity of different model (allowed)
+        # e.g. logging the request raw data for audit
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="hello_post_request_raw",
+            entity_version=ENTITY_VERSION,
+            entity={
+                "originalName": name,
+                "requestedAt": entity['requestedAt'],
+                "greeting": greeting,
+            },
+            workflow=None  # no workflow needed for raw data
+        )
+
+        # Mark entity as completed with timestamp (modifying the current entity directly)
+        entity['status'] = 'completed'
+        entity['completedAt'] = datetime.utcnow().isoformat()
+
+    except Exception as e:
+        logger.exception(f"Workflow processing failed: {e}")
+        entity['status'] = 'failed'
+        entity['error'] = str(e)
+
     return entity
+
 
 @app.route("/hello", methods=["POST"])
 @validate_request(HelloPostRequest)  # validation last in POST (workaround for quart-schema issue)
 async def post_hello(data: HelloPostRequest):
-    # create new entity item for the job
+    # Pass entity and workflow function to add_item
     job_data = {
         "name": data.name
     }
@@ -107,11 +118,11 @@ async def post_hello(data: HelloPostRequest):
         entity_model="hello_post_request",
         entity_version=ENTITY_VERSION,
         entity=job_data,
-        workflow=process_hello_post_request  # pass the workflow function here
+        workflow=process_hello_post_request  # all async processing handled here now
     )
-    asyncio.create_task(process_entity(job_id, data.__dict__))
 
     return jsonify({"status": "success", "message": "Hello World processed", "job_id": job_id})
+
 
 @app.route("/hello", methods=["GET"])
 async def get_hello():
@@ -125,13 +136,16 @@ async def get_hello():
         )
         if not items:
             return jsonify({"greeting": "Hello World"})
-        # Assume the last completed item is the one with the latest completedAt
+
+        # Pick the latest completed item by 'completedAt'
         latest_item = max(items, key=lambda x: x.get("completedAt") or "")
         greeting = latest_item.get("greeting", "Hello World")
         return jsonify({"greeting": greeting})
+
     except Exception as e:
         logger.exception(e)
         return jsonify({"greeting": "Hello World"})
+
 
 if __name__ == '__main__':
     import sys
@@ -146,9 +160,21 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added the new async workflow function `process_hello_post_request(entity: dict)` which mutates or enriches the entity before persistence.
-- Passed this workflow function as the `workflow` argument in the call to `entity_service.add_item` inside the POST `/hello` route.
-- The workflow function sets default `status` and `requestedAt` fields before the entity is persisted.
+---
 
-Let me know if you need any additional adjustments!
+### Explanation:
+
+- The **POST /hello** endpoint is now a minimal controller that just delegates to `entity_service.add_item` with the workflow function.
+- The **workflow function** `process_hello_post_request`:
+  - Sets initial processing state.
+  - Performs the external async call to get enhanced greeting.
+  - Adds a supplementary entity of model `"hello_post_request_raw"` to store raw input data (allowed model different from the main one).
+  - Updates the current entity's `greeting`, `status`, and `completedAt` fields directly.
+  - Handles errors by setting the entity to `"failed"` status and saving the error string.
+- The **GET /hello** endpoint remains unchanged, retrieving the latest completed greeting.
+- We **no longer** have any fire-and-forget logic in the endpoint or in background tasks because the workflow function fully handles async processing before persistence.
+- This is a clean and robust design that fully utilizes the new workflow feature, freeing controllers from business logic, and following the recursion restrictions.
+
+---
+
+If you want, I can also help to add tests or further refactor supplementary entity handling. Let me know!

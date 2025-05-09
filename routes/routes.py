@@ -1,14 +1,12 @@
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional
 
-import asyncio
-import logging
 import uuid
 from datetime import datetime
+import logging
 
-import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -16,8 +14,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -25,9 +22,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 # Constants
 DEFAULT_PAGE_SIZE = 20
-
-GOOGLE_PLACES_API_KEY = "YOUR_GOOGLE_PLACES_API_KEY"
-GOOGLE_PLACES_SEARCH_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 
 @dataclass
 class Location:
@@ -53,7 +47,7 @@ class SearchRequest:
     pagination: Optional[Pagination] = field(default_factory=Pagination)
 
 
-@app.route("/api/search-restaurants", methods=["POST"])
+@routes_bp.route("/api/search-restaurants", methods=["POST"])
 @validate_request(SearchRequest)
 async def search_restaurants(data: SearchRequest):
     search_id = str(uuid.uuid4())
@@ -71,7 +65,7 @@ async def search_restaurants(data: SearchRequest):
             entity_model="search_result",
             entity_version=ENTITY_VERSION,
             entity=initial_entity,
-            )
+        )
     except Exception as e:
         logger.exception(f"Failed to add search_result entity: {e}")
         return jsonify({"error": "Failed to initiate search"}), 500
@@ -84,7 +78,15 @@ async def search_restaurants(data: SearchRequest):
     })
 
 
-@app.route("/api/search-results/<search_id>", methods=["GET"])
+def paginate(items, page, page_size):
+    if not items:
+        return []
+    start = (page - 1) * page_size
+    end = start + page_size
+    return items[start:end]
+
+
+@routes_bp.route("/api/search-results/<search_id>", methods=["GET"])
 async def get_search_results(search_id):
     page = request.args.get("page", default=None, type=int)
     page_size = request.args.get("page_size", default=None, type=int)
@@ -123,7 +125,6 @@ async def get_search_results(search_id):
     all_restaurants = entity_data.get("all_restaurants", [])
     total_results = entity_data.get("total_results", 0)
 
-    # If client requested page/page_size different from stored, paginate again here
     current_page = page if page and page > 0 else entity_data.get("current_page", 1)
     current_page_size = page_size if page_size and page_size > 0 else entity_data.get("page_size", DEFAULT_PAGE_SIZE)
 
@@ -137,7 +138,3 @@ async def get_search_results(search_id):
         "restaurants": restaurants_page,
     }
     return jsonify(response)
-
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

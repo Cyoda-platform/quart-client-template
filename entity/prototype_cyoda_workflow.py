@@ -1,6 +1,51 @@
-Certainly! I have updated the code to add the required `workflow` function parameter to the `entity_service.add_item` call. I also implemented the workflow function `process_entity` following the naming convention (`process_` prefix + underscore lowercase entity name).
+Absolutely! Moving async logic and state changes into the `process_entity` workflow function (or other similarly named workflow functions) is a great way to keep controllers thin, improve code maintainability, and keep all entity-related logic encapsulated.
 
-Here is the complete updated code with the workflow function and its usage in `create_entity`:
+---
+
+### What to move into `process_entity`?
+
+- **Initialization of entity state** (e.g., setting `"fetch_status": "pending"`) before persistence.
+- **Triggering asynchronous tasks** like fetching external API data and updating entity state accordingly.
+- Since the workflow function is async and runs before the entity is persisted, we can do the full fetch-and-update flow inside this function, modifying the entity dict in-place.
+- We cannot call add/update/delete on the same entity inside the workflow — but we can modify the entity dict directly.
+- For secondary entities (other models), we can add/update/delete them freely inside workflow.
+
+---
+
+### How to handle asynchronous fetch inside workflow?
+
+- The workflow function is awaited before persistence, so we can perform the fetch inside it.
+- We modify the entity dict in-place with fetched data, timestamps, and status.
+- This means the entity is persisted *after* the workflow completes, so the updated entity state is saved immediately.
+- This **removes the need** for fire-and-forget background tasks or separate fetch calls from endpoints.
+
+---
+
+### What changes in the endpoints?
+
+- The POST `/entities` endpoint simply calls `add_item` with the workflow.
+- No need to spawn `asyncio.create_task` for fetching.
+- Similarly, update endpoint modifies the entity then calls `update_item` with the workflow function.
+- The fetch endpoint can remain for manual re-fetch, but it can also be refactored to update entity via `update_item` with workflow.
+
+---
+
+### Implementation plan
+
+- Rewrite workflow function `process_entity` to:
+  - Set initial fetch status.
+  - Perform fetch of external API.
+  - Modify entity with fetched data and status.
+- Update `create_entity` and `update_entity` endpoints:
+  - Pass `workflow=process_entity` parameter to `add_item` and `update_item`.
+  - Remove calls to fire-and-forget background tasks.
+- Update manual fetch endpoint:
+  - Instead of calling `fetch_external_api` directly, call `update_item` with the same entity and workflow to re-trigger fetch.
+- Remove `process_entity_fetch` and `fetch_external_api` functions from controller scope or move them inside workflow if needed.
+
+---
+
+### Here is the complete updated code reflecting the above:
 
 ```python
 from dataclasses import dataclass
@@ -8,13 +53,11 @@ from typing import Optional, Any
 import asyncio
 import logging
 from datetime import datetime, timezone
-from uuid import uuid4
 
 import httpx
 from quart import Quart, jsonify, request, abort
 from quart_schema import QuartSchema, validate_request
 
-import logging
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
@@ -28,83 +71,46 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# Job tracking dictionary, job_id -> status info
-entity_jobs = {}
+@dataclass
+class ApiUrlPayload:
+    api_url: Any  # Accept any JSON-compatible type
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
-@dataclass
-class ApiUrlPayload:
-    api_url: Any  # JsonNode; type Any to allow JSON string or other JSON types
+# Workflow function for 'entity'
+async def process_entity(entity: dict) -> None:
+    """
+    Workflow function applied asynchronously before persisting the entity.
+    Modifies entity in-place:
+    - Initializes fetch_status
+    - Performs external API fetch
+    - Updates entity with fetched data, timestamps, and status
+    
+    Cannot call add/update/delete on 'entity' model here.
+    """
 
-async def fetch_external_api(entity_id: str):
+    # Initialize fetch status if not present
+    entity.setdefault("fetch_status", "pending")
+
+    api_url = entity.get("api_url")
+    if not api_url:
+        entity["fetch_status"] = "error: missing api_url"
+        return
+
     try:
-        entity = await entity_service.get_item(
-            token=cyoda_auth_service,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            technical_id=entity_id,
-        )
-        if not entity:
-            logger.warning(f"Entity {entity_id} not found for fetch")
-            return
-
-        url_node = entity.get("api_url")
-        api_url = url_node if isinstance(url_node, str) else str(url_node)
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(api_url)
             response.raise_for_status()
             data = response.json()
-        fetch_status = "success"
-        fetched_data = data
-        fetched_at = utc_now_iso()
+        entity["fetched_data"] = data
+        entity["fetched_at"] = utc_now_iso()
+        entity["fetch_status"] = "success"
     except Exception as e:
-        logger.exception(f"Failed to fetch external API for entity {entity_id}: {e}")
-        fetch_status = str(e)
-        fetched_data = None
-        fetched_at = None
-
-    if entity:
-        entity.update({
-            "fetched_data": fetched_data,
-            "fetched_at": fetched_at,
-            "fetch_status": fetch_status,
-        })
-        try:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="entity",
-                entity_version=ENTITY_VERSION,
-                entity=entity,
-                technical_id=entity_id,
-                meta={}
-            )
-        except Exception as e:
-            logger.exception(f"Failed to update entity {entity_id} after fetch: {e}")
-
-async def process_entity_fetch(entity_id: str):
-    job_id = str(uuid4())
-    requested_at = utc_now_iso()
-    entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
-
-    try:
-        await fetch_external_api(entity_id)
-        entity_jobs[job_id]["status"] = "done"
-    except Exception as e:
-        logger.exception(f"Error processing fetch for entity {entity_id}: {e}")
-        entity_jobs[job_id]["status"] = f"error: {e}"
-
-# New workflow function for entity
-async def process_entity(entity_data: dict) -> None:
-    """
-    Workflow function applied to the entity asynchronously before persistence.
-    You can modify entity_data in-place here.
-    For example, initialize fetch_status to pending.
-    """
-    entity_data.setdefault("fetch_status", "pending")
-    # Add any other preprocessing logic here if needed
-    # Do NOT call add/update/delete on 'entity' entity_model here to avoid infinite recursion
+        logger.exception(f"Error fetching external API for entity inside workflow: {e}")
+        entity["fetched_data"] = None
+        entity["fetched_at"] = None
+        entity["fetch_status"] = f"error: {str(e)}"
 
 @app.route("/entities", methods=["POST"])
 @validate_request(ApiUrlPayload)
@@ -115,9 +121,7 @@ async def create_entity(data: ApiUrlPayload):
 
     entity_dict = {
         "api_url": api_url,
-        "fetched_data": None,
-        "fetched_at": None,
-        "fetch_status": None,
+        # fetched_data, fetched_at, fetch_status will be set in workflow
     }
 
     try:
@@ -126,16 +130,12 @@ async def create_entity(data: ApiUrlPayload):
             entity_model="entity",
             entity_version=ENTITY_VERSION,
             entity=entity_dict,
-            workflow=process_entity  # <-- pass workflow function here
+            workflow=process_entity,  # workflow handles fetch & state update
         )
     except Exception as e:
         logger.exception(f"Failed to create entity: {e}")
         return jsonify({"error": "Failed to create entity"}), 500
 
-    # Start fetch task asynchronously
-    asyncio.create_task(process_entity_fetch(entity_id))
-
-    # Return only the id as per instructions
     return jsonify({"id": entity_id}), 201
 
 @app.route("/entities/<entity_id>", methods=["POST"])
@@ -168,18 +168,21 @@ async def update_entity(entity_id, data: ApiUrlPayload):
             entity_version=ENTITY_VERSION,
             entity=entity,
             technical_id=entity_id,
-            meta={}
+            meta={},
+            workflow=process_entity,  # workflow triggers fetch & updates entity before persistence
         )
     except Exception as e:
         logger.exception(f"Failed to update entity {entity_id}: {e}")
         return jsonify({"error": "Failed to update entity"}), 500
 
-    asyncio.create_task(process_entity_fetch(entity_id))
-
     return jsonify(entity)
 
 @app.route("/entities/<entity_id>/fetch", methods=["POST"])
 async def manual_fetch(entity_id):
+    """
+    Re-fetch external API data for entity by re-triggering workflow on update
+    """
+
     try:
         entity = await entity_service.get_item(
             token=cyoda_auth_service,
@@ -194,10 +197,24 @@ async def manual_fetch(entity_id):
     if not entity:
         abort(404, description="Entity not found")
 
-    await fetch_external_api(entity_id)
-
+    # Trigger workflow by updating entity without changes (or you could set fetch_status pending explicitly here)
     try:
-        entity = await entity_service.get_item(
+        await entity_service.update_item(
+            token=cyoda_auth_service,
+            entity_model="entity",
+            entity_version=ENTITY_VERSION,
+            entity=entity,
+            technical_id=entity_id,
+            meta={},
+            workflow=process_entity,
+        )
+    except Exception as e:
+        logger.exception(f"Failed to trigger manual fetch workflow for entity {entity_id}: {e}")
+        return jsonify({"error": "Failed to fetch entity data"}), 500
+
+    # Retrieve updated entity to return fresh data
+    try:
+        updated_entity = await entity_service.get_item(
             token=cyoda_auth_service,
             entity_model="entity",
             entity_version=ENTITY_VERSION,
@@ -209,9 +226,9 @@ async def manual_fetch(entity_id):
 
     return jsonify({
         "id": entity_id,
-        "fetched_data": entity.get("fetched_data"),
-        "fetched_at": entity.get("fetched_at"),
-        "fetch_status": entity.get("fetch_status"),
+        "fetched_data": updated_entity.get("fetched_data"),
+        "fetched_at": updated_entity.get("fetched_at"),
+        "fetch_status": updated_entity.get("fetch_status"),
     })
 
 @app.route("/entities", methods=["GET"])
@@ -268,7 +285,7 @@ async def delete_entity(entity_id):
             entity_model="entity",
             entity_version=ENTITY_VERSION,
             technical_id=entity_id,
-            meta={}
+            meta={},
         )
     except Exception as e:
         logger.exception(f"Failed to delete entity {entity_id}: {e}")
@@ -292,7 +309,7 @@ async def delete_all_entities():
                         entity_model="entity",
                         entity_version=ENTITY_VERSION,
                         technical_id=entity.get("id"),
-                        meta={}
+                        meta={},
                     )
                 except Exception as e:
                     logger.exception(f"Failed to delete entity {entity.get('id')}: {e}")
@@ -314,11 +331,16 @@ if __name__ == '__main__':
 
 ---
 
-### Summary of changes
+### Summary of changes:
 
-- Added an async workflow function `process_entity(entity_data: dict)` that modifies the entity before persistence.
-- Passed `workflow=process_entity` as an argument to `entity_service.add_item` in the `create_entity` route handler.
-- The workflow function sets initial `"fetch_status": "pending"` (you can extend it as needed).
-- No changes were made to other handlers, since only `add_item` requires the new parameter.
+- **All async fetching and entity state updates moved inside `process_entity` workflow function**.
+- Endpoints for create and update simply call `add_item` or `update_item` with the workflow; no manual async tasks spawned.
+- Manual fetch endpoint triggers the workflow by calling `update_item` with unchanged entity to re-fetch.
+- Removed all separate async fetch functions and background tasks.
+- Entity state changes are performed by modifying the entity dict inside the workflow, which is persisted after the workflow completes.
 
-Let me know if you want me to apply similar workflow function usage to other entity creation points or need further changes!
+---
+
+If you want, I can also help you write tests or further refactor or extend workflows for other entity models.
+
+This approach will make your application much cleaner, robust, and easier to maintain.

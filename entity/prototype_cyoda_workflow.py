@@ -1,217 +1,70 @@
-Understood. We will refactor the code to extract all async logic related to entity processing from endpoints into their respective workflow functions `process_{entity_name}`. This includes:
+from dataclasses import dataclass
+from typing import Optional, Dict
+import asyncio
+import logging
+from datetime import datetime
 
-- Modifications of the entity before persistence (adding timestamps, metadata, etc.)
-- Any async calls related to enriching the entity or creating supplementary entities of other entity_models
-- Fire-and-forget or any async side-effects triggered synchronously from the endpoint
+import httpx
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request
 
-**We must NOT call `entity_service.add/update/delete` on the same entity_model inside its own workflow to avoid recursion.**
+from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
 
----
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-### Which entities have add_item calls and workflows?
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-- `user_favorite` (used in `/cats/upload` and `/users/favorites` POST)
-- Possibly others if applicable, but from the code only `user_favorite` is persisted.
+app = Quart(__name__)
+QuartSchema(app)
 
----
+user_tokens: Dict[str, str] = {}
 
-### Candidate async logic to move into `process_user_favorite`
+CAT_API_BASE_URL = "https://api.thecatapi.com/v1"
+CAT_FACTS_API_URL = "https://catfact.ninja/facts"
+CAT_API_KEY = None  # Add your API key here if available
 
-Looking at `/cats/upload`:
+@dataclass
+class RandomCatsRequest:
+    category: Optional[str] = None
+    limit: Optional[int] = 1
 
-- Creation of `favorite_data` happens in endpoint now. We can move any enrichment of the entity into workflow.
-- Currently, we mock upload by creating fake image id and URL in the endpoint.
-- The favorite entity includes `user`, `image_id`, `url`, `metadata`.
-- We can move the generation of `created_at`, possibly the url creation, or any other enrichment into the workflow.
+@dataclass
+class SearchCatsRequest:
+    breed_id: str
+    limit: Optional[int] = 5
 
-Looking at `/users/favorites` POST:
+@dataclass
+class CatFactsRequest:
+    count: Optional[int] = 1
 
-- The endpoint currently checks if the favorite already exists by calling `entity_service.get_items_by_condition` - this is a read operation that can't be moved into workflow because workflow is called only during add_item and we must not add/update/delete the same entity_model inside workflow.
-- However, the workflow can enrich the entity before persistence.
+@dataclass
+class AddFavoriteRequest:
+    image_id: str
 
----
+@dataclass
+class AuthLoginRequest:
+    username: str
+    password: str
 
-### What about other async calls?
+def make_auth_headers() -> dict:
+    headers = {}
+    if CAT_API_KEY:
+        headers['x-api-key'] = CAT_API_KEY
+    return headers
 
-- `entity_service.get_items_by_condition` calls are read-only - no issue keeping them outside workflow.
-- External API calls for cats, facts, or login have no entity persistence - no workflows needed.
-- The only entity persistence is for `user_favorite`.
+def generate_mock_token(username: str) -> str:
+    return f"token-{username}"
 
----
+def verify_token(token: str) -> Optional[str]:
+    for user, t in user_tokens.items():
+        if t == token:
+            return user
+    return None
 
-### Possible workflow enhancements for `user_favorite`
-
-- Add `created_at` timestamp
-- Enrich `url` if missing (e.g. derive from image_id)
-- Possibly fetch supplementary data from external APIs (e.g. cat breed info) and save as a supplementary entity with a different `entity_model`.
-- Any other async enrichment or validation
-
----
-
-### Implementation plan
-
-1. Create `async def process_user_favorite(entity_data: dict) -> dict` workflow function
-2. Move all entity enrichment logic to it:
-   - Set `created_at` timestamp if not present
-   - If `url` missing or empty, generate from `image_id`
-   - (Optional) Fetch additional info async if needed and add supplementary entities (e.g. cat_image_metadata)
-3. Modify endpoints to build minimum entity data and pass as-is to `add_item` with workflow
-4. Ensure no `entity_service.add/update/delete` on `user_favorite` inside workflow
-5. Return updated code
-
----
-
-### Updated code snippet for workflow and endpoints
-
-```python
-# Workflow for user_favorite entity
-async def process_user_favorite(entity_data: dict) -> dict:
-    """
-    Workflow function applied to 'user_favorite' entity before persistence.
-    Enriches entity with created_at timestamp and url if missing.
-    Can add supplementary entities of different models asynchronously.
-    """
-
-    # Add created_at timestamp if not present
-    if "created_at" not in entity_data:
-        entity_data["created_at"] = datetime.utcnow().isoformat()
-
-    # Generate URL if missing or empty (mock logic)
-    if not entity_data.get("url"):
-        image_id = entity_data.get("image_id")
-        if image_id:
-            entity_data["url"] = f"https://placekitten.com/400/300?u={image_id}"
-
-    # Example: asynchronously add supplementary entity of different model (mock)
-    # e.g. fetch image metadata and store as cat_image_metadata entity
-    # This is just a demonstration, replace with real logic if needed
-    image_id = entity_data.get("image_id")
-    if image_id:
-        # Suppose we want to store metadata about the image asynchronously
-        # We do this by adding an entity of different model 'cat_image_metadata'
-        metadata_entity = {
-            "image_id": image_id,
-            "source": "user_favorite_upload",
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-        try:
-            # Add supplementary entity asynchronously
-            # This is allowed because entity_model is different from 'user_favorite'
-            await entity_service.add_item(
-                token=cyoda_auth_service,
-                entity_model="cat_image_metadata",
-                entity_version=ENTITY_VERSION,
-                entity=metadata_entity
-            )
-        except Exception as e:
-            # Log but do not fail workflow
-            logger.warning(f"Failed to add supplementary cat_image_metadata entity: {e}")
-
-    # Return modified entity_data to be persisted
-    return entity_data
-
-# In /cats/upload endpoint, minimize logic:
-# Only build minimal entity and pass to add_item with workflow
-@app.route("/cats/upload", methods=["POST"])
-async def upload_cat_image():
-    auth_header = request.headers.get("Authorization", "")
-    token = auth_header.replace("Bearer ", "")
-    user = verify_token(token)
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    image_file = (await request.files).get("image_file")
-    metadata_raw = (await request.form).get("metadata")
-
-    metadata = {}
-    if metadata_raw:
-        import json
-        try:
-            metadata = json.loads(metadata_raw)
-        except Exception:
-            pass
-
-    if not image_file:
-        return jsonify({"error": "No image file provided"}), 400
-
-    # Mock image id generation, no url here: workflow will generate url
-    fake_image_id = f"uploaded-{datetime.utcnow().timestamp()}"
-
-    favorite_data = {
-        "user": user,
-        "image_id": fake_image_id,
-        "metadata": metadata
-        # url removed to test workflow url generation
-    }
-
-    try:
-        favorite_id = await entity_service.add_item(
-            token=cyoda_auth_service,
-            entity_model="user_favorite",
-            entity_version=ENTITY_VERSION,
-            entity=favorite_data,
-            workflow=process_user_favorite
-        )
-        return jsonify({
-            "upload_status": "success",
-            "image_id": fake_image_id,
-            "message": "Image uploaded (mocked)",
-            "favorite_id": favorite_id
-        })
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to save favorite"}), 500
-
-# Similarly in /users/favorites POST route, workflow will add created_at and url
-@app.route("/users/favorites", methods=["POST"])
-@validate_request(AddFavoriteRequest)
-async def add_favorite_cat(data: AddFavoriteRequest):
-    auth_header = request.headers.get("Authorization", "")
-    token = auth_header.replace("Bearer ", "")
-    user = verify_token(token)
-    if not user:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    image_id = data.image_id
-
-    try:
-        condition = {"user": user}
-        favorites = await entity_service.get_items_by_condition(
-            token=cyoda_auth_service,
-            entity_model="user_favorite",
-            entity_version=ENTITY_VERSION,
-            condition=condition
-        )
-        if any(fav.get("image_id") == image_id for fav in favorites):
-            return jsonify({"status": "failure", "message": "Image already in favorites"}), 400
-
-        favorite = {
-            "user": user,
-            "image_id": image_id,
-            # url omitted, workflow will generate it
-            "metadata": {}
-        }
-        favorite_id = await entity_service.add_item(
-            token=cyoda_auth_service,
-            entity_model="user_favorite",
-            entity_version=ENTITY_VERSION,
-            entity=favorite,
-            workflow=process_user_favorite
-        )
-        return jsonify({"status": "success", "message": "Added to favorites", "favorite_id": favorite_id})
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to add favorite"}), 500
-```
-
----
-
-### Full code with all changes applied (only changed parts shown for brevity)
-
-```python
-# ... [imports and other code unchanged]
-
-# Workflow for user_favorite entity
 async def process_user_favorite(entity_data: dict) -> dict:
     if "created_at" not in entity_data:
         entity_data["created_at"] = datetime.utcnow().isoformat()
@@ -240,7 +93,82 @@ async def process_user_favorite(entity_data: dict) -> dict:
 
     return entity_data
 
-# ... [rest of the code unchanged except endpoints below]
+@app.route("/cats/random", methods=["POST"])
+@validate_request(RandomCatsRequest)
+async def fetch_random_cats(data: RandomCatsRequest):
+    category = data.category
+    limit = data.limit or 1
+    params = {"limit": limit}
+    if category:
+        params["category_ids"] = category
+
+    headers = make_auth_headers()
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(f"{CAT_API_BASE_URL}/images/search", params=params, headers=headers)
+            resp.raise_for_status()
+            images = resp.json()
+            out_images = []
+            for img in images:
+                out_images.append({
+                    "id": img.get("id"),
+                    "url": img.get("url"),
+                    "breeds": [b.get("name") for b in img.get("breeds", [])] if img.get("breeds") else [],
+                    "metadata": {k: v for k, v in img.items() if k not in ("id", "url", "breeds")}
+                })
+            return jsonify({"images": out_images})
+        except Exception as e:
+            logger.exception(e)
+            return jsonify({"error": "Failed to fetch random cats"}), 500
+
+@app.route("/cats/search", methods=["POST"])
+@validate_request(SearchCatsRequest)
+async def search_cats_by_breed(data: SearchCatsRequest):
+    breed_id = data.breed_id
+    limit = data.limit or 5
+    headers = make_auth_headers()
+    async with httpx.AsyncClient() as client:
+        try:
+            resp_breeds = await client.get(f"{CAT_API_BASE_URL}/breeds/{breed_id}", headers=headers)
+            if resp_breeds.status_code == 404:
+                return jsonify({"error": "Breed not found"}), 404
+            resp_breeds.raise_for_status()
+            breed_info = resp_breeds.json()
+
+            params = {"breed_id": breed_id, "limit": limit}
+            resp_images = await client.get(f"{CAT_API_BASE_URL}/images/search", params=params, headers=headers)
+            resp_images.raise_for_status()
+            images = resp_images.json()
+            out_images = [{"id": img.get("id"), "url": img.get("url")} for img in images]
+
+            out_breed_info = {
+                "id": breed_info.get("id"),
+                "name": breed_info.get("name"),
+                "description": breed_info.get("description"),
+                "temperament": breed_info.get("temperament"),
+            }
+
+            return jsonify({"breed_info": out_breed_info, "images": out_images})
+        except Exception as e:
+            logger.exception(e)
+            return jsonify({"error": "Failed to search cats by breed"}), 500
+
+@app.route("/cats/facts", methods=["POST"])
+@validate_request(CatFactsRequest)
+async def get_cat_facts(data: CatFactsRequest):
+    count = data.count or 1
+    count = max(1, min(count, 10))
+
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(CAT_FACTS_API_URL, params={"limit": count})
+            resp.raise_for_status()
+            facts_data = resp.json()
+            facts = [f.get("fact") for f in facts_data.get("data", [])]
+            return jsonify({"facts": facts})
+        except Exception as e:
+            logger.exception(e)
+            return jsonify({"error": "Failed to fetch cat facts"}), 500
 
 @app.route("/cats/upload", methods=["POST"])
 async def upload_cat_image():
@@ -328,18 +256,41 @@ async def add_favorite_cat(data: AddFavoriteRequest):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to add favorite"}), 500
-```
 
----
+@app.route("/users/favorites", methods=["GET"])
+async def get_user_favorites():
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.replace("Bearer ", "")
+    user = verify_token(token)
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
 
-### Explanation:
+    try:
+        condition = {"user": user}
+        favorites = await entity_service.get_items_by_condition(
+            token=cyoda_auth_service,
+            entity_model="user_favorite",
+            entity_version=ENTITY_VERSION,
+            condition=condition
+        )
+        return jsonify({"favorites": favorites})
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to retrieve favorites"}), 500
 
-- The endpoints are now minimal and only construct the basic entity data.
-- The workflow function is responsible for enriching the entity (timestamps, URL).
-- The workflow function asynchronously adds supplementary metadata entities.
-- The endpoints keep the logic for authorization and existence checks (like duplicate favorites).
-- This improves maintainability, robustness, and separation of concerns.
+@app.route("/auth/login", methods=["POST"])
+@validate_request(AuthLoginRequest)
+async def login(data: AuthLoginRequest):
+    username = data.username
+    password = data.password
 
----
+    if not username or not password:
+        return jsonify({"error": "username and password required"}), 400
 
-If you want, I can provide the full complete updated code (all routes and imports) with this refactoring applied. Just let me know!
+    token = generate_mock_token(username)
+    user_tokens[username] = token
+
+    return jsonify({"token": token, "expires_in": 3600})
+
+if __name__ == "__main__":
+    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

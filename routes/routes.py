@@ -5,21 +5,20 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 ENTITY_NAME = "category"
 LOAD_REQUEST_ENTITY_NAME = "category_load_request"
@@ -49,7 +48,7 @@ def find_category_by_id(node: Dict[str, Any], category_id: str) -> Optional[Dict
             return found
     return None
 
-@app.route("/api/categories/load-tree", methods=["POST"])
+@routes_bp.route("/api/categories/load-tree", methods=["POST"])
 @validate_request(dict)
 async def load_tree(data):
     load_request_entity = {
@@ -68,7 +67,7 @@ async def load_tree(data):
         "loadRequestId": entity_id
     })
 
-@app.route("/api/categories/tree", methods=["GET"])
+@routes_bp.route("/api/categories/tree", methods=["GET"])
 async def get_tree():
     try:
         items = await entity_service.get_items(
@@ -79,11 +78,11 @@ async def get_tree():
         if not items:
             return jsonify({"error": "Category tree not loaded"}), 404
         return jsonify({"categoryTree": items[0]})
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to get category tree")
         return jsonify({"error": "Failed to retrieve category tree"}), 500
 
-@app.route("/api/categories/search", methods=["POST"])
+@routes_bp.route("/api/categories/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def search_categories(data: SearchRequest):
     query = data.query
@@ -99,7 +98,7 @@ async def search_categories(data: SearchRequest):
         if not items:
             return jsonify({"results": [], "notification": "Category data not loaded"}), 404
         category_tree = items[0]
-    except Exception as e:
+    except Exception:
         logger.exception("Failed retrieving category data during search")
         return jsonify({"error": "Failed to retrieve category data"}), 500
     results = []
@@ -113,7 +112,7 @@ async def search_categories(data: SearchRequest):
         return jsonify({"results": [], "notification": "Category not found"})
     return jsonify({"results": results})
 
-@app.route("/api/categories/navigate", methods=["POST"])
+@routes_bp.route("/api/categories/navigate", methods=["POST"])
 @validate_request(NavigateRequest)
 async def navigate_category(data: NavigateRequest):
     category_id = data.categoryId
@@ -126,16 +125,10 @@ async def navigate_category(data: NavigateRequest):
         if not items:
             return jsonify({"error": "Category data not loaded"}), 404
         category_tree = items[0]
-    except Exception as e:
+    except Exception:
         logger.exception("Failed retrieving category data during navigate")
         return jsonify({"error": "Failed to retrieve category data"}), 500
     subtree = find_category_by_id(category_tree, category_id)
     if not subtree:
         return jsonify({"notification": "Category not found"}), 404
     return jsonify({"subtree": subtree})
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                        format='%(asctime)s %(levelname)s %(name)s - %(message)s')
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

@@ -1,10 +1,10 @@
-```python
+from dataclasses import dataclass, field
+from typing import Optional
+from quart import Quart, request, jsonify
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -13,23 +13,45 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory mock storage
-cats_store: Dict[str, Dict[str, Any]] = {}
-adoptions_store: Dict[str, Dict[str, Any]] = {}
-health_checks_store: Dict[str, Dict[str, Any]] = {}
-entity_jobs: Dict[str, Dict[str, Any]] = {}
+cats_store = {}
+adoptions_store = {}
+health_checks_store = {}
+entity_jobs = {}
 
-# Helper to generate simple IDs
 def generate_id(prefix: str) -> str:
     return f"{prefix}{int(datetime.utcnow().timestamp() * 1000)}"
 
-# Real external API used: TheCatAPI for breed info (https://thecatapi.com/)
 CAT_API_BASE = "https://api.thecatapi.com/v1"
 CAT_API_KEY = None  # TODO: Add your API key here if available
 
+@dataclass
+class CatFilter:
+    state: Optional[str] = None
+    breed: Optional[str] = None
+    age: Optional[int] = None
 
-async def fetch_breed_info(breed_name: str) -> Dict[str, Any]:
-    # Fetch cat breed info from TheCatAPI by breed name
+@dataclass
+class CatData:
+    id: Optional[str] = None
+    name: str = ""
+    breed: str = ""
+    age: int = 0
+    health_status: str = ""
+    state: str = ""
+
+@dataclass
+class AdoptionData:
+    cat_id: str
+    applicant_name: str
+    contact_info: str
+
+@dataclass
+class HealthCheckData:
+    check_date: str
+    health_status: str
+    notes: Optional[str] = ""
+
+async def fetch_breed_info(breed_name: str):
     headers = {}
     if CAT_API_KEY:
         headers["x-api-key"] = CAT_API_KEY
@@ -40,20 +62,16 @@ async def fetch_breed_info(breed_name: str) -> Dict[str, Any]:
             data = resp.json()
             if data:
                 return data[0]
-            else:
-                return {}
+            return {}
         except Exception as e:
             logger.exception(f"Error fetching breed info for {breed_name}: {e}")
             return {}
 
-
-async def process_cat_creation_update(job_id: str, cat_data: Dict[str, Any]):
+async def process_cat_creation_update(job_id: str, cat_data: dict):
     try:
-        # Example external data lookup: enrich breed info
         breed_name = cat_data.get("breed", "")
         breed_info = await fetch_breed_info(breed_name) if breed_name else {}
 
-        # Add breed info to cat record if available
         if breed_info:
             cat_data["breed_info"] = {
                 "origin": breed_info.get("origin"),
@@ -61,7 +79,6 @@ async def process_cat_creation_update(job_id: str, cat_data: Dict[str, Any]):
                 "description": breed_info.get("description")
             }
 
-        # Save or update cat record in memory
         cat_id = cat_data.get("id")
         if not cat_id:
             cat_id = generate_id("cat")
@@ -77,23 +94,18 @@ async def process_cat_creation_update(job_id: str, cat_data: Dict[str, Any]):
         entity_jobs[job_id]["error"] = str(e)
         logger.exception(e)
 
-
-async def process_adoption_request(job_id: str, adoption_data: Dict[str, Any]):
+async def process_adoption_request(job_id: str, adoption_data: dict):
     try:
         cat_id = adoption_data.get("cat_id")
         cat = cats_store.get(cat_id)
         if not cat:
             raise ValueError("Cat not found")
-
-        # Check cat availability
         if cat.get("state") != "Available":
             raise ValueError("Cat not available for adoption")
 
-        # Update cat state to Pending Adoption
         cat["state"] = "Pending Adoption"
         cats_store[cat_id] = cat
 
-        # Create adoption record
         adoption_id = generate_id("adopt")
         adoption_record = {
             "adoption_id": adoption_id,
@@ -114,22 +126,18 @@ async def process_adoption_request(job_id: str, adoption_data: Dict[str, Any]):
         entity_jobs[job_id]["error"] = str(e)
         logger.exception(e)
 
-
-async def process_health_check(job_id: str, cat_id: str, health_data: Dict[str, Any]):
+async def process_health_check(job_id: str, cat_id: str, health_data: dict):
     try:
         cat = cats_store.get(cat_id)
         if not cat:
             raise ValueError("Cat not found")
 
-        # Update health check record (append or overwrite for simplicity)
         health_checks_store[cat_id] = health_data
 
-        # Example logic: if health_status is not "Healthy", mark cat as Unavailable
         health_status = health_data.get("health_status", "").lower()
         if health_status != "healthy":
             cat["state"] = "Unavailable"
         else:
-            # Only set to Available if currently Unavailable
             if cat.get("state") == "Unavailable":
                 cat["state"] = "Available"
         cats_store[cat_id] = cat
@@ -143,13 +151,13 @@ async def process_health_check(job_id: str, cat_id: str, health_data: Dict[str, 
         entity_jobs[job_id]["error"] = str(e)
         logger.exception(e)
 
-
+# GET /cats with validation first (workaround for quart-schema issue)
 @app.route("/cats", methods=["GET"])
+@validate_querystring(CatFilter)  # validation first for GET (workaround)
 async def list_cats():
-    # Filters: state, breed, age
     state = request.args.get("state")
     breed = request.args.get("breed")
-    age = request.args.get("age")  # Could be a range, but simple equality for prototype
+    age = request.args.get("age")
 
     results = []
     for cat in cats_store.values():
@@ -167,20 +175,19 @@ async def list_cats():
         results.append(cat)
     return jsonify(results)
 
-
-@app.route("/cats", methods=["POST"])
-async def create_update_cat():
-    data = await request.get_json()
+# POST /cats with validation last (workaround for quart-schema issue)
+@app.route("/cats", methods=["POST"])  # route first
+@validate_request(CatData)           # validation last for POST (workaround)
+async def create_update_cat(data: CatData):
     requested_at = datetime.utcnow().isoformat() + "Z"
     job_id = generate_id("job")
     entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
 
-    # Fire and forget processing
-    asyncio.create_task(process_cat_creation_update(job_id, data))
+    asyncio.create_task(process_cat_creation_update(job_id, data.__dict__))
 
     return jsonify({"success": True, "job_id": job_id, "message": "Cat creation/update processing started"}), 202
 
-
+# GET /cats/job/<job_id> no validation needed
 @app.route("/cats/job/<job_id>", methods=["GET"])
 async def get_cat_job_status(job_id):
     job = entity_jobs.get(job_id)
@@ -188,19 +195,19 @@ async def get_cat_job_status(job_id):
         return jsonify({"error": "Job not found"}), 404
     return jsonify(job)
 
-
+# POST /adoptions validation last for POST
 @app.route("/adoptions", methods=["POST"])
-async def submit_adoption():
-    data = await request.get_json()
+@validate_request(AdoptionData)
+async def submit_adoption(data: AdoptionData):
     requested_at = datetime.utcnow().isoformat() + "Z"
     job_id = generate_id("job")
     entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
 
-    asyncio.create_task(process_adoption_request(job_id, data))
+    asyncio.create_task(process_adoption_request(job_id, data.__dict__))
 
     return jsonify({"success": True, "job_id": job_id, "message": "Adoption request processing started"}), 202
 
-
+# GET /adoptions/<adoption_id> no validation needed
 @app.route("/adoptions/<adoption_id>", methods=["GET"])
 async def get_adoption_status(adoption_id):
     adoption = adoptions_store.get(adoption_id)
@@ -208,26 +215,25 @@ async def get_adoption_status(adoption_id):
         return jsonify({"error": "Adoption not found"}), 404
     return jsonify(adoption)
 
-
+# POST /cats/<cat_id>/health-check validation last for POST
 @app.route("/cats/<cat_id>/health-check", methods=["POST"])
-async def update_health_check(cat_id):
-    data = await request.get_json()
+@validate_request(HealthCheckData)
+async def update_health_check(cat_id, data: HealthCheckData):
     requested_at = datetime.utcnow().isoformat() + "Z"
     job_id = generate_id("job")
     entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
 
-    asyncio.create_task(process_health_check(job_id, cat_id, data))
+    asyncio.create_task(process_health_check(job_id, cat_id, data.__dict__))
 
     return jsonify({"success": True, "job_id": job_id, "message": "Health check processing started"}), 202
 
-
+# GET /cats/<cat_id> no validation needed
 @app.route("/cats/<cat_id>", methods=["GET"])
 async def get_cat(cat_id):
     cat = cats_store.get(cat_id)
     if not cat:
         return jsonify({"error": "Cat not found"}), 404
     return jsonify(cat)
-
 
 if __name__ == '__main__':
     import sys

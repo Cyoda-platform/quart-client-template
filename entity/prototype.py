@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass
+from typing import Optional, List, Union, Any, Dict
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,6 +24,17 @@ EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/categories/tree"
 
 # Job status store for fire-and-forget pattern (not strictly needed here but showing example)
 entity_job: Dict[str, Dict[str, Any]] = {}
+
+
+@dataclass
+class SearchRequest:
+    query: str
+    searchBy: str  # "name" or "id"
+
+
+@dataclass
+class NavigateRequest:
+    categoryId: str
 
 
 async def fetch_external_category_tree() -> Dict[str, Any]:
@@ -75,7 +87,8 @@ def find_category_by_id(node: Dict[str, Any], category_id: str) -> Optional[Dict
 
 
 @app.route("/api/categories/load-tree", methods=["POST"])
-async def load_tree():
+@validate_request(dict)  # workaround: dummy validation, no real schema needed here
+async def load_tree(data):
     """Trigger loading and transformation of category tree from external API."""
     # Fire and forget task
     job_id = f"load-tree-{datetime.utcnow().isoformat()}"
@@ -95,18 +108,19 @@ async def get_tree():
     return jsonify({"categoryTree": category_cache})
 
 
+# POST request: validate_request must go last (after @app.route) - workaround for quart-schema issue
 @app.route("/api/categories/search", methods=["POST"])
-async def search_categories():
+@validate_request(SearchRequest)
+async def search_categories(data: SearchRequest):
     """
     Search categories by name (partial) or id (exact).
     If cache is empty, load the tree first.
     """
-    data = await request.get_json(force=True)
-    query = data.get("query", "")
-    search_by = data.get("searchBy", "")
+    query = data.query
+    search_by = data.searchBy
 
-    if not query or search_by not in ("name", "id"):
-        return jsonify({"error": "Missing or invalid query/searchBy"}), 400
+    if search_by not in ("name", "id"):
+        return jsonify({"error": "Invalid searchBy value"}), 400
 
     # Load tree if not loaded
     if category_cache is None:
@@ -134,16 +148,15 @@ async def search_categories():
     return jsonify({"results": results})
 
 
+# POST request: validate_request must go last (after @app.route) - workaround for quart-schema issue
 @app.route("/api/categories/navigate", methods=["POST"])
-async def navigate_category():
+@validate_request(NavigateRequest)
+async def navigate_category(data: NavigateRequest):
     """
     Retrieve a subtree starting from specified categoryId.
     Load tree if needed.
     """
-    data = await request.get_json(force=True)
-    category_id = data.get("categoryId")
-    if not category_id:
-        return jsonify({"error": "Missing categoryId"}), 400
+    category_id = data.categoryId
 
     if category_cache is None:
         try:

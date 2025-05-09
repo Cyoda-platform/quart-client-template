@@ -1,28 +1,11 @@
-Understood. The key is to move all asynchronous logic related to processing the entity **before persistence** into the workflow function `process_hello_post_request`. This means:
-
-- The POST endpoint will be simplified to only calling `entity_service.add_item` with the workflow function.
-- The workflow function will:
-  - Set initial state fields
-  - Perform async calls like fetching external data
-  - Store related entities or supplementary data via `entity_service.add_item` for other entity models (allowed)
-  - Update the current entity state directly by modifying the `entity` dict argument (which will then be persisted automatically)
-- We **cannot** call `entity_service.add/update/delete` on the current entity inside the workflow function (to avoid recursion), but we can mutate the entity dict directly.
-- Fire-and-forget async tasks like `process_entity` logic must be moved inside the workflow.
-
----
-
-### Here is the fully refactored code with the above approach:
-
-```python
 from dataclasses import dataclass
 from typing import Optional
 
-import asyncio
 import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -45,7 +28,6 @@ class HelloPostRequest:
 async def fetch_external_greeting(name: Optional[str]) -> str:
     if not name:
         return "Hello World"
-
     url = f"https://api.agify.io/?name={name}"
     try:
         async with httpx.AsyncClient() as client:
@@ -58,58 +40,55 @@ async def fetch_external_greeting(name: Optional[str]) -> str:
             else:
                 return f"Hello {name}"
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error fetching external greeting: {e}")
         return f"Hello {name}"
 
-# Workflow function applied to the entity before persistence
 async def process_hello_post_request(entity: dict) -> dict:
     """
-    This workflow function:
-    - Sets initial entity state
-    - Performs async external call to enrich data
-    - Stores supplementary entity of a different model (allowed)
-    - Updates current entity state directly
+    Workflow function applied before persisting hello_post_request entity.
+    Mutates entity dict directly and persists supplementary entities if needed.
     """
     try:
-        # Initial state for this entity
+        # Set initial state and timestamp
         entity['status'] = 'processing'
         entity['requestedAt'] = datetime.utcnow().isoformat()
 
-        # Fetch external greeting asynchronously and enrich entity
+        # Fetch and set greeting
         name = entity.get('name')
         greeting = await fetch_external_greeting(name)
         entity['greeting'] = greeting
 
-        # Add supplementary raw data entity of different model (allowed)
-        # e.g. logging the request raw data for audit
-        await entity_service.add_item(
-            token=cyoda_auth_service,
-            entity_model="hello_post_request_raw",
-            entity_version=ENTITY_VERSION,
-            entity={
-                "originalName": name,
-                "requestedAt": entity['requestedAt'],
-                "greeting": greeting,
-            },
-            workflow=None  # no workflow needed for raw data
-        )
+        # Add supplementary raw data entity of a different model (allowed)
+        # Wrap in try-except to avoid failing main entity persistence if this fails
+        try:
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="hello_post_request_raw",
+                entity_version=ENTITY_VERSION,
+                entity={
+                    "originalName": name,
+                    "requestedAt": entity['requestedAt'],
+                    "greeting": greeting,
+                },
+                workflow=None  # no workflow for raw data entity
+            )
+        except Exception as e:
+            logger.error(f"Failed to add raw data entity: {e}")
 
-        # Mark entity as completed with timestamp (modifying the current entity directly)
+        # Mark entity completed with timestamp
         entity['status'] = 'completed'
         entity['completedAt'] = datetime.utcnow().isoformat()
 
     except Exception as e:
-        logger.exception(f"Workflow processing failed: {e}")
+        logger.exception(f"Workflow processing error: {e}")
         entity['status'] = 'failed'
         entity['error'] = str(e)
 
     return entity
 
-
 @app.route("/hello", methods=["POST"])
-@validate_request(HelloPostRequest)  # validation last in POST (workaround for quart-schema issue)
+@validate_request(HelloPostRequest)
 async def post_hello(data: HelloPostRequest):
-    # Pass entity and workflow function to add_item
     job_data = {
         "name": data.name
     }
@@ -118,15 +97,12 @@ async def post_hello(data: HelloPostRequest):
         entity_model="hello_post_request",
         entity_version=ENTITY_VERSION,
         entity=job_data,
-        workflow=process_hello_post_request  # all async processing handled here now
+        workflow=process_hello_post_request
     )
-
     return jsonify({"status": "success", "message": "Hello World processed", "job_id": job_id})
-
 
 @app.route("/hello", methods=["GET"])
 async def get_hello():
-    # Retrieve the latest completed greeting
     try:
         items = await entity_service.get_items_by_condition(
             token=cyoda_auth_service,
@@ -136,16 +112,12 @@ async def get_hello():
         )
         if not items:
             return jsonify({"greeting": "Hello World"})
-
-        # Pick the latest completed item by 'completedAt'
         latest_item = max(items, key=lambda x: x.get("completedAt") or "")
         greeting = latest_item.get("greeting", "Hello World")
         return jsonify({"greeting": greeting})
-
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error fetching greeting: {e}")
         return jsonify({"greeting": "Hello World"})
-
 
 if __name__ == '__main__':
     import sys
@@ -158,23 +130,3 @@ if __name__ == '__main__':
     )
 
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- The **POST /hello** endpoint is now a minimal controller that just delegates to `entity_service.add_item` with the workflow function.
-- The **workflow function** `process_hello_post_request`:
-  - Sets initial processing state.
-  - Performs the external async call to get enhanced greeting.
-  - Adds a supplementary entity of model `"hello_post_request_raw"` to store raw input data (allowed model different from the main one).
-  - Updates the current entity's `greeting`, `status`, and `completedAt` fields directly.
-  - Handles errors by setting the entity to `"failed"` status and saving the error string.
-- The **GET /hello** endpoint remains unchanged, retrieving the latest completed greeting.
-- We **no longer** have any fire-and-forget logic in the endpoint or in background tasks because the workflow function fully handles async processing before persistence.
-- This is a clean and robust design that fully utilizes the new workflow feature, freeing controllers from business logic, and following the recursion restrictions.
-
----
-
-If you want, I can also help to add tests or further refactor supplementary entity handling. Let me know!

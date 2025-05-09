@@ -1,61 +1,10 @@
-Absolutely! Moving async logic and state changes into the `process_entity` workflow function (or other similarly named workflow functions) is a great way to keep controllers thin, improve code maintainability, and keep all entity-related logic encapsulated.
-
----
-
-### What to move into `process_entity`?
-
-- **Initialization of entity state** (e.g., setting `"fetch_status": "pending"`) before persistence.
-- **Triggering asynchronous tasks** like fetching external API data and updating entity state accordingly.
-- Since the workflow function is async and runs before the entity is persisted, we can do the full fetch-and-update flow inside this function, modifying the entity dict in-place.
-- We cannot call add/update/delete on the same entity inside the workflow — but we can modify the entity dict directly.
-- For secondary entities (other models), we can add/update/delete them freely inside workflow.
-
----
-
-### How to handle asynchronous fetch inside workflow?
-
-- The workflow function is awaited before persistence, so we can perform the fetch inside it.
-- We modify the entity dict in-place with fetched data, timestamps, and status.
-- This means the entity is persisted *after* the workflow completes, so the updated entity state is saved immediately.
-- This **removes the need** for fire-and-forget background tasks or separate fetch calls from endpoints.
-
----
-
-### What changes in the endpoints?
-
-- The POST `/entities` endpoint simply calls `add_item` with the workflow.
-- No need to spawn `asyncio.create_task` for fetching.
-- Similarly, update endpoint modifies the entity then calls `update_item` with the workflow function.
-- The fetch endpoint can remain for manual re-fetch, but it can also be refactored to update entity via `update_item` with workflow.
-
----
-
-### Implementation plan
-
-- Rewrite workflow function `process_entity` to:
-  - Set initial fetch status.
-  - Perform fetch of external API.
-  - Modify entity with fetched data and status.
-- Update `create_entity` and `update_entity` endpoints:
-  - Pass `workflow=process_entity` parameter to `add_item` and `update_item`.
-  - Remove calls to fire-and-forget background tasks.
-- Update manual fetch endpoint:
-  - Instead of calling `fetch_external_api` directly, call `update_item` with the same entity and workflow to re-trigger fetch.
-- Remove `process_entity_fetch` and `fetch_external_api` functions from controller scope or move them inside workflow if needed.
-
----
-
-### Here is the complete updated code reflecting the above:
-
-```python
 from dataclasses import dataclass
-from typing import Optional, Any
-import asyncio
+from typing import Any
 import logging
 from datetime import datetime, timezone
 
 import httpx
-from quart import Quart, jsonify, request, abort
+from quart import Quart, jsonify, abort
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -90,12 +39,13 @@ async def process_entity(entity: dict) -> None:
     Cannot call add/update/delete on 'entity' model here.
     """
 
-    # Initialize fetch status if not present
     entity.setdefault("fetch_status", "pending")
 
     api_url = entity.get("api_url")
     if not api_url:
         entity["fetch_status"] = "error: missing api_url"
+        entity["fetched_data"] = None
+        entity["fetched_at"] = None
         return
 
     try:
@@ -121,7 +71,6 @@ async def create_entity(data: ApiUrlPayload):
 
     entity_dict = {
         "api_url": api_url,
-        # fetched_data, fetched_at, fetch_status will be set in workflow
     }
 
     try:
@@ -130,7 +79,7 @@ async def create_entity(data: ApiUrlPayload):
             entity_model="entity",
             entity_version=ENTITY_VERSION,
             entity=entity_dict,
-            workflow=process_entity,  # workflow handles fetch & state update
+            workflow=process_entity,
         )
     except Exception as e:
         logger.exception(f"Failed to create entity: {e}")
@@ -169,7 +118,7 @@ async def update_entity(entity_id, data: ApiUrlPayload):
             entity=entity,
             technical_id=entity_id,
             meta={},
-            workflow=process_entity,  # workflow triggers fetch & updates entity before persistence
+            workflow=process_entity,
         )
     except Exception as e:
         logger.exception(f"Failed to update entity {entity_id}: {e}")
@@ -179,10 +128,6 @@ async def update_entity(entity_id, data: ApiUrlPayload):
 
 @app.route("/entities/<entity_id>/fetch", methods=["POST"])
 async def manual_fetch(entity_id):
-    """
-    Re-fetch external API data for entity by re-triggering workflow on update
-    """
-
     try:
         entity = await entity_service.get_item(
             token=cyoda_auth_service,
@@ -197,8 +142,8 @@ async def manual_fetch(entity_id):
     if not entity:
         abort(404, description="Entity not found")
 
-    # Trigger workflow by updating entity without changes (or you could set fetch_status pending explicitly here)
     try:
+        # Trigger workflow by updating entity without changes
         await entity_service.update_item(
             token=cyoda_auth_service,
             entity_model="entity",
@@ -212,7 +157,6 @@ async def manual_fetch(entity_id):
         logger.exception(f"Failed to trigger manual fetch workflow for entity {entity_id}: {e}")
         return jsonify({"error": "Failed to fetch entity data"}), 500
 
-    # Retrieve updated entity to return fresh data
     try:
         updated_entity = await entity_service.get_item(
             token=cyoda_auth_service,
@@ -327,20 +271,3 @@ if __name__ == '__main__':
         level=logging.INFO,
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Summary of changes:
-
-- **All async fetching and entity state updates moved inside `process_entity` workflow function**.
-- Endpoints for create and update simply call `add_item` or `update_item` with the workflow; no manual async tasks spawned.
-- Manual fetch endpoint triggers the workflow by calling `update_item` with unchanged entity to re-fetch.
-- Removed all separate async fetch functions and background tasks.
-- Entity state changes are performed by modifying the entity dict inside the workflow, which is persisted after the workflow completes.
-
----
-
-If you want, I can also help you write tests or further refactor or extend workflows for other entity models.
-
-This approach will make your application much cleaner, robust, and easier to maintain.

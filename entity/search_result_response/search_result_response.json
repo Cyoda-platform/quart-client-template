@@ -1,0 +1,24 @@
+{
+    "page": 1,
+    "page_size": 20,
+    "restaurants": [
+        {
+            "address": "10 Rue de Paris, 75001 Paris",
+            "contact": "+33 1 23 45 67 89",
+            "cuisine_types": [
+                "French",
+                "Bistro"
+            ],
+            "id": "restaurant-id",
+            "location": {
+                "latitude": 48.857,
+                "longitude": 2.351
+            },
+            "name": "Le Gourmet",
+            "price_level": 2,
+            "rating": 4.5
+        }
+    ],
+    "search_id": "uuid-string",
+    "total_results": 120
+}

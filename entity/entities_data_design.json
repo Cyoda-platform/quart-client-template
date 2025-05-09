@@ -1,0 +1,27 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "categoryId": "cat123",
+                "categoryName": "Electronics",
+                "children": [
+                    {
+                        "categoryId": "cat124",
+                        "categoryName": "Computers",
+                        "children": [
+                            {
+                                "categoryId": "cat125",
+                                "categoryName": "Laptops",
+                                "children": [],
+                                "parentId": "cat124"
+                            }
+                        ],
+                        "parentId": "cat123"
+                    }
+                ],
+                "parentId": "cat001"
+            },
+            "entity_name": "category"
+        }
+    ]
+}

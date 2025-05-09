@@ -1,4 +1,6 @@
-```python
+from dataclasses import dataclass, field
+from typing import List, Optional
+
 import asyncio
 import logging
 import uuid
@@ -6,7 +8,7 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -24,16 +26,34 @@ GOOGLE_PLACES_SEARCH_URL = "https://maps.googleapis.com/maps/api/place/nearbysea
 # Constants
 DEFAULT_PAGE_SIZE = 20
 
+@dataclass
+class Location:
+    latitude: float
+    longitude: float
+
+@dataclass
+class Pagination:
+    page: Optional[int] = 1
+    page_size: Optional[int] = DEFAULT_PAGE_SIZE
+
+@dataclass
+class Filters:
+    price_range: Optional[List[int]] = field(default_factory=list)  # e.g. [1,3]
+    rating_min: Optional[float] = None
+    cuisine_subtypes: Optional[List[str]] = field(default_factory=list)
+
+@dataclass
+class SearchRequest:
+    location: Location
+    radius: int
+    filters: Optional[Filters] = field(default_factory=Filters)
+    pagination: Optional[Pagination] = field(default_factory=Pagination)
+
 
 async def fetch_restaurants_from_google(location, radius, filters):
-    """
-    Query Google Places Nearby Search API for French restaurants within radius.
-    Apply filters client-side as Google API does not support all filters directly.
-    """
-
     params = {
         "key": GOOGLE_PLACES_API_KEY,
-        "location": f"{location['latitude']},{location['longitude']}",
+        "location": f"{location.latitude},{location.longitude}",
         "radius": radius,
         "keyword": "french restaurant",
         "type": "restaurant",
@@ -44,10 +64,8 @@ async def fetch_restaurants_from_google(location, radius, filters):
         next_page_token = None
         while True:
             if next_page_token:
-                # Google requires short delay before using next_page_token
                 await asyncio.sleep(2)
                 params["pagetoken"] = next_page_token
-
             try:
                 resp = await client.get(GOOGLE_PLACES_SEARCH_URL, params=params, timeout=10)
                 resp.raise_for_status()
@@ -63,34 +81,26 @@ async def fetch_restaurants_from_google(location, radius, filters):
             if not next_page_token:
                 break
 
-            # Limit results for prototype to max ~60 (3 pages)
             if len(restaurants) >= 60:
                 break
 
-    # Apply additional filters not supported by Google API
     filtered = []
-    price_range = filters.get("price_range")
-    rating_min = filters.get("rating_min")
-    cuisine_subtypes = filters.get("cuisine_subtypes", [])
+    price_range = filters.price_range if filters else None
+    rating_min = filters.rating_min if filters else None
+    cuisine_subtypes = filters.cuisine_subtypes if filters else []
 
     for r in restaurants:
-        # Price level: Google gives 0-4, treat 0 as unknown
         price_level = r.get("price_level", 0)
         rating = r.get("rating", 0)
 
-        # Filtering price_range if specified
         if price_range:
             if price_level == 0 or not (price_range[0] <= price_level <= price_range[1]):
                 continue
 
-        # Filtering rating minimum
         if rating_min and rating < rating_min:
             continue
 
-        # Filtering cuisine subtypes (mocked, as Google API may not provide detailed cuisine)
-        # TODO: Improve cuisine subtype filtering with additional data source if possible
         if cuisine_subtypes:
-            # We check if any subtype keyword appears in name or vicinity as a basic heuristic
             name = r.get("name", "").lower()
             vicinity = r.get("vicinity", "").lower()
             if not any(subtype.lower() in name or subtype.lower() in vicinity for subtype in cuisine_subtypes):
@@ -108,17 +118,14 @@ def paginate(items, page, page_size):
 
 
 def format_restaurant(raw):
-    """
-    Normalize Google Places restaurant data to our API response format.
-    """
     return {
         "id": raw.get("place_id"),
         "name": raw.get("name"),
         "address": raw.get("vicinity"),
-        "contact": raw.get("formatted_phone_number", ""),  # Not provided by Places Nearby Search API
+        "contact": "",  # Google Nearby Search does not provide contact info
         "rating": raw.get("rating"),
         "price_level": raw.get("price_level", 0),
-        "cuisine_types": ["French"],  # Base assumption from search keyword
+        "cuisine_types": ["French"],
         "location": {
             "latitude": raw.get("geometry", {}).get("location", {}).get("lat"),
             "longitude": raw.get("geometry", {}).get("location", {}).get("lng"),
@@ -126,32 +133,26 @@ def format_restaurant(raw):
     }
 
 
-async def process_search_job(search_id, request_data):
-    """
-    Background task to fetch and process restaurants, store results in cache.
-    """
+async def process_search_job(search_id, request_data: SearchRequest):
     try:
         logger.info(f"Processing search job {search_id} started")
-        location = request_data["location"]
-        radius = request_data["radius"]
-        filters = request_data.get("filters", {})
-        pagination = request_data.get("pagination", {"page": 1, "page_size": DEFAULT_PAGE_SIZE})
+        location = request_data.location
+        radius = request_data.radius
+        filters = request_data.filters or Filters()
+        pagination = request_data.pagination or Pagination()
 
         raw_restaurants = await fetch_restaurants_from_google(location, radius, filters)
         total_results = len(raw_restaurants)
 
-        # Format all results
         all_restaurants = [format_restaurant(r) for r in raw_restaurants]
 
-        # Store full results and metadata in cache
         search_cache[search_id]["status"] = "completed"
         search_cache[search_id]["completedAt"] = datetime.utcnow().isoformat()
         search_cache[search_id]["total_results"] = total_results
         search_cache[search_id]["all_restaurants"] = all_restaurants
 
-        # Prepare first page response data
-        page = pagination.get("page", 1)
-        page_size = pagination.get("page_size", DEFAULT_PAGE_SIZE)
+        page = pagination.page or 1
+        page_size = pagination.page_size or DEFAULT_PAGE_SIZE
         restaurants_page = paginate(all_restaurants, page, page_size)
         search_cache[search_id]["current_page"] = page
         search_cache[search_id]["page_size"] = page_size
@@ -165,12 +166,8 @@ async def process_search_job(search_id, request_data):
 
 
 @app.route("/api/search-restaurants", methods=["POST"])
-async def search_restaurants():
-    data = await request.get_json(force=True)
-    # Basic validation, more can be added later
-    if not data or "location" not in data or "radius" not in data:
-        return jsonify({"error": "Missing required fields: location and radius"}), 400
-
+@validate_request(SearchRequest)  # Validate last in POST method as per quart-schema issue workaround
+async def search_restaurants(data: SearchRequest):
     search_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat()
     search_cache[search_id] = {
@@ -179,10 +176,8 @@ async def search_restaurants():
         "request_data": data,
     }
 
-    # Fire and forget processing task
     asyncio.create_task(process_search_job(search_id, data))
 
-    # Initial response: status processing, no results yet
     return jsonify({
         "search_id": search_id,
         "status": "processing",
@@ -192,6 +187,7 @@ async def search_restaurants():
 
 
 @app.route("/api/search-results/<search_id>", methods=["GET"])
+# Validate first in GET requests as per quart-schema issue workaround
 async def get_search_results(search_id):
     page = request.args.get("page", default=1, type=int)
     page_size = request.args.get("page_size", default=DEFAULT_PAGE_SIZE, type=int)
@@ -216,7 +212,6 @@ async def get_search_results(search_id):
             "error": cached.get("error")
         }), 500
 
-    # If completed, return paginated results
     all_restaurants = cached.get("all_restaurants", [])
     total_results = cached.get("total_results", 0)
 

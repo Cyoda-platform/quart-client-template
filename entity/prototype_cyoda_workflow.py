@@ -1,8 +1,35 @@
-Certainly! I've updated your code to include a workflow function parameter for `entity_service.add_item`. The workflow function `process_category` is implemented with the required naming convention (`process_` + entity name in underscore lowercase).
+Understood! Moving as much business and async logic as possible from the endpoints into the `process_category` workflow function is indeed a good architectural choice. This keeps controllers thin and delegates processing and persistence-related logic to the workflow, which runs asynchronously and is guaranteed to execute before persisting the entity.
 
-The workflow function will receive the entity data, and you can modify the entity state inside it before it gets persisted.
+### What we can move:
+- The entire category tree fetching, transformation, and persistence should be moved inside a workflow function for a special "load" entity (or similar).
+- The `load_category_tree_job` async task can be replaced by calling `entity_service.add_item` with an entity triggering the workflow that:
+  - Fetches the external API
+  - Transforms the data
+  - Modifies the entity before save
+  - Saves supplementary data entities if needed
+- For search and navigate endpoints, these are read-only, so no workflow applies. But if they currently fetch entity data and do transformations, we can move heavy logic if applicable (e.g., caching, indexing) into workflow functions triggered by writes, not reads.
 
-Below is the complete updated code with the workflow function added and integrated in the appropriate place(s):
+---
+
+### Proposed approach in detail:
+
+1. **Create a special entity model to trigger the load workflow**, e.g., `"category_load_request"` or use a dummy entity `"category"` with a special attribute like `load_request: True`.
+
+2. **Implement `process_category_load_request` workflow** that will:
+    - Fetch external API
+    - Transform the tree
+    - Add the transformed tree as a separate `"category"` entity via `entity_service.add_item` (allowed because it is a different entity model)
+    - Update the current entity with status info (optional)
+    
+3. **Make the `/api/categories/load-tree` endpoint call `entity_service.add_item` with the load request entity**, passing `workflow=process_category_load_request`. This triggers the workflow to fetch and persist the actual category tree.
+
+4. **Keep the search and navigate endpoints as is**, only reading the persisted category tree entities.
+
+5. **Keep the `process_category` workflow for ordinary category entities**, for example adding timestamps or enriching data if needed.
+
+---
+
+### Full updated example code with this approach:
 
 ```python
 from dataclasses import dataclass
@@ -29,14 +56,12 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# We no longer use local in-memory cache for categories but keep entity name constant
+# Entity model names
 ENTITY_NAME = "category"
+LOAD_REQUEST_ENTITY_NAME = "category_load_request"
 
-# External API URL (used in original code, still relevant for fetch)
+# External API URL for category tree
 EXTERNAL_API_URL = "https://api.practicesoftwaretesting.com/categories/tree"
-
-# Job status store for fire-and-forget pattern (not strictly needed here but showing example)
-entity_job: Dict[str, Dict[str, Any]] = {}
 
 
 @dataclass
@@ -62,40 +87,55 @@ async def fetch_external_category_tree() -> Dict[str, Any]:
 
 
 def transform_to_hierarchy(raw_data: Any) -> Dict[str, Any]:
-    # TODO: Adapt transformation if raw API format differs
+    # Adapt transformation if raw API format differs
     return raw_data
 
 
 async def process_category(entity_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Workflow function applied to the category entity asynchronously before persistence.
-    Modify entity state here if needed.
+    Workflow function for ordinary category entities.
+    Modify the entity data before save.
     """
-    # Example: Add/update a timestamp when the entity is processed
     entity_data['processedAt'] = datetime.utcnow().isoformat()
-
-    # You can add/get other entities here using entity_service but must NOT add/update/delete
-    # entities of the same entity_model 'category' to avoid infinite recursion.
-
     return entity_data
 
 
-async def load_category_tree_job():
+async def process_category_load_request(entity_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Workflow function for category load request entities.
+    This triggers the fetching, transformation, and persistence of the category tree.
+    """
+
+    logger.info("Processing category load request...")
+
     try:
+        # Fetch external category tree
         raw_tree = await fetch_external_category_tree()
+
+        # Transform raw data into hierarchical structure
         transformed_tree = transform_to_hierarchy(raw_tree)
 
-        # Save transformed tree to entity service with workflow applied
+        # Add transformed tree as a separate 'category' entity
+        # Note: We must NOT update the current entity (load request) itself with add/update/delete of same model.
         await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=ENTITY_NAME,
             entity_version=ENTITY_VERSION,
             entity=transformed_tree,
-            workflow=process_category
+            workflow=process_category  # Apply normal category processing workflow
         )
-        logger.info("Category tree loaded, transformed, and persisted successfully")
+
+        # Optionally update current load request entity state
+        entity_data['status'] = 'loaded'
+        entity_data['loadedAt'] = datetime.utcnow().isoformat()
+        logger.info("Category tree fetched and persisted successfully.")
+
     except Exception as e:
-        logger.exception("Error during load_category_tree_job")
+        logger.error(f"Error processing category load request: {e}")
+        entity_data['status'] = 'error'
+        entity_data['errorMessage'] = str(e)
+
+    return entity_data
 
 
 def find_categories_by_name(node: Dict[str, Any], query: str, results: list):
@@ -116,33 +156,50 @@ def find_category_by_id(node: Dict[str, Any], category_id: str) -> Optional[Dict
 
 
 @app.route("/api/categories/load-tree", methods=["POST"])
-@validate_request(dict)  # workaround: dummy validation, no real schema needed here
+@validate_request(dict)  # dummy schema since no payload expected
 async def load_tree(data):
-    """Trigger loading and transformation of category tree from external API."""
-    job_id = f"load-tree-{datetime.utcnow().isoformat()}"
-    entity_job[job_id] = {"status": "processing", "requestedAt": datetime.utcnow()}
-    asyncio.create_task(load_category_tree_job())
+    """
+    Trigger loading and transformation of category tree by creating a load request entity.
+    The actual fetching and persistence is done in process_category_load_request workflow.
+    """
+
+    # Create a load request entity - use timestamp or UUID as unique key if you want
+    load_request_entity = {
+        "requestAt": datetime.utcnow().isoformat(),
+        "status": "requested"
+    }
+
+    # Add load request entity which triggers workflow that fetches and persists category tree
+    entity_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model=LOAD_REQUEST_ENTITY_NAME,
+        entity_version=ENTITY_VERSION,
+        entity=load_request_entity,
+        workflow=process_category_load_request
+    )
+
     return jsonify({
         "status": "success",
-        "message": "Category tree loading started."
+        "message": "Category tree loading triggered.",
+        "loadRequestId": entity_id
     })
 
 
 @app.route("/api/categories/tree", methods=["GET"])
 async def get_tree():
-    """Return cached hierarchical category tree."""
-    # Retrieve all category entities from external service
+    """
+    Return the cached hierarchical category tree.
+    """
+
     try:
         items = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model=ENTITY_NAME,
             entity_version=ENTITY_VERSION,
         )
-        # items is expected to be a list of dicts representing categories
-        # If the external service stores the whole tree as one entity, return first or all
         if not items:
             return jsonify({"error": "Category tree not loaded"}), 404
-        # return first item assuming it's the full tree
+        # Return first item assuming it's the full tree
         return jsonify({"categoryTree": items[0]})
     except Exception as e:
         logger.exception("Failed to get category tree")
@@ -154,8 +211,8 @@ async def get_tree():
 async def search_categories(data: SearchRequest):
     """
     Search categories by name (partial) or id (exact).
-    If cache is empty, load the tree first.
     """
+
     query = data.query
     search_by = data.searchBy
 
@@ -163,7 +220,6 @@ async def search_categories(data: SearchRequest):
         return jsonify({"error": "Invalid searchBy value"}), 400
 
     try:
-        # Retrieve all categories (assumed tree or list) from entity service
         items = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model=ENTITY_NAME,
@@ -171,7 +227,7 @@ async def search_categories(data: SearchRequest):
         )
         if not items:
             return jsonify({"results": [], "notification": "Category data not loaded"}), 404
-        category_tree = items[0]  # assuming first item is full tree
+        category_tree = items[0]
     except Exception as e:
         logger.exception("Failed retrieving category data during search")
         return jsonify({"error": "Failed to retrieve category data"}), 500
@@ -195,8 +251,8 @@ async def search_categories(data: SearchRequest):
 async def navigate_category(data: NavigateRequest):
     """
     Retrieve a subtree starting from specified categoryId.
-    Load tree if needed.
     """
+
     category_id = data.categoryId
 
     try:
@@ -229,11 +285,26 @@ if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
 ```
 
-### Explanation of changes:
-- Added the async `process_category` workflow function.
-- This function takes the entity data, modifies it (example: adds a `processedAt` timestamp), and returns it.
-- Updated `load_category_tree_job` to call `entity_service.add_item` with the new `workflow=process_category` argument.
-- No other places call `entity_service.add_item` in the code, so only that place was updated.
-- The naming convention is respected: workflow function named `process_category` (`process_` + `category`).
+---
 
-Let me know if you want me to update other entity operations similarly or add more logic inside the workflow function!
+### Summary of changes:
+- Introduced a new entity model `"category_load_request"` to trigger the category tree load workflow.
+- Added `process_category_load_request` workflow function which:
+  - Fetches the external category tree
+  - Transforms it
+  - Persists it as a `"category"` entity (using `entity_service.add_item` with `workflow=process_category`)
+  - Updates the load request entity state
+- The `/api/categories/load-tree` endpoint now only creates the load request entity, triggering the workflow asynchronously.
+- The original `process_category` workflow now only handles ordinary category entities.
+- Removed all direct async fetch/persist logic from endpoints, making endpoints very thin.
+- Search and navigation endpoints remain unchanged as they are read-only and don't require workflows.
+
+---
+
+This design respects your requirements:
+- All async processing (including fetching external data) is done inside workflow functions.
+- No infinite recursion risk because the workflow for `"category_load_request"` adds `"category"` entities, different entity models.
+- Controllers are lightweight, only responsible for HTTP request/response.
+- Entity data is modified inside workflows just before persistence.
+
+If you want, I can help you further improve or add additional workflows for other entity models similarly.

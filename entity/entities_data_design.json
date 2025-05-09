@@ -1,0 +1,34 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "age": 3,
+                "breed": "Siamese",
+                "health_status": "Healthy",
+                "id": "cat123",
+                "name": "Whiskers",
+                "state": "Available"
+            },
+            "entity_name": "cat"
+        },
+        {
+            "entity_data_example": {
+                "adoption_id": "adopt456",
+                "applicant_name": "Jane Doe",
+                "cat_id": "cat123",
+                "contact_info": "jane@example.com",
+                "status": "Pending Approval",
+                "submitted_at": "2024-04-27T10:00:00Z"
+            },
+            "entity_name": "adoption"
+        },
+        {
+            "entity_data_example": {
+                "check_date": "2024-04-25",
+                "health_status": "Healthy",
+                "notes": "Routine check, no issues."
+            },
+            "entity_name": "health_check"
+        }
+    ]
+}

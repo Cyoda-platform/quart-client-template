@@ -1,0 +1,8 @@
+{
+    "age": 3,
+    "breed": "Siamese",
+    "health_status": "Healthy",
+    "id": "cat123",
+    "name": "Whiskers",
+    "state": "Available"
+}

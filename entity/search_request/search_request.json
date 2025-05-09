@@ -1,0 +1,22 @@
+{
+    "filters": {
+        "cuisine_subtypes": [
+            "bistro",
+            "brasserie"
+        ],
+        "price_range": [
+            1,
+            3
+        ],
+        "rating_min": 4.0
+    },
+    "location": {
+        "latitude": 48.8566,
+        "longitude": 2.3522
+    },
+    "pagination": {
+        "page": 1,
+        "page_size": 20
+    },
+    "radius": 5000
+}

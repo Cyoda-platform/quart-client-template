@@ -1,0 +1,22 @@
+{
+    "author": {
+        "email": "alice@example.com",
+        "name": "Alice"
+    },
+    "createdAt": "2023-10-04T12:00:00Z",
+    "id": "happy-001",
+    "message": "Today is a great day!",
+    "requestedAt": "2023-10-04T12:00:00Z",
+    "status": "active",
+    "updatedAt": "2023-10-04T12:00:00Z",
+    "workflow": {
+        "currentState": "initial",
+        "transitions": [
+            {
+                "description": "Event that triggers the happy workflow",
+                "name": "trigger_happy_event",
+                "nextState": "happy_processed"
+            }
+        ]
+    }
+}

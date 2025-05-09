@@ -1,15 +1,16 @@
 from dataclasses import dataclass
 from typing import Optional, Dict
-import asyncio
 import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +18,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 user_tokens: Dict[str, str] = {}
 
@@ -65,7 +63,7 @@ def verify_token(token: str) -> Optional[str]:
             return user
     return None
 
-@app.route("/cats/random", methods=["POST"])
+@routes_bp.route("/cats/random", methods=["POST"])
 @validate_request(RandomCatsRequest)
 async def fetch_random_cats(data: RandomCatsRequest):
     category = data.category
@@ -93,7 +91,7 @@ async def fetch_random_cats(data: RandomCatsRequest):
             logger.exception(e)
             return jsonify({"error": "Failed to fetch random cats"}), 500
 
-@app.route("/cats/search", methods=["POST"])
+@routes_bp.route("/cats/search", methods=["POST"])
 @validate_request(SearchCatsRequest)
 async def search_cats_by_breed(data: SearchCatsRequest):
     breed_id = data.breed_id
@@ -125,7 +123,7 @@ async def search_cats_by_breed(data: SearchCatsRequest):
             logger.exception(e)
             return jsonify({"error": "Failed to search cats by breed"}), 500
 
-@app.route("/cats/facts", methods=["POST"])
+@routes_bp.route("/cats/facts", methods=["POST"])
 @validate_request(CatFactsRequest)
 async def get_cat_facts(data: CatFactsRequest):
     count = data.count or 1
@@ -142,7 +140,7 @@ async def get_cat_facts(data: CatFactsRequest):
             logger.exception(e)
             return jsonify({"error": "Failed to fetch cat facts"}), 500
 
-@app.route("/cats/upload", methods=["POST"])
+@routes_bp.route("/cats/upload", methods=["POST"])
 async def upload_cat_image():
     auth_header = request.headers.get("Authorization", "")
     token = auth_header.replace("Bearer ", "")
@@ -189,7 +187,7 @@ async def upload_cat_image():
         logger.exception(e)
         return jsonify({"error": "Failed to save favorite"}), 500
 
-@app.route("/users/favorites", methods=["POST"])
+@routes_bp.route("/users/favorites", methods=["POST"])
 @validate_request(AddFavoriteRequest)
 async def add_favorite_cat(data: AddFavoriteRequest):
     auth_header = request.headers.get("Authorization", "")
@@ -227,7 +225,7 @@ async def add_favorite_cat(data: AddFavoriteRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to add favorite"}), 500
 
-@app.route("/users/favorites", methods=["GET"])
+@routes_bp.route("/users/favorites", methods=["GET"])
 async def get_user_favorites():
     auth_header = request.headers.get("Authorization", "")
     token = auth_header.replace("Bearer ", "")
@@ -248,7 +246,7 @@ async def get_user_favorites():
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve favorites"}), 500
 
-@app.route("/auth/login", methods=["POST"])
+@routes_bp.route("/auth/login", methods=["POST"])
 @validate_request(AuthLoginRequest)
 async def login(data: AuthLoginRequest):
     username = data.username
@@ -261,6 +259,3 @@ async def login(data: AuthLoginRequest):
     user_tokens[username] = token
 
     return jsonify({"token": token, "expires_in": 3600})
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

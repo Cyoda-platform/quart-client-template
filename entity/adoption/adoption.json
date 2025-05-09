@@ -1,0 +1,8 @@
+{
+    "adoption_id": "adopt456",
+    "applicant_name": "Jane Doe",
+    "cat_id": "cat123",
+    "contact_info": "jane@example.com",
+    "status": "Pending Approval",
+    "submitted_at": "2024-04-27T10:00:00Z"
+}

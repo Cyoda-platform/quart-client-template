@@ -1,0 +1,199 @@
+{
+    "description": "Workflow for processing hello post requests including greeting retrieval and supplementary data persistence",
+    "name": "hello_post_request_workflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Set initial processing state and timestamp",
+            "end_state": "Processing_started",
+            "end_state_description": "Processing started and initial state set",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "",
+                        "name": "process_set_initial_state",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Fetch external greeting and set in entity",
+            "end_state": "Greeting_set",
+            "end_state_description": "Greeting has been fetched and set",
+            "name": "fetch_and_set_greeting",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "",
+                        "name": "process_set_greeting",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing_started",
+            "start_state_description": "Processing started and initial state set",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Persist supplementary raw data entity",
+            "end_state": "Raw_data_persisted",
+            "end_state_description": "Raw data entity persisted",
+            "name": "persist_raw_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "",
+                        "name": "process_persist_raw_data",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Greeting_set",
+            "start_state_description": "Greeting has been fetched and set",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Mark processing as completed with timestamp",
+            "end_state": "Processing_completed",
+            "end_state_description": "Processing completed",
+            "name": "mark_completed",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "",
+                        "name": "process_mark_completed",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Raw_data_persisted",
+            "start_state_description": "Raw data entity persisted",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Handle failure during processing",
+            "end_state": "Processing_failed",
+            "end_state_description": "Processing failed with error",
+            "name": "handle_failure",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "",
+                        "name": "process_mark_failed",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing_started",
+            "start_state_description": "Processing started and initial state set",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        }
+    ],
+    "workflow_criteria": {
+        "condition_criteria": [
+            {
+                "condition": {
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_MODEL_VAR",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ],
+                    "group_condition_operator": "AND"
+                },
+                "description": "Workflow criteria",
+                "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR"
+            }
+        ],
+        "externalized_criteria": []
+    }
+}

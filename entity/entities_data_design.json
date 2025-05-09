@@ -1,0 +1,21 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "api_url": "\"https://api.example.com/data\"",
+                "fetch_status": "success",
+                "fetched_at": "2024-04-27T12:00:00Z",
+                "fetched_data": {
+                    "array": [
+                        1,
+                        2,
+                        3
+                    ],
+                    "key": "value"
+                },
+                "id": "123e4567-e89b-12d3-a456-426614174000"
+            },
+            "entity_name": "entity"
+        }
+    ]
+}

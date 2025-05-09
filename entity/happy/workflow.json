@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for processing happy entity events with state transitions and associated processes",
+    "name": "happy_entity_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the happy workflow processing",
+            "end_state": "Happy_initiated",
+            "end_state_description": "Happy workflow has been initiated",
+            "name": "start_happy_workflow",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_start_happy_workflow"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process the happy message content",
+            "end_state": "Happy_processed",
+            "end_state_description": "Happy message has been processed",
+            "name": "process_happy_message",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_process_happy_message"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Happy_initiated",
+            "start_state_description": "Happy workflow has been initiated"
+        },
+        {
+            "automated": true,
+            "description": "Complete the happy workflow",
+            "end_state": "Happy_completed",
+            "end_state_description": "Happy workflow completed successfully",
+            "name": "complete_happy_workflow",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_complete_happy_workflow"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Happy_processed",
+            "start_state_description": "Happy message has been processed"
+        }
+    ]
+}

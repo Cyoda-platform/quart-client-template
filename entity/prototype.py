@@ -1,12 +1,11 @@
-```python
+from dataclasses import dataclass
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request
 import asyncio
 import logging
 import uuid
 from datetime import datetime
-
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,13 +13,12 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+@dataclass
+class RandomCatRequest:
+    includeBreedInfo: bool = True
+
 # In-memory "cache" for fetched cat data
 cat_data_cache = {}
-
-# External APIs used:
-# - TheCatAPI for random cat images and breed info: https://thecatapi.com/
-#   (Free public API: https://api.thecatapi.com/v1/images/search?include_breeds=1)
-# Note: No API key used here; for production, consider using a key.
 
 async def fetch_random_cat(include_breed_info: bool):
     url = "https://api.thecatapi.com/v1/images/search"
@@ -40,12 +38,10 @@ async def fetch_random_cat(include_breed_info: bool):
 
 async def process_entity(entity_job, data):
     try:
-        # Fetch cat data from external API
-        cat_raw = await fetch_random_cat(data.get("includeBreedInfo", True))
+        cat_raw = await fetch_random_cat(data.includeBreedInfo)
 
-        # Extract breed info if present
         breed_info = None
-        if data.get("includeBreedInfo", True) and cat_raw.get("breeds"):
+        if data.includeBreedInfo and cat_raw.get("breeds"):
             breed = cat_raw["breeds"][0]
             breed_info = {
                 "name": breed.get("name"),
@@ -54,60 +50,53 @@ async def process_entity(entity_job, data):
                 "description": breed.get("description"),
             }
 
-        # Construct stored entity
         stored_entity = {
-            "catId": data["catId"],
+            "catId": data.catId,
             "imageUrl": cat_raw.get("url"),
             "breed": breed_info,
             "fetchedAt": datetime.utcnow().isoformat() + "Z",
         }
 
-        # Update cache
-        entity_job[data["catId"]].update({
+        entity_job[data.catId].update({
             "status": "completed",
             "result": stored_entity,
             "completedAt": datetime.utcnow().isoformat() + "Z",
         })
 
-        cat_data_cache[data["catId"]] = stored_entity
+        cat_data_cache[data.catId] = stored_entity
 
-        logger.info(f"Processed cat data for catId={data['catId']}")
+        logger.info(f"Processed cat data for catId={data.catId}")
 
     except Exception as e:
-        entity_job[data["catId"]].update({
+        entity_job[data.catId].update({
             "status": "failed",
             "error": str(e),
             "completedAt": datetime.utcnow().isoformat() + "Z",
         })
-        logger.exception(f"Error processing cat data for catId={data['catId']}")
+        logger.exception(f"Error processing cat data for catId={data.catId}")
 
+# POST route: validation last due to quart-schema issue workaround
 @app.route("/cats/random", methods=["POST"])
-async def post_random_cat():
-    try:
-        data = await request.get_json(force=True)
-    except Exception:
-        data = {}
-
-    include_breed_info = data.get("includeBreedInfo", True)
+@validate_request(RandomCatRequest)  # must be second decorator on POST
+async def post_random_cat(data: RandomCatRequest):
     cat_id = str(uuid.uuid4())
 
-    # Initialize the job status
     entity_job = {}
     entity_job[cat_id] = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat() + "Z",
     }
 
-    # Fire and forget the processing task
-    await asyncio.create_task(process_entity(entity_job, {"catId": cat_id, "includeBreedInfo": include_breed_info}))
+    # Fire and forget processing task
+    await asyncio.create_task(process_entity(entity_job, RandomCatRequest(catId=cat_id, includeBreedInfo=data.includeBreedInfo)))
 
-    # Immediately respond with the catId and status
     return jsonify({
         "catId": cat_id,
         "status": entity_job[cat_id]["status"],
         "message": "Cat data is being fetched. Use GET /cats/random/{catId} to retrieve results."
     }), 202
 
+# GET route: validation first due to quart-schema issue workaround
 @app.route("/cats/random/<cat_id>", methods=["GET"])
 async def get_random_cat(cat_id):
     stored = cat_data_cache.get(cat_id)
@@ -123,9 +112,7 @@ if __name__ == '__main__':
     import sys
     import logging
 
-    # Set up basic console logging
     logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s - %(message)s")
 
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

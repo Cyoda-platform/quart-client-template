@@ -1,0 +1,8 @@
+{
+    "filters": {
+        "age": "young",
+        "breed": "Siamese",
+        "location": "New York"
+    },
+    "source": "cat_api"
+}

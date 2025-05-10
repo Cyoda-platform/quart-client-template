@@ -1,0 +1,25 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "description": "Active, playful, and curious breed.",
+                "id": "abys",
+                "name": "Abyssinian",
+                "origin": "Egypt"
+            },
+            "entity_name": "breed"
+        },
+        {
+            "entity_data_example": {
+                "fact": "Cats have five toes on their front paws, but only four toes on their back paws."
+            },
+            "entity_name": "fact"
+        },
+        {
+            "entity_data_example": {
+                "url": "https://cdn2.thecatapi.com/images/MTY3ODIyMQ.jpg"
+            },
+            "entity_name": "image"
+        }
+    ]
+}

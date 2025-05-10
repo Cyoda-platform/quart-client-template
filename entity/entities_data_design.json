@@ -1,0 +1,18 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "breed": {
+                    "description": "The Siberian cat is a domestic breed...",
+                    "name": "Siberian",
+                    "origin": "Russia",
+                    "temperament": "Playful, Loyal, Intelligent"
+                },
+                "catId": "abc123",
+                "fetchedAt": "2024-06-01T12:00:00Z",
+                "imageUrl": "https://example.com/cat.jpg"
+            },
+            "entity_name": "random_cat_request"
+        }
+    ]
+}

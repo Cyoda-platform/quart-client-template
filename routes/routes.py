@@ -1,25 +1,22 @@
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
-import asyncio
 import logging
 from datetime import datetime
 
-import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 CAT_FACTS_API = "https://catfact.ninja/facts"
 CAT_BREEDS_API = "https://api.thecatapi.com/v1/breeds"
@@ -35,7 +32,7 @@ class FavoriteRequest:
     type: str
     content: str
 
-@app.route("/cats/fetch-data", methods=["POST"])
+@routes_bp.route("/cats/fetch-data", methods=["POST"])
 @validate_request(FetchDataRequest)
 async def cats_fetch_data(data: FetchDataRequest):
     """
@@ -56,7 +53,7 @@ async def cats_fetch_data(data: FetchDataRequest):
         logger.exception("Error in /cats/fetch-data")
         return jsonify({"error": "Failed to fetch cat data"}), 500
 
-@app.route("/cats/favorite", methods=["POST"])
+@routes_bp.route("/cats/favorite", methods=["POST"])
 @validate_request(FavoriteRequest)
 async def cats_favorite(data: FavoriteRequest):
     """
@@ -86,7 +83,7 @@ async def cats_favorite(data: FavoriteRequest):
         logger.exception("Failed to save favorite")
         return jsonify({"error": "Failed to save favorite"}), 500
 
-@app.route("/cats/results", methods=["GET"])
+@routes_bp.route("/cats/results", methods=["GET"])
 async def cats_results():
     """
     Returns latest cached cat data from entity_service.
@@ -98,8 +95,6 @@ async def cats_results():
         if data_type not in valid_types:
             return jsonify({"error": f"Invalid type '{data_type}'. Must be one of {valid_types}."}), 400
 
-        # Query entity_service for latest fetch_data entity (assuming method get_latest_entity_by_model exists)
-        # Adjust this according to your actual entity_service API
         latest_entity = await entity_service.get_latest_entity_by_model(
             token=cyoda_auth_service,
             entity_model="fetch_data",
@@ -117,6 +112,3 @@ async def cats_results():
     except Exception:
         logger.exception("Error in /cats/results")
         return jsonify({"error": "Failed to retrieve cat data"}), 500
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

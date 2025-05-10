@@ -1,0 +1,13 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "description": "The Abyssinian is a breed of domestic cat with a distinctive ticked coat.",
+                "id": "abys",
+                "image_url": "https://cdn2.thecatapi.com/images/abys.jpg",
+                "name": "Abyssinian"
+            },
+            "entity_name": "cat_breed"
+        }
+    ]
+}

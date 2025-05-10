@@ -1,16 +1,150 @@
-from datetime import timezone, datetime
+from dataclasses import dataclass
+from typing import Optional, Dict, Any
 import logging
-from quart import Blueprint, request, abort
-from quart_schema import validate, validate_querystring, tag, operation_id
+import uuid
+from datetime import datetime
+
+import httpx
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request
+
 from app_init.app_init import BeanFactory
-from common.service.entity_service_interface import EntityService
+from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
-FINAL_STATES = {"FAILURE", "SUCCESS", "CANCELLED", "CANCELLED_BY_USER", "UNKNOWN", "FINISHED"}
-PROCESSING_STATE = "PROCESSING"
-routes_bp = Blueprint("routes", __name__)
+logger.setLevel(logging.INFO)
 
-factory = BeanFactory(config={"CHAT_REPOSITORY": "cyoda"})
-entity_service: EntityService = factory.get_services()["entity_service"]
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
+
+app = Quart(__name__)
+QuartSchema(app)
+
+# Data classes for request validation
+
+@dataclass
+class FetchFilters:
+    breed: Optional[str] = None
+    age: Optional[str] = None
+    location: Optional[str] = None
+
+@dataclass
+class CatsFetchRequest:
+    source: str
+    filters: Optional[Dict[str, Any]] = None  # Dynamic, no strict validation on filters content
+
+@dataclass
+class FavoriteRequest:
+    user_id: str
+    cat_id: str
+
+# In-memory stores for favorites and cat cache
+# These are ephemeral and could be replaced with persistent storage if needed
+user_favorites = {}  # user_id -> set(cat_id)
+cat_cache = {}       # cat_id -> cat info dict
 
 
+# Workflow function for 'cats_favorite' entity (optional enhancement)
+# If you want to persist favorites in entity_service, you can extend this pattern.
+async def process_cats_favorite(entity: dict):
+    """
+    Example workflow for favorite entity if needed.
+    Here we just update timestamps or validate if needed.
+    """
+    entity['addedAt'] = datetime.utcnow().isoformat()
+    return entity
+
+
+@app.route("/cats/fetch", methods=["POST"])
+@validate_request(CatsFetchRequest)
+async def cats_fetch(data: CatsFetchRequest):
+    """
+    Endpoint now only adds entity with workflow function. All async processing moved to workflow.
+    """
+    entity_dict = data.__dict__
+
+    entity_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="cats_fetch_request",
+        entity_version=ENTITY_VERSION,
+        entity=entity_dict,
+        )
+
+    # Return entity_id for client tracking
+    return jsonify({
+        "entity_id": entity_id,
+        "message": "Cats fetch request accepted and processing started.",
+    }), 202
+
+
+@app.route("/cats/results/<entity_id>", methods=["GET"])
+async def cats_results(entity_id):
+    """
+    Retrieve results by entity_id.
+    """
+    try:
+        entity = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="cats_fetch_request",
+            entity_version=ENTITY_VERSION,
+            entity_id=entity_id,
+        )
+    except Exception as e:
+        logger.warning(f"Entity {entity_id} not found: {e}")
+        return jsonify({"error": "Entity not found"}), 404
+
+    return jsonify({
+        "entity_id": entity_id,
+        "status": entity.get("status", "processing"),
+        "requestedAt": entity.get("requestedAt"),
+        "completedAt": entity.get("completedAt"),
+        "data": entity.get("data", []),
+        "error": entity.get("error"),
+    }), 200
+
+
+@app.route("/cats/favorites", methods=["POST"])
+@validate_request(FavoriteRequest)
+async def add_favorite(data: FavoriteRequest):
+    user_id = data.user_id
+    cat_id = data.cat_id
+    if not user_id or not cat_id:
+        return jsonify({"success": False, "message": "user_id and cat_id are required"}), 400
+
+    if user_id not in user_favorites:
+        user_favorites[user_id] = set()
+    user_favorites[user_id].add(cat_id)
+
+    if cat_id not in cat_cache:
+        cat_cache[cat_id] = {
+            "id": cat_id,
+            "breed": "Unknown",
+            "image_url": None,
+        }
+
+    return jsonify({"success": True, "message": "Cat added to favorites"}), 200
+
+
+@app.route("/cats/favorites/<user_id>", methods=["GET"])
+async def get_favorites(user_id):
+    favs = user_favorites.get(user_id, set())
+    favorites_list = []
+    for cat_id in favs:
+        cat = cat_cache.get(cat_id)
+        if cat:
+            favorites_list.append(
+                {
+                    "cat_id": cat_id,
+                    "breed": cat.get("breed", "Unknown"),
+                    "image_url": cat.get("image_url"),
+                }
+            )
+        else:
+            favorites_list.append({"cat_id": cat_id, "breed": "Unknown", "image_url": None})
+
+    return jsonify({"user_id": user_id, "favorites": favorites_list}), 200
+
+
+if __name__ == '__main__':
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

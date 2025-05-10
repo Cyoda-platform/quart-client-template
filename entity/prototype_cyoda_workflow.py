@@ -1,35 +1,3 @@
-Great approach! Moving asynchronous logic and data fetching into workflow functions (like `process_cat_breed`) will indeed make controllers cleaner and delegate entity-related processing to the workflows, as intended.
-
----
-
-### What we can move to workflow functions:
-
-- Fetching images from the external API for each breed.
-- Adding supplementary data or modifying entity attributes.
-- Any async operation related to enriching or transforming the entity data before persistence.
-
----
-
-### What we **cannot** do in workflow functions:
-
-- Add/update/delete the *same* entity_model (to avoid infinite recursion).
-- Heavy orchestrations involving multiple different entity_models is okay but care must be taken.
-
----
-
-### Plan for refactoring:
-
-1. **Fetch breeds from The Cat API** — this is a job triggering an update of the whole cat_breed collection, so this stays in the controller/async job.
-2. **For each breed entity, move image fetching and entity enrichment into a `process_cat_breed` workflow.**  
-   - So `process_cat_breed` will asynchronously fetch the image URL and add it to the entity data before persistence.
-3. **The controller/job will only fetch the list of breeds and call `add_item` with raw breed data, the workflow enriches it with image etc.**
-4. **Move any other logic for entity enrichment inside the workflow as well.**
-
----
-
-### Updated code with this approach applied:
-
-```python
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -67,8 +35,8 @@ async def process_cat_breed(entity_data: dict) -> dict:
     """
     Workflow function applied to 'cat_breed' entities before persistence.
     
-    - Fetches image URL asynchronously from The Cat API for the breed.
-    - Adds 'image_url' and 'processed_at' timestamp to entity data.
+    Fetches image URL asynchronously from The Cat API for the breed and adds it.
+    Adds a processed_at timestamp.
     """
     breed_id = entity_data.get("id")
     if not breed_id:
@@ -121,9 +89,8 @@ async def process_fetch_breeds_job(job_id: str):
             except Exception as e:
                 logger.warning(f"Failed to delete old breed item {item.get('technical_id')}: {e}")
 
-        # Add new breeds - note we do NOT fetch image here: workflow will do it
+        # Add new breeds without image_url, workflow will enrich them
         for breed in breeds:
-            # Prepare minimal breed data, without image_url
             breed_data = {
                 "id": breed.get("id"),
                 "name": breed.get("name", ""),
@@ -135,7 +102,7 @@ async def process_fetch_breeds_job(job_id: str):
                     entity_model="cat_breed",
                     entity_version=ENTITY_VERSION,
                     entity=breed_data,
-                    workflow=process_cat_breed,  # workflow enriches with image and timestamp
+                    workflow=process_cat_breed,
                 )
             except Exception as e:
                 logger.warning(f"Failed to add breed {breed.get('id')}: {e}")
@@ -194,33 +161,3 @@ async def get_job_status(job_id: str):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- The **only job** of the `/api/cats/fetch-breeds` endpoint and its async job is to fetch the raw breed list and insert each breed with minimal data (id, name, description).
-- The **workflow `process_cat_breed`** then:
-  - Fetches the image URL asynchronously per breed.
-  - Adds/updates the entity dictionary with `"image_url"` and a `"processed_at"` timestamp.
-  - Returns the modified entity to be persisted.
-- This moves the async HTTP request for images out of the job and into the workflow function, fulfilling the requirement that async tasks related to an entity are in the workflow.
-- The controller and job code becomes **cleaner, simpler, and more focused** on just orchestrating entity persistence.
-
----
-
-### Benefits:
-- No recursion risk (workflow does not add/delete/update same entity model).
-- All entity-specific async enrichment is isolated in workflow functions.
-- Controllers are free from async enrichment logic.
-- Easy to add more enrichment or supplementary data inside workflow functions in the future.
-- Clear separation of concerns.
-
----
-
-If you have other entities needing similar async enrichment, you can apply the same pattern: create `process_{entity_name}` workflows that modify the entity before persistence.
-
----
-
-Let me know if you want me to help with other entities or further improvements!

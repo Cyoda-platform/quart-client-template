@@ -1,12 +1,12 @@
-```python
+from dataclasses import dataclass
+from typing import Dict, List
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -31,6 +31,10 @@ CAT_BREEDS_API = "https://api.thecatapi.com/v1/breeds"
 # Jobs to track async processing
 entity_jobs = {}
 
+@dataclass
+class EmptyRequest:
+    pass
+
 async def fetch_cat_fact() -> Dict:
     async with httpx.AsyncClient() as client:
         resp = await client.get(CAT_FACT_API)
@@ -52,7 +56,6 @@ async def fetch_cat_breeds() -> Dict:
         resp = await client.get(CAT_BREEDS_API)
         resp.raise_for_status()
         data = resp.json()
-        # Extract only id and name as per spec
         breeds = [{"id": b.get("id"), "name": b.get("name")} for b in data]
         return {"breeds": breeds}
 
@@ -85,7 +88,6 @@ async def process_cat_image(job_id: str):
 async def process_cat_breeds(job_id: str):
     try:
         breeds_data = await fetch_cat_breeds()
-        # Replace entire store on each fetch
         cat_breeds_store.clear()
         for b in breeds_data["breeds"]:
             cat_breeds_store[b["id"]] = b
@@ -99,13 +101,14 @@ async def process_cat_breeds(job_id: str):
 
 # POST /cats/facts/random
 @app.route("/cats/facts/random", methods=["POST"])
-async def post_random_cat_fact():
+@validate_request(EmptyRequest)  # Validation last in POST per quart-schema workaround
+async def post_random_cat_fact(data: EmptyRequest):
     job_id = generate_id("job", entity_jobs)
     entity_jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
     asyncio.create_task(process_cat_fact(job_id))
     return jsonify({"job_id": job_id, "status": "processing"}), 202
 
-# GET /cats/facts/{id}
+# GET /cats/facts/{id}  - no validation needed as per instructions
 @app.route("/cats/facts/<fact_id>", methods=["GET"])
 async def get_cat_fact(fact_id: str):
     fact = cat_facts_store.get(fact_id)
@@ -115,13 +118,14 @@ async def get_cat_fact(fact_id: str):
 
 # POST /cats/images/random
 @app.route("/cats/images/random", methods=["POST"])
-async def post_random_cat_image():
+@validate_request(EmptyRequest)  # Validation last in POST per quart-schema workaround
+async def post_random_cat_image(data: EmptyRequest):
     job_id = generate_id("job", entity_jobs)
     entity_jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
     asyncio.create_task(process_cat_image(job_id))
     return jsonify({"job_id": job_id, "status": "processing"}), 202
 
-# GET /cats/images/{id}
+# GET /cats/images/{id} - no validation
 @app.route("/cats/images/<image_id>", methods=["GET"])
 async def get_cat_image(image_id: str):
     image = cat_images_store.get(image_id)
@@ -131,13 +135,14 @@ async def get_cat_image(image_id: str):
 
 # POST /cats/breeds/list
 @app.route("/cats/breeds/list", methods=["POST"])
-async def post_cat_breeds_list():
+@validate_request(EmptyRequest)  # Validation last in POST per quart-schema workaround
+async def post_cat_breeds_list(data: EmptyRequest):
     job_id = generate_id("job", entity_jobs)
     entity_jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
     asyncio.create_task(process_cat_breeds(job_id))
     return jsonify({"job_id": job_id, "status": "processing"}), 202
 
-# GET /cats/breeds
+# GET /cats/breeds - no validation needed
 @app.route("/cats/breeds", methods=["GET"])
 async def get_cat_breeds():
     if not cat_breeds_store:

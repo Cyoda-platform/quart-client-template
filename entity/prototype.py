@@ -1,4 +1,5 @@
-```python
+from dataclasses import dataclass
+from typing import Optional, Dict, Any
 import asyncio
 import logging
 import uuid
@@ -6,13 +7,31 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data classes for request validation
+
+@dataclass
+class FetchFilters:
+    breed: Optional[str] = None
+    age: Optional[str] = None
+    location: Optional[str] = None
+
+@dataclass
+class CatsFetchRequest:
+    source: str
+    filters: Optional[Dict[str, Any]] = None  # Dynamic, no strict validation on filters content
+
+@dataclass
+class FavoriteRequest:
+    user_id: str
+    cat_id: str
 
 # In-memory stores for prototype
 entity_job = {}  # Stores fetch jobs: job_id -> {status, requestedAt, data}
@@ -35,9 +54,10 @@ async def fetch_cats_from_thecatapi(filters: dict):
         if "breed" in filters:
             # Breed filtering requires first fetching breed IDs
             breed_name = filters["breed"].lower()
-            breeds_resp = await httpx.AsyncClient().get(f"{THE_CAT_API_BASE}/breeds")
-            breeds_resp.raise_for_status()
-            breeds = breeds_resp.json()
+            async with httpx.AsyncClient() as client:
+                breeds_resp = await client.get(f"{THE_CAT_API_BASE}/breeds")
+                breeds_resp.raise_for_status()
+                breeds = breeds_resp.json()
             breed_obj = next((b for b in breeds if b["name"].lower() == breed_name), None)
             if breed_obj:
                 params["breed_ids"] = breed_obj["id"]
@@ -102,20 +122,21 @@ async def process_entity(job_store: dict, job_id: str, data: dict):
 
 
 @app.route("/cats/fetch", methods=["POST"])
-async def cats_fetch():
-    data = await request.get_json(force=True)
+@validate_request(CatsFetchRequest)  # Validation last in POST due to Quart-Schema issue workaround
+async def cats_fetch(data: CatsFetchRequest):
     job_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat()
 
     entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
     # Fire and forget the processing task
-    asyncio.create_task(process_entity(entity_job, job_id, data))
+    asyncio.create_task(process_entity(entity_job, job_id, data.__dict__))
 
     return jsonify({"request_id": job_id, "status": "processing"}), 202
 
 
 @app.route("/cats/results/<request_id>", methods=["GET"])
 async def cats_results(request_id):
+    # GET request without validation, fetching by path param only
     job = entity_job.get(request_id)
     if not job:
         return jsonify({"error": "Request ID not found"}), 404
@@ -132,10 +153,10 @@ async def cats_results(request_id):
 
 
 @app.route("/cats/favorites", methods=["POST"])
-async def add_favorite():
-    data = await request.get_json(force=True)
-    user_id = data.get("user_id")
-    cat_id = data.get("cat_id")
+@validate_request(FavoriteRequest)  # Validation last in POST due to Quart-Schema issue workaround
+async def add_favorite(data: FavoriteRequest):
+    user_id = data.user_id
+    cat_id = data.cat_id
     if not user_id or not cat_id:
         return jsonify({"success": False, "message": "user_id and cat_id are required"}), 400
 
@@ -156,6 +177,7 @@ async def add_favorite():
 
 @app.route("/cats/favorites/<user_id>", methods=["GET"])
 async def get_favorites(user_id):
+    # GET request without validation, fetching by path param only
     favs = user_favorites.get(user_id, set())
     favorites_list = []
     for cat_id in favs:

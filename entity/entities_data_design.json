@@ -1,0 +1,48 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "filters": {
+                    "breed": "Siamese"
+                },
+                "types": [
+                    "facts",
+                    "images",
+                    "breeds"
+                ]
+            },
+            "entity_name": "fetch_data_request"
+        },
+        {
+            "entity_data_example": {
+                "content": "https://example.com/cat_fav.jpg",
+                "type": "image"
+            },
+            "entity_name": "favorite_request"
+        },
+        {
+            "entity_data_example": "Cats sleep 70% of their lives.",
+            "entity_name": "cat_fact"
+        },
+        {
+            "entity_data_example": {
+                "description": "Sleek and social cat breed.",
+                "name": "Siamese",
+                "origin": "Thailand"
+            },
+            "entity_name": "cat_breed"
+        },
+        {
+            "entity_data_example": "https://example.com/cat1.jpg",
+            "entity_name": "cat_image"
+        },
+        {
+            "entity_data_example": {
+                "content": "https://example.com/cat_fav.jpg",
+                "submittedAt": "2024-06-01T12:00:00Z",
+                "type": "image"
+            },
+            "entity_name": "favorite_record"
+        }
+    ]
+}

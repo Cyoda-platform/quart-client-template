@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass
+from typing import Optional
 import asyncio
 import logging
 from datetime import datetime
-from typing import List, Optional
+import random
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,18 +16,30 @@ app = Quart(__name__)
 QuartSchema(app)
 
 # Local in-memory caches for prototype persistence
-breeds_cache: List[dict] = []
-facts_cache: List[str] = []
-images_cache: List[str] = []
+breeds_cache = []
+facts_cache = []
+images_cache = []
 
-# Job status tracking dicts (simulate async processing)
 breed_jobs = {}
 fact_jobs = {}
 image_jobs = {}
 
-# External APIs
 CAT_API_BASE = "https://api.thecatapi.com/v1"
 CAT_FACTS_API = "https://catfact.ninja/fact"
+
+@dataclass
+class FetchBreedsRequest:
+    # No fields for now, placeholder
+    pass
+
+@dataclass
+class FetchFactsRequest:
+    count: Optional[int] = 5
+
+@dataclass
+class FetchImagesRequest:
+    breed: Optional[str] = None
+    limit: Optional[int] = 3
 
 
 async def fetch_breeds_from_external():
@@ -35,7 +48,6 @@ async def fetch_breeds_from_external():
             response = await client.get(f"{CAT_API_BASE}/breeds")
             response.raise_for_status()
             breeds = response.json()
-            # Simplify breed data for cache
             simplified = [
                 {
                     "id": b.get("id"),
@@ -50,9 +62,7 @@ async def fetch_breeds_from_external():
             logger.exception(e)
             return None
 
-
-async def fetch_cat_facts_external(count: int = 5) -> List[str]:
-    # The catfact.ninja API provides one fact per call, so fetch multiple times
+async def fetch_cat_facts_external(count: int = 5):
     facts = []
     async with httpx.AsyncClient() as client:
         for _ in range(count):
@@ -67,8 +77,7 @@ async def fetch_cat_facts_external(count: int = 5) -> List[str]:
                 logger.exception(e)
     return facts
 
-
-async def fetch_cat_images_external(breed_id: Optional[str] = None, limit: int = 3) -> List[str]:
+async def fetch_cat_images_external(breed_id: Optional[str], limit: int):
     params = {"limit": limit}
     if breed_id:
         params["breed_id"] = breed_id
@@ -82,7 +91,6 @@ async def fetch_cat_images_external(breed_id: Optional[str] = None, limit: int =
         except Exception as e:
             logger.exception(e)
             return []
-
 
 async def process_breeds_job(job_id: str):
     breed_jobs[job_id]["status"] = "processing"
@@ -99,14 +107,12 @@ async def process_breeds_job(job_id: str):
         logger.exception(e)
         breed_jobs[job_id]["status"] = "failed"
 
-
-async def process_facts_job(job_id: str, count: int = 5):
+async def process_facts_job(job_id: str, count: int):
     fact_jobs[job_id]["status"] = "processing"
     try:
         facts = await fetch_cat_facts_external(count)
         if facts:
             global facts_cache
-            # Append new facts, simple deduplication
             for f in facts:
                 if f not in facts_cache:
                     facts_cache.append(f)
@@ -118,14 +124,12 @@ async def process_facts_job(job_id: str, count: int = 5):
         logger.exception(e)
         fact_jobs[job_id]["status"] = "failed"
 
-
 async def process_images_job(job_id: str, breed: Optional[str], limit: int):
     image_jobs[job_id]["status"] = "processing"
     try:
         images = await fetch_cat_images_external(breed, limit)
         if images:
             global images_cache
-            # Append new images, simple deduplication
             for img in images:
                 if img not in images_cache:
                     images_cache.append(img)
@@ -139,12 +143,14 @@ async def process_images_job(job_id: str, breed: Optional[str], limit: int):
 
 
 @app.route("/breeds", methods=["GET"])
+# Workaround: validate first for GET requests due to quart-schema issue
 async def get_breeds():
     return jsonify(breeds_cache)
 
 
 @app.route("/breeds/fetch", methods=["POST"])
-async def fetch_breeds():
+@validate_request(FetchBreedsRequest)  # Workaround: validate last for POST requests due to quart-schema issue
+async def fetch_breeds(data: FetchBreedsRequest):
     job_id = datetime.utcnow().isoformat()
     breed_jobs[job_id] = {"status": "queued", "requestedAt": job_id}
     asyncio.create_task(process_breeds_job(job_id))
@@ -155,18 +161,17 @@ async def fetch_breeds():
 async def get_random_fact():
     if not facts_cache:
         return jsonify({"fact": "No facts available. Please POST to /facts/fetch first."}), 404
-    import random
-
     fact = random.choice(facts_cache)
     return jsonify({"fact": fact})
 
 
 @app.route("/facts/fetch", methods=["POST"])
-async def fetch_facts():
+@validate_request(FetchFactsRequest)  # Workaround: validate last for POST requests due to quart-schema issue
+async def fetch_facts(data: FetchFactsRequest):
+    count = data.count if data.count and data.count > 0 else 5
     job_id = datetime.utcnow().isoformat()
     fact_jobs[job_id] = {"status": "queued", "requestedAt": job_id}
-    # TODO: Accept count parameter from body? For now fixed 5
-    asyncio.create_task(process_facts_job(job_id, count=5))
+    asyncio.create_task(process_facts_job(job_id, count=count))
     return jsonify({"status": "queued", "job_id": job_id})
 
 
@@ -174,17 +179,15 @@ async def fetch_facts():
 async def get_random_image():
     if not images_cache:
         return jsonify({"url": None, "message": "No images available. Please POST to /images/fetch first."}), 404
-    import random
-
     url = random.choice(images_cache)
     return jsonify({"url": url})
 
 
 @app.route("/images/fetch", methods=["POST"])
-async def fetch_images():
-    data = await request.get_json(force=True)
-    breed = data.get("breed")
-    limit = data.get("limit", 3)
+@validate_request(FetchImagesRequest)  # Workaround: validate last for POST requests due to quart-schema issue
+async def fetch_images(data: FetchImagesRequest):
+    breed = data.breed
+    limit = data.limit if data.limit and data.limit > 0 else 3
     job_id = datetime.utcnow().isoformat()
     image_jobs[job_id] = {"status": "queued", "requestedAt": job_id}
     asyncio.create_task(process_images_job(job_id, breed, limit))
@@ -195,10 +198,8 @@ if __name__ == "__main__":
     import sys
 
     if sys.platform == "win32":
-        # Windows event loop policy fix for asyncio
         import asyncio
 
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

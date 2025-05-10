@@ -1,6 +1,50 @@
-Certainly! I've updated the code to add the required workflow function as a parameter to `entity_service.add_item`. For each entity_model (`breed`, `fact`, `image`), I implemented an asynchronous workflow function named `process_{entity_name}` (with lowercase underscore entity name). These functions simply return the entity unchanged (you can customize them to modify entity state or add/get other entities asynchronously as needed).
+Got it! To follow the requirements and best practices, I will move as much logic as possible into the workflow functions `process_breed`, `process_fact`, and `process_image`.
 
-Here is the complete updated code with the workflow functions and their usage in `add_item` calls:
+**Key points:**
+
+- The workflow function replaces asynchronous "pre-persistence" logic related to that entity.
+- These functions receive the entity dict as the only argument.
+- They can mutate the entity to update its state before persistence.
+- They can fetch or add supplementary entities of *different* entity_models, but **cannot** add/update/delete the same entity_model (to avoid recursion).
+- Fire-and-forget async tasks related to entity enrichment or data fetching fit well here.
+
+---
+
+### Changes I will make:
+
+**1. Breeds:**
+
+- Current fetching breeds from external API and adding is done in a separate async task `process_breeds_job`.
+- We cannot add the same entity_model inside the workflow function for a breed entity (would cause recursion).
+- But we can move the external API fetch logic into the workflow function that is called for an initial placeholder breed entity (say with minimal info).
+- However, the current pattern is to fetch *all* breeds externally and add them one by one. We cannot do that inside a single workflow function since it applies to a single entity.
+- So for breeds, probably the best we can do is keep the initial fetch in the job, but if we want to enrich or mutate the breed entity before saving, that logic moves inside `process_breed`.
+
+**2. Facts:**
+
+- The current fetching of facts is done by `process_facts_job`, which fetches facts externally and adds them one by one.
+- Again, since adding the same entity_model inside the workflow causes infinite recursion, we cannot fetch multiple facts inside `process_fact`.
+- However, if a fact entity is created with minimal info, `process_fact` can enrich the fact entity (e.g. add timestamp, source, or transform the fact text).
+- If we want to fire-and-forget fetch multiple facts, we must keep it outside or implement a separate job.
+
+**3. Images:**
+
+- Similar to facts.
+- If an image entity is created with minimal info, `process_image` can enrich the image entity (e.g. add metadata).
+- But we cannot add images inside the image workflow function.
+
+---
+
+### To satisfy the requirement:
+
+- Move all enrichment and transformation logic inside `process_{entity_name}` workflow functions.
+- Keep the external fetching of multiple entities or batches in the respective job functions.
+- The job functions will create minimal entities, and the workflow will enrich them before persistence.
+- Remove any duplicated async logic from endpoints.
+
+---
+
+### Updated code:
 
 ```python
 from dataclasses import dataclass
@@ -14,7 +58,6 @@ import httpx
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema, validate_request
 
-import logging
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
@@ -48,139 +91,176 @@ breed_jobs = {}
 fact_jobs = {}
 image_jobs = {}
 
+
 async def process_breed(entity: dict) -> dict:
-    # Workflow function for 'breed' entity
-    # You can modify entity here or perform async operations
+    """
+    Workflow function for breed entity.
+    Enrich breed with additional data from external API if needed.
+    This function is called before the breed entity is persisted.
+    """
+
+    # If entity has minimal info (e.g., just id), fetch full details from external API
+    if "description" not in entity or not entity.get("description"):
+        breed_id = entity.get("id")
+        if breed_id:
+            async with httpx.AsyncClient() as client:
+                try:
+                    resp = await client.get(f"{CAT_API_BASE}/breeds/{breed_id}")
+                    resp.raise_for_status()
+                    data = resp.json()
+                    # Update entity with enriched data fields
+                    entity["name"] = data.get("name", entity.get("name"))
+                    entity["origin"] = data.get("origin", entity.get("origin"))
+                    entity["description"] = data.get("description", "")
+                except Exception as e:
+                    logger.warning(f"Failed to enrich breed {breed_id}: {e}")
+
+    # Add timestamp for when the breed was processed
+    entity["processed_at"] = datetime.utcnow().isoformat()
+
+    # Example: Add supplementary entities (different entity_model) here if needed
+    # e.g., add a 'fact' entity related to this breed (without updating this breed)
+    # await entity_service.add_item(
+    #     token=cyoda_auth_service,
+    #     entity_model="fact",
+    #     entity_version=ENTITY_VERSION,
+    #     entity={"fact": f"Interesting fact about {entity.get('name', 'this breed')}."},
+    #     workflow=process_fact,
+    # )
+
     return entity
+
 
 async def process_fact(entity: dict) -> dict:
-    # Workflow function for 'fact' entity
-    # You can modify entity here or perform async operations
+    """
+    Workflow function for fact entity.
+    Enrich or modify facts before persistence.
+    """
+
+    # Add timestamps
+    entity.setdefault("created_at", datetime.utcnow().isoformat())
+
+    # Normalize fact text - example: capitalize first letter
+    fact_text = entity.get("fact", "")
+    if fact_text:
+        entity["fact"] = fact_text[0].upper() + fact_text[1:]
+
+    # Optionally, fetch related breed or image info as supplementary entities
+    # For example, if fact mentions a breed, add that breed entity asynchronously (fire and forget)
+    # But only if we have such info in fact (not in this example)
+
     return entity
+
 
 async def process_image(entity: dict) -> dict:
-    # Workflow function for 'image' entity
-    # You can modify entity here or perform async operations
+    """
+    Workflow function for image entity.
+    Enrich image entity before persistence.
+    """
+
+    # Add processed timestamp
+    entity["processed_at"] = datetime.utcnow().isoformat()
+
+    # Optionally fetch metadata about image (e.g., size, format) asynchronously
+    url = entity.get("url")
+    if url:
+        try:
+            async with httpx.AsyncClient() as client:
+                head_resp = await client.head(url)
+                if head_resp.status_code == 200:
+                    entity["content_type"] = head_resp.headers.get("Content-Type", "")
+                    entity["content_length"] = int(head_resp.headers.get("Content-Length", "0"))
+        except Exception as e:
+            logger.warning(f"Failed to fetch metadata for image: {e}")
+
     return entity
 
-async def fetch_breeds_from_external():
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(f"{CAT_API_BASE}/breeds")
-            response.raise_for_status()
-            breeds = response.json()
-            simplified = [
-                {
-                    "id": b.get("id"),
-                    "name": b.get("name"),
-                    "origin": b.get("origin"),
-                    "description": b.get("description"),
-                }
-                for b in breeds
-            ]
-            return simplified
-        except Exception as e:
-            logger.exception(e)
-            return None
 
-async def fetch_cat_facts_external(count: int = 5):
-    facts = []
-    async with httpx.AsyncClient() as client:
-        for _ in range(count):
-            try:
-                r = await client.get(CAT_FACTS_API)
-                r.raise_for_status()
-                data = r.json()
-                fact = data.get("fact")
-                if fact:
-                    facts.append(fact)
-            except Exception as e:
-                logger.exception(e)
-    return facts
-
-async def fetch_cat_images_external(breed_id: Optional[str], limit: int):
-    params = {"limit": limit}
-    if breed_id:
-        params["breed_id"] = breed_id
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.get(f"{CAT_API_BASE}/images/search", params=params)
-            resp.raise_for_status()
-            data = resp.json()
-            urls = [item.get("url") for item in data if item.get("url")]
-            return urls
-        except Exception as e:
-            logger.exception(e)
-            return []
-
-async def process_breeds_job(job_id: str):
+async def fetch_breeds_job(job_id: str):
     breed_jobs[job_id]["status"] = "processing"
     try:
-        breeds = await fetch_breeds_from_external()
-        if breeds is not None:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"{CAT_API_BASE}/breeds")
+            resp.raise_for_status()
+            breeds = resp.json()
             for breed in breeds:
+                # Add minimal breed entity; enrichment happens in workflow
+                minimal_breed = {
+                    "id": breed.get("id"),
+                    "name": breed.get("name"),
+                    # do NOT add description here, let workflow fetch it on demand
+                }
                 try:
                     await entity_service.add_item(
                         token=cyoda_auth_service,
                         entity_model="breed",
                         entity_version=ENTITY_VERSION,
-                        entity=breed,
+                        entity=minimal_breed,
                         workflow=process_breed,
                     )
                 except Exception as e:
-                    logger.exception(e)
-            breed_jobs[job_id]["status"] = "completed"
-            breed_jobs[job_id]["count"] = len(breeds)
-        else:
-            breed_jobs[job_id]["status"] = "failed"
+                    logger.warning(f"Failed to add breed {minimal_breed.get('id')}: {e}")
+        breed_jobs[job_id]["status"] = "completed"
+        breed_jobs[job_id]["count"] = len(breeds)
     except Exception as e:
         logger.exception(e)
         breed_jobs[job_id]["status"] = "failed"
 
-async def process_facts_job(job_id: str, count: int):
+
+async def fetch_facts_job(job_id: str, count: int):
     fact_jobs[job_id]["status"] = "processing"
     try:
-        facts = await fetch_cat_facts_external(count)
-        if facts:
-            for fact in facts:
+        async with httpx.AsyncClient() as client:
+            for _ in range(count):
                 try:
-                    await entity_service.add_item(
-                        token=cyoda_auth_service,
-                        entity_model="fact",
-                        entity_version=ENTITY_VERSION,
-                        entity={"fact": fact},
-                        workflow=process_fact,
-                    )
+                    r = await client.get(CAT_FACTS_API)
+                    r.raise_for_status()
+                    data = r.json()
+                    fact_text = data.get("fact")
+                    if fact_text:
+                        # Add fact entity, enrichment such as timestamp and normalization in workflow
+                        await entity_service.add_item(
+                            token=cyoda_auth_service,
+                            entity_model="fact",
+                            entity_version=ENTITY_VERSION,
+                            entity={"fact": fact_text},
+                            workflow=process_fact,
+                        )
                 except Exception as e:
-                    logger.exception(e)
-            fact_jobs[job_id]["status"] = "completed"
-            fact_jobs[job_id]["count"] = len(facts)
-        else:
-            fact_jobs[job_id]["status"] = "failed"
+                    logger.warning(f"Failed fetching a cat fact: {e}")
+        fact_jobs[job_id]["status"] = "completed"
+        fact_jobs[job_id]["count"] = count
     except Exception as e:
         logger.exception(e)
         fact_jobs[job_id]["status"] = "failed"
 
-async def process_images_job(job_id: str, breed: Optional[str], limit: int):
+
+async def fetch_images_job(job_id: str, breed: Optional[str], limit: int):
     image_jobs[job_id]["status"] = "processing"
     try:
-        images = await fetch_cat_images_external(breed, limit)
-        if images:
-            for url in images:
-                try:
-                    await entity_service.add_item(
-                        token=cyoda_auth_service,
-                        entity_model="image",
-                        entity_version=ENTITY_VERSION,
-                        entity={"url": url},
-                        workflow=process_image,
-                    )
-                except Exception as e:
-                    logger.exception(e)
-            image_jobs[job_id]["status"] = "completed"
-            image_jobs[job_id]["count"] = len(images)
-        else:
-            image_jobs[job_id]["status"] = "failed"
+        params = {"limit": limit}
+        if breed:
+            params["breed_id"] = breed
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"{CAT_API_BASE}/images/search", params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            for item in data:
+                url = item.get("url")
+                if url:
+                    # Add minimal image entity; enrichment in workflow (content-type, length)
+                    try:
+                        await entity_service.add_item(
+                            token=cyoda_auth_service,
+                            entity_model="image",
+                            entity_version=ENTITY_VERSION,
+                            entity={"url": url},
+                            workflow=process_image,
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to add image url {url}: {e}")
+        image_jobs[job_id]["status"] = "completed"
+        image_jobs[job_id]["count"] = len(data)
     except Exception as e:
         logger.exception(e)
         image_jobs[job_id]["status"] = "failed"
@@ -199,13 +279,15 @@ async def get_breeds():
         logger.exception(e)
         return jsonify([]), 500
 
+
 @app.route("/breeds/fetch", methods=["POST"])
 @validate_request(FetchBreedsRequest)
 async def fetch_breeds(data: FetchBreedsRequest):
     job_id = datetime.utcnow().isoformat()
     breed_jobs[job_id] = {"status": "queued", "requestedAt": job_id}
-    asyncio.create_task(process_breeds_job(job_id))
+    asyncio.create_task(fetch_breeds_job(job_id))
     return jsonify({"status": "queued", "job_id": job_id})
+
 
 @app.route("/facts/random", methods=["GET"])
 async def get_random_fact():
@@ -223,14 +305,16 @@ async def get_random_fact():
         logger.exception(e)
         return jsonify({"fact": "Error retrieving facts."}), 500
 
+
 @app.route("/facts/fetch", methods=["POST"])
 @validate_request(FetchFactsRequest)
 async def fetch_facts(data: FetchFactsRequest):
     count = data.count if data.count and data.count > 0 else 5
     job_id = datetime.utcnow().isoformat()
     fact_jobs[job_id] = {"status": "queued", "requestedAt": job_id}
-    asyncio.create_task(process_facts_job(job_id, count=count))
+    asyncio.create_task(fetch_facts_job(job_id, count=count))
     return jsonify({"status": "queued", "job_id": job_id})
+
 
 @app.route("/images/random", methods=["GET"])
 async def get_random_image():
@@ -248,6 +332,7 @@ async def get_random_image():
         logger.exception(e)
         return jsonify({"url": None, "message": "Error retrieving images."}), 500
 
+
 @app.route("/images/fetch", methods=["POST"])
 @validate_request(FetchImagesRequest)
 async def fetch_images(data: FetchImagesRequest):
@@ -255,8 +340,9 @@ async def fetch_images(data: FetchImagesRequest):
     limit = data.limit if data.limit and data.limit > 0 else 3
     job_id = datetime.utcnow().isoformat()
     image_jobs[job_id] = {"status": "queued", "requestedAt": job_id}
-    asyncio.create_task(process_images_job(job_id, breed, limit))
+    asyncio.create_task(fetch_images_job(job_id, breed, limit))
     return jsonify({"status": "queued", "job_id": job_id})
+
 
 if __name__ == "__main__":
     import sys
@@ -271,9 +357,14 @@ if __name__ == "__main__":
 
 ---
 
-**Summary of changes:**
+## Explanation
 
-- Added async functions `process_breed`, `process_fact`, `process_image`.
-- Passed these workflow functions as the `workflow` parameter to `entity_service.add_item(...)`.
+- All "enrichment" or "pre-persistence transformation" logic moved into respective `process_{entity_name}` functions.
+- The job functions only fetch raw data and create minimal entities.
+- The workflow functions enrich entities (e.g. fetch missing data, normalize text, add timestamps, fetch image metadata).
+- Endpoints only trigger job functions or retrieve entities — no business logic inside the endpoints.
+- This approach complies with the requirement to move async pre-persistence logic into workflow functions and keeps endpoint controllers clean and minimal.
 
-Now each entity is processed by its respective workflow function before persistence, in compliance with the new API requirements. Let me know if you want these workflow functions to implement any specific logic!
+---
+
+Let me know if you want me to further optimize, e.g. move job creation logic inside workflows too or handle more complex scenarios!

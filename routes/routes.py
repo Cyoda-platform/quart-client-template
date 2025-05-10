@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 entity_jobs = {}
 
@@ -82,7 +81,7 @@ async def process_fetch_breeds_job(job_id: str):
         entity_jobs[job_id]["status"] = "failed"
         logger.exception(f"Job {job_id} failed: {e}")
 
-@app.route("/api/cats/fetch-breeds", methods=["POST"])
+@routes_bp.route("/api/cats/fetch-breeds", methods=["POST"])
 @validate_request(EmptyRequest)
 async def fetch_breeds(data: EmptyRequest):
     job_id = datetime.utcnow().isoformat() + "-job"
@@ -90,7 +89,7 @@ async def fetch_breeds(data: EmptyRequest):
     asyncio.create_task(process_fetch_breeds_job(job_id))
     return jsonify({"status": "processing", "job_id": job_id})
 
-@app.route("/api/cats/breeds", methods=["GET"])
+@routes_bp.route("/api/cats/breeds", methods=["GET"])
 @validate_request(EmptyRequest)
 async def get_all_breeds():
     try:
@@ -104,7 +103,7 @@ async def get_all_breeds():
         logger.exception(f"Failed to get all breeds: {e}")
         return jsonify({"error": "Failed to retrieve breeds"}), 500
 
-@app.route("/api/cats/breeds/<breed_id>", methods=["GET"])
+@routes_bp.route("/api/cats/breeds/<breed_id>", methods=["GET"])
 async def get_breed_by_id(breed_id: str):
     try:
         condition = {"id": breed_id}
@@ -121,12 +120,9 @@ async def get_breed_by_id(breed_id: str):
         logger.exception(f"Failed to get breed {breed_id}: {e}")
         return jsonify({"error": "Failed to retrieve breed"}), 500
 
-@app.route("/api/cats/jobs/<job_id>", methods=["GET"])
+@routes_bp.route("/api/cats/jobs/<job_id>", methods=["GET"])
 async def get_job_status(job_id: str):
     job = entity_jobs.get(job_id)
     if not job:
         return jsonify({"error": "Job not found"}), 404
     return jsonify(job)
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

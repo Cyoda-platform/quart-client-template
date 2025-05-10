@@ -1,0 +1,83 @@
+{
+    "description": "Workflow to enrich breed entity with missing description and add processing timestamp",
+    "name": "breed_enrichment_workflow:ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the breed enrichment process",
+            "end_state": "Breed_enrichment_started",
+            "end_state_description": "Breed enrichment has started",
+            "name": "start_enrich_breed",
+            "processes": {
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        },
+        {
+            "automated": true,
+            "description": "Enrich breed data by fetching missing description and adding processed timestamp",
+            "end_state": "Breed_enriched",
+            "end_state_description": "Breed data enriched with description and timestamp",
+            "name": "enrich_breed_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "attach_entity": true,
+                        "calculation_nodes_tags": "CHAT_ID_VAR",
+                        "calculation_response_timeout_ms": "120000",
+                        "description": "External processor to create a job",
+                        "name": "process_breed",
+                        "new_transaction_for_async": true,
+                        "none_transactional_for_async": false,
+                        "processor_criteria": {
+                            "condition_criteria": [],
+                            "externalized_criteria": []
+                        },
+                        "retry_policy": "NONE",
+                        "sync_process": false
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Breed_enrichment_started",
+            "start_state_description": "Breed enrichment has started",
+            "transition_criteria": {
+                "condition_criteria": [],
+                "externalized_criteria": []
+            }
+        }
+    ],
+    "workflow_criteria": {
+        "condition_criteria": [
+            {
+                "condition": {
+                    "conditions": [
+                        {
+                            "field_name": "entityModelName",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_MODEL_VAR",
+                            "value_type": "strings"
+                        },
+                        {
+                            "field_name": "entityModelVersion",
+                            "is_meta_field": true,
+                            "operation": "equals",
+                            "value": "ENTITY_VERSION_VAR",
+                            "value_type": "strings"
+                        }
+                    ],
+                    "group_condition_operator": "AND"
+                },
+                "description": "Workflow criteria",
+                "name": "ENTITY_MODEL_VAR:ENTITY_VERSION_VAR:CHAT_ID_VAR"
+            }
+        ],
+        "externalized_criteria": []
+    }
+}

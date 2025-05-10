@@ -1,0 +1,24 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "fact": "Cats sleep 70% of their lives."
+            },
+            "entity_name": "cat_fact"
+        },
+        {
+            "entity_data_example": {
+                "url": "https://example.com/cat1.jpg"
+            },
+            "entity_name": "cat_image"
+        },
+        {
+            "entity_data_example": {
+                "description": "Sleek and social cats.",
+                "name": "Siamese",
+                "origin": "Thailand"
+            },
+            "entity_name": "cat_breed"
+        }
+    ]
+}

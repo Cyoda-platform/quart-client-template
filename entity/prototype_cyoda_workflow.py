@@ -1,41 +1,3 @@
-Understood! The goal is to move all async logic related to processing, fetching, or modifying data away from the endpoint handlers into dedicated `process_{entity_name}` workflow functions, which will be invoked just before persisting the entity. This will keep controllers clean, and centralize entity-related async work in workflows.
-
----
-
-### Plan:
-
-- Define workflow functions for each entity model that currently involves async operations or business logic in the endpoints.
-- Refactor endpoints to only validate input and call `entity_service.add_item` with the workflow function.
-- The workflow will do all async fetching, filtering, enrichment, state modifications, etc.
-- Entities being persisted will be modified in-place within workflow functions.
-- For entities that are not persisted (e.g. fetch-data returns raw data without saving), we can still make a minimal entity wrapper to invoke workflow.
-
----
-
-### Entities and workflows to implement:
-
-1. `fetch_data` entity (corresponding to `/cats/fetch-data` POST)  
-   - Workflow `process_fetch_data`: fetch facts, breeds, images async, apply filters, update entity fields with results.
-
-2. `favorite` entity (corresponding to `/cats/favorite` POST)  
-   - Workflow `process_favorite`: add timestamps, validate or flag entity, etc.
-
-3. Possibly `cached_data` entity if you want to persist cached cat data, but since this was in-memory before, no direct persistence needed.
-
----
-
-### Implementation details:
-
-- The `/cats/fetch-data` endpoint will accept a validated `fetch_data` entity, pass it to `entity_service.add_item` with `workflow=process_fetch_data`.  
-- `process_fetch_data` will perform all async fetching, filter application, and set attributes on the entity dict before save.  
-- The endpoint can then return the processed data from the saved entity or directly from the workflow result.  
-- Because the entity is persisted after workflow, the saved entity will have all enriched data.
-
----
-
-### Updated code with workflows and slim endpoints:
-
-```python
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 import asyncio
@@ -73,7 +35,7 @@ class FavoriteRequest:
     type: str
     content: str
 
-# Workflow for fetch_data entity
+# Workflow function for fetch_data entity
 async def process_fetch_data(entity: Dict[str, Any]):
     """
     Asynchronously fetch cat facts, breeds, and images as requested.
@@ -82,11 +44,6 @@ async def process_fetch_data(entity: Dict[str, Any]):
     """
     requested_types = entity.get("types", [])
     filters = entity.get("filters") or {}
-
-    results = {}
-    tasks = []
-
-    # Define async fetch functions inside workflow so they have access to entity_service if needed
 
     async def fetch_cat_facts(limit: int = 5) -> List[str]:
         try:
@@ -130,6 +87,7 @@ async def process_fetch_data(entity: Dict[str, Any]):
             logger.exception("Failed to fetch cat images")
             return []
 
+    tasks = []
     if "facts" in requested_types:
         tasks.append(fetch_cat_facts())
     if "breeds" in requested_types:
@@ -151,12 +109,11 @@ async def process_fetch_data(entity: Dict[str, Any]):
         entity["images"] = fetched_data[idx]
         idx += 1
 
-    # Optionally add timestamp of processing
     entity["processedAt"] = datetime.utcnow().isoformat()
 
     return entity
 
-# Workflow for favorite entity
+# Workflow function for favorite entity
 async def process_favorite(entity: Dict[str, Any]):
     """
     Process favorite entity before persistence.
@@ -170,7 +127,7 @@ async def process_favorite(entity: Dict[str, Any]):
 @validate_request(FetchDataRequest)
 async def cats_fetch_data(data: FetchDataRequest):
     """
-    Endpoint now only calls entity_service.add_item with workflow.
+    Endpoint calls entity_service.add_item with workflow.
     The workflow fetches and enriches data.
     """
     entity = data.__dict__
@@ -182,8 +139,7 @@ async def cats_fetch_data(data: FetchDataRequest):
             entity=entity,
             workflow=process_fetch_data
         )
-        # entity now enriched in DB with fetched data, return enriched entity (without ID)
-        # You can also fetch the saved entity by id if needed
+        # Return enriched entity immediately after processing (before persistence completes might be possible)
         return jsonify(entity)
     except Exception:
         logger.exception("Error in /cats/fetch-data")
@@ -193,7 +149,7 @@ async def cats_fetch_data(data: FetchDataRequest):
 @validate_request(FavoriteRequest)
 async def cats_favorite(data: FavoriteRequest):
     """
-    Endpoint only validates input then persists favorite entity with workflow.
+    Endpoint validates input then persists favorite entity with workflow.
     """
     fav_type = data.type
     content = data.content
@@ -223,55 +179,34 @@ async def cats_favorite(data: FavoriteRequest):
 @app.route("/cats/results", methods=["GET"])
 async def cats_results():
     """
-    This endpoint returns cached data for requested type.
-    Since caching was previously in-memory and not persisted,
-    keep this endpoint as-is or implement caching in entity_service.
+    Returns latest cached cat data from entity_service.
+    Queries latest fetch_data entity and returns requested data type.
     """
     try:
         data_type = request.args.get("type")
-        # For simplicity, return empty list or error if no cache
-        # You can extend this to query entity_service for cached entities
-
-        # Example: Query entity_service for latest fetch_data entity and return data
-        # But as this is not required strictly by request, returning 400 if invalid type
-
         valid_types = {"facts", "images", "breeds"}
         if data_type not in valid_types:
             return jsonify({"error": f"Invalid type '{data_type}'. Must be one of {valid_types}."}), 400
 
-        # Query latest fetch_data entity and return requested data if exists
-        # This is an example; adjust entity_service query calls according to your API
+        # Query entity_service for latest fetch_data entity (assuming method get_latest_entity_by_model exists)
+        # Adjust this according to your actual entity_service API
+        latest_entity = await entity_service.get_latest_entity_by_model(
+            token=cyoda_auth_service,
+            entity_model="fetch_data",
+            entity_version=ENTITY_VERSION
+        )
 
-        # Placeholder empty response
-        return jsonify({"type": data_type, "data": []})
+        if not latest_entity:
+            return jsonify({"type": data_type, "data": []})
 
+        data = latest_entity.get(data_type, [])
+        if data is None:
+            data = []
+
+        return jsonify({"type": data_type, "data": data})
     except Exception:
         logger.exception("Error in /cats/results")
         return jsonify({"error": "Failed to retrieve cat data"}), 500
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- The async fetching logic for facts, breeds, and images is moved fully into `process_fetch_data`.  
-- The favorite processing logic is in `process_favorite`.  
-- Endpoints just validate input and call `entity_service.add_item` with appropriate workflow.  
-- The entity dict passed to `add_item` is enriched/modified in-place by the workflow before persistence.  
-- The `cats_results` endpoint is left simple because caching persistence is unclear; you can extend it to query stored entities.
-
----
-
-### Benefits:
-
-- Controllers are minimal and only handle request validation and response.  
-- Workflows encapsulate all async operations, entity modifications, and side effects.  
-- This approach supports fire-and-forget async tasks inside workflows if needed.  
-- Keeps code more maintainable, testable, and consistent with your requirements.
-
----
-
-If you want, I can help you implement entity querying for `/cats/results` or add further workflow functions for other entity models. Just let me know!

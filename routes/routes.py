@@ -6,11 +6,13 @@ from datetime import datetime
 import random
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -18,9 +20,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 CAT_API_BASE = "https://api.thecatapi.com/v1"
 CAT_FACTS_API = "https://catfact.ninja/fact"
@@ -61,7 +60,7 @@ async def fetch_breeds_job(job_id: str):
                         entity_model="breed",
                         entity_version=ENTITY_VERSION,
                         entity=minimal_breed,
-                        )
+                    )
                 except Exception as e:
                     logger.warning(f"Failed to add breed {minimal_breed.get('id')}: {e}")
         breed_jobs[job_id]["status"] = "completed"
@@ -88,7 +87,7 @@ async def fetch_facts_job(job_id: str, count: int):
                             entity_model="fact",
                             entity_version=ENTITY_VERSION,
                             entity={"fact": fact_text},
-                            )
+                        )
                         added_count += 1
                 except Exception as e:
                     logger.warning(f"Failed fetching a cat fact: {e}")
@@ -119,7 +118,7 @@ async def fetch_images_job(job_id: str, breed: Optional[str], limit: int):
                             entity_model="image",
                             entity_version=ENTITY_VERSION,
                             entity={"url": url},
-                            )
+                        )
                         added_count += 1
                     except Exception as e:
                         logger.warning(f"Failed to add image url {url}: {e}")
@@ -129,7 +128,7 @@ async def fetch_images_job(job_id: str, breed: Optional[str], limit: int):
         logger.exception(e)
         image_jobs[job_id]["status"] = "failed"
 
-@app.route("/breeds", methods=["GET"])
+@routes_bp.route("/breeds", methods=["GET"])
 async def get_breeds():
     try:
         breeds = await entity_service.get_items(
@@ -142,7 +141,7 @@ async def get_breeds():
         logger.exception(e)
         return jsonify([]), 500
 
-@app.route("/breeds/fetch", methods=["POST"])
+@routes_bp.route("/breeds/fetch", methods=["POST"])
 @validate_request(FetchBreedsRequest)
 async def fetch_breeds(data: FetchBreedsRequest):
     job_id = datetime.utcnow().isoformat()
@@ -150,7 +149,7 @@ async def fetch_breeds(data: FetchBreedsRequest):
     asyncio.create_task(fetch_breeds_job(job_id))
     return jsonify({"status": "queued", "job_id": job_id})
 
-@app.route("/facts/random", methods=["GET"])
+@routes_bp.route("/facts/random", methods=["GET"])
 async def get_random_fact():
     try:
         facts = await entity_service.get_items(
@@ -166,7 +165,7 @@ async def get_random_fact():
         logger.exception(e)
         return jsonify({"fact": "Error retrieving facts."}), 500
 
-@app.route("/facts/fetch", methods=["POST"])
+@routes_bp.route("/facts/fetch", methods=["POST"])
 @validate_request(FetchFactsRequest)
 async def fetch_facts(data: FetchFactsRequest):
     count = data.count if data.count and data.count > 0 else 5
@@ -175,7 +174,7 @@ async def fetch_facts(data: FetchFactsRequest):
     asyncio.create_task(fetch_facts_job(job_id, count=count))
     return jsonify({"status": "queued", "job_id": job_id})
 
-@app.route("/images/random", methods=["GET"])
+@routes_bp.route("/images/random", methods=["GET"])
 async def get_random_image():
     try:
         images = await entity_service.get_items(
@@ -191,7 +190,7 @@ async def get_random_image():
         logger.exception(e)
         return jsonify({"url": None, "message": "Error retrieving images."}), 500
 
-@app.route("/images/fetch", methods=["POST"])
+@routes_bp.route("/images/fetch", methods=["POST"])
 @validate_request(FetchImagesRequest)
 async def fetch_images(data: FetchImagesRequest):
     breed = data.breed
@@ -200,12 +199,3 @@ async def fetch_images(data: FetchImagesRequest):
     image_jobs[job_id] = {"status": "queued", "requestedAt": job_id}
     asyncio.create_task(fetch_images_job(job_id, breed, limit))
     return jsonify({"status": "queued", "job_id": job_id})
-
-if __name__ == "__main__":
-    import sys
-
-    if sys.platform == "win32":
-        import asyncio
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

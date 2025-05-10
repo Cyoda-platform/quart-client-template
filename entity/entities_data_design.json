@@ -1,0 +1,66 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "filters": {
+                    "age": "young",
+                    "breed": "Siamese",
+                    "location": "New York"
+                },
+                "source": "cat_api"
+            },
+            "entity_name": "cats_fetch_request"
+        },
+        {
+            "entity_data_example": {
+                "request_id": "123e4567-e89b-12d3-a456-426614174000",
+                "status": "processing"
+            },
+            "entity_name": "cats_fetch_response"
+        },
+        {
+            "entity_data_example": {
+                "data": [
+                    {
+                        "age": "young",
+                        "breed": "Siamese",
+                        "fact": "Siamese cats are vocal and affectionate.",
+                        "id": "abc123",
+                        "image_url": "https://example.com/cat.jpg",
+                        "location": "New York"
+                    }
+                ],
+                "request_id": "123e4567-e89b-12d3-a456-426614174000",
+                "status": "completed"
+            },
+            "entity_name": "cats_results_response"
+        },
+        {
+            "entity_data_example": {
+                "cat_id": "abc123",
+                "user_id": "user_001"
+            },
+            "entity_name": "favorite_request"
+        },
+        {
+            "entity_data_example": {
+                "message": "Cat added to favorites",
+                "success": true
+            },
+            "entity_name": "favorite_response"
+        },
+        {
+            "entity_data_example": {
+                "favorites": [
+                    {
+                        "breed": "Siamese",
+                        "cat_id": "abc123",
+                        "image_url": "https://example.com/cat.jpg"
+                    }
+                ],
+                "user_id": "user_001"
+            },
+            "entity_name": "favorites_response"
+        }
+    ]
+}

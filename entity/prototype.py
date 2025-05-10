@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass
+from typing import List, Optional
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,11 +15,21 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+# Data classes for request validation
+
+@dataclass
+class CountRequest:
+    count: int
+
+@dataclass
+class BreedsRequest:
+    breeds: List[str]
+
 # In-memory caches for GET endpoints to return last fetched results
 cache = {
-    "random_cats": None,   # type: Optional[List[Dict]]
-    "breeds_info": None,   # type: Optional[List[Dict]]
-    "cat_facts": None      # type: Optional[List[str]]
+    "random_cats": None,   # Optional[List[Dict]]
+    "breeds_info": None,   # Optional[List[Dict]]
+    "cat_facts": None      # Optional[List[str]]
 }
 
 # Job status tracking for fire-and-forget pattern
@@ -29,19 +40,14 @@ CAT_API_BASE = "https://api.thecatapi.com/v1"
 CAT_FACTS_API = "https://catfact.ninja/facts"
 
 
-async def fetch_random_cats(count: int) -> List[Dict]:
-    """
-    Fetch random cat images and breed info from TheCatAPI.
-    """
+async def fetch_random_cats(count: int):
     logger.info(f"Fetching {count} random cats from external API")
     async with httpx.AsyncClient() as client:
         try:
-            # TheCatAPI random images with breed info included
             params = {"limit": count, "size": "med", "order": "Random"}
             resp = await client.get(f"{CAT_API_BASE}/images/search", params=params)
             resp.raise_for_status()
             data = resp.json()
-
             cats = []
             for item in data:
                 breed = item.get("breeds")[0] if item.get("breeds") else {}
@@ -52,23 +58,18 @@ async def fetch_random_cats(count: int) -> List[Dict]:
                     "description": breed.get("description", ""),
                 })
             return cats
-
         except Exception as e:
             logger.exception(f"Error fetching random cats: {e}")
             return []
 
 
-async def fetch_breeds_info(breeds: List[str]) -> List[Dict]:
-    """
-    Fetch info for given breed names from TheCatAPI.
-    """
+async def fetch_breeds_info(breeds):
     logger.info(f"Fetching breeds info for: {breeds}")
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(f"{CAT_API_BASE}/breeds")
             resp.raise_for_status()
             all_breeds = resp.json()
-
             result = []
             breed_set = set(b.lower() for b in breeds)
             for breed in all_breeds:
@@ -80,21 +81,16 @@ async def fetch_breeds_info(breeds: List[str]) -> List[Dict]:
                         "description": breed.get("description"),
                     })
             return result
-
         except Exception as e:
             logger.exception(f"Error fetching breeds info: {e}")
             return []
 
 
-async def fetch_cat_facts(count: int) -> List[str]:
-    """
-    Fetch cat facts from catfact.ninja API.
-    """
+async def fetch_cat_facts(count: int):
     logger.info(f"Fetching {count} cat facts")
     async with httpx.AsyncClient() as client:
         try:
             facts = []
-            # catfact.ninja API supports only 1 fact per request; batch count requests
             for _ in range(count):
                 resp = await client.get(CAT_FACTS_API, params={"limit": 1})
                 resp.raise_for_status()
@@ -102,7 +98,6 @@ async def fetch_cat_facts(count: int) -> List[str]:
                 if data.get("data") and len(data["data"]) > 0:
                     facts.append(data["data"][0].get("fact"))
             return facts
-
         except Exception as e:
             logger.exception(f"Error fetching cat facts: {e}")
             return []
@@ -147,12 +142,12 @@ async def process_cat_facts(job_id: str, count: int):
         entity_job[job_id]["status"] = "failed"
 
 
+# POST endpoints: validation last due to quart-schema issue (workaround)
 @app.route("/cats/random", methods=["POST"])
-async def cats_random_post():
-    data = await request.get_json()
-    count = data.get("count", 1)
+@validate_request(CountRequest)  # validation last in POST (workaround)
+async def cats_random_post(data: CountRequest):
+    count = data.count
     job_id = f"random_cats_{datetime.utcnow().timestamp()}"
-
     entity_job[job_id] = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat(),
@@ -161,20 +156,12 @@ async def cats_random_post():
     return jsonify({"job_id": job_id, "status": "processing"}), 202
 
 
-@app.route("/cats/random", methods=["GET"])
-async def cats_random_get():
-    if cache["random_cats"]:
-        return jsonify({"cats": cache["random_cats"]})
-    return jsonify({"cats": []}), 204
-
-
 @app.route("/cats/breeds", methods=["POST"])
-async def cats_breeds_post():
-    data = await request.get_json()
-    breeds = data.get("breeds", [])
-    if not isinstance(breeds, list) or not breeds:
+@validate_request(BreedsRequest)  # validation last in POST (workaround)
+async def cats_breeds_post(data: BreedsRequest):
+    breeds = data.breeds
+    if not breeds:
         return jsonify({"error": "Field 'breeds' must be a non-empty list"}), 400
-
     job_id = f"breeds_info_{datetime.utcnow().timestamp()}"
     entity_job[job_id] = {
         "status": "processing",
@@ -184,17 +171,10 @@ async def cats_breeds_post():
     return jsonify({"job_id": job_id, "status": "processing"}), 202
 
 
-@app.route("/cats/breeds", methods=["GET"])
-async def cats_breeds_get():
-    if cache["breeds_info"]:
-        return jsonify({"breeds_info": cache["breeds_info"]})
-    return jsonify({"breeds_info": []}), 204
-
-
 @app.route("/cats/facts", methods=["POST"])
-async def cats_facts_post():
-    data = await request.get_json()
-    count = data.get("count", 1)
+@validate_request(CountRequest)  # validation last in POST (workaround)
+async def cats_facts_post(data: CountRequest):
+    count = data.count
     job_id = f"cat_facts_{datetime.utcnow().timestamp()}"
     entity_job[job_id] = {
         "status": "processing",
@@ -202,6 +182,22 @@ async def cats_facts_post():
     }
     asyncio.create_task(process_cat_facts(job_id, count))
     return jsonify({"job_id": job_id, "status": "processing"}), 202
+
+
+# GET endpoints: no request body, no validation needed.
+
+@app.route("/cats/random", methods=["GET"])
+async def cats_random_get():
+    if cache["random_cats"]:
+        return jsonify({"cats": cache["random_cats"]})
+    return jsonify({"cats": []}), 204
+
+
+@app.route("/cats/breeds", methods=["GET"])
+async def cats_breeds_get():
+    if cache["breeds_info"]:
+        return jsonify({"breeds_info": cache["breeds_info"]})
+    return jsonify({"breeds_info": []}), 204
 
 
 @app.route("/cats/facts", methods=["GET"])
@@ -221,4 +217,3 @@ async def job_status(job_id):
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

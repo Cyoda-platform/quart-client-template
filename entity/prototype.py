@@ -1,18 +1,24 @@
-```python
+from dataclasses import dataclass
+from typing import Optional
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data models for POST requests
+@dataclass
+class CatDataRequest:
+    source: Optional[str] = "all"
+    dataType: Optional[str] = "all"
 
 # In-memory storage mocks
 cat_facts = []
@@ -103,12 +109,12 @@ async def process_entity(job_id: str, source: str, data_type: str):
     entity_jobs[job_id]["completedAt"] = datetime.utcnow().isoformat()
     logger.info(f"Completed processing job {job_id}, fetched {count} items.")
 
-
+# POST /cats/data
 @app.route("/cats/data", methods=["POST"])
-async def update_cat_data():
-    req = await request.get_json(force=True)
-    source = req.get("source", "all")  # currently unused, could be extended
-    data_type = req.get("dataType", "all")
+@validate_request(CatDataRequest)  # Validation last in POST method (issue workaround)
+async def update_cat_data(data: CatDataRequest):
+    source = data.source or "all"
+    data_type = data.dataType or "all"
 
     job_id = datetime.utcnow().isoformat() + "_job"
     entity_jobs[job_id] = {
@@ -127,17 +133,17 @@ async def update_cat_data():
         "jobId": job_id,
     })
 
-
+# GET /cats/facts - no request body, no validation needed
 @app.route("/cats/facts", methods=["GET"])
 async def get_cat_facts():
     return jsonify({"facts": cat_facts})
 
-
+# GET /cats/images - no request body, no validation needed
 @app.route("/cats/images", methods=["GET"])
 async def get_cat_images():
     return jsonify({"images": cat_images})
 
-
+# GET /cats/breeds - no request body, no validation needed
 @app.route("/cats/breeds", methods=["GET"])
 async def get_cat_breeds():
     return jsonify({"breeds": cat_breeds})
@@ -153,4 +159,3 @@ if __name__ == '__main__':
         stream=sys.stdout,
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

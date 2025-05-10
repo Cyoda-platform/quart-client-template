@@ -1,8 +1,33 @@
-Certainly! I have updated the code to add the required workflow function as a parameter to `entity_service.add_item`. The workflow function is named `process_cat_breed` following your naming convention (`process_` prefix + entity name in underscore lowercase).
+Great approach! Moving asynchronous logic and data fetching into workflow functions (like `process_cat_breed`) will indeed make controllers cleaner and delegate entity-related processing to the workflows, as intended.
 
-The workflow function `process_cat_breed` is implemented to accept the entity data, and as an example, you can modify the entity state inside it. In this example, I just add a field `"processed_at"` with the current UTC ISO datetime string to demonstrate how one might modify the entity before persistence. You can customize it further as needed.
+---
 
-Here is the complete updated code with the workflow function and usage:
+### What we can move to workflow functions:
+
+- Fetching images from the external API for each breed.
+- Adding supplementary data or modifying entity attributes.
+- Any async operation related to enriching or transforming the entity data before persistence.
+
+---
+
+### What we **cannot** do in workflow functions:
+
+- Add/update/delete the *same* entity_model (to avoid infinite recursion).
+- Heavy orchestrations involving multiple different entity_models is okay but care must be taken.
+
+---
+
+### Plan for refactoring:
+
+1. **Fetch breeds from The Cat API** — this is a job triggering an update of the whole cat_breed collection, so this stays in the controller/async job.
+2. **For each breed entity, move image fetching and entity enrichment into a `process_cat_breed` workflow.**  
+   - So `process_cat_breed` will asynchronously fetch the image URL and add it to the entity data before persistence.
+3. **The controller/job will only fetch the list of breeds and call `add_item` with raw breed data, the workflow enriches it with image etc.**
+4. **Move any other logic for entity enrichment inside the workflow as well.**
+
+---
+
+### Updated code with this approach applied:
 
 ```python
 from dataclasses import dataclass
@@ -37,79 +62,83 @@ THE_CAT_API_IMAGES_URL = "https://api.thecatapi.com/v1/images/search"
 class EmptyRequest:
     pass
 
-async def fetch_breed_image(client: httpx.AsyncClient, breed_id: str) -> Optional[str]:
-    try:
-        params = {"breed_id": breed_id, "limit": 1}
-        resp = await client.get(THE_CAT_API_IMAGES_URL, params=params, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        if data and isinstance(data, list) and "url" in data[0]:
-            return data[0]["url"]
-    except Exception as e:
-        logger.exception(f"Failed to fetch image for breed {breed_id}: {e}")
-    return None
-
 # Workflow function for cat_breed entity
 async def process_cat_breed(entity_data: dict) -> dict:
     """
     Workflow function applied to 'cat_breed' entities before persistence.
-    You can modify entity_data here as needed.
+    
+    - Fetches image URL asynchronously from The Cat API for the breed.
+    - Adds 'image_url' and 'processed_at' timestamp to entity data.
     """
+    breed_id = entity_data.get("id")
+    if not breed_id:
+        logger.warning("No breed id found in entity_data during workflow processing.")
+        return entity_data
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            params = {"breed_id": breed_id, "limit": 1}
+            resp = await client.get(THE_CAT_API_IMAGES_URL, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+            if data and isinstance(data, list) and "url" in data[0]:
+                entity_data["image_url"] = data[0]["url"]
+            else:
+                entity_data["image_url"] = ""
+    except Exception as e:
+        logger.warning(f"Failed to fetch image for breed {breed_id} inside workflow: {e}")
+        entity_data["image_url"] = ""
+
     entity_data["processed_at"] = datetime.utcnow().isoformat()
-    # Add any additional processing here
     return entity_data
 
 async def process_fetch_breeds_job(job_id: str):
+    """
+    Job that fetches all breeds from The Cat API and persists them using entity_service.
+    """
     logger.info(f"Start processing job {job_id} to fetch breeds data")
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.get(THE_CAT_API_BREEDS_URL)
             resp.raise_for_status()
             breeds = resp.json()
-            # Clear previous breeds by deleting items via entity_service
-            existing_breeds = await entity_service.get_items(
-                token=cyoda_auth_service,
-                entity_model="cat_breed",
-                entity_version=ENTITY_VERSION,
-            )
-            for item in existing_breeds:
-                try:
-                    await entity_service.delete_item(
-                        token=cyoda_auth_service,
-                        entity_model="cat_breed",
-                        entity_version=ENTITY_VERSION,
-                        technical_id=item.get("technical_id"),
-                        meta={},
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to delete old breed item {item.get('technical_id')}: {e}")
 
-            tasks = []
-            for breed in breeds:
-                breed_id = breed.get("id")
-                if not breed_id:
-                    continue
-                tasks.append(fetch_breed_image(client, breed_id))
-            images = await asyncio.gather(*tasks)
+        # Delete old breeds
+        existing_breeds = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model="cat_breed",
+            entity_version=ENTITY_VERSION,
+        )
+        for item in existing_breeds:
+            try:
+                await entity_service.delete_item(
+                    token=cyoda_auth_service,
+                    entity_model="cat_breed",
+                    entity_version=ENTITY_VERSION,
+                    technical_id=item.get("technical_id"),
+                    meta={},
+                )
+            except Exception as e:
+                logger.warning(f"Failed to delete old breed item {item.get('technical_id')}: {e}")
 
-            # Add new breeds to entity_service with workflow function
-            for breed, image_url in zip(breeds, images):
-                breed_data = {
-                    "id": breed.get("id"),
-                    "name": breed.get("name", ""),
-                    "description": breed.get("description", ""),
-                    "image_url": image_url or "",
-                }
-                try:
-                    await entity_service.add_item(
-                        token=cyoda_auth_service,
-                        entity_model="cat_breed",
-                        entity_version=ENTITY_VERSION,
-                        entity=breed_data,
-                        workflow=process_cat_breed,  # Added workflow here
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to add breed {breed.get('id')}: {e}")
+        # Add new breeds - note we do NOT fetch image here: workflow will do it
+        for breed in breeds:
+            # Prepare minimal breed data, without image_url
+            breed_data = {
+                "id": breed.get("id"),
+                "name": breed.get("name", ""),
+                "description": breed.get("description", ""),
+            }
+            try:
+                await entity_service.add_item(
+                    token=cyoda_auth_service,
+                    entity_model="cat_breed",
+                    entity_version=ENTITY_VERSION,
+                    entity=breed_data,
+                    workflow=process_cat_breed,  # workflow enriches with image and timestamp
+                )
+            except Exception as e:
+                logger.warning(f"Failed to add breed {breed.get('id')}: {e}")
 
         entity_jobs[job_id]["status"] = "completed"
         logger.info(f"Job {job_id} completed successfully")
@@ -142,7 +171,6 @@ async def get_all_breeds():
 @app.route("/api/cats/breeds/<breed_id>", methods=["GET"])
 async def get_breed_by_id(breed_id: str):
     try:
-        # Search by condition to find breed by id field
         condition = {"id": breed_id}
         items = await entity_service.get_items_by_condition(
             token=cyoda_auth_service,
@@ -152,7 +180,6 @@ async def get_breed_by_id(breed_id: str):
         )
         if not items:
             return jsonify({"error": "Breed not found"}), 404
-        # Assuming id is unique, return first
         return jsonify(items[0])
     except Exception as e:
         logger.exception(f"Failed to get breed {breed_id}: {e}")
@@ -171,9 +198,29 @@ if __name__ == '__main__':
 
 ---
 
-### Summary of changes:
-- Added new async workflow function `process_cat_breed(entity_data: dict) -> dict`.
-- Passed `workflow=process_cat_breed` parameter to `entity_service.add_item` calls for `"cat_breed"` entity.
-- The workflow function modifies the entity data by adding a `"processed_at"` timestamp before persistence.
+### Explanation:
 
-Let me know if you want the workflow function to do something else or if you want me to add workflows for other entities too!
+- The **only job** of the `/api/cats/fetch-breeds` endpoint and its async job is to fetch the raw breed list and insert each breed with minimal data (id, name, description).
+- The **workflow `process_cat_breed`** then:
+  - Fetches the image URL asynchronously per breed.
+  - Adds/updates the entity dictionary with `"image_url"` and a `"processed_at"` timestamp.
+  - Returns the modified entity to be persisted.
+- This moves the async HTTP request for images out of the job and into the workflow function, fulfilling the requirement that async tasks related to an entity are in the workflow.
+- The controller and job code becomes **cleaner, simpler, and more focused** on just orchestrating entity persistence.
+
+---
+
+### Benefits:
+- No recursion risk (workflow does not add/delete/update same entity model).
+- All entity-specific async enrichment is isolated in workflow functions.
+- Controllers are free from async enrichment logic.
+- Easy to add more enrichment or supplementary data inside workflow functions in the future.
+- Clear separation of concerns.
+
+---
+
+If you have other entities needing similar async enrichment, you can apply the same pattern: create `process_{entity_name}` workflows that modify the entity before persistence.
+
+---
+
+Let me know if you want me to help with other entities or further improvements!

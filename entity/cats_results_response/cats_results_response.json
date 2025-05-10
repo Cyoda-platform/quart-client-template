@@ -1,0 +1,14 @@
+{
+    "data": [
+        {
+            "age": "young",
+            "breed": "Siamese",
+            "fact": "Siamese cats are vocal and affectionate.",
+            "id": "abc123",
+            "image_url": "https://example.com/cat.jpg",
+            "location": "New York"
+        }
+    ],
+    "request_id": "123e4567-e89b-12d3-a456-426614174000",
+    "status": "completed"
+}

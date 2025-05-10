@@ -1,0 +1,10 @@
+{
+    "favorites": [
+        {
+            "breed": "Siamese",
+            "cat_id": "abc123",
+            "image_url": "https://example.com/cat.jpg"
+        }
+    ],
+    "user_id": "user_001"
+}

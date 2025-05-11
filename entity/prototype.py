@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
@@ -6,7 +6,7 @@ from typing import Dict, Any
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -21,6 +21,21 @@ entity_job: Dict[str, Dict[str, Any]] = {}
 CAT_API_BASE = "https://api.thecatapi.com/v1"
 CAT_API_KEY = ""  # TODO: Insert your The Cat API key here or leave empty for limited access
 
+@dataclass
+class RandomCatsRequest:
+    count: int = 1
+
+@dataclass
+class BreedCatsRequest:
+    breed: str
+    count: int = 1
+
+@dataclass
+class FavoriteAddRequest:
+    cat_id: str = None
+    breed: str = None
+    image_url: str = None
+    fact: str = None
 
 async def fetch_random_cats(count: int = 1) -> Any:
     headers = {"x-api-key": CAT_API_KEY} if CAT_API_KEY else {}
@@ -50,7 +65,6 @@ async def fetch_random_cats(count: int = 1) -> Any:
         except Exception as e:
             logger.exception(e)
             return {"cats": []}
-
 
 async def fetch_cats_by_breed(breed: str, count: int = 1) -> Any:
     headers = {"x-api-key": CAT_API_KEY} if CAT_API_KEY else {}
@@ -90,7 +104,6 @@ async def fetch_cats_by_breed(breed: str, count: int = 1) -> Any:
             logger.exception(e)
             return {"cats": []}
 
-
 async def process_add_favorite(job_id: str, cat_data: Dict[str, Any]) -> None:
     try:
         # Simulate processing delay
@@ -103,41 +116,33 @@ async def process_add_favorite(job_id: str, cat_data: Dict[str, Any]) -> None:
         entity_job[job_id]["status"] = "failed"
         logger.exception(e)
 
-
 @app.route('/cats/random', methods=["POST"])
-async def post_cats_random():
-    data = await request.get_json(force=True, silent=True) or {}
-    count = data.get("count", 1)
-    result = await fetch_random_cats(count)
+@validate_request(RandomCatsRequest)  # Validation last in POST per workaround
+async def post_cats_random(data: RandomCatsRequest):
+    result = await fetch_random_cats(data.count)
     return jsonify(result)
-
 
 @app.route('/cats/breed', methods=["POST"])
-async def post_cats_breed():
-    data = await request.get_json(force=True, silent=True) or {}
-    breed = data.get("breed", "")
-    count = data.get("count", 1)
-    if not breed:
+@validate_request(BreedCatsRequest)  # Validation last in POST per workaround
+async def post_cats_breed(data: BreedCatsRequest):
+    if not data.breed:
         return jsonify({"cats": []}), 400
-    result = await fetch_cats_by_breed(breed, count)
+    result = await fetch_cats_by_breed(data.breed, data.count)
     return jsonify(result)
 
-
 @app.route('/favorites', methods=["GET"])
+# Validation first in GET (workaround for quart-schema issue)
 async def get_favorites():
     return jsonify({"favorites": list(favorites_cache.values())})
 
-
 @app.route('/favorites/add', methods=["POST"])
-async def post_favorites_add():
-    data = await request.get_json(force=True, silent=True) or {}
+@validate_request(FavoriteAddRequest)  # Validation last in POST per workaround
+async def post_favorites_add(data: FavoriteAddRequest):
     job_id = str(datetime.utcnow().timestamp())
     entity_job[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
     # Fire and forget the processing task
-    asyncio.create_task(process_add_favorite(job_id, data))
+    asyncio.create_task(process_add_favorite(job_id, data.__dict__))
     return jsonify({"message": "Cat add request received", "job_id": job_id})
-
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

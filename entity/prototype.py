@@ -1,12 +1,14 @@
-```python
+from dataclasses import dataclass
+from typing import Literal
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Union
+from typing import Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,32 +16,22 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+@dataclass
+class FetchRequest:
+    type: Literal["images", "facts", "breeds"]
+    count: int
+
 # In-memory cache to store fetched data
-# Structure:
-# {
-#   "images": [{id, url}],
-#   "facts": [{id, text}],
-#   "breeds": [{id, name, origin, description}]
-# }
 data_store: Dict[str, List[Dict]] = {
     "images": [],
     "facts": [],
     "breeds": []
 }
 
-# Simulated job tracking for fetch requests
 entity_jobs: Dict[str, Dict] = {}
-
-# Real external APIs chosen:
-# - Cat facts: https://catfact.ninja/fact (single random fact)
-# - Cat images: https://api.thecatapi.com/v1/images/search
-# - Cat breeds: https://api.thecatapi.com/v1/breeds
 
 CAT_API_BASE = "https://api.thecatapi.com/v1"
 CAT_FACT_API = "https://catfact.ninja/fact"
-
-# TODO: For thecatapi.com, you can optionally add an API key header if needed.
-# For prototype, it's optional and free tier allows some calls.
 
 
 async def fetch_cat_images(count: int) -> List[Dict]:
@@ -66,7 +58,6 @@ async def fetch_cat_facts(count: int) -> List[Dict]:
                 resp = await client.get(CAT_FACT_API)
                 resp.raise_for_status()
                 fact_json = resp.json()
-                # fact_json example: {"fact": "...", "length": 50}
                 results.append({"id": f"fact_{datetime.utcnow().timestamp()}", "text": fact_json.get("fact")})
             return results
         except Exception as e:
@@ -119,43 +110,23 @@ async def process_entity(job_id: str, data_type: str, count: int):
         entity_jobs[job_id]["status"] = "failed"
         logger.exception(f"Error processing job {job_id}: {e}")
 
-
 @app.route("/cats/fetch", methods=["POST"])
-async def cats_fetch():
-    """
-    Request JSON example:
-    {
-      "type": "images" | "facts" | "breeds",
-      "count": 1
-    }
-    """
-    try:
-        data = await request.get_json()
-        data_type = data.get("type")
-        count = data.get("count", 1)
+@validate_request(FetchRequest)  # Validation last for POST request (workaround issue)
+async def cats_fetch(data: FetchRequest):
+    job_id = f"job_{datetime.utcnow().timestamp()}"
+    entity_jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
 
-        if data_type not in ("images", "facts", "breeds"):
-            return jsonify({"status": "error", "message": "Invalid type parameter"}), 400
-        if not isinstance(count, int) or count < 1:
-            return jsonify({"status": "error", "message": "Count must be a positive integer"}), 400
+    asyncio.create_task(process_entity(job_id, data.type, data.count))
 
-        job_id = f"job_{datetime.utcnow().timestamp()}"
-        entity_jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
-
-        # Fire and forget the processing task
-        asyncio.create_task(process_entity(job_id, data_type, count))
-
-        return jsonify({
-            "status": "success",
-            "message": f"Cat data fetch started for {data_type}",
-            "job_id": job_id
-        })
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"status": "error", "message": "Internal server error"}), 500
+    return jsonify({
+        "status": "success",
+        "message": f"Cat data fetch started for {data.type}",
+        "job_id": job_id
+    })
 
 
 @app.route("/cats/images", methods=["GET"])
+# Validation first for GET requests (workaround issue)
 async def cats_images():
     return jsonify({"images": data_store["images"]})
 

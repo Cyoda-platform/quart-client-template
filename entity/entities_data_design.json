@@ -1,0 +1,33 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "filters": {
+                    "breed": "siamese",
+                    "limit": 5
+                },
+                "type": "facts"
+            },
+            "entity_name": "cat_data_request"
+        },
+        {
+            "entity_data_example": {
+                "data": [
+                    {
+                        "fact": "Cats have five toes on their front paws, but only four toes on their back paws."
+                    }
+                ],
+                "status": "success"
+            },
+            "entity_name": "cat_data_result"
+        },
+        {
+            "entity_data_example": {
+                "description": "My cute cat playing.",
+                "photo_url": "https://example.com/cat_photo.jpg",
+                "user_id": "user123"
+            },
+            "entity_name": "cat_photo_submission"
+        }
+    ]
+}

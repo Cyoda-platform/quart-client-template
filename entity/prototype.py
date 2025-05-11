@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,21 +15,33 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+
+@dataclass
+class CatDataRequestFilters:
+    breed: Optional[str] = None
+    limit: Optional[int] = 10
+
+
+@dataclass
+class CatDataRequest:
+    type: str
+    filters: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+
+@dataclass
+class CatPhotoSubmission:
+    user_id: str
+    photo_url: str
+    description: Optional[str] = None
+
+
 # In-memory local cache to mock persistence
 entity_job: Dict[str, Dict[str, Any]] = {}
 last_results_cache: Dict[str, Any] = {"data": []}
 
-# Real external APIs for cat data:
-# - Cat Facts: https://catfact.ninja/fact
-# - Cat Breeds: https://api.thecatapi.com/v1/breeds
-# - Cat Images: https://api.thecatapi.com/v1/images/search
-
 CAT_FACT_API = "https://catfact.ninja/fact"
 CAT_BREEDS_API = "https://api.thecatapi.com/v1/breeds"
 CAT_IMAGES_API = "https://api.thecatapi.com/v1/images/search"
-
-# TheCatAPI requires an API key for high usage, but allows some free requests without it.
-# TODO: Add API key if needed, for now we proceed without one.
 
 
 async def fetch_cat_fact(client: httpx.AsyncClient) -> Dict[str, Any]:
@@ -66,7 +79,6 @@ async def process_entity(job: Dict[str, Any], data: Dict[str, Any]):
 
             if cat_type == "facts":
                 results = []
-                # Fetch multiple facts by calling API multiple times (not ideal but this API returns one per call)
                 for _ in range(limit):
                     fact = await fetch_cat_fact(client)
                     results.append(fact)
@@ -78,7 +90,6 @@ async def process_entity(job: Dict[str, Any], data: Dict[str, Any]):
                 results = []
                 logger.warning(f"Unknown type requested: {cat_type}")
 
-            # Cache last results globally (for demo, no user separation)
             last_results_cache["data"] = results
             job["status"] = "completed"
             job["completedAt"] = datetime.utcnow().isoformat()
@@ -90,33 +101,29 @@ async def process_entity(job: Dict[str, Any], data: Dict[str, Any]):
 
 
 @app.route("/api/cats/data", methods=["POST"])
-async def post_cat_data():
-    data = await request.get_json(force=True)
+@validate_request(CatDataRequest)  # For POST requests, validation must be last (issue workaround)
+async def post_cat_data(data: CatDataRequest):
     job_id = datetime.utcnow().isoformat()
     entity_job[job_id] = {"status": "queued", "requestedAt": job_id}
 
-    # Fire and forget processing
-    asyncio.create_task(process_entity(entity_job[job_id], data))
+    asyncio.create_task(process_entity(entity_job[job_id], data.__dict__))
 
     return jsonify({"status": "accepted", "job_id": job_id}), 202
 
 
+# GET /api/cats/results does not take request parameters, so no validation needed
 @app.route("/api/cats/results", methods=["GET"])
 async def get_cat_results():
-    # Return last cached results
-    # TODO: Enhance to accept job_id or user_id for scoped results
     return jsonify({"status": "success", "data": last_results_cache["data"]})
 
 
 @app.route("/api/cats/submit-photo", methods=["POST"])
-async def post_cat_photo():
-    data = await request.get_json(force=True)
-    # Mock storing photo submission
-    logger.info(f"Received photo submission: user_id={data.get('user_id')}, photo_url={data.get('photo_url')}")
+@validate_request(CatPhotoSubmission)  # For POST requests, validation must be last (issue workaround)
+async def post_cat_photo(data: CatPhotoSubmission):
+    logger.info(f"Received photo submission: user_id={data.user_id}, photo_url={data.photo_url}")
     # TODO: Persist photo submissions in real storage
     return jsonify({"status": "success", "message": "Photo submitted"})
 
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

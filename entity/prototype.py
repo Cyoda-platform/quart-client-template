@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass
+from typing import Optional
 import asyncio
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -23,17 +24,20 @@ CAT_API_BASE = "https://api.thecatapi.com/v1"
 CAT_API_BREEDS = f"{CAT_API_BASE}/breeds"
 CAT_API_IMAGES_SEARCH = f"{CAT_API_BASE}/images/search"
 
-# For public access, TheCatAPI allows limited calls w/o key, no key used here for prototype.
-# TODO: If rate-limited, consider adding API key.
+@dataclass
+class FetchCatsRequest:
+    breed: Optional[str] = None
 
-# Utility: fetch breeds list from external API
+# For breeds POST no body expected; so no dataclass needed
+
+# --- External API utilities ---
+
 async def fetch_breeds() -> List[dict]:
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(CAT_API_BREEDS)
             resp.raise_for_status()
             breeds = resp.json()
-            # Normalize breeds info for cache
             normalized = []
             for b in breeds:
                 normalized.append(
@@ -49,7 +53,6 @@ async def fetch_breeds() -> List[dict]:
             logger.exception(e)
             return []
 
-# Utility: fetch cat images + breed info; can filter by breed id (TheCatAPI breed id)
 async def fetch_cats(breed: Optional[str] = None, limit: int = 25) -> List[dict]:
     async with httpx.AsyncClient() as client:
         try:
@@ -96,15 +99,10 @@ async def process_fetch_breeds():
 # --- Endpoint implementations ---
 
 @app.route("/cats/fetch", methods=["POST"])
-async def cats_fetch():
-    try:
-        data = await request.get_json(force=True)
-    except Exception:
-        data = {}
-
+@validate_request(FetchCatsRequest)  # POST validation goes last (after route) per quart-schema workaround
+async def cats_fetch(data: FetchCatsRequest):
     # Fire and forget processing task
-    await asyncio.create_task(process_fetch_cats(data))
-
+    await asyncio.create_task(process_fetch_cats(data.__dict__))
     return jsonify({
         "status": "success",
         "message": "Data fetch triggered, caching in progress",
@@ -112,6 +110,7 @@ async def cats_fetch():
     })
 
 @app.route("/cats", methods=["GET"])
+# GET validation must come first (workaround for quart-schema issue), but we have no query validation dataclass here because breed is optional and simple
 async def cats_get():
     breed = request.args.get("breed")
     if breed:
@@ -121,6 +120,7 @@ async def cats_get():
     return jsonify(filtered)
 
 @app.route("/cats/breeds", methods=["POST"])
+# No request body, so no validation decorator needed here
 async def breeds_fetch():
     await asyncio.create_task(process_fetch_breeds())
     return jsonify({
@@ -130,6 +130,7 @@ async def breeds_fetch():
     })
 
 @app.route("/cats/breeds", methods=["GET"])
+# GET with no query parameters, no validation needed
 async def breeds_get():
     return jsonify(breeds_cache)
 
@@ -141,4 +142,3 @@ if __name__ == "__main__":
                         format="%(asctime)s %(levelname)s %(message)s")
 
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

@@ -1,18 +1,3 @@
-Understood! We will refactor the code to move as much logic as possible from the endpoints and asynchronous tasks into the `process_{entity_name}` workflow functions. This will make controllers slimmer and delegate responsibility for enriching or supplementing data to these workflow functions.
-
-Key points for the refactor:
-
-- All data enrichment, fetching of supplementary data, adding related entities, and any async processing will move into the workflows.
-- The endpoints will mostly just call `entity_service.add_item()` with the raw entity data and the appropriate workflow function.
-- The workflows can asynchronously fetch and add other entities **except** for the current entity type (to avoid infinite recursion).
-- We will move the live-data fetching logic from the async job into workflows by submitting minimal entities to kick off the workflow process.
-- The workflows will also handle enrichment of favorites, by fetching related entities.
-
----
-
-### Refactored Code
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -57,44 +42,70 @@ class FavoriteRequest:
 
 # --- Workflow functions ---
 
+
 async def process_cat_image(entity: dict) -> dict:
-    """
-    Add processed timestamp.
-    """
+    # Add processed timestamp
     entity['processed_at'] = datetime.utcnow().isoformat()
     return entity
 
 
 async def process_cat_breed(entity: dict) -> dict:
-    """
-    Normalize breed name to title case.
-    """
+    # Normalize breed name to title case
     if 'name' in entity and isinstance(entity['name'], str):
         entity['name'] = entity['name'].title()
     return entity
 
 
 async def process_cat_fact(entity: dict) -> dict:
-    """
-    Append a source field.
-    """
+    # Append a source field
     entity['source'] = 'catfact.ninja'
     return entity
 
 
 async def process_cat_favorite(entity: dict) -> dict:
-    """
-    Add created timestamp.
-    """
+    # Add created timestamp
     entity['created_at'] = datetime.utcnow().isoformat()
+
+    fav_type = entity.get("type")
+    fav_id = entity.get("favorite_id")
+    try:
+        if fav_type == "image":
+            img_items = await entity_service.get_items_by_condition(
+                token=cyoda_auth_service,
+                entity_model="cat_image",
+                entity_version=ENTITY_VERSION,
+                condition={"id": fav_id}
+            )
+            if img_items:
+                img = img_items[0]
+                entity["image_info"] = {
+                    "id": img.get("id"),
+                    "url": img.get("url"),
+                    "breed": img.get("breed"),
+                }
+        elif fav_type == "breed":
+            breed_items = await entity_service.get_items_by_condition(
+                token=cyoda_auth_service,
+                entity_model="cat_breed",
+                entity_version=ENTITY_VERSION,
+                condition={"id": fav_id}
+            )
+            if breed_items:
+                breed = breed_items[0]
+                entity["breed_info"] = {
+                    "id": breed.get("id"),
+                    "name": breed.get("name"),
+                    "origin": breed.get("origin"),
+                    "description": breed.get("description"),
+                }
+    except Exception:
+        logger.exception(f"Failed to enrich favorite entity {entity}")
+
     return entity
 
 
 async def process_live_data(entity: dict) -> dict:
-    """
-    This workflow will handle fetching and persisting requested live data:
-    - entity contains keys: dataType (images|breeds|facts), filters (dict)
-    """
+    # This workflow handles fetching and persisting requested live data
     data_type = entity.get("dataType")
     filters = entity.get("filters", {})
 
@@ -114,7 +125,6 @@ async def process_live_data(entity: dict) -> dict:
             breed = filters.get("breed")
             images = await fetch_cat_images(limit=limit, breed=breed)
             for img in images:
-                # Add each image entity, with its own workflow
                 await entity_service.add_item(
                     token=cyoda_auth_service,
                     entity_model="cat_image",
@@ -169,63 +179,18 @@ async def process_live_data(entity: dict) -> dict:
         entity_jobs[job_id]["message"] = str(e)
         logger.exception(f"Error in live data workflow for job {job_id}: {e}")
 
-    # Store jobId in entity for reference
     entity["jobId"] = job_id
-    return entity
-
-
-async def process_cat_favorite(entity: dict) -> dict:
-    """
-    Add created timestamp, enrich favorite by retrieving related entity info asynchronously.
-    """
-    entity['created_at'] = datetime.utcnow().isoformat()
-
-    fav_type = entity.get("type")
-    fav_id = entity.get("favorite_id")
-    # Enrich favorite entity by fetching related entity info asynchronously
-    try:
-        if fav_type == "image":
-            img_items = await entity_service.get_items_by_condition(
-                token=cyoda_auth_service,
-                entity_model="cat_image",
-                entity_version=ENTITY_VERSION,
-                condition={"id": fav_id}
-            )
-            if img_items:
-                img = img_items[0]
-                entity["image_info"] = {
-                    "id": img.get("id"),
-                    "url": img.get("url"),
-                    "breed": img.get("breed"),
-                }
-        elif fav_type == "breed":
-            breed_items = await entity_service.get_items_by_condition(
-                token=cyoda_auth_service,
-                entity_model="cat_breed",
-                entity_version=ENTITY_VERSION,
-                condition={"id": fav_id}
-            )
-            if breed_items:
-                breed = breed_items[0]
-                entity["breed_info"] = {
-                    "id": breed.get("id"),
-                    "name": breed.get("name"),
-                    "origin": breed.get("origin"),
-                    "description": breed.get("description"),
-                }
-    except Exception:
-        logger.exception(f"Failed to enrich favorite entity {entity}")
-
     return entity
 
 
 # --- Helper async fetch functions used in workflows ---
 
+
 async def fetch_cat_images(limit: int = 10, breed: Optional[str] = None) -> List[Dict]:
     params = {"limit": limit}
     if breed:
         params["breed_ids"] = breed
-    headers = {"x-api-key": ""}  # TODO: Add your TheCatAPI key here if needed
+    headers = {"x-api-key": ""}
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(f"{CAT_API_BASE}/images/search", params=params, headers=headers)
@@ -285,20 +250,15 @@ async def fetch_cat_facts(limit: int = 5) -> List[str]:
 
 # --- Endpoints ---
 
+
 @app.route("/cats/live-data", methods=["POST"])
 @validate_request(LiveDataRequest)  # Validation last in POST (workaround issue)
 async def post_live_data(data: LiveDataRequest):
-    """
-    Accepts live data fetch request with filters.
-    The workflow will fetch and store the data asynchronously.
-    """
-    # Prepare minimal entity for workflow
     entity = {
         "dataType": data.dataType,
         "filters": data.filters or {},
     }
 
-    # Add entity with workflow that handles data fetching and persistence
     entity_id = await entity_service.add_item(
         token=cyoda_auth_service,
         entity_model="live_data",
@@ -316,9 +276,6 @@ async def post_live_data(data: LiveDataRequest):
 
 @app.route("/cats/images", methods=["GET"])
 async def get_cat_images():
-    """
-    Returns stored cat images.
-    """
     try:
         items = await entity_service.get_items(
             token=cyoda_auth_service,
@@ -333,9 +290,6 @@ async def get_cat_images():
 
 @app.route("/cats/breeds", methods=["GET"])
 async def get_cat_breeds():
-    """
-    Returns stored cat breeds.
-    """
     try:
         items = await entity_service.get_items(
             token=cyoda_auth_service,
@@ -350,16 +304,12 @@ async def get_cat_breeds():
 
 @app.route("/cats/facts", methods=["GET"])
 async def get_cat_facts():
-    """
-    Returns stored cat facts.
-    """
     try:
         items = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model="cat_fact",
             entity_version=ENTITY_VERSION,
         )
-        # Each item expected to be {"fact": "..."} - flatten to list of facts
         facts = [item.get("fact") for item in items if "fact" in item]
         return jsonify({"facts": facts})
     except Exception as e:
@@ -370,9 +320,6 @@ async def get_cat_facts():
 @app.route("/cats/favorites", methods=["POST"])
 @validate_request(FavoriteRequest)  # Validation last in POST (workaround issue)
 async def post_favorites(data: FavoriteRequest):
-    """
-    Store user favorite, workflow will enrich favorite entity.
-    """
     favorite_obj = {
         "user_id": data.userId,
         "type": data.favoriteType,
@@ -395,9 +342,6 @@ async def post_favorites(data: FavoriteRequest):
 
 @app.route("/cats/favorites", methods=["GET"])
 async def get_favorites():
-    """
-    Retrieve and return user favorites with enrichment.
-    """
     user_id = request.args.get("userId")
     if not user_id:
         return jsonify({"status": "error", "message": "Missing userId query parameter"}), 400
@@ -421,21 +365,3 @@ if __name__ == '__main__':
     import logging
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation
-
-- The `/cats/live-data` endpoint now simply submits a minimal entity with `dataType` and `filters` to `entity_service.add_item` with workflow `process_live_data` which asynchronously fetches data from external APIs and persists those entities.
-- The workflows `process_cat_image`, `process_cat_breed`, and `process_cat_fact` handle minor enrichment of their respective entities.
-- The workflow `process_cat_favorite` enriches favorite entities by fetching related image or breed info asynchronously and attaching it to the favorite entity.
-- The `/cats/favorites` GET endpoint returns fully enriched favorite entities that already contain related info because enrichment happens in the workflow.
-- Removed all async tasks or extra logic from controllers; they now just call `add_item` with the appropriate workflow.
-- Helper async fetch functions remain but are only called from workflows.
-
----
-
-This approach keeps your controllers clean and moves all async processing to the new workflow functions, which is the right design you described.
-
-Let me know if you want me to help with testing or any further improvements!

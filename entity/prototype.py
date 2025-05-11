@@ -1,18 +1,31 @@
-```python
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+
+@dataclass
+class CatDataRequest:
+    type: str
+    filters: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+
+@dataclass
+class RandomCatRequest:
+    includeImage: Optional[bool] = True
+
 
 # In-memory cache for storing last fetched data
 cached_cat_data = {
@@ -39,7 +52,6 @@ if CAT_API_KEY:
 
 
 async def fetch_cat_facts(limit: int = 10, breed: Optional[str] = None, age: Optional[str] = None):
-    # The catfact.ninja API does not support filtering by breed or age, so we ignore those filters here
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(CAT_FACTS_API, params={"limit": limit})
@@ -71,7 +83,6 @@ async def fetch_cat_images(limit: int = 10, breed_filter: Optional[str] = None):
         async with httpx.AsyncClient() as client:
             params = {"limit": limit}
             if breed_filter:
-                # TheCatAPI allows filtering images by breed_id but we need to map breed name to id first
                 # TODO: implement breed name to id mapping for filtering images
                 pass
             resp = await client.get(CAT_IMAGES_API, headers=headers, params=params)
@@ -114,10 +125,10 @@ async def process_cat_data(request_id: str, data_type: str, filters: dict):
 
 
 @app.route("/cats/data", methods=["POST"])
-async def post_cats_data():
-    data = await request.get_json(force=True)
-    data_type = data.get("type")
-    filters = data.get("filters", {})
+@validate_request(CatDataRequest)  # Validation last in POST - known quart-schema issue workaround
+async def post_cats_data(data: CatDataRequest):
+    data_type = data.type
+    filters = data.filters or {}
 
     if data_type not in {"facts", "images", "breeds"}:
         return jsonify({"status": "error", "message": "Invalid type specified"}), 400
@@ -131,6 +142,7 @@ async def post_cats_data():
     return jsonify({"status": "processing", "job_id": request_id})
 
 
+# No request parameters to validate for GET /cats/results, so no validation decorator here
 @app.route("/cats/results", methods=["GET"])
 async def get_cats_results():
     # Returns cached cat data for all types
@@ -145,10 +157,11 @@ async def get_cats_results():
     })
 
 
+# Validation first in POST - known quart-schema issue workaround
 @app.route("/cats/random", methods=["POST"])
-async def post_cats_random():
-    data = await request.get_json(force=True) or {}
-    include_image = data.get("includeImage", True)
+@validate_request(RandomCatRequest)
+async def post_cats_random(data: RandomCatRequest):
+    include_image = data.includeImage if data.includeImage is not None else True
 
     try:
         # Fetch one random fact
@@ -173,4 +186,3 @@ async def post_cats_random():
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

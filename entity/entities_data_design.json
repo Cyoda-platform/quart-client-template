@@ -1,0 +1,35 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "breed": "Siamese",
+                "id": "abc123",
+                "url": "https://example.com/cat.jpg"
+            },
+            "entity_name": "cat_image"
+        },
+        {
+            "entity_data_example": {
+                "description": "A medium-sized, slender cat known for its striking blue eyes and vocal nature.",
+                "id": "b1",
+                "name": "Siamese",
+                "origin": "Thailand"
+            },
+            "entity_name": "cat_breed"
+        },
+        {
+            "entity_data_example": {
+                "fact": "Cats sleep 12-16 hours a day."
+            },
+            "entity_name": "cat_fact"
+        },
+        {
+            "entity_data_example": {
+                "favorite_id": "abc123",
+                "type": "image",
+                "user_id": "user123"
+            },
+            "entity_name": "cat_favorite"
+        }
+    ]
+}

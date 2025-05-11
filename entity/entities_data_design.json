@@ -1,0 +1,22 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "description": "The Abyssinian is a breed of domestic cat with a distinctive ticked coat.",
+                "id": "abc123",
+                "image_url": "https://cdn2.thecatapi.com/images/abc123.jpg",
+                "name": "Abyssinian"
+            },
+            "entity_name": "cat"
+        },
+        {
+            "entity_data_example": {
+                "description": "The Abyssinian is a breed of domestic cat with a distinctive ticked coat.",
+                "id": "abys",
+                "name": "Abyssinian",
+                "origin": "Ethiopia"
+            },
+            "entity_name": "breed"
+        }
+    ]
+}

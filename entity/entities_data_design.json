@@ -1,0 +1,41 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "filters": {
+                    "age": "young",
+                    "breed": "siamese",
+                    "limit": 5
+                },
+                "type": "facts"
+            },
+            "entity_name": "cat_data_request"
+        },
+        {
+            "entity_data_example": {
+                "includeImage": true
+            },
+            "entity_name": "random_cat_request"
+        },
+        {
+            "entity_data_example": {
+                "data": [
+                    "Cats have five toes on their front paws, but only four toes on their back paws.",
+                    "Cats sleep for 70% of their lives."
+                ],
+                "status": "success"
+            },
+            "entity_name": "cat_data_response"
+        },
+        {
+            "entity_data_example": {
+                "cat": {
+                    "fact": "Cats have five toes on their front paws, but only four toes on their back paws.",
+                    "image": "https://cdn2.thecatapi.com/images/MTY3ODIyMQ.jpg"
+                },
+                "status": "success"
+            },
+            "entity_name": "random_cat_response"
+        }
+    ]
+}

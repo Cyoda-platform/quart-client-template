@@ -1,6 +1,30 @@
-Certainly! I've updated the code to include the new `workflow` parameter in the calls to `entity_service.add_item`. I also implemented the required workflow functions for each entity model. These workflow functions have the prefix `process_` followed by the underscore-lowercase entity name, as specified.
+Understood. I'll refactor the code to move all asynchronous logic from the endpoints into the respective `process_{entity_name}` workflow functions. This includes:
 
-Here is the complete updated code with the workflow functions added and used accordingly:
+- For `cat_data_request`:
+  - Move the entire async processing task (`process_entity`) launch into the workflow function.
+  - The endpoint will just call `entity_service.add_item` with the workflow; no additional logic.
+
+- For `cat_photo_submission`:
+  - Keep any processing in the workflow function.
+  - Endpoint will be simple and only call `entity_service.add_item` with the workflow.
+
+- For `cat_data_result` (GET endpoint), since it just fetches data synchronously from `entity_service.get_items`, no workflow applies here.
+
+---
+
+### Key points:
+
+- Workflow functions are async, take the entity dict, and can modify it directly.
+
+- We can get/add other entities (different entity_models) inside workflow functions.
+
+- We **cannot** call `entity_service.add/update/delete` on the same entity_model inside its workflow (to avoid recursion).
+
+- Fire-and-forget async tasks should be launched inside workflow functions.
+
+---
+
+### Here's the fully refactored code:
 
 ```python
 from dataclasses import dataclass, field
@@ -47,7 +71,7 @@ class CatPhotoSubmission:
     description: Optional[str] = None
 
 
-# In-memory local cache to mock persistence
+# In-memory local cache to mock persistence for jobs
 entity_job: Dict[str, Dict[str, Any]] = {}
 last_results_cache: Dict[str, Any] = {"data": []}
 
@@ -80,6 +104,7 @@ async def fetch_cat_images(client: httpx.AsyncClient, limit: int = 1) -> Any:
 
 
 async def process_entity(job: Dict[str, Any], data: Dict[str, Any]):
+    """This function is now internal only, called by workflow."""
     try:
         job["status"] = "processing"
         job["startedAt"] = datetime.utcnow().isoformat()
@@ -112,15 +137,16 @@ async def process_entity(job: Dict[str, Any], data: Dict[str, Any]):
         logger.exception(e)
 
 
-# Workflow function for cat_data_request (entity_model = "cat_data_request")
+# === Workflow functions ===
+
 async def process_cat_data_request(entity: Dict[str, Any]):
     """
     Workflow function that processes a cat_data_request entity before persistence.
-    It creates a job in the local cache and launches the async processing task.
+    Creates a job in local cache and launches the async processing task.
     """
+    # Generate or use existing job_id
     job_id = entity.get("job_id")
     if not job_id:
-        # Generate a job id, e.g. timestamp-based or UUID
         import uuid
         job_id = str(uuid.uuid4())
         entity["job_id"] = job_id
@@ -132,24 +158,24 @@ async def process_cat_data_request(entity: Dict[str, Any]):
         "entity": entity,
     }
 
-    # Launch async processing task (do not await here)
+    # Fire-and-forget async processing task
     asyncio.create_task(process_entity(entity_job[job_id], entity))
 
 
-# Workflow function for cat_photo_submission (entity_model = "cat_photo_submission")
 async def process_cat_photo_submission(entity: Dict[str, Any]):
     """
-    Workflow function for cat_photo_submission.
-    For example, enrich description if missing or log submission.
+    Workflow function for cat_photo_submission entity.
+    Adds a submission timestamp and logs the submission.
     """
-    # Example: Add a timestamp if not present
     if "submittedAt" not in entity:
         entity["submittedAt"] = datetime.utcnow().isoformat()
     logger.info(f"Processing cat_photo_submission for user {entity.get('user_id')}")
 
 
+# === API endpoints ===
+
 @app.route("/api/cats/data", methods=["POST"])
-@validate_request(CatDataRequest)  # For POST requests, validation must be last (issue workaround)
+@validate_request(CatDataRequest)  # Validation last for POST requests (issue workaround)
 async def post_cat_data(data: CatDataRequest):
     try:
         id = await entity_service.add_item(
@@ -157,7 +183,7 @@ async def post_cat_data(data: CatDataRequest):
             entity_model="cat_data_request",
             entity_version=ENTITY_VERSION,
             entity=data.__dict__,
-            workflow=process_cat_data_request  # Passing the workflow function
+            workflow=process_cat_data_request
         )
         return jsonify({"status": "accepted", "id": id}), 202
     except Exception as e:
@@ -165,11 +191,9 @@ async def post_cat_data(data: CatDataRequest):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# GET /api/cats/results does not take request parameters, so no validation needed
 @app.route("/api/cats/results", methods=["GET"])
 async def get_cat_results():
     try:
-        # Using get_items without condition to fetch all results
         items = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model="cat_data_result",
@@ -182,16 +206,15 @@ async def get_cat_results():
 
 
 @app.route("/api/cats/submit-photo", methods=["POST"])
-@validate_request(CatPhotoSubmission)  # For POST requests, validation must be last (issue workaround)
+@validate_request(CatPhotoSubmission)  # Validation last for POST requests (issue workaround)
 async def post_cat_photo(data: CatPhotoSubmission):
-    logger.info(f"Received photo submission: user_id={data.user_id}, photo_url={data.photo_url}")
     try:
         id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="cat_photo_submission",
             entity_version=ENTITY_VERSION,
             entity=data.__dict__,
-            workflow=process_cat_photo_submission  # Passing the workflow function
+            workflow=process_cat_photo_submission
         )
         return jsonify({"status": "success", "id": id})
     except Exception as e:
@@ -205,18 +228,18 @@ if __name__ == '__main__':
 
 ---
 
-### Summary of changes:
+### What changed
 
-- Added two workflow functions:
-  - `process_cat_data_request` for `"cat_data_request"` entities.
-  - `process_cat_photo_submission` for `"cat_photo_submission"` entities.
+- All async logic related to processing the entity data (job creation, async task launching, enrichment) moved into the `process_{entity_name}` workflow functions.
 
-- These functions are passed as the `workflow` argument to `entity_service.add_item` in the respective endpoints.
+- Endpoints now only call `entity_service.add_item` with the workflow function; no processing logic remains in the endpoints.
 
-- The workflow functions are asynchronous and take the entity dictionary as the only argument.
+- This makes controllers thin and delegates business logic to workflow functions that are guaranteed to run before persistence.
 
-- The `process_cat_data_request` workflow creates a job in the local cache and launches the async job processor `process_entity`.
+- `process_entity` is an internal helper launched by the workflow for `cat_data_request`.
 
-- The `process_cat_photo_submission` workflow adds a submission timestamp and logs the submission.
+---
 
-If you have any other entity_models that need workflows, you can add similarly named `process_{entity_name}` functions and pass them accordingly.
+This approach fully complies with your requirement that **all async tasks (including fire-and-forget) be moved into the workflow functions** and that the controller logic be minimal.
+
+If you want me to help further refactor or add more workflows, just ask!

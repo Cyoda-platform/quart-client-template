@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass
+from typing import Optional, Dict
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -19,6 +20,24 @@ cached_cats: List[Dict] = []
 
 # Entity job tracking (simulate async job processing)
 entity_jobs: Dict[str, Dict] = {}
+
+@dataclass
+class Filters:
+    breed: Optional[str] = None
+    limit: Optional[int] = 10
+
+@dataclass
+class Search:
+    breed: Optional[str] = None
+    name: Optional[str] = None
+
+@dataclass
+class LiveDataRequest:
+    filters: Optional[Filters] = None
+
+@dataclass
+class SearchRequest:
+    search: Optional[Search] = None
 
 
 async def fetch_live_cat_data(filters: Dict) -> List[Dict]:
@@ -105,16 +124,11 @@ async def process_live_data_job(job_id: str, filters: Dict):
         entity_jobs[job_id]["error"] = str(e)
         logger.exception(f"Job {job_id} failed: {e}")
 
-
+# POST /cats/live-data
 @app.route("/cats/live-data", methods=["POST"])
-async def post_live_data():
-    """
-    POST /cats/live-data
-    Request JSON: {"filters": {"breed": str (optional), "limit": int (optional)}}
-    Response: cats list fetched live, also cached internally
-    """
-    data = await request.get_json(force=True)
-    filters = data.get("filters", {})
+@validate_request(LiveDataRequest)  # validation last on POST endpoints (issue workaround)
+async def post_live_data(data: LiveDataRequest):
+    filters = data.filters.__dict__ if data.filters else {}
 
     job_id = datetime.utcnow().isoformat()  # simple job id, can be improved
     entity_jobs[job_id] = {"status": "processing", "requestedAt": job_id}
@@ -125,24 +139,20 @@ async def post_live_data():
     return jsonify({"job_id": job_id, "status": "processing"}), 202
 
 
+# GET /cats - no request parameters, no validation needed
 @app.route("/cats", methods=["GET"])
 async def get_cats():
     """
-    GET /cats
     Return the cached cats data.
     """
     return jsonify({"cats": cached_cats})
 
 
+# POST /cats/search
 @app.route("/cats/search", methods=["POST"])
-async def post_cats_search():
-    """
-    POST /cats/search
-    Request JSON: {"search": {"breed": str (optional), "name": str (optional)}}
-    Response: filtered cats list from cached data
-    """
-    data = await request.get_json(force=True)
-    search = data.get("search", {})
+@validate_request(SearchRequest)  # validation last on POST endpoints (issue workaround)
+async def post_cats_search(data: SearchRequest):
+    search = data.search.__dict__ if data.search else {}
     breed_filter = search.get("breed")
     name_filter = search.get("name")
 
@@ -169,4 +179,3 @@ if __name__ == "__main__":
     )
 
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

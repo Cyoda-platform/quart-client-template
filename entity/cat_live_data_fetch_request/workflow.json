@@ -1,0 +1,78 @@
+{
+    "description": "Workflow to fetch live cat data, handle status updates, and store results.",
+    "name": "cat_live_data_fetch_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Mark the request as processing with timestamp.",
+            "end_state": "Processing",
+            "end_state_description": "Request is marked as processing",
+            "name": "start_request_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_requested"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch live cat data and temporarily store in entity.",
+            "end_state": "Fetched",
+            "end_state_description": "Live cat data fetched",
+            "name": "fetch_live_cats",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_cats"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Request is marked as processing"
+        },
+        {
+            "automated": true,
+            "description": "Update entity status to completed with result count and timestamp.",
+            "end_state": "Completed",
+            "end_state_description": "Request completed successfully",
+            "name": "complete_request_success",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_status_completed"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Fetched",
+            "start_state_description": "Live cat data fetched"
+        },
+        {
+            "automated": true,
+            "description": "Update entity status to failed with error message.",
+            "end_state": "Failed",
+            "end_state_description": "Request failed",
+            "name": "fail_request",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_status_failed"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Request is marked as processing"
+        }
+    ]
+}

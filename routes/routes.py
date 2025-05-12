@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from typing import Optional, Literal, List
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
-import httpx
+from typing import Optional, Literal
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 import logging
 from datetime import datetime
 from app_init.app_init import BeanFactory
@@ -11,8 +10,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -32,7 +30,7 @@ class CatsDataRequest:
 class FavoriteCatRequest:
     cat_id: str
 
-@app.route("/cats/data", methods=["POST"])
+@routes_bp.route("/cats/data", methods=["POST"])
 @validate_request(CatsDataRequest)
 async def post_cats_data(data: CatsDataRequest):
     entity_data = data.__dict__
@@ -50,7 +48,7 @@ async def post_cats_data(data: CatsDataRequest):
         logger.exception("Failed to add cats entity")
         return jsonify({"error": "Failed to start cats data processing"}), 500
 
-@app.route("/cats", methods=["GET"])
+@routes_bp.route("/cats", methods=["GET"])
 async def get_cats():
     try:
         items = await entity_service.get_items(
@@ -73,7 +71,7 @@ async def get_cats():
         logger.exception("Error retrieving cats data")
         return jsonify({"cats": [], "message": "Error retrieving cats data."}), 500
 
-@app.route("/cats/favorite", methods=["POST"])
+@routes_bp.route("/cats/favorite", methods=["POST"])
 @validate_request(FavoriteCatRequest)
 async def post_favorite_cat(data: FavoriteCatRequest):
     cat_id = data.cat_id
@@ -101,8 +99,3 @@ async def post_favorite_cat(data: FavoriteCatRequest):
     except Exception as e:
         logger.exception("Error validating cat_id")
         return jsonify({"status": "failure", "message": "Error validating cat_id"}), 500
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

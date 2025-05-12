@@ -1,18 +1,36 @@
-```python
+from dataclasses import dataclass
+from typing import List, Optional
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import List, Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data classes for validation
+
+@dataclass
+class PetSearch:
+    type: Optional[str] = None
+    status: Optional[str] = None
+    name: Optional[str] = None
+
+@dataclass
+class FavoritePet:
+    petId: int
+
+@dataclass
+class AdoptionStatusRequest:
+    petIds: List[int]
+
 
 # Local in-memory caches / mocks
 favorite_pet_ids: set[int] = set()
@@ -92,10 +110,11 @@ async def calculate_adoption_status(pet_ids: List[int]) -> List[dict]:
 # Routes
 
 
+# POST endpoint - validation last due to quart-schema issue workaround
 @app.route("/pets/search", methods=["POST"])
-async def pets_search():
-    data = await request.get_json(force=True)
-    key = _filter_key(data)
+@validate_request(PetSearch)
+async def pets_search(data: PetSearch):
+    key = _filter_key(data.__dict__)
 
     if key in search_cache:
         logger.info("Returning cached search result")
@@ -103,7 +122,7 @@ async def pets_search():
 
     # Fire and forget processing task to fetch and cache pets
     async def process_search():
-        pets = await fetch_pets_from_petstore(data)
+        pets = await fetch_pets_from_petstore(data.__dict__)
         search_cache[key] = pets
 
     asyncio.create_task(process_search())
@@ -111,17 +130,16 @@ async def pets_search():
     return jsonify({"message": "Search initiated, results will be cached shortly"}), 202
 
 
+# POST endpoint - validation last due to quart-schema issue workaround
 @app.route("/pets/favorite", methods=["POST"])
-async def pets_favorite():
-    data = await request.get_json(force=True)
-    pet_id = data.get("petId")
-    if not isinstance(pet_id, int):
-        return jsonify({"error": "petId must be an integer"}), 400
-
+@validate_request(FavoritePet)
+async def pets_favorite(data: FavoritePet):
+    pet_id = data.petId
     favorite_pet_ids.add(pet_id)
     return jsonify({"message": "Pet added to favorites", "favoritePetIds": list(favorite_pet_ids)})
 
 
+# GET endpoint - validation first due to quart-schema issue workaround
 @app.route("/pets/favorites", methods=["GET"])
 async def pets_favorites():
     if not favorite_pet_ids:
@@ -153,12 +171,11 @@ async def pets_favorites():
     return jsonify({"pets": pets})
 
 
+# POST endpoint - validation last due to quart-schema issue workaround
 @app.route("/pets/adoption-status", methods=["POST"])
-async def pets_adoption_status():
-    data = await request.get_json(force=True)
-    pet_ids = data.get("petIds")
-    if not isinstance(pet_ids, list) or not all(isinstance(pid, int) for pid in pet_ids):
-        return jsonify({"error": "petIds must be a list of integers"}), 400
+@validate_request(AdoptionStatusRequest)
+async def pets_adoption_status(data: AdoptionStatusRequest):
+    pet_ids = data.petIds
 
     # Fire and forget caching adoption statuses
     async def process_adoption():

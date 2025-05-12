@@ -1,0 +1,16 @@
+{
+    "entity_models": [
+        {
+            "entity_model_name": "pet_search",
+            "workflow_function": {
+                "code_with_necessary_imports_and_constants": "from datetime import datetime\nimport hashlib\nimport time",
+                "content": "async def process_pet_search(entity: dict):\n    filters = {\n        \"type\": entity.get(\"type\"),\n        \"status\": entity.get(\"status\"),\n        \"name\": entity.get(\"name\"),\n    }\n    pets = await fetch_pets_from_petstore(filters)\n\n    # entity might not have 'id' yet, generate unique id for cache entity\n    # Use current timestamp + filters hash as fallback cache key\n    cache_key = entity.get(\"id\")\n    if not cache_key:\n        import hashlib\n        import time\n\n        key_str = f\"{datetime.utcnow().isoformat()}_{str(sorted(filters.items()))}\"\n        cache_key = hashlib.sha256(key_str.encode()).hexdigest()\n\n    cache_entity = {\n        \"searchId\": cache_key,\n        \"filters\": filters,\n        \"pets\": pets,\n        \"cachedAt\": datetime.utcnow().isoformat() + \"Z\",\n    }\n    try:\n        await entity_service.add_item(\n            token=cyoda_auth_service,\n            entity_model=\"pet_search_result\",\n            entity_version=ENTITY_VERSION,\n            entity=cache_entity,\n        )\n    except Exception as e:\n        logger.error(f\"Failed to save pet_search_result entity: {e}\")",
+                "name": "process_pet_search"
+            }
+        },
+        "entity_model_name\":\"favorite_pet",
+        "workflow_function\":{\"name\":\"process_favorite_pet",
+        "content\":\"async def process_favorite_pet(entity: dict):\n    # Add ISO8601 UTC timestamp\n    entity[\"addedAt\"] = datetime.utcnow().isoformat() + \"Z\"",
+        "code_with_necessary_imports_and_constants\":\"from datetime import datetime\"}},"
+    ]
+}

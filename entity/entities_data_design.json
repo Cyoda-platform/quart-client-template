@@ -1,0 +1,15 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "age": 3,
+                "breed": "Siamese",
+                "description": "A playful Siamese cat.",
+                "id": "12345",
+                "imageUrl": "http://example.com/images/whiskers.jpg",
+                "name": "Whiskers"
+            },
+            "entity_name": "cat"
+        }
+    ]
+}

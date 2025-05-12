@@ -1,4 +1,5 @@
-```python
+from dataclasses import dataclass
+from typing import Optional
 import asyncio
 import datetime
 import logging
@@ -6,7 +7,7 @@ from typing import Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -24,6 +25,13 @@ entity_job: Dict[str, dict] = {}
 API_KEY = "test"
 API_URL_TEMPLATE = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key=" + API_KEY
 
+@dataclass
+class SubscribeData:
+    email: str
+
+@dataclass
+class FetchScoresData:
+    date: str
 
 async def fetch_nba_scores(date: str) -> List[dict]:
     url = API_URL_TEMPLATE.format(date=date)
@@ -38,7 +46,6 @@ async def fetch_nba_scores(date: str) -> List[dict]:
             logger.exception(f"Failed to fetch NBA scores for {date}: {e}")
             return []
 
-
 async def send_email_notification(to_emails: List[str], date: str, games: List[dict]) -> None:
     # TODO: Implement real email sending logic
     # For prototype, we just log the notification
@@ -49,7 +56,6 @@ async def send_email_notification(to_emails: List[str], date: str, games: List[d
         summary += f"{g.get('AwayTeam')} at {g.get('HomeTeam')}: {g.get('AwayTeamScore')} - {g.get('HomeTeamScore')} ({g.get('Status')})\n"
     # Log summary instead of sending email
     logger.info(f"Email content:\n{summary}")
-
 
 async def process_fetch_store_notify(job_id: str, date: str):
     try:
@@ -67,11 +73,11 @@ async def process_fetch_store_notify(job_id: str, date: str):
         logger.exception(f"Error processing fetch-store-notify job {job_id} for date {date}: {e}")
         entity_job[job_id]["status"] = "failed"
 
-
+# POST - validate_request placed after route decorator (last) - per library issue workaround
 @app.route("/subscribe", methods=["POST"])
-async def subscribe():
-    data = await request.get_json()
-    email = data.get("email")
+@validate_request(SubscribeData)
+async def subscribe(data: SubscribeData):
+    email = data.email
     if not email or not isinstance(email, str):
         return jsonify({"error": "Invalid email"}), 400
     if email in subscribers:
@@ -80,15 +86,14 @@ async def subscribe():
     logger.info(f"New subscription: {email}")
     return jsonify({"message": "Subscription successful", "email": email}), 201
 
-
+# GET - no validation needed for this endpoint as per instruction
 @app.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     return jsonify({"subscribers": list(subscribers)}), 200
 
-
+# GET - no request body or query params validation (optional pagination via query params)
 @app.route("/games/all", methods=["GET"])
 async def get_all_games():
-    # Basic pagination support via query params
     try:
         page = int(request.args.get("page", 1))
         limit = int(request.args.get("limit", 20))
@@ -107,10 +112,9 @@ async def get_all_games():
         "total": len(all_games),
     }), 200
 
-
+# GET - no validation needed for path param, but we validate date format inside
 @app.route("/games/<date>", methods=["GET"])
 async def get_games_by_date(date: str):
-    # Validate date format YYYY-MM-DD
     try:
         datetime.datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
@@ -118,14 +122,12 @@ async def get_games_by_date(date: str):
     games = games_storage.get(date, [])
     return jsonify({"date": date, "games": games}), 200
 
-
+# POST - validate_request placed after route decorator (last) - per library issue workaround
 @app.route("/fetch-scores", methods=["POST"])
-async def fetch_scores():
-    data = await request.get_json()
-    date = data.get("date")
-    # Validate date format YYYY-MM-DD
-    if not date:
-        return jsonify({"error": "Missing date field"}), 400
+@validate_request(FetchScoresData)
+async def fetch_scores(data: FetchScoresData):
+    date = data.date
+    # Validate date format YYYY-MM-DD just in case
     try:
         datetime.datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
@@ -136,11 +138,9 @@ async def fetch_scores():
         "status": "queued",
         "requestedAt": datetime.datetime.utcnow().isoformat(),
     }
-    # Fire and forget processing task
     asyncio.create_task(process_fetch_store_notify(job_id, date))
 
     return jsonify({"message": "Scores fetch started", "job_id": job_id}), 202
-
 
 if __name__ == '__main__':
     import sys

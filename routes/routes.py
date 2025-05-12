@@ -5,8 +5,8 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,26 +14,29 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class Filters:
     breed: Optional[str] = None
     limit: Optional[int] = 10
 
+
 @dataclass
 class LiveDataRequest:
     filters: Optional[Filters] = None
+
 
 @dataclass
 class Search:
     breed: Optional[str] = None
     name: Optional[str] = None
+
 
 @dataclass
 class SearchRequest:
@@ -170,7 +173,7 @@ async def process_cat_live_data_fetch_request(entity: Dict) -> Dict:
     return entity
 
 
-@app.route("/cats/live-data", methods=["POST"])
+@routes_bp.route("/cats/live-data", methods=["POST"])
 @validate_request(LiveDataRequest)
 async def post_live_data(data: LiveDataRequest):
     filters = data.filters.__dict__ if data.filters else {}
@@ -189,7 +192,7 @@ async def post_live_data(data: LiveDataRequest):
     return jsonify({"job_id": entity_id, "status": "processing"}), 202
 
 
-@app.route("/cats", methods=["GET"])
+@routes_bp.route("/cats", methods=["GET"])
 async def get_cats():
     try:
         cats = await entity_service.get_items(
@@ -204,7 +207,7 @@ async def get_cats():
     return jsonify({"cats": cats})
 
 
-@app.route("/cats/search", methods=["POST"])
+@routes_bp.route("/cats/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def post_cats_search(data: SearchRequest):
     search = data.search.__dict__ if data.search else {}
@@ -231,16 +234,3 @@ async def post_cats_search(data: SearchRequest):
     results = [cat for cat in cats if matches(cat)]
 
     return jsonify({"results": results})
-
-
-if __name__ == "__main__":
-    import sys
-    import logging.config
-
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-        level=logging.INFO,
-        stream=sys.stdout,
-    )
-
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

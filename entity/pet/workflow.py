@@ -36,10 +36,19 @@ async def process_update(entity: Dict[str, Any]):
                 if k not in entity:
                     entity[k] = v
 
+async def process_initial_setup(entity: Dict[str, Any]):
+    # This process simulates initial setup and local launch preparations for the client application
+    # Add a timestamp to indicate setup start
+    entity["initialSetupStartedAt"] = datetime.utcnow().isoformat()
+    # Simulate setup steps by adding a status attribute
+    entity["clientAppStatus"] = "Setup initiated locally"
+    # TODO: Add real setup logic if needed, e.g. environment checks, config validations
+
 async def process_pet(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
     Workflow function applied to pet entity before persistence.
-    Handles async tasks such as enrichment, validation, supplement data fetching.
+    Handles async tasks such as enrichment, validation, supplement data fetching,
+    and initial client app setup.
     """
     action = entity.get("action")
 
@@ -54,6 +63,8 @@ async def process_pet(entity: Dict[str, Any]) -> Dict[str, Any]:
         await process_add(entity)
     elif action == "update":
         await process_update(entity)
+    elif action == "initial_setup":
+        await process_initial_setup(entity)
     # For other actions or no action: just add processedAt timestamp
 
     return entity

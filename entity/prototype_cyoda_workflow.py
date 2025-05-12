@@ -1,47 +1,3 @@
-Absolutely, moving logic from the endpoint into the `process_{entity_name}` workflow functions is a great design choice. It keeps controllers thin, centralizes business logic related to entity processing, and leverages the asynchronous capabilities of workflow functions.
-
----
-
-### What to move?
-
-- **Entity validation/fetching from external APIs** related to the entity before persisting it.
-- **Enriching or modifying the entity state** based on external data.
-- **Additional asynchronous tasks** that relate to the entity but should happen before persistence.
-
----
-
-### What to NOT do inside `process_{entity_name}`?
-
-- Do not create/update/delete the same entity model (to avoid infinite recursion).
-- Only modify the entity argument directly.
-- You may get/add other entities of *different* entity models if needed.
-
----
-
-### Applying this to your code
-
-We have two main async blocks related to the "favorite" entity:
-
-1. **Fetching pet details from external Petstore API to enrich the favorite before saving.**
-2. **Adding metadata like timestamps, etc.**
-
-Currently, the endpoint `/favorites/add`:
-
-- Checks if the entity exists in `entity_service`.
-- If not, fetches pet data from Petstore API.
-- Calls `entity_service.add_item` with the pet data and the workflow.
-
-We can move the **external API fetching and enrichment** into `process_favorite`. The endpoint then only:
-
-- Checks if the favorite exists in `entity_service`.
-- If not exists, calls `add_item` with minimal data (just petId or so).
-- The workflow `process_favorite` will fetch the pet details and enrich the entity before persistence.
-
----
-
-### Updated code
-
-```python
 from dataclasses import dataclass
 from typing import List, Optional, Dict
 import asyncio
@@ -65,10 +21,8 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-# External Petstore API base URL (Swagger Petstore public API)
 PETSTORE_API_BASE = "https://petstore3.swagger.io/api/v3"
 
-# Sample pet facts for fun feature
 PET_FACTS = [
     "Cats sleep 70% of their lives.",
     "Dogs have three eyelids.",
@@ -93,14 +47,12 @@ class EmptyBody:
     pass
 
 async def fetch_pet_by_id(pet_id: int) -> Optional[Dict]:
-    """Fetch a single pet by ID from the Petstore API."""
     url = f"{PETSTORE_API_BASE}/pet/{pet_id}"
     async with httpx.AsyncClient() as client:
         try:
             r = await client.get(url, timeout=10)
             r.raise_for_status()
-            pet = r.json()
-            return pet
+            return r.json()
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 return None
@@ -110,45 +62,7 @@ async def fetch_pet_by_id(pet_id: int) -> Optional[Dict]:
             logger.error(f"Error fetching pet {pet_id}: {e}")
             return None
 
-# Workflow function for 'favorite' entity
-async def process_favorite(entity: Dict) -> Dict:
-    """
-    Workflow function applied to the favorite entity before persisting.
-    This function enriches the entity with pet data fetched from the external API.
-    """
-    pet_id = entity.get("id") or entity.get("petId")
-    if not pet_id:
-        logger.warning("No petId found in favorite entity for enrichment.")
-        return entity
-
-    # Fetch pet details asynchronously from Petstore API
-    pet_data = await fetch_pet_by_id(int(pet_id))
-    if pet_data:
-        # Replace or enrich the favorite entity with pet details
-        # e.g. transferring relevant fields
-        entity["id"] = pet_data.get("id")
-        entity["name"] = pet_data.get("name")
-        entity["type"] = pet_data.get("category", {}).get("name")
-        entity["status"] = pet_data.get("status")
-        entity["tags"] = [tag.get("name") for tag in pet_data.get("tags", [])]
-        entity["photoUrls"] = pet_data.get("photoUrls", [])
-    else:
-        logger.warning(f"Pet data not found for petId {pet_id}, favorite entity unchanged.")
-
-    # Add a timestamp when this favorite was added
-    entity["added_at"] = datetime.utcnow().isoformat() + "Z"
-
-    # You can add further async logic here, e.g. fetching or adding secondary entities of other models
-
-    return entity
-
-@app.route("/pets/query", methods=["POST"])
-@validate_request(PetQuery)
-async def pets_query(data: PetQuery):
-    # This remains unchanged; filter pets by status/type/tags/name
-    filters = data.__dict__
-
-    # Reuse the fetch pets logic here
+async def fetch_pets_from_petstore(filters: Dict) -> List[Dict]:
     status = filters.get("status", "available")
     url = f"{PETSTORE_API_BASE}/pet/findByStatus"
     params = {"status": status}
@@ -160,7 +74,7 @@ async def pets_query(data: PetQuery):
             pets = r.json()
         except Exception as e:
             logger.exception(f"Failed to fetch pets from Petstore API: {e}")
-            pets = []
+            return []
 
     filtered = []
     type_filter = filters.get("type")
@@ -190,7 +104,35 @@ async def pets_query(data: PetQuery):
                 "photoUrls": pet.get("photoUrls", []),
             }
         )
-    return jsonify({"pets": filtered})
+    return filtered
+
+async def process_favorite(entity: Dict) -> Dict:
+    pet_id = entity.get("id") or entity.get("petId")
+    if not pet_id:
+        logger.warning("No petId found in favorite entity for enrichment.")
+        return entity
+
+    pet_data = await fetch_pet_by_id(int(pet_id))
+    if pet_data:
+        entity["id"] = pet_data.get("id")
+        entity["name"] = pet_data.get("name")
+        entity["type"] = pet_data.get("category", {}).get("name")
+        entity["status"] = pet_data.get("status")
+        entity["tags"] = [tag.get("name") for tag in pet_data.get("tags", [])]
+        entity["photoUrls"] = pet_data.get("photoUrls", [])
+    else:
+        logger.warning(f"Pet data not found for petId {pet_id}, favorite entity unchanged.")
+
+    entity["added_at"] = datetime.utcnow().isoformat() + "Z"
+
+    return entity
+
+@app.route("/pets/query", methods=["POST"])
+@validate_request(PetQuery)
+async def pets_query(data: PetQuery):
+    filters = data.__dict__
+    pets = await fetch_pets_from_petstore(filters)
+    return jsonify({"pets": pets})
 
 @app.route("/favorites/add", methods=["POST"])
 @validate_request(FavoriteAdd)
@@ -199,7 +141,6 @@ async def favorites_add(data: FavoriteAdd):
     if not pet_id or not isinstance(pet_id, int):
         return jsonify({"success": False, "message": "Invalid or missing petId."}), 400
 
-    # Check if favorite already exists in entity_service
     try:
         pet = await entity_service.get_item(
             token=cyoda_auth_service,
@@ -207,15 +148,13 @@ async def favorites_add(data: FavoriteAdd):
             entity_version=ENTITY_VERSION,
             technical_id=str(pet_id)
         )
-    except Exception as e:
-        # Not found or error, treat as not existing
+    except Exception:
         pet = None
 
     if pet:
         logger.info(f"Pet {pet_id} already in favorites in entity_service")
         return jsonify({"success": True, "message": "Pet already in favorites."})
 
-    # If not exists, add minimal entity (just petId) - workflow will enrich the data
     try:
         new_id = await entity_service.add_item(
             token=cyoda_auth_service,
@@ -259,30 +198,3 @@ if __name__ == "__main__":
         level=logging.INFO,
     )
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- In the endpoint `/favorites/add`, we **only** check if the favorite exists and call `add_item` with minimal data: `{ "id": pet_id }`.
-- The `process_favorite` workflow function:
-  - Fetches the full pet data from the external API.
-  - Enriches the favorite entity with pet details.
-  - Adds a timestamp.
-- This way, the controller is light, and the full enrichment logic lives in the workflow function.
-- Also, if you want to add any other async calls or related entities, put them inside `process_favorite`.
-
----
-
-### Advantages:
-
-- Endpoint is clean, short, focused on HTTP and existence check.
-- Workflow function encapsulates all async enrichment logic.
-- Easy to test and maintain.
-- Avoids infinite recursion by never calling `entity_service.add_item` or update/delete on the same entity model inside the workflow.
-- Allows adding supplementary entities of other models if needed inside the workflow.
-
----
-
-If you want, I can help you refactor other parts similarly or add more workflow functions for other entities!

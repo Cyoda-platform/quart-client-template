@@ -1,42 +1,12 @@
-Absolutely, moving the bulk of async processing logic into the workflow functions that run just before persistence is a great design choice to keep endpoints thin and clean, and encapsulate processing logic with the entity lifecycle.
-
-Given your requirements and constraints:
-- The workflow function is async, receives entity data as input, can modify it directly.
-- It can do async tasks, including fetching external data.
-- It can add/get entities of other models but cannot modify the same entity model to avoid recursion.
-- The workflow function is invoked automatically before persistence by the entity service.
-
----
-
-### What to move and how?
-
-- In the `/cats/live-data` endpoint, the main heavy logic is in `process_entity()` that fetches cat facts/breeds/images asynchronously and then calls `add_item`. We can move this entire fetching and data aggregation logic inside a workflow function `process_entity_job`.  
-- The endpoint just creates the empty entity job with minimal info (status queued, requestedAt) and calls `add_item` with workflow. The workflow then does the fetching, enriches the entity, and returns the final entity to be persisted.
-- For `/cats/favorites`, the endpoint is already minimal, just creating favorite data and calling `add_item`. We can move any enrichment or side logic into `process_favorite_cats`.
-
----
-
-### Implementation notes:
-
-- Because the workflow is called **before** persistence, we cannot do a "fire and forget" inside the workflow that later calls add_item again on the same entity model (would cause recursion). Instead, the workflow should mutate the entity data directly, and that updated entity is persisted after the workflow completes.
-- For heavy or long running tasks, if they require multiple steps or result updates, consider storing state inside the entity and updating it progressively via new calls or separate entities.
-- The endpoint will just call add_item with an initial empty or partial entity (e.g. status queued), and return immediately.
-
----
-
-### Updated code with logic moved to workflow functions:
-
-```python
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-import asyncio
 import logging
 from datetime import datetime
 from typing import List
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -51,10 +21,6 @@ logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
-
-# In-memory cache for job info/status (only job tracking remains local)
-entity_job: Dict[str, Dict] = {}  # job_id -> job info/status
-
 
 # External API base URLs for real live cat data
 CAT_FACTS_API = "https://catfact.ninja/facts"
@@ -78,7 +44,6 @@ class FavoriteRequest:
 @validate_request(LiveDataRequest)
 async def post_live_data(data: LiveDataRequest):
     try:
-        # Just create an initial entity job with minimal info (queued status)
         job_id = datetime.utcnow().isoformat()
         entity_data = {
             "job_id": job_id,
@@ -87,7 +52,7 @@ async def post_live_data(data: LiveDataRequest):
             "data_type": data.data_type,
             "filters": data.filters or {},
         }
-        # Add item with workflow process_entity_job that will do all async fetching/enrichment
+        # Add entity with workflow that will perform async fetching and enrich entity before persistence
         id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="entity_job",
@@ -104,7 +69,6 @@ async def post_live_data(data: LiveDataRequest):
 @app.route("/cats/latest", methods=["GET"])
 async def get_latest():
     try:
-        # Retrieve items with condition on entity_model 'entity_job' and data_type='random' and status='done'
         condition = {
             "data_type": "random",
             "status": "done"
@@ -224,13 +188,7 @@ async def fetch_cat_images(filters: Optional[Dict]) -> List[Dict]:
         return []
 
 
-# Workflow for 'entity_job' entity_model
 async def process_entity_job(entity: Dict) -> Dict:
-    """
-    Process the entity_job entity before it is persisted.
-    It fetches and populates the result data asynchronously
-    according to the data_type and filters in the entity.
-    """
     try:
         entity["status"] = "processing"
         data_type = entity.get("data_type")
@@ -259,9 +217,6 @@ async def process_entity_job(entity: Dict) -> Dict:
         entity["status"] = "done"
         entity["workflow_processed_at"] = datetime.utcnow().isoformat()
 
-        # You can optionally add supplementary entities here using entity_service.add_item
-        # but NOT for 'entity_job' itself to avoid recursion.
-
     except Exception as e:
         logger.exception(e)
         entity["status"] = "error"
@@ -270,17 +225,10 @@ async def process_entity_job(entity: Dict) -> Dict:
     return entity
 
 
-# Workflow for 'favorite_cats' entity_model
 async def process_favorite_cats(entity: Dict) -> Dict:
-    """
-    Process favorite_cats entity before persistence.
-    Can enrich the entity or perform async tasks.
-    """
     try:
         entity["workflow_processed_at"] = datetime.utcnow().isoformat()
-        # If you want, you can fetch extra data about the cat (breed info, etc) here,
-        # and add supplementary entities of different entity_model.
-
+        # Potential place to enrich favorite cat entity or fetch supplementary data
     except Exception as e:
         logger.exception(e)
         entity["error"] = str(e)
@@ -289,22 +237,3 @@ async def process_favorite_cats(entity: Dict) -> Dict:
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- The `/cats/live-data` endpoint now merely creates a minimal entity job with status queued and basic info, then calls `add_item` with `workflow=process_entity_job`.
-- The `process_entity_job` workflow function implements all the async logic for fetching facts, breeds, images, and composing the result.
-- The workflow function updates the entity's `status`, `result`, `processed_at`, and other metadata before returning it. This updated entity will be persisted by the entity service.
-- Similarly, `/cats/favorites` endpoint is minimal, and the workflow function `process_favorite_cats` can extend or enrich the favorite cat entity asynchronously before persistence.
-- The external fetching helper functions (`fetch_cat_facts`, etc) are reused inside the workflow functions.
-- All endpoints are clean and only responsible for validation and simple calls to `add_item` or `get_items`.
-- No infinite recursion risk because workflow functions never call add/update/delete on the same entity_model they belong to.
-
----
-
-This approach fully leverages the new workflow support, moves async business logic into lifecycle hooks, and keeps controllers focused and maintainable.
-
-If you want me to help refactor or extend this further, just ask!

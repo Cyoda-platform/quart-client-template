@@ -1,0 +1,53 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "data_type": "breeds",
+                "filters": {
+                    "breed": "Siamese"
+                }
+            },
+            "entity_name": "live_data_request"
+        },
+        {
+            "entity_data_example": {
+                "cat_id": "abc123",
+                "user_id": "user789"
+            },
+            "entity_name": "favorite_request"
+        },
+        {
+            "entity_data_example": {
+                "completedAt": "2024-04-27T10:05:00Z",
+                "data_type": "random",
+                "filters": {
+                    "breed": "Siamese"
+                },
+                "job_id": "2024-04-27T10:00:00Z",
+                "processed_at": "2024-04-27T10:05:00Z",
+                "result": [
+                    {
+                        "fact": "Cats have five toes on their front paws."
+                    },
+                    {
+                        "image_url": "https://cdn.thecatapi.com/images/abc.jpg"
+                    },
+                    {
+                        "breed_name": "Siamese"
+                    }
+                ],
+                "result_id": "job_001",
+                "status": "done"
+            },
+            "entity_name": "entity_job"
+        },
+        {
+            "entity_data_example": {
+                "added_at": "2024-04-27T11:00:00Z",
+                "cat_id": "abc123",
+                "user_id": "user789"
+            },
+            "entity_name": "favorite_cats"
+        }
+    ]
+}

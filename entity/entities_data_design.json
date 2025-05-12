@@ -1,0 +1,52 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "name": "whiskers",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet_search"
+        },
+        {
+            "entity_data_example": {
+                "petId": 123
+            },
+            "entity_name": "favorite_pet"
+        },
+        {
+            "entity_data_example": {
+                "petIds": [
+                    123,
+                    456
+                ]
+            },
+            "entity_name": "adoption_status_request"
+        },
+        {
+            "entity_data_example": {
+                "id": 123,
+                "name": "Whiskers",
+                "photoUrls": [
+                    "http://example.com/photo1.jpg",
+                    "http://example.com/photo2.jpg"
+                ],
+                "status": "available",
+                "tags": [
+                    "friendly",
+                    "playful"
+                ],
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "notes": "Ready for adoption",
+                "petId": 123,
+                "readyForAdoption": true
+            },
+            "entity_name": "adoption_status"
+        }
+    ]
+}

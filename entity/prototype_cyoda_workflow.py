@@ -1,12 +1,82 @@
-Certainly! Below is the updated full code of `entity/prototype_cyoda.py` with the new required `workflow` parameter added to all calls to `entity_service.add_item`.  
-I implemented the workflow function named `process_cat` (following the naming convention: `process_` + entity name in underscore lowercase) as an async function.  
-This example workflow function currently just returns the entity unchanged but you can customize it as needed. It demonstrates the expected async signature and usage.
+Understood. The requirement is to move **all** async logic from the endpoint handlers that happens before persistence into the `process_{entity_name}` workflow functions. This effectively means the controllers become very thin, just forwarding the validated entity data to `entity_service.add_item` with the appropriate workflow function that performs all enrichment, async calls, and any side effects (like adding supplementary entities).
 
 ---
 
+### What needs to be moved into workflow functions?
+
+- The live data fetching from external API done in `process_live_data_job` (currently a background task triggered by `/cats/live-data` POST).
+- The enrichment of the entity, e.g. fetching images, adding facts, etc.
+- The search/filter logic itself cannot be moved because it is a query operation, but any data enrichment on individual entities can be moved if it happens before persistence.
+- The job management (status tracking) is a bit tricky since it's related to async fire-and-forget job control, but maybe we can move the data gathering + enrichment into the workflow and keep the job control in the endpoint.
+
+---
+
+### Constraints / Considerations
+
+- The workflow applies to each entity before persistence.
+- The workflow cannot add/update/delete entities of the same entity_model (to prevent recursion).
+- But it **can** add supplementary entities of a different model.
+- The workflow can perform async logic.
+- We can move any async enrichment and fetching logic into the workflow.
+- Fire-and-forget async jobs (like fetching live cat data) should be replaced by a workflow function that is run once per entity before persistence.
+  - However, the live-data endpoint submits a "job" that asynchronously fetches many cats and then adds them.
+  - Since workflow functions run on a single entity before persistence, the "bulk fetching and adding multiple entities" cannot be done inside a single workflow function of the same entity.
+  - So we must rethink: the live-data endpoint is about fetching multiple cats and adding many cats.
+  - Since workflow cannot add/update/delete entities of the same model, the workflow of "cat" cannot add other cats.
+  - Hence the "bulk fetch and add" logic cannot be moved into the cat workflow.
+  - But it can be moved to a different entity model's workflow, or reorganized.
+
+---
+
+### Proposed approach
+
+- The `/cats/live-data` POST endpoint currently submits a job that fetches multiple cat entities asynchronously and adds them.
+- Since workflow cannot add/update/delete same entity_model, we cannot move this bulk fetch logic into the `process_cat` workflow.
+- Alternative: define a new entity model, e.g. `cat_live_data_job` or `cat_live_data_fetch_request` entities, and have a workflow `process_cat_live_data_fetch_request` that, when a new entity of that model is added, performs the fetch and adds cats (allowed since cats are a different model).
+- So the live data fetch becomes a new entity type and the workflow is attached to that entity, moving logic out of the controller.
+- The `/cats/live-data` endpoint just adds a `cat_live_data_fetch_request` entity with filters; the workflow of that entity performs the fetch and adds many cats.
+- This aligns with "workflow function applied to the entity asynchronously before persistence," and allows async fire-and-forget job logic in the workflow function of a *different* entity model.
+
+- For the `/cats/search` endpoint, it is a query, no persistence, so no workflow applies.
+- For `/cats` GET endpoint, just fetches entities, no workflow applies.
+- For any new cat addition endpoint, the enrichment logic (e.g. adding images, facts) can be moved into the `process_cat` workflow.
+
+---
+
+### Summary of changes to implement:
+
+- **Define new entity model:** `"cat_live_data_fetch_request"` with a workflow function `process_cat_live_data_fetch_request` that:
+  - Takes the filters from the entity,
+  - Fetches live data from external API,
+  - Adds multiple `"cat"` entities (allowed since different model),
+  - Updates the job status fields within the `cat_live_data_fetch_request` entity (allowed since updating the current entity),
+  - This replaces the current `process_live_data_job` fire-and-forget task.
+
+- **Change `/cats/live-data` POST endpoint to only add a `cat_live_data_fetch_request` entity with workflow `process_cat_live_data_fetch_request`.**
+
+- **Keep `process_cat` workflow for enriching a cat entity before persistence:**
+  - Enrich with image, fact, etc.
+  - No adding/updating/deletion of cat entities inside `process_cat` workflow.
+
+- The endpoints become very simple, just validate and add entity with appropriate workflow.
+
+---
+
+### Let's implement this:
+
+- Add `process_cat_live_data_fetch_request` workflow async function.
+- Refactor `/cats/live-data` POST to add the new entity type with filters.
+- Modify `process_cat` workflow for enrichment logic.
+- Remove background task `process_live_data_job`.
+- `/cats` GET and `/cats/search` remain unchanged.
+
+---
+
+### Complete updated code with these changes below:
+
 ```python
 from dataclasses import dataclass
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 import asyncio
 import logging
 from datetime import datetime
@@ -28,13 +98,14 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 app = Quart(__name__)
 QuartSchema(app)
 
-# Entity job tracking (simulate async job processing)
-entity_jobs: Dict[str, Dict] = {}
-
 @dataclass
 class Filters:
     breed: Optional[str] = None
     limit: Optional[int] = 10
+
+@dataclass
+class LiveDataRequest:
+    filters: Optional[Filters] = None
 
 @dataclass
 class Search:
@@ -42,29 +113,13 @@ class Search:
     name: Optional[str] = None
 
 @dataclass
-class LiveDataRequest:
-    filters: Optional[Filters] = None
-
-@dataclass
 class SearchRequest:
     search: Optional[Search] = None
 
 
-async def process_cat(entity: Dict) -> Dict:
-    """
-    Workflow function applied to the 'cat' entity asynchronously before persistence.
-    Modify entity state here if needed.
-    """
-    # Example: Add or modify fields, validate, enrich, etc.
-    # For now, just return the entity unchanged.
-    return entity
-
-
 async def fetch_live_cat_data(filters: Dict) -> List[Dict]:
     """
-    Fetch live cat data from real external API.
-    We'll use TheCatAPI (https://thecatapi.com/) for breeds and images.
-    For fun facts, we'll use a placeholder (TODO).
+    Fetch live cat data from TheCatAPI.
     """
     limit = filters.get("limit", 10)
     breed_filter = filters.get("breed")
@@ -89,7 +144,6 @@ async def fetch_live_cat_data(filters: Dict) -> List[Dict]:
     cats_data = []
     for breed in breeds:
         cat = {
-            "id": breed.get("id"),
             "name": breed.get("name"),
             "breed": breed.get("name"),
             "image_url": None,
@@ -97,12 +151,10 @@ async def fetch_live_cat_data(filters: Dict) -> List[Dict]:
         }
 
         # Fetch image for breed if available
-        # TheCatAPI provides image in breed info sometimes
         image = breed.get("image")
         if image and image.get("url"):
             cat["image_url"] = image["url"]
         else:
-            # Try to get an image by breed ID separately
             try:
                 async with httpx.AsyncClient() as client:
                     img_resp = await client.get(
@@ -115,8 +167,7 @@ async def fetch_live_cat_data(filters: Dict) -> List[Dict]:
             except Exception as e:
                 logger.exception(f"Error fetching image for breed {breed['id']}: {e}")
 
-        # TODO: Replace with real cat fact API or database
-        # For now, use a static fun fact or empty string
+        # Static fun fact placeholder
         cat["fact"] = f"{cat['breed']} is a wonderful cat breed!"
 
         cats_data.append(cat)
@@ -124,65 +175,112 @@ async def fetch_live_cat_data(filters: Dict) -> List[Dict]:
     return cats_data
 
 
-async def process_live_data_job(job_id: str, filters: Dict):
+async def process_cat(entity: Dict) -> Dict:
     """
-    Background task to fetch live data and store using entity_service.
+    Workflow function for 'cat' entity.
+    Enrich cat entity before persistence.
     """
-    logger.info(f"Processing job {job_id} with filters: {filters}")
+    # If breed or name are missing, try to fill or sanitize
+    name = entity.get("name")
+    breed = entity.get("breed")
+
+    # Example: ensure breed is set, fallback to name if possible
+    if not breed and name:
+        entity["breed"] = name
+
+    # Enrich image_url if missing based on breed (fetch from TheCatAPI)
+    if not entity.get("image_url") and breed:
+        try:
+            async with httpx.AsyncClient() as client:
+                # Search breed id by name
+                breeds_resp = await client.get("https://api.thecatapi.com/v1/breeds", timeout=10)
+                breeds_resp.raise_for_status()
+                breeds = breeds_resp.json()
+                breed_id = None
+                for b in breeds:
+                    if b["name"].lower() == breed.lower():
+                        breed_id = b["id"]
+                        break
+                if breed_id:
+                    img_resp = await client.get(
+                        f"https://api.thecatapi.com/v1/images/search?breed_id={breed_id}&limit=1", timeout=10
+                    )
+                    img_resp.raise_for_status()
+                    imgs = img_resp.json()
+                    if imgs and imgs[0].get("url"):
+                        entity["image_url"] = imgs[0]["url"]
+        except Exception as e:
+            logger.warning(f"Failed to enrich cat image_url: {e}")
+
+    # Enrich fact if missing
+    if not entity.get("fact") and entity.get("breed"):
+        entity["fact"] = f"{entity['breed']} is a wonderful cat breed!"
+
+    # Return modified entity (will be persisted)
+    return entity
+
+
+async def process_cat_live_data_fetch_request(entity: Dict) -> Dict:
+    """
+    Workflow function for 'cat_live_data_fetch_request' entity.
+    Fetches live cat data and adds multiple 'cat' entities.
+    Updates the job status in this entity.
+    """
+    filters = entity.get("filters", {}) or {}
+    job_started_at = datetime.utcnow().isoformat()
+    entity["status"] = "processing"
+    entity["requestedAt"] = job_started_at
+
     try:
         cats = await fetch_live_cat_data(filters)
 
-        # Instead of caching locally, store each cat item in entity_service
-        # Clear previous cats? Since we have no delete all, we skip that step to keep logic simpler.
-
-        # Store cats asynchronously, but we'll await all to complete
-        tasks = []
+        # Add each cat entity (allowed, different entity_model)
         for cat in cats:
-            # Remove 'id' key from cat because entity_service will generate its own id
-            cat_data = cat.copy()
-            cat_data.pop("id", None)
-            tasks.append(
-                entity_service.add_item(
-                    token=cyoda_auth_service,
-                    entity_model="cat",
-                    entity_version=ENTITY_VERSION,
-                    entity=cat_data,
-                    workflow=process_cat,
-                )
+            # Add each cat, with enrichment via process_cat workflow automatically
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="cat",
+                entity_version=ENTITY_VERSION,
+                entity=cat,
+                workflow=process_cat,
             )
-        # Await all add_item calls, but result ids are not used here
-        await asyncio.gather(*tasks)
 
-        entity_jobs[job_id]["status"] = "completed"
-        entity_jobs[job_id]["result_count"] = len(cats)
-        entity_jobs[job_id]["completedAt"] = datetime.utcnow().isoformat()
-        logger.info(f"Job {job_id} completed with {len(cats)} cats")
+        entity["status"] = "completed"
+        entity["result_count"] = len(cats)
+        entity["completedAt"] = datetime.utcnow().isoformat()
     except Exception as e:
-        entity_jobs[job_id]["status"] = "failed"
-        entity_jobs[job_id]["error"] = str(e)
-        logger.exception(f"Job {job_id} failed: {e}")
+        entity["status"] = "failed"
+        entity["error"] = str(e)
+        logger.exception(f"Failed to process cat_live_data_fetch_request: {e}")
 
-# POST /cats/live-data
+    return entity
+
+
 @app.route("/cats/live-data", methods=["POST"])
-@validate_request(LiveDataRequest)  # validation last on POST endpoints (issue workaround)
+@validate_request(LiveDataRequest)
 async def post_live_data(data: LiveDataRequest):
+    # Add a 'cat_live_data_fetch_request' entity with filters and workflow
     filters = data.filters.__dict__ if data.filters else {}
 
-    job_id = datetime.utcnow().isoformat()  # simple job id, can be improved
-    entity_jobs[job_id] = {"status": "processing", "requestedAt": job_id}
+    entity = {
+        "filters": filters,
+        # Optional: other metadata fields can be added here
+    }
 
-    # Fire and forget processing task
-    asyncio.create_task(process_live_data_job(job_id, filters))
+    # Add entity with workflow that handles fetching and adding cats
+    entity_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="cat_live_data_fetch_request",
+        entity_version=ENTITY_VERSION,
+        entity=entity,
+        workflow=process_cat_live_data_fetch_request,
+    )
 
-    return jsonify({"job_id": job_id, "status": "processing"}), 202
+    return jsonify({"job_id": entity_id, "status": "processing"}), 202
 
 
-# GET /cats - fetch cats from entity_service
 @app.route("/cats", methods=["GET"])
 async def get_cats():
-    """
-    Return cats data from entity_service.
-    """
     try:
         cats = await entity_service.get_items(
             token=cyoda_auth_service,
@@ -196,52 +294,31 @@ async def get_cats():
     return jsonify({"cats": cats})
 
 
-# POST /cats/search
 @app.route("/cats/search", methods=["POST"])
-@validate_request(SearchRequest)  # validation last on POST endpoints (issue workaround)
+@validate_request(SearchRequest)
 async def post_cats_search(data: SearchRequest):
     search = data.search.__dict__ if data.search else {}
     breed_filter = search.get("breed")
     name_filter = search.get("name")
 
-    # Build condition for entity_service - since entity_service supports condition queries
-    # We will build a simple condition dict that the service can understand.
-    # Assuming condition is a dict with keys and values for equality or substring match
+    try:
+        cats = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model="cat",
+            entity_version=ENTITY_VERSION,
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to retrieve cats"}), 500
 
-    # Since entity_service condition is not fully defined, if insufficient, skip and fallback to local filter
+    def matches(cat):
+        if breed_filter and breed_filter.lower() not in (cat.get("breed") or "").lower():
+            return False
+        if name_filter and name_filter.lower() not in (cat.get("name") or "").lower():
+            return False
+        return True
 
-    if breed_filter or name_filter:
-        # Construct condition with substring matching if possible, else skip
-        # Since no detailed condition format is described, we'll skip and fallback to get_items and filter locally
-        try:
-            cats = await entity_service.get_items(
-                token=cyoda_auth_service,
-                entity_model="cat",
-                entity_version=ENTITY_VERSION,
-            )
-        except Exception as e:
-            logger.exception(e)
-            return jsonify({"error": "Failed to retrieve cats"}), 500
-
-        def matches(cat):
-            if breed_filter and breed_filter.lower() not in (cat.get("breed") or "").lower():
-                return False
-            if name_filter and name_filter.lower() not in (cat.get("name") or "").lower():
-                return False
-            return True
-
-        results = [cat for cat in cats if matches(cat)]
-    else:
-        # No filters, return all cats
-        try:
-            results = await entity_service.get_items(
-                token=cyoda_auth_service,
-                entity_model="cat",
-                entity_version=ENTITY_VERSION,
-            )
-        except Exception as e:
-            logger.exception(e)
-            return jsonify({"error": "Failed to retrieve cats"}), 500
+    results = [cat for cat in cats if matches(cat)]
 
     return jsonify({"results": results})
 
@@ -261,11 +338,19 @@ if __name__ == "__main__":
 
 ---
 
-### Summary of changes:
+### Explanation
 
-- Added async `process_cat(entity: Dict) -> Dict` function as the workflow for `cat` entity.
-- Added `workflow=process_cat` parameter to all `entity_service.add_item()` calls for `"cat"` entity_model.
-- Workflow function can modify the entity dict and must be async.
-- Naming follows the convention `process_<entity_name_in_underscore_lowercase>`, e.g. `process_cat`.
+- The `/cats/live-data` endpoint now only creates a `cat_live_data_fetch_request` entity with the filter data.
+- The workflow `process_cat_live_data_fetch_request` runs automatically *before* that entity is persisted:
+  - It sets status fields on the request entity,
+  - Fetches live cats via `fetch_live_cat_data`,
+  - Adds each cat entity individually with `workflow=process_cat` (enrichment),
+  - Updates the request entity status to completed or failed.
+- The `process_cat` workflow enriches each cat entity just before persistence.
+- Endpoints are very thin: they only create entities with workflow functions that handle async logic.
+- This approach follows your requirement that workflows do all async tasks and enrichments, freeing controllers from logic.
+- The infinite recursion issue is avoided because `process_cat` does not add cats, and `process_cat_live_data_fetch_request` is a workflow on a different entity model.
 
-Let me know if you want me to customize the workflow function with some actual logic or if you want me to update other parts as well!
+---
+
+If you want, I can also provide test cases or further break down the workflows, just ask!

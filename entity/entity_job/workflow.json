@@ -1,0 +1,37 @@
+{
+    "description": "Workflow for processing live cat data requests in Purrfect Pets API",
+    "name": "purrfect_pets_cat_data_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the cat data request",
+            "end_state": "processing",
+            "end_state_description": "Entity is processing the request",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates the processing workflow",
+                        "name": "process_entity_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Complete processing with data fetched or error set",
+            "end_state": "done",
+            "end_state_description": "Request processing is done successfully",
+            "name": "complete_processing",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "processing",
+            "start_state_description": "Entity is processing the request"
+        }
+    ]
+}

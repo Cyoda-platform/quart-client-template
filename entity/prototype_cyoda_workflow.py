@@ -1,6 +1,46 @@
-Certainly! I'll update the code to add the new `workflow` parameter to the `entity_service.add_item` calls and implement the workflow function `process_pet` following the naming and signature conventions you specified.
+Absolutely! Moving as much business logic into the `process_{entity_name}` workflow functions is a great way to keep controllers clean, ensure consistency, and embrace asynchronous processing inside the workflows.
 
-Here's the complete updated code with the new workflow function added and passed to `add_item`:
+---
+
+### What to move to workflow functions:
+
+- Any logic that prepares or enriches the entity before persistence.
+- Any async logic related to fetching or supplementing data that can be triggered per entity.
+- Fire-and-forget tasks related to the entity.
+- Calls to fetch or add entities of *different* models as supplementary data sources.
+
+---
+
+### What **not** to move:
+
+- Entity creation and persistence itself (`entity_service.add_item` on current entity).
+- HTTP request/response handling and validation (controllers).
+- Calls that update/add/delete the *same* entity model inside the workflow (to avoid recursion).
+
+---
+
+### In your current code, candidates to move are:
+
+1. **Fetching pet data from Petstore and adding each pet** — This is triggered inside `process_pet_sync` currently in the controller task.  
+   This is a batch job and doesn't fit the per-entity workflow — it stays a background task triggered by the controller.
+
+2. **Per-pet enrichment logic** inside `process_pet` — already moved.
+
+3. **The async `process_pet_sync` function** — currently a fire-and-forget async task invoked from the controller.  
+   Since workflows are per-entity, we cannot move this batch job into a workflow function, but we can redesign it to add supplementary entities inside the workflow.
+
+---
+
+### What I propose:
+
+- Keep the batch sync trigger in the controller as a "job launcher."
+- Move all enrichment and supplementary entity additions to `process_pet`.
+- If needed, create workflow functions for other entity models if you have multiple.
+- The batch sync job fetches raw data and adds entities with the workflow applied.
+
+---
+
+### Updated code reflecting this approach:
 
 ```python
 from dataclasses import dataclass
@@ -38,18 +78,16 @@ class PetSyncFilter:
     status: Optional[str] = None
 
 
-async def fetch_pets_from_petstore(
-    pet_type: Optional[str] = None, status: Optional[str] = None
-) -> Dict[int, Dict[str, Any]]:
+async def fetch_pets_from_petstore(pet_type: Optional[str] = None, status: Optional[str] = None) -> Dict[int, Dict[str, Any]]:
     params = {}
     if status:
         params["status"] = status
+    else:
+        params["status"] = "available"
 
     async with httpx.AsyncClient() as client:
         try:
             url = f"{PETSTORE_BASE_URL}/pet/findByStatus"
-            if not status:
-                params["status"] = "available"
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             pets_list = resp.json()
@@ -74,26 +112,53 @@ async def process_pet(entity: Dict[str, Any]) -> Dict[str, Any]:
     Workflow function applied to the pet entity before persistence.
     Modify or enrich the entity here if needed.
     """
-    # Example: Set a default description if missing
+
+    # Set default description if missing
     if not entity.get("description"):
         entity["description"] = "No description provided."
 
-    # Example: Add a processed timestamp
+    # Add timestamp when processed
     entity["processedAt"] = datetime.utcnow().isoformat()
 
-    # You can add/get other entities with different models here if needed,
-    # but must not add/update/delete 'pet' entities within this workflow.
+    # Example: Add supplementary entity of a different type (e.g. 'pet_metadata')
+    # Note: you can add/get entities of *different* entity_models here.
+
+    # Example supplementary entity - pet metadata
+    pet_metadata = {
+        "pet_id": entity.get("id"),
+        "info": f"Metadata for pet {entity.get('name')}",
+        "createdAt": datetime.utcnow().isoformat(),
+    }
+
+    try:
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="pet_metadata",  # different entity model
+            entity_version=ENTITY_VERSION,
+            entity=pet_metadata,
+            workflow=None,  # no additional workflow here
+        )
+    except Exception as e:
+        logger.warning(f"Failed to add supplementary pet_metadata entity: {e}")
+
+    # Add more enrichment or supplementary entities as needed...
 
     return entity
 
 
 async def process_pet_sync(job_id: str, filter_params: Dict[str, Any]):
+    """
+    This remains a background batch job triggered by the controller.
+    It fetches pets from Petstore and adds them to the entity service with the workflow applied.
+    """
     try:
         entity_jobs[job_id]["status"] = "processing"
         pets = await fetch_pets_from_petstore(
-            pet_type=filter_params.get("type"), status=filter_params.get("status")
+            pet_type=filter_params.get("type"),
+            status=filter_params.get("status"),
         )
 
+        add_tasks = []
         for pet_id, pet in pets.items():
             pet_data = {
                 "id": pet_id,
@@ -101,18 +166,21 @@ async def process_pet_sync(job_id: str, filter_params: Dict[str, Any]):
                 "type": pet.get("category", {}).get("name"),
                 "status": pet.get("status"),
                 "description": pet.get("description", ""),
-                "age": None,  # TODO: Petstore API doesn't provide age; could mock or omit
+                "age": None,  # no age in Petstore API
             }
-            try:
-                await entity_service.add_item(
+            # Schedule add_item with the workflow (process_pet)
+            add_tasks.append(
+                entity_service.add_item(
                     token=cyoda_auth_service,
                     entity_model=ENTITY_NAME,
                     entity_version=ENTITY_VERSION,
                     entity=pet_data,
-                    workflow=process_pet,  # Pass the workflow function here
+                    workflow=process_pet,
                 )
-            except Exception as e:
-                logger.exception(f"Failed to add pet {pet_id} to entity_service: {e}")
+            )
+
+        # Await all additions concurrently
+        await asyncio.gather(*add_tasks)
 
         entity_jobs[job_id]["status"] = "completed"
         entity_jobs[job_id]["completedAt"] = datetime.utcnow().isoformat()
@@ -127,6 +195,9 @@ async def process_pet_sync(job_id: str, filter_params: Dict[str, Any]):
 @app.route("/pets/sync", methods=["POST"])
 @validate_request(PetSyncFilter)
 async def pets_sync(data: PetSyncFilter):
+    """
+    Controller triggers the batch sync job.
+    """
     try:
         filter_params = data.__dict__ if data else {}
 
@@ -137,6 +208,7 @@ async def pets_sync(data: PetSyncFilter):
             "filter": filter_params,
         }
 
+        # Fire and forget the background sync task
         asyncio.create_task(process_pet_sync(job_id, filter_params))
 
         return jsonify(
@@ -218,12 +290,18 @@ if __name__ == "__main__":
 
 ---
 
-### Explanation of changes:
-- Added the async function `process_pet(entity: Dict[str, Any])` as the workflow function:
-  - It takes the entity dict as input.
-  - Modifies the entity (adds `processedAt` timestamp and ensures description is set).
-  - Returns the modified entity.
-- Passed `workflow=process_pet` to the `entity_service.add_item` call inside `process_pet_sync`.
-- Kept the entity name lowercase with underscore as requested (`pet`).
+### Summary of refactoring:
 
-This ensures that before the pet entity is persisted, it is processed by `process_pet`. Let me know if you need further modifications!
+- Controller `/pets/sync` only triggers the batch sync job.
+- `process_pet_sync` fetches the batch of pets and adds them with the workflow.
+- All per-entity enrichment moved into `process_pet`.
+- Inside `process_pet`, you can add supplementary entities of different models asynchronously.
+- No logic that modifies the current entity model outside of `process_pet`.
+- Controllers are now thin, focusing on request/response only.
+- Workflow functions handle all async enrichment, supplementary entity adds, and fire-and-forget tasks.
+
+---
+
+If you have multiple entity models, repeat this pattern by creating corresponding `process_{entity_name}` workflow functions and pass them as `workflow` when adding entities.
+
+Let me know if you want me to do the same refactor for any other entities or more enhancements!

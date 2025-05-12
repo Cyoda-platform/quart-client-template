@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass
+from typing import Optional, List, Dict, Any
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any, List, Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,36 +16,39 @@ app = Quart(__name__)
 QuartSchema(app)
 
 # In-memory cache for prototype persistence
-# Structure example: 
-# {
-#   "images": [{id: str, content: str}, ...],
-#   "breeds": [{id: str, content: dict}, ...],
-#   "facts": [{id: str, content: str}, ...]
-# }
 data_store: Dict[str, List[Dict[str, Any]]] = {
     "images": [],
     "breeds": [],
     "facts": []
 }
 
-# Track jobs for demonstration
 entity_job: Dict[str, Dict[str, Any]] = {}
-
-# External APIs used:
-# - TheCatAPI (https://docs.thecatapi.com/) for images and breeds
-# - Cat Facts API (https://catfact.ninja/) for facts
 
 THE_CAT_API_BASE = "https://api.thecatapi.com/v1"
 CAT_FACTS_API_BASE = "https://catfact.ninja"
-
-# TODO: Add your TheCatAPI API key here if needed; for prototype, it works without one.
 THE_CAT_API_HEADERS = {
-    # "x-api-key": "YOUR_API_KEY"
+    # "x-api-key": "YOUR_API_KEY"  # TODO: Add API key if needed
 }
 
-# Helper to generate simple unique IDs for stored data items
 def generate_id(prefix: str, idx: int) -> str:
     return f"{prefix}_{idx}"
+
+@dataclass
+class FetchDataRequest:
+    source: Optional[str] = "default"
+    dataTypes: List[str] = None
+    filters: Optional[Dict[str, Any]] = None
+
+@dataclass
+class AnalyzeDataRequest:
+    analysisType: str
+    parameters: Optional[Dict[str, Any]] = None
+
+@dataclass
+class CatsDataGetQuery:
+    type: Optional[str] = None
+    breed: Optional[str] = None
+    limit: Optional[int] = None
 
 async def fetch_cat_images(limit: int = 5) -> List[Dict[str, Any]]:
     url = f"{THE_CAT_API_BASE}/images/search?limit={limit}"
@@ -65,7 +69,6 @@ async def fetch_cat_breeds(limit: int = 10) -> List[Dict[str, Any]]:
             resp = await client.get(url, headers=THE_CAT_API_HEADERS, timeout=10)
             resp.raise_for_status()
             items = resp.json()
-            # Limit breeds if requested
             breeds = items[:limit]
             return [{"id": breed["id"], "content": breed} for breed in breeds]
     except Exception as e:
@@ -85,18 +88,16 @@ async def fetch_cat_facts(limit: int = 5) -> List[Dict[str, Any]]:
         logger.exception(f"Failed to fetch cat facts: {e}")
         return []
 
-async def process_fetch_data(job_id: str, params: Dict[str, Any]):
+async def process_fetch_data(job_id: str, params: FetchDataRequest):
     try:
-        source = params.get("source", "default")  # only 'default' supported in prototype
-        data_types = params.get("dataTypes", [])
-        filters = params.get("filters", {})
+        source = params.source or "default"
+        data_types = params.dataTypes or []
+        filters = params.filters or {}
         limit = filters.get("limit", 5)
 
-        # Clear data_store for requested types to simulate fresh fetch
         for dt in data_types:
             data_store[dt] = []
 
-        # Fetch data for requested types
         if "images" in data_types:
             imgs = await fetch_cat_images(limit=limit)
             data_store["images"].extend(imgs)
@@ -104,7 +105,6 @@ async def process_fetch_data(job_id: str, params: Dict[str, Any]):
         if "breeds" in data_types:
             breeds_limit = limit if limit else 10
             breeds = await fetch_cat_breeds(limit=breeds_limit)
-            # Apply breed filter if present
             breed_filter = filters.get("breed")
             if breed_filter:
                 breeds = [b for b in breeds if breed_filter.lower() in b["content"]["name"].lower()]
@@ -125,20 +125,22 @@ async def process_fetch_data(job_id: str, params: Dict[str, Any]):
         logger.exception(f"Failed processing fetch data job {job_id}: {e}")
 
 @app.route("/cats/data/fetch", methods=["POST"])
-async def cats_data_fetch():
-    data: Dict[str, Any] = await request.get_json(force=True)
+@validate_request(FetchDataRequest)  # POST validation last (issue workaround)
+async def cats_data_fetch(data: FetchDataRequest):
     job_id = f"job_{datetime.utcnow().timestamp()}"
     requested_at = datetime.utcnow().isoformat()
     entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
-    # Fire and forget the processing task
     asyncio.create_task(process_fetch_data(job_id, data))
     return jsonify({"status": "processing", "jobId": job_id, "requestedAt": requested_at}), 202
 
+# GET validation first (issue workaround)
 @app.route("/cats/data", methods=["GET"])
+@validate_querystring(CatsDataGetQuery)
 async def cats_data_get():
-    data_type = request.args.get("type", None)
-    breed_filter = request.args.get("breed", None)
-    limit = request.args.get("limit", None)
+    query_args = request.args
+    data_type = query_args.get("type", None)
+    breed_filter = query_args.get("breed", None)
+    limit = query_args.get("limit", None)
     try:
         limit = int(limit) if limit else None
     except ValueError:
@@ -149,7 +151,6 @@ async def cats_data_get():
 
     data_items = data_store.get(data_type, [])
 
-    # Apply breed filter for breeds data_type only
     if data_type == "breeds" and breed_filter:
         data_items = [item for item in data_items if breed_filter.lower() in item["content"]["name"].lower()]
 
@@ -159,18 +160,14 @@ async def cats_data_get():
     return jsonify({"dataType": data_type, "data": data_items})
 
 @app.route("/cats/data/analyze", methods=["POST"])
-async def cats_data_analyze():
-    data: Dict[str, Any] = await request.get_json(force=True)
-    analysis_type = data.get("analysisType")
-    parameters = data.get("parameters", {})
-
-    # Example analysis implementations:
+@validate_request(AnalyzeDataRequest)  # POST validation last (issue workaround)
+async def cats_data_analyze(data: AnalyzeDataRequest):
+    analysis_type = data.analysisType
+    parameters = data.parameters or {}
 
     if analysis_type == "popularity":
-        # TODO: For prototype, mock popularity as count of stored breeds
         breed_name = parameters.get("breed")
         if breed_name:
-            # Count how many images or facts mention the breed name (mock)
             count_images = sum(1 for i in data_store["images"] if breed_name.lower() in i["content"].lower())
             count_facts = sum(1 for f in data_store["facts"] if breed_name.lower() in f["content"].lower())
             result = {"breed": breed_name, "popularityScore": count_images + count_facts}
@@ -179,13 +176,11 @@ async def cats_data_analyze():
         return jsonify({"analysisType": analysis_type, "result": result})
 
     elif analysis_type == "factFrequency":
-        # Count frequency of words in facts (simple example)
-        word_count: Dict[str, int] = {}
+        word_count = {}
         for fact_item in data_store["facts"]:
             words = fact_item["content"].lower().split()
             for w in words:
                 word_count[w] = word_count.get(w, 0) + 1
-        # Return top 10 words for prototype
         top_words = sorted(word_count.items(), key=lambda x: x[1], reverse=True)[:10]
         result = {word: count for word, count in top_words}
         return jsonify({"analysisType": analysis_type, "result": result})

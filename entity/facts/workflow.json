@@ -1,0 +1,33 @@
+{
+    "description": "Workflow to fetch and finalize cat facts data for Purrfect Pets",
+    "name": "purrfect_pets_facts_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Begin processing facts entity",
+            "end_state": "Facts_processing_started",
+            "end_state_description": "Facts processing has started",
+            "name": "start_facts_processing",
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process facts fetching and finalization",
+            "end_state": "Facts_processed",
+            "end_state_description": "Facts processing completed",
+            "name": "process_facts_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_facts"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Facts_processing_started",
+            "start_state_description": "Facts processing has started"
+        }
+    ]
+}

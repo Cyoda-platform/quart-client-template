@@ -15,8 +15,12 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-last_fetched_pets: List[Dict[str, Any]] = []
-entity_job: Dict[str, Dict[str, Any]] = {}
+class PetDataStore:
+    def __init__(self):
+        self.last_fetched_pets: List[Dict[str, Any]] = []
+        self.entity_job: Dict[str, Dict[str, Any]] = {}
+
+pet_store = PetDataStore()
 
 @dataclass
 class FetchPetsRequest:
@@ -61,22 +65,21 @@ async def fetch_pets_from_petstore(pet_type: str, status: Optional[str] = None) 
 async def process_entity(job_id: str, data: Dict[str, Any]):
     try:
         pets = await fetch_pets_from_petstore(data.get("type", "all"), data.get("status"))
-        global last_fetched_pets
-        last_fetched_pets = pets
-        entity_job[job_id]["status"] = "completed"
-        entity_job[job_id]["resultCount"] = len(pets)
-        entity_job[job_id]["completedAt"] = datetime.utcnow().isoformat()
+        pet_store.last_fetched_pets = pets
+        pet_store.entity_job[job_id]["status"] = "completed"
+        pet_store.entity_job[job_id]["resultCount"] = len(pets)
+        pet_store.entity_job[job_id]["completedAt"] = datetime.utcnow().isoformat()
         logger.info(f"Job {job_id} completed with {len(pets)} pets fetched.")
     except Exception as e:
-        entity_job[job_id]["status"] = "failed"
-        entity_job[job_id]["error"] = str(e)
+        pet_store.entity_job[job_id]["status"] = "failed"
+        pet_store.entity_job[job_id]["error"] = str(e)
         logger.exception(f"Job {job_id} failed: {e}")
 
 @app.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)  # validation last in POST (workaround issue in quart-schema)
 async def pets_fetch(data: FetchPetsRequest):
     job_id = f"job_{datetime.utcnow().timestamp()}"
-    entity_job[job_id] = {
+    pet_store.entity_job[job_id] = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat(),
         "type": data.type,
@@ -88,7 +91,7 @@ async def pets_fetch(data: FetchPetsRequest):
 @app.route("/pets", methods=["GET"])
 async def get_pets():
     # No validation needed for GET without parameters
-    return jsonify({"pets": last_fetched_pets})
+    return jsonify({"pets": pet_store.last_fetched_pets})
 
 @app.route("/pets/fun-fact", methods=["POST"])
 @validate_request(FunFactRequest)  # validation last in POST (workaround issue in quart-schema)

@@ -1,0 +1,24 @@
+{
+    "description": "Workflow to process cat data fetching and enrichment for Purrfect Pets API",
+    "name": "purrfect_pets_cat_data_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing cat data entity",
+            "end_state": "processing",
+            "end_state_description": "Cat data processing started",
+            "name": "start_processing_cats",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Main orchestration of cat data processing workflow",
+                        "name": "process_cats"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

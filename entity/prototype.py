@@ -1,4 +1,5 @@
-```python
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Any
 import asyncio
 import logging
 import uuid
@@ -6,7 +7,7 @@ from datetime import datetime
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -22,6 +23,21 @@ cat_data_store = {}  # catId -> cat info (breed, imageUrl, fact)
 # External API info
 CAT_API_BASE = "https://api.thecatapi.com/v1"
 CAT_API_KEY = None  # TODO: optionally set your key for higher rate limits
+
+@dataclass
+class CatsDataRequestFilters:
+    breed: Optional[str] = None
+    age: Optional[int] = None
+
+@dataclass
+class CatsDataRequest:
+    source: Optional[str] = None
+    filters: Optional[Dict[str, Any]] = field(default_factory=dict)
+
+@dataclass
+class CatsFavoritesRequest:
+    userId: str
+    catId: str
 
 
 async def fetch_cat_breeds():
@@ -97,18 +113,18 @@ async def process_entity(job_id, filters):
         entity_job[job_id]["status"] = "failed"
         entity_job[job_id]["result"] = {"error": str(e)}
 
-
+# POST endpoint - validate_request goes after route decorator per quart-schema issue workaround
 @app.route("/cats/data", methods=["POST"])
-async def post_cats_data():
-    data = await request.get_json(force=True)
-    filters = data.get("filters", {}) if isinstance(data, dict) else {}
+@validate_request(CatsDataRequest)
+async def post_cats_data(data: CatsDataRequest):
+    filters = data.filters if data.filters else {}
     job_id = str(uuid.uuid4())
     entity_job[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
     # Fire and forget processing task
     asyncio.create_task(process_entity(job_id, filters))
     return jsonify({"status": "success", "processedDataId": job_id})
 
-
+# GET endpoint - validation first (workaround for quart-schema issue)
 @app.route("/cats/data/<processed_data_id>", methods=["GET"])
 async def get_cats_data(processed_data_id):
     job = entity_job.get(processed_data_id)
@@ -126,17 +142,13 @@ async def get_cats_data(processed_data_id):
         "cats": job.get("result", [])
     })
 
-
+# POST endpoint - validate_request after route decorator (quart-schema workaround)
 @app.route("/cats/favorites", methods=["POST"])
-async def post_cats_favorites():
-    data = await request.get_json(force=True)
-    user_id = data.get("userId")
-    cat_id = data.get("catId")
+@validate_request(CatsFavoritesRequest)
+async def post_cats_favorites(data: CatsFavoritesRequest):
+    user_id = data.userId
+    cat_id = data.catId
 
-    if not user_id or not cat_id:
-        return jsonify({"error": "userId and catId are required"}), 400
-
-    # Check catId exists in cat_data_store
     if cat_id not in cat_data_store:
         return jsonify({"error": "catId not found"}), 404
 
@@ -144,7 +156,7 @@ async def post_cats_favorites():
     favorites.add(cat_id)
     return jsonify({"status": "success"})
 
-
+# GET endpoint - no body, no validation needed
 @app.route("/cats/favorites/<user_id>", methods=["GET"])
 async def get_cats_favorites(user_id):
     favorites = user_favorites.get(user_id, set())
@@ -158,4 +170,3 @@ async def get_cats_favorites(user_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

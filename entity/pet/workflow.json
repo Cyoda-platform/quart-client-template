@@ -1,6 +1,6 @@
 {
-    "description": "Workflow for processing pet entity actions such as add and update with enrichment processes",
-    "name": "pet_entity_workflow",
+    "description": "Workflow for processing pet entity actions and initial setup for local launch of 'Purrfect Pets' API client",
+    "name": "pet_entity_workflow_with_init_setup",
     "transitions": [
         {
             "automated": true,
@@ -46,6 +46,24 @@
             },
             "start_state": "Added",
             "start_state_description": "Pet entity added with enrichment"
+        },
+        {
+            "automated": true,
+            "description": "Initial setup and local launch of client application",
+            "end_state": "Client_Launched",
+            "end_state_description": "Client application launched locally",
+            "name": "initial_setup_client_launch",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Process for initial setup and launch of client app",
+                        "name": "process_initial_setup"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Updated",
+            "start_state_description": "Pet entity updated with enrichment"
         }
     ]
 }

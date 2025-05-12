@@ -1,0 +1,51 @@
+{
+    "description": "Workflow for processing pet entity actions such as add and update with enrichment processes",
+    "name": "pet_entity_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initial processing of pet entity",
+            "end_state": "Processed",
+            "end_state_description": "Pet entity processed",
+            "name": "start_processing",
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process add action with enrichment",
+            "end_state": "Added",
+            "end_state_description": "Pet entity added with enrichment",
+            "name": "process_add_action",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processed",
+            "start_state_description": "Pet entity processed"
+        },
+        {
+            "automated": true,
+            "description": "Process update action with enrichment",
+            "end_state": "Updated",
+            "end_state_description": "Pet entity updated with enrichment",
+            "name": "process_update_action",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Added",
+            "start_state_description": "Pet entity added with enrichment"
+        }
+    ]
+}

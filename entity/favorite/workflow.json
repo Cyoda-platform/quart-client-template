@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to enrich favorite pet entity with pet data and mark it as added",
+    "name": "favorite_pet_enrichment_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Enrich favorite entity with detailed pet data",
+            "end_state": "Pet_data_enriched",
+            "end_state_description": "Favorite entity enriched with pet data",
+            "name": "enrich_pet_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrich_pet_data"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Mark favorite entity as added with timestamp",
+            "end_state": "Favorite_marked_added",
+            "end_state_description": "Favorite entity marked as added",
+            "name": "mark_favorite_added",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_mark_added"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_data_enriched",
+            "start_state_description": "Favorite entity enriched with pet data"
+        },
+        {
+            "automated": true,
+            "description": "Complete favorite processing",
+            "end_state": "Favorite_processed",
+            "end_state_description": "Favorite processing completed",
+            "name": "finalize_favorite",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Workflow orchestration",
+                        "name": "process_favorite"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Favorite_marked_added",
+            "start_state_description": "Favorite entity marked as added"
+        }
+    ]
+}

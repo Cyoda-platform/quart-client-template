@@ -1,0 +1,33 @@
+{
+    "description": "Workflow to fetch and finalize breed data for Purrfect Pets",
+    "name": "purrfect_pets_breeds_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Begin processing breed entity",
+            "end_state": "Breed_processing_started",
+            "end_state_description": "Breed processing has started",
+            "name": "start_breed_processing",
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process breed fetching and finalization",
+            "end_state": "Breed_processed",
+            "end_state_description": "Breed processing completed",
+            "name": "process_breed",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_breeds"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Breed_processing_started",
+            "start_state_description": "Breed processing has started"
+        }
+    ]
+}

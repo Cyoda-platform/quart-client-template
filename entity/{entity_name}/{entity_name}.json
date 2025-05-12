@@ -1,0 +1,23 @@
+{
+    "data": [
+        {
+            "created_at": "2023-10-01T10:00:00Z",
+            "id": "1",
+            "name": "Entity One",
+            "status": "active"
+        },
+        {
+            "created_at": "2023-10-02T11:00:00Z",
+            "id": "2",
+            "name": "Entity Two",
+            "status": "inactive"
+        },
+        {
+            "created_at": "2023-10-03T12:00:00Z",
+            "id": "3",
+            "name": "Entity Three",
+            "status": "active"
+        }
+    ],
+    "entity_name": "example_entity"
+}

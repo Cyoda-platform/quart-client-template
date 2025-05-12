@@ -1,80 +1,3 @@
-Understood. The requirement is to move **all** async logic from the endpoint handlers that happens before persistence into the `process_{entity_name}` workflow functions. This effectively means the controllers become very thin, just forwarding the validated entity data to `entity_service.add_item` with the appropriate workflow function that performs all enrichment, async calls, and any side effects (like adding supplementary entities).
-
----
-
-### What needs to be moved into workflow functions?
-
-- The live data fetching from external API done in `process_live_data_job` (currently a background task triggered by `/cats/live-data` POST).
-- The enrichment of the entity, e.g. fetching images, adding facts, etc.
-- The search/filter logic itself cannot be moved because it is a query operation, but any data enrichment on individual entities can be moved if it happens before persistence.
-- The job management (status tracking) is a bit tricky since it's related to async fire-and-forget job control, but maybe we can move the data gathering + enrichment into the workflow and keep the job control in the endpoint.
-
----
-
-### Constraints / Considerations
-
-- The workflow applies to each entity before persistence.
-- The workflow cannot add/update/delete entities of the same entity_model (to prevent recursion).
-- But it **can** add supplementary entities of a different model.
-- The workflow can perform async logic.
-- We can move any async enrichment and fetching logic into the workflow.
-- Fire-and-forget async jobs (like fetching live cat data) should be replaced by a workflow function that is run once per entity before persistence.
-  - However, the live-data endpoint submits a "job" that asynchronously fetches many cats and then adds them.
-  - Since workflow functions run on a single entity before persistence, the "bulk fetching and adding multiple entities" cannot be done inside a single workflow function of the same entity.
-  - So we must rethink: the live-data endpoint is about fetching multiple cats and adding many cats.
-  - Since workflow cannot add/update/delete entities of the same model, the workflow of "cat" cannot add other cats.
-  - Hence the "bulk fetch and add" logic cannot be moved into the cat workflow.
-  - But it can be moved to a different entity model's workflow, or reorganized.
-
----
-
-### Proposed approach
-
-- The `/cats/live-data` POST endpoint currently submits a job that fetches multiple cat entities asynchronously and adds them.
-- Since workflow cannot add/update/delete same entity_model, we cannot move this bulk fetch logic into the `process_cat` workflow.
-- Alternative: define a new entity model, e.g. `cat_live_data_job` or `cat_live_data_fetch_request` entities, and have a workflow `process_cat_live_data_fetch_request` that, when a new entity of that model is added, performs the fetch and adds cats (allowed since cats are a different model).
-- So the live data fetch becomes a new entity type and the workflow is attached to that entity, moving logic out of the controller.
-- The `/cats/live-data` endpoint just adds a `cat_live_data_fetch_request` entity with filters; the workflow of that entity performs the fetch and adds many cats.
-- This aligns with "workflow function applied to the entity asynchronously before persistence," and allows async fire-and-forget job logic in the workflow function of a *different* entity model.
-
-- For the `/cats/search` endpoint, it is a query, no persistence, so no workflow applies.
-- For `/cats` GET endpoint, just fetches entities, no workflow applies.
-- For any new cat addition endpoint, the enrichment logic (e.g. adding images, facts) can be moved into the `process_cat` workflow.
-
----
-
-### Summary of changes to implement:
-
-- **Define new entity model:** `"cat_live_data_fetch_request"` with a workflow function `process_cat_live_data_fetch_request` that:
-  - Takes the filters from the entity,
-  - Fetches live data from external API,
-  - Adds multiple `"cat"` entities (allowed since different model),
-  - Updates the job status fields within the `cat_live_data_fetch_request` entity (allowed since updating the current entity),
-  - This replaces the current `process_live_data_job` fire-and-forget task.
-
-- **Change `/cats/live-data` POST endpoint to only add a `cat_live_data_fetch_request` entity with workflow `process_cat_live_data_fetch_request`.**
-
-- **Keep `process_cat` workflow for enriching a cat entity before persistence:**
-  - Enrich with image, fact, etc.
-  - No adding/updating/deletion of cat entities inside `process_cat` workflow.
-
-- The endpoints become very simple, just validate and add entity with appropriate workflow.
-
----
-
-### Let's implement this:
-
-- Add `process_cat_live_data_fetch_request` workflow async function.
-- Refactor `/cats/live-data` POST to add the new entity type with filters.
-- Modify `process_cat` workflow for enrichment logic.
-- Remove background task `process_live_data_job`.
-- `/cats` GET and `/cats/search` remain unchanged.
-
----
-
-### Complete updated code with these changes below:
-
-```python
 from dataclasses import dataclass
 from typing import Optional, Dict, List, Any
 import asyncio
@@ -180,19 +103,15 @@ async def process_cat(entity: Dict) -> Dict:
     Workflow function for 'cat' entity.
     Enrich cat entity before persistence.
     """
-    # If breed or name are missing, try to fill or sanitize
     name = entity.get("name")
     breed = entity.get("breed")
 
-    # Example: ensure breed is set, fallback to name if possible
     if not breed and name:
         entity["breed"] = name
 
-    # Enrich image_url if missing based on breed (fetch from TheCatAPI)
     if not entity.get("image_url") and breed:
         try:
             async with httpx.AsyncClient() as client:
-                # Search breed id by name
                 breeds_resp = await client.get("https://api.thecatapi.com/v1/breeds", timeout=10)
                 breeds_resp.raise_for_status()
                 breeds = breeds_resp.json()
@@ -212,11 +131,9 @@ async def process_cat(entity: Dict) -> Dict:
         except Exception as e:
             logger.warning(f"Failed to enrich cat image_url: {e}")
 
-    # Enrich fact if missing
     if not entity.get("fact") and entity.get("breed"):
         entity["fact"] = f"{entity['breed']} is a wonderful cat breed!"
 
-    # Return modified entity (will be persisted)
     return entity
 
 
@@ -234,9 +151,7 @@ async def process_cat_live_data_fetch_request(entity: Dict) -> Dict:
     try:
         cats = await fetch_live_cat_data(filters)
 
-        # Add each cat entity (allowed, different entity_model)
         for cat in cats:
-            # Add each cat, with enrichment via process_cat workflow automatically
             await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model="cat",
@@ -259,15 +174,12 @@ async def process_cat_live_data_fetch_request(entity: Dict) -> Dict:
 @app.route("/cats/live-data", methods=["POST"])
 @validate_request(LiveDataRequest)
 async def post_live_data(data: LiveDataRequest):
-    # Add a 'cat_live_data_fetch_request' entity with filters and workflow
     filters = data.filters.__dict__ if data.filters else {}
 
     entity = {
         "filters": filters,
-        # Optional: other metadata fields can be added here
     }
 
-    # Add entity with workflow that handles fetching and adding cats
     entity_id = await entity_service.add_item(
         token=cyoda_auth_service,
         entity_model="cat_live_data_fetch_request",
@@ -334,23 +246,3 @@ if __name__ == "__main__":
     )
 
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation
-
-- The `/cats/live-data` endpoint now only creates a `cat_live_data_fetch_request` entity with the filter data.
-- The workflow `process_cat_live_data_fetch_request` runs automatically *before* that entity is persisted:
-  - It sets status fields on the request entity,
-  - Fetches live cats via `fetch_live_cat_data`,
-  - Adds each cat entity individually with `workflow=process_cat` (enrichment),
-  - Updates the request entity status to completed or failed.
-- The `process_cat` workflow enriches each cat entity just before persistence.
-- Endpoints are very thin: they only create entities with workflow functions that handle async logic.
-- This approach follows your requirement that workflows do all async tasks and enrichments, freeing controllers from logic.
-- The infinite recursion issue is avoided because `process_cat` does not add cats, and `process_cat_live_data_fetch_request` is a workflow on a different entity model.
-
----
-
-If you want, I can also provide test cases or further break down the workflows, just ask!

@@ -5,11 +5,13 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +19,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 entity_jobs: Dict[str, Dict[str, Any]] = {}
 
@@ -125,7 +124,7 @@ async def process_pet_sync(job_id: str, filter_params: Dict[str, Any]):
         entity_jobs[job_id]["status"] = "failed"
         entity_jobs[job_id]["error"] = str(e)
 
-@app.route("/pets/sync", methods=["POST"])
+@routes_bp.route("/pets/sync", methods=["POST"])
 @validate_request(PetSyncFilter)
 async def pets_sync(data: PetSyncFilter):
     try:
@@ -151,7 +150,7 @@ async def pets_sync(data: PetSyncFilter):
         logger.exception(e)
         return jsonify({"error": "Invalid request"}), 400
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def get_pets():
     try:
         pets_list = await entity_service.get_items(
@@ -164,7 +163,7 @@ async def get_pets():
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pets"}), 500
 
-@app.route("/pets/<int:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<int:pet_id>", methods=["GET"])
 async def get_pet(pet_id: int):
     try:
         pet = await entity_service.get_item(
@@ -180,7 +179,7 @@ async def get_pet(pet_id: int):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pet"}), 500
 
-@app.route("/pets/fun/fact", methods=["GET"])
+@routes_bp.route("/pets/fun/fact", methods=["GET"])
 async def get_random_pet_fact():
     facts = [
         "Cats sleep for 70% of their lives.",
@@ -194,19 +193,9 @@ async def get_random_pet_fact():
     fact = random.choice(facts)
     return jsonify({"fact": fact})
 
-@app.route("/pets/sync/status/<job_id>", methods=["GET"])
+@routes_bp.route("/pets/sync/status/<job_id>", methods=["GET"])
 async def get_sync_status(job_id):
     job = entity_jobs.get(job_id)
     if not job:
         return jsonify({"error": "Job ID not found"}), 404
     return jsonify(job)
-
-if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

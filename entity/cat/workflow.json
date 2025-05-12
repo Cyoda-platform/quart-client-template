@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for enriching cat entity data with breed, image, and fact information.",
+    "name": "cat_entity_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initial transition to start processing cat entity.",
+            "end_state": "Breed_set",
+            "end_state_description": "Breed attribute set if missing",
+            "name": "start_cat_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_breed"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch and enrich cat entity with image based on breed.",
+            "end_state": "Image_enriched",
+            "end_state_description": "Cat image URL enriched",
+            "name": "enrich_cat_image",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrich_image"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Breed_set",
+            "start_state_description": "Breed attribute set if missing"
+        },
+        {
+            "automated": true,
+            "description": "Set a fun fact about the cat breed.",
+            "end_state": "Fact_set",
+            "end_state_description": "Cat fact set",
+            "name": "set_cat_fact",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_fact"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Image_enriched",
+            "start_state_description": "Cat image URL enriched"
+        }
+    ]
+}

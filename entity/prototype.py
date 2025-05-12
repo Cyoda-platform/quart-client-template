@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass, field
+from typing import List, Optional, Dict, Any
+
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,21 +15,39 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# Local in-memory cache / "database" for pets: pet_id -> pet_data
 pets_cache: Dict[int, Dict[str, Any]] = {}
-next_pet_id = 1000  # for created pets locally
-
-# Entity job tracking for async processing (e.g. external API calls)
+next_pet_id = 1000
 entity_job: Dict[str, Dict[str, Any]] = {}
 
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
 
+@dataclass
+class PetFilter:
+    type: Optional[str] = None
+    status: Optional[str] = None
+    name: Optional[str] = None
+
+
+@dataclass
+class PetCreate:
+    name: str
+    type: str
+    status: str = "available"
+    category: str = "pets"
+    photoUrls: List[str] = field(default_factory=list)
+
+
+@dataclass
+class PetUpdate:
+    name: Optional[str] = None
+    type: Optional[str] = None
+    status: Optional[str] = None
+    category: Optional[str] = None
+    photoUrls: Optional[List[str]] = None
+
+
 async def fetch_pets_from_petstore(filters: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Fire external Petstore API call to fetch pets (simulate filtering client-side because Petstore API is limited).
-    TODO: Improve filtering logic or use real Petstore API filter if available.
-    """
     url = f"{PETSTORE_API_BASE}/pet/findByStatus"
     status = filters.get("status", "available")
     params = {"status": status}
@@ -39,7 +58,6 @@ async def fetch_pets_from_petstore(filters: Dict[str, Any]) -> Dict[str, Any]:
             resp.raise_for_status()
             pets = resp.json()
 
-            # Apply additional filtering (type, name) client-side
             filtered = []
             pet_type = filters.get("type")
             name = filters.get("name")
@@ -51,7 +69,6 @@ async def fetch_pets_from_petstore(filters: Dict[str, Any]) -> Dict[str, Any]:
                     continue
                 filtered.append(pet)
 
-            # Cache filtered pets internally (simulate)
             for pet in filtered:
                 pets_cache[pet["id"]] = pet
 
@@ -63,15 +80,12 @@ async def fetch_pets_from_petstore(filters: Dict[str, Any]) -> Dict[str, Any]:
 
 
 @app.route("/pets/search", methods=["POST"])
-async def search_pets():
-    """
-    Search pets with filters. Fetch data from Petstore API.
-    """
-    filters = await request.get_json()
+@validate_request(PetFilter)  # POST validation last per workaround
+async def search_pets(data: PetFilter):
+    filters = data.__dict__
     job_id = str(datetime.utcnow().timestamp())
     entity_job[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat()}
 
-    # Fire and forget fetch
     async def process_search():
         result = await fetch_pets_from_petstore(filters)
         entity_job[job_id]["status"] = "done"
@@ -79,18 +93,14 @@ async def search_pets():
 
     asyncio.create_task(process_search())
 
-    # For prototype: Wait for task completion to return result (to simplify UX)
-    # TODO: In real app use async job status system
-    await asyncio.sleep(1)  # simulate minimal wait (replace with better sync in prod)
+    await asyncio.sleep(1)
     result = entity_job[job_id].get("result", {"pets": []})
     return jsonify(result)
 
 
 @app.route("/pets/<int:pet_id>", methods=["GET"])
+# GET validation first per workaround - no validation needed here as no query params
 async def get_pet(pet_id: int):
-    """
-    Retrieve pet details from internal cache.
-    """
     pet = pets_cache.get(pet_id)
     if not pet:
         return jsonify({"error": "Pet not found"}), 404
@@ -98,22 +108,19 @@ async def get_pet(pet_id: int):
 
 
 @app.route("/pets", methods=["POST"])
-async def create_pet():
-    """
-    Add a new pet to internal cache. Simulated creation.
-    """
+@validate_request(PetCreate)  # POST validation last per workaround
+async def create_pet(data: PetCreate):
     global next_pet_id
-    data = await request.get_json()
     next_pet_id += 1
     pet_id = next_pet_id
 
     pet = {
         "id": pet_id,
-        "name": data.get("name", ""),
-        "type": data.get("type", ""),
-        "status": data.get("status", "available"),
-        "category": data.get("category", "pets"),
-        "photoUrls": data.get("photoUrls", []),
+        "name": data.name,
+        "type": data.type,
+        "status": data.status,
+        "category": data.category,
+        "photoUrls": data.photoUrls,
     }
     pets_cache[pet_id] = pet
 
@@ -121,29 +128,30 @@ async def create_pet():
 
 
 @app.route("/pets/<int:pet_id>", methods=["POST"])
-async def update_pet(pet_id: int):
-    """
-    Update pet details internally.
-    """
-    data = await request.get_json()
+@validate_request(PetUpdate)  # POST validation last per workaround
+async def update_pet(pet_id: int, data: PetUpdate):
     pet = pets_cache.get(pet_id)
     if not pet:
         return jsonify({"error": "Pet not found"}), 404
 
-    # Update allowed fields only
-    for key in ["name", "type", "status", "category", "photoUrls"]:
-        if key in data:
-            pet[key] = data[key]
+    if data.name is not None:
+        pet["name"] = data.name
+    if data.type is not None:
+        pet["type"] = data.type
+    if data.status is not None:
+        pet["status"] = data.status
+    if data.category is not None:
+        pet["category"] = data.category
+    if data.photoUrls is not None:
+        pet["photoUrls"] = data.photoUrls
 
     pets_cache[pet_id] = pet
     return jsonify({"id": pet_id, "message": "Pet updated successfully"})
 
 
 @app.route("/pets/<int:pet_id>/delete", methods=["POST"])
+# POST with no body, no validation decorator needed
 async def delete_pet(pet_id: int):
-    """
-    Delete pet from internal cache.
-    """
     if pet_id not in pets_cache:
         return jsonify({"error": "Pet not found"}), 404
 
@@ -158,4 +166,3 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, stream=sys.stdout,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

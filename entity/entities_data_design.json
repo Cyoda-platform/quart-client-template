@@ -1,0 +1,117 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "dataTypes": [
+                    "images",
+                    "breeds",
+                    "facts"
+                ],
+                "filters": {
+                    "breed": "siamese",
+                    "limit": 5
+                },
+                "source": "default"
+            },
+            "entity_name": "fetch_data_request"
+        },
+        {
+            "entity_data_example": {
+                "analysisType": "popularity",
+                "parameters": {
+                    "breed": "siamese",
+                    "timeRange": "last_month"
+                }
+            },
+            "entity_name": "analyze_data_request"
+        },
+        {
+            "entity_data_example": {
+                "breed": "siamese",
+                "limit": 5,
+                "type": "images"
+            },
+            "entity_name": "cats_data_get_query"
+        },
+        {
+            "entity_data_example": {
+                "content": "https://cdn2.thecatapi.com/images/MTY3ODIyMQ.jpg",
+                "id": "img_0"
+            },
+            "entity_name": "image_entity"
+        },
+        {
+            "entity_data_example": {
+                "content": {
+                    "description": "The Abyssinian is easy to care for, and a joy to have in your home.",
+                    "id": "abys",
+                    "life_span": "14 - 15",
+                    "name": "Abyssinian",
+                    "origin": "Egypt",
+                    "temperament": "Active, Energetic, Independent, Intelligent, Gentle"
+                },
+                "id": "abys"
+            },
+            "entity_name": "breed_entity"
+        },
+        {
+            "entity_data_example": {
+                "content": "Cats have five toes on their front paws, but only four toes on their back paws.",
+                "id": "fact_0"
+            },
+            "entity_name": "fact_entity"
+        },
+        {
+            "entity_data_example": {
+                "count": 15,
+                "message": "Data fetched and stored",
+                "status": "success"
+            },
+            "entity_name": "fetch_data_response"
+        },
+        {
+            "entity_data_example": {
+                "data": [
+                    {
+                        "content": "https://cdn2.thecatapi.com/images/MTY3ODIyMQ.jpg",
+                        "id": "img_0"
+                    },
+                    {
+                        "content": "https://cdn2.thecatapi.com/images/MTY3ODIyMg.jpg",
+                        "id": "img_1"
+                    }
+                ],
+                "dataType": "images"
+            },
+            "entity_name": "cats_data_get_response"
+        },
+        {
+            "entity_data_example": {
+                "analysisType": "popularity",
+                "result": {
+                    "breed": "siamese",
+                    "popularityScore": 12
+                }
+            },
+            "entity_name": "analyze_data_response_popularity"
+        },
+        {
+            "entity_data_example": {
+                "analysisType": "factFrequency",
+                "result": {
+                    "but": 2,
+                    "cats": 5,
+                    "five": 2,
+                    "front": 3,
+                    "have": 3,
+                    "on": 6,
+                    "only": 2,
+                    "paws": 4,
+                    "their": 7,
+                    "toes": 4
+                }
+            },
+            "entity_name": "analyze_data_response_fact_frequency"
+        }
+    ]
+}

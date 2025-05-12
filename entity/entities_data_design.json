@@ -1,0 +1,15 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "age": 2,
+                "description": "a playful kitten",
+                "id": 1,
+                "name": "fluffy",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

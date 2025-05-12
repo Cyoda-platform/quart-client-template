@@ -1,0 +1,53 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": "string",
+                "id": "string",
+                "name": "string",
+                "photoUrls": [
+                    "string"
+                ],
+                "status": "available",
+                "tags": [
+                    "string"
+                ]
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "action": "add",
+                "pet": {
+                    "category": "string",
+                    "id": "string (optional for add)",
+                    "name": "string",
+                    "photoUrls": [
+                        "string"
+                    ],
+                    "status": "available",
+                    "tags": [
+                        "string"
+                    ]
+                }
+            },
+            "entity_name": "pet_action"
+        },
+        {
+            "entity_data_example": {
+                "category": "string (optional)",
+                "status": "string (optional)",
+                "tags": [
+                    "string (optional)"
+                ]
+            },
+            "entity_name": "pet_search"
+        },
+        {
+            "entity_data_example": {
+                "fact": "Cats are mysterious and wonderful creatures!"
+            },
+            "entity_name": "random_pet_fact"
+        }
+    ]
+}

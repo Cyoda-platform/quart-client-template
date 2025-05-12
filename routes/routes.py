@@ -6,11 +6,13 @@ from datetime import datetime
 import uuid
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -18,9 +20,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 RANDOM_PET_FACTS_URL = "https://some-random-api.ml/facts/cat"
@@ -96,7 +95,7 @@ async def get_random_pet_fact() -> str:
             return "Cats are mysterious and wonderful creatures!"
 
 # POST /pets - handle add or update pet
-@app.route("/pets", methods=["POST"])
+@routes_bp.route("/pets", methods=["POST"])
 @validate_request(PetAction)
 async def pets_post(data: PetAction):
     pet_entity = data.pet or {}
@@ -144,7 +143,7 @@ async def pets_post(data: PetAction):
         return jsonify({"error": "Unsupported action"}), 400
 
 # GET /pets/<pet_id> - fetch pet, no persistence, no workflow
-@app.route("/pets/<pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<pet_id>", methods=["GET"])
 async def get_pet(pet_id):
     try:
         pet = await entity_service.get_item(
@@ -161,20 +160,14 @@ async def get_pet(pet_id):
         return jsonify({"error": "Failed to retrieve pet"}), 500
 
 # POST /pets/search - search pets from petstore (no persistence, no workflow)
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearch)
 async def search_pets(data: PetSearch):
     pets = await search_pets_from_petstore(data.category, data.status, data.tags)
     return jsonify({"pets": pets})
 
 # GET /pets/random-fact - fetch random fact (no persistence, no workflow)
-@app.route("/pets/random-fact", methods=["GET"])
+@routes_bp.route("/pets/random-fact", methods=["GET"])
 async def random_fact():
     fact = await get_random_pet_fact()
     return jsonify({"fact": fact})
-
-if __name__ == "__main__":
-    import logging
-
-    logging.basicConfig(level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

@@ -5,8 +5,8 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,8 +14,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -127,14 +126,14 @@ async def process_favorite(entity: Dict) -> Dict:
 
     return entity
 
-@app.route("/pets/query", methods=["POST"])
+@routes_bp.route("/pets/query", methods=["POST"])
 @validate_request(PetQuery)
 async def pets_query(data: PetQuery):
     filters = data.__dict__
     pets = await fetch_pets_from_petstore(filters)
     return jsonify({"pets": pets})
 
-@app.route("/favorites/add", methods=["POST"])
+@routes_bp.route("/favorites/add", methods=["POST"])
 @validate_request(FavoriteAdd)
 async def favorites_add(data: FavoriteAdd):
     pet_id = data.petId
@@ -167,7 +166,7 @@ async def favorites_add(data: FavoriteAdd):
         logger.exception(f"Failed to add pet to favorites via entity_service: {e}")
         return jsonify({"success": False, "message": "Failed to add favorite."}), 500
 
-@app.route("/favorites", methods=["GET"])
+@routes_bp.route("/favorites", methods=["GET"])
 async def favorites_list():
     try:
         items = await entity_service.get_items(
@@ -180,20 +179,9 @@ async def favorites_list():
         logger.exception(f"Failed to get favorites from entity_service: {e}")
         return jsonify({"favorites": []})
 
-@app.route("/fun/random-fact", methods=["POST"])
+@routes_bp.route("/fun/random-fact", methods=["POST"])
 @validate_request(EmptyBody)
 async def fun_random_fact(data: EmptyBody):
     import random
     fact = random.choice(PET_FACTS)
     return jsonify({"fact": fact})
-
-if __name__ == "__main__":
-    import sys
-    import logging
-
-    logging.basicConfig(
-        stream=sys.stdout,
-        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-        level=logging.INFO,
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

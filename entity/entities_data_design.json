@@ -1,0 +1,44 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "name": "buddy",
+                "status": "available",
+                "tags": [
+                    "friendly",
+                    "small"
+                ],
+                "type": "dog"
+            },
+            "entity_name": "pet_query"
+        },
+        {
+            "entity_data_example": {
+                "petId": 123
+            },
+            "entity_name": "favorite_add"
+        },
+        {
+            "entity_data_example": {
+                "id": 1,
+                "name": "Buddy",
+                "photoUrls": [
+                    "https://example.com/photo1.jpg"
+                ],
+                "status": "available",
+                "tags": [
+                    "friendly",
+                    "small"
+                ],
+                "type": "dog"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "fact": "Cats sleep 70% of their lives."
+            },
+            "entity_name": "fun_random_fact"
+        }
+    ]
+}

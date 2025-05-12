@@ -1,10 +1,10 @@
 {
-    "description": "Workflow to enrich favorite pet entity with pet data and mark it as added",
-    "name": "favorite_pet_enrichment_workflow",
+    "description": "Workflow for enriching favorite pet data and marking as added",
+    "name": "favorite_pet_processing_workflow",
     "transitions": [
         {
             "automated": true,
-            "description": "Enrich favorite entity with detailed pet data",
+            "description": "Enrich favorite entity with pet data",
             "end_state": "Pet_data_enriched",
             "end_state_description": "Favorite entity enriched with pet data",
             "name": "enrich_pet_data",
@@ -40,14 +40,14 @@
         },
         {
             "automated": true,
-            "description": "Complete favorite processing",
+            "description": "Workflow orchestration completion",
             "end_state": "Favorite_processed",
             "end_state_description": "Favorite processing completed",
             "name": "finalize_favorite",
             "processes": {
                 "externalized_processors": [
                     {
-                        "description": "Workflow orchestration",
+                        "description": "Workflow orchestration function",
                         "name": "process_favorite"
                     }
                 ],

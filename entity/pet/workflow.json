@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to process pet entities by setting description, adding timestamp, and pet metadata",
+    "name": "pet_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Set default description if missing",
+            "end_state": "Default_description_set",
+            "end_state_description": "Default description has been set on pet entity",
+            "name": "set_default_description",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_default_description"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add processing timestamp to pet entity",
+            "end_state": "Timestamp_added",
+            "end_state_description": "Processing timestamp has been added",
+            "name": "add_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_timestamp"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Default_description_set",
+            "start_state_description": "Default description has been set on pet entity"
+        },
+        {
+            "automated": true,
+            "description": "Add supplementary pet metadata entity",
+            "end_state": "Pet_metadata_added",
+            "end_state_description": "Supplementary pet metadata entity has been added",
+            "name": "add_pet_metadata",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_pet_metadata"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Timestamp_added",
+            "start_state_description": "Processing timestamp has been added"
+        }
+    ]
+}

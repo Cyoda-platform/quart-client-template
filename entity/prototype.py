@@ -1,12 +1,12 @@
-```python
+from dataclasses import dataclass
+from typing import List, Optional, Dict
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -29,17 +29,23 @@ PET_FACTS = [
     "Goldfish can recognize their owners."
 ]
 
+@dataclass
+class PetQuery:
+    type: Optional[str] = None
+    status: Optional[str] = None
+    tags: Optional[List[str]] = None
+    name: Optional[str] = None
+
+@dataclass
+class FavoriteAdd:
+    petId: int
+
+@dataclass
+class EmptyBody:
+    pass
 
 async def fetch_pets_from_petstore(filters: Dict) -> List[Dict]:
-    """
-    Query the external Petstore API with filters.
-    Petstore API supports querying by status only, so we will filter results locally for other fields.
-
-    :param filters: Dict with possible keys: type, status, tags, name
-    :return: List of pet dicts
-    """
     status = filters.get("status", "available")
-    # Petstore API: GET /pet/findByStatus?status=available
     url = f"{PETSTORE_API_BASE}/pet/findByStatus"
     params = {"status": status}
 
@@ -52,23 +58,12 @@ async def fetch_pets_from_petstore(filters: Dict) -> List[Dict]:
             logger.exception(f"Failed to fetch pets from Petstore API: {e}")
             return []
 
-    # Local filtering for type, tags, name
     filtered = []
     type_filter = filters.get("type")
-    tags_filter = set(filters.get("tags", []))
-    name_filter = filters.get("name", "").lower()
+    tags_filter = set(t.lower() for t in (filters.get("tags") or []))
+    name_filter = (filters.get("name") or "").lower()
 
     for pet in pets:
-        # Petstore API pet object example:
-        # {
-        #   "id": int,
-        #   "name": str,
-        #   "photoUrls": [str],
-        #   "status": str,
-        #   "category": {"id": int, "name": str},  # category.name is pet type
-        #   "tags": [{"id": int, "name": str}]
-        # }
-
         pet_type = pet.get("category", {}).get("name")
         if type_filter and (not pet_type or pet_type.lower() != type_filter.lower()):
             continue
@@ -78,10 +73,9 @@ async def fetch_pets_from_petstore(filters: Dict) -> List[Dict]:
             if not tags_filter.issubset(pet_tags):
                 continue
 
-        if name_filter and name_filter not in pet.get("name", "").lower():
+        if name_filter and name_filter not in (pet.get("name") or "").lower():
             continue
 
-        # Normalize response fields to match API spec
         filtered.append(
             {
                 "id": pet.get("id"),
@@ -94,27 +88,21 @@ async def fetch_pets_from_petstore(filters: Dict) -> List[Dict]:
         )
     return filtered
 
-
 @app.route("/pets/query", methods=["POST"])
-async def pets_query():
-    data = await request.get_json(force=True)
-    # Fire and forget processing pattern is not essential here since this endpoint returns immediately
-    pets = await fetch_pets_from_petstore(data or {})
+@validate_request(PetQuery)  # POST validation goes last, so decorator goes below route - correct order is route then validate_request
+async def pets_query(data: PetQuery):
+    pets = await fetch_pets_from_petstore(data.__dict__)
     return jsonify({"pets": pets})
 
-
 @app.route("/favorites/add", methods=["POST"])
-async def favorites_add():
-    data = await request.get_json(force=True)
-    pet_id = data.get("petId")
+@validate_request(FavoriteAdd)  # POST validation goes last, so decorator goes below route - correct order is route then validate_request
+async def favorites_add(data: FavoriteAdd):
+    pet_id = data.petId
     if not pet_id or not isinstance(pet_id, int):
         return jsonify({"success": False, "message": "Invalid or missing petId."}), 400
 
-    # Check if we already have pet cached, else try to fetch it (simplified)
     pet = favorites_store.get(pet_id)
     if not pet:
-        # TODO: Could fetch pet details from Petstore API /pet/{petId} here, but Petstore API has limited support
-        # For prototype, try to fetch from available pets
         pets = await fetch_pets_from_petstore({"status": "available"})
         pet = next((p for p in pets if p["id"] == pet_id), None)
         if not pet:
@@ -125,25 +113,23 @@ async def favorites_add():
 
     return jsonify({"success": True, "message": "Pet added to favorites."})
 
-
+# GET /favorites has no input params, so no validation needed
 @app.route("/favorites", methods=["GET"])
 async def favorites_list():
-    # Return list of favorite pets from local cache
     return jsonify({"favorites": list(favorites_store.values())})
 
-
+# POST /fun/random-fact with empty body
 @app.route("/fun/random-fact", methods=["POST"])
-async def fun_random_fact():
+@validate_request(EmptyBody)  # POST validation goes last, so decorator goes below route - correct order is route then validate_request
+async def fun_random_fact(data: EmptyBody):
     import random
-
     fact = random.choice(PET_FACTS)
     return jsonify({"fact": fact})
 
-
 if __name__ == "__main__":
     import sys
+    import logging
 
-    # Setup basic logging to stdout
     logging.basicConfig(
         stream=sys.stdout,
         format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",

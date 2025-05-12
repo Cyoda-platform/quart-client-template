@@ -1,54 +1,3 @@
-Understood. The goal is to move as much asynchronous processing and logic as possible from the controller endpoints into the workflow functions `process_{entity_name}` which are invoked right before persistence by `entity_service.add_item` or `update_item`.  
-The rules/reminders are:
-
-- The workflow function receives the entity dict and can modify it before persistence.
-- The workflow function can perform async tasks.
-- The workflow function can get/add entities of *different* entity models.
-- The workflow function **cannot** add/update/delete entities of the same model (to avoid infinite recursion).
-- The endpoint controllers should be "thin" and mainly delegate business logic to workflow functions.
-
----
-
-### Plan for refactoring:
-
-- Keep the HTTP endpoints minimal: just validate and forward calls to `entity_service` with proper workflow.
-- Move all async logic related to fetching supplements, enriching data, or other computations into workflow functions.
-- For example:
-  - For adding a pet, enrich pet data inside `process_pet`.
-  - For searching pets, move the search logic into workflow (if search operates on entities).
-  - For fetching pet details or others, move fetching and enrichment to workflow.
-- The async task `process_entity` we had before was basically business logic and async orchestration — we will now move most of it to `process_pet` workflow.
-- The workflows can call `entity_service.get_item()` or `add_item()` for *other* entity models if needed.
-- The endpoints just call `add_item` or `update_item` with the workflow attached.
-
----
-
-### Implementation notes:
-
-- For the current example, we have only `pet` entity_model, so only `process_pet` workflow.
-- The `process_pet` will:
-  - If entity has an `action` field, perform the corresponding logic:
-    - e.g. "fetch" action can be handled by returning pet or enriching pet.
-    - "add" action: enrich pet data (e.g. add timestamps, additional data).
-    - "update" action: maybe enrich or validate data.
-  - Or we can separate the action handling from workflow and keep it as a controller stub. But per your request, let's put as much logic as possible in workflow.
-- However, note that `entity_service.add_item` expects the *entity* to persist. So the workflow modifies the entity before persistence.
-- For "fetch" or "search" endpoints that do not add or update entities, workflows do not apply (since no persistence).
-- For "search" and "random fact" endpoints that just fetch data and return, we can create separate utility async functions but those are not workflows since no persistence.
-
----
-
-### Summary of what can be moved to workflow:
-
-- For add/update pet: move enrichment, validation, and supplement data fetching to workflow.
-- For "fetch" pet endpoint, no persistence occurs, so no workflow - keep as is.
-- For search and random fact endpoints, no persistence, so keep logic in utility functions.
-
----
-
-## Here's the updated code reflecting this approach:
-
-```python
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 import asyncio
@@ -72,8 +21,6 @@ logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
-
-entity_job: Dict[str, Dict[str, Any]] = {}
 
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 RANDOM_PET_FACTS_URL = "https://some-random-api.ml/facts/cat"
@@ -284,30 +231,3 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### What changed?
-
-- **All async enrichment/fetching logic for adding/updating pets moved into `process_pet`.**
-- **Endpoints `/pets` (POST) are now thin wrappers just calling `add_item` or `update_item` with `workflow=process_pet`.**
-- **`process_pet` workflow inspects the `action` field in the entity, performs async enrichment/fetches, modifies the entity in-place before persistence.**
-- **Removed previous async task/job queue logic since the workflow approach is the preferred pattern.**
-- **Search, random fact, and fetch endpoints remain unchanged as no persistence is involved and no workflows apply.**
-
----
-
-### Why this is better?
-
-- Controller endpoints are slimmer and simpler.
-- Business logic and async enrichment is centralized in workflow functions.
-- Workflow functions run asynchronously inside persistence calls, ensuring all enrichment happens before data is saved.
-- No fire-and-forget or external async tasks needed.
-- Workflow can fetch/add entities of other models if needed without recursion risks.
-
----
-
-If you want, I can help adapt this pattern to other entity models or create additional workflows for search or other entity persistence.
-
-Let me know!

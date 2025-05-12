@@ -1,0 +1,45 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "type": "random"
+            },
+            "entity_name": "cats_data_request"
+        },
+        {
+            "entity_data_example": {
+                "cat_id": "abc123"
+            },
+            "entity_name": "favorite_cat_request"
+        },
+        {
+            "entity_data_example": {
+                "breed": "Bengal",
+                "fact": "Bengal cats are known for their leopard-like spots.",
+                "id": "bengal_01",
+                "image_url": "https://cdn2.thecatapi.com/images/bengal_01.jpg"
+            },
+            "entity_name": "cat"
+        },
+        {
+            "entity_data_example": {
+                "cats": [
+                    {
+                        "breed": "Bengal",
+                        "fact": "Bengal cats are known for their leopard-like spots.",
+                        "id": "bengal_01",
+                        "image_url": "https://cdn2.thecatapi.com/images/bengal_01.jpg"
+                    }
+                ]
+            },
+            "entity_name": "cats_response"
+        },
+        {
+            "entity_data_example": {
+                "message": "Cat abc123 added to favorites.",
+                "status": "success"
+            },
+            "entity_name": "favorite_cat_response"
+        }
+    ]
+}

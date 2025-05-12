@@ -1,12 +1,13 @@
-```python
+from dataclasses import dataclass
+from typing import Optional, Dict
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,22 +15,15 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory "persistence" for fetched cat data
 cats_storage: List[Dict] = []
 entity_job: Dict[str, Dict] = {}
 
-# External Petstore API base URL (public Petstore Swagger example)
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
-# Helper: simulate generating a unique job id
 def generate_job_id() -> str:
     return datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
 
-# Helper: transform external pet data to internal cat model
 def transform_pet_to_cat(pet: Dict) -> Dict:
-    # TODO: Petstore API does not have real cat data; mapping with placeholders.
-    # We'll simulate cats as pets with category.name == 'cats' or type 'cat' in tags,
-    # but Petstore API has limited data, so just map all pets as cats for prototype.
     return {
         "id": str(pet.get("id")),
         "name": pet.get("name", "Unknown Cat"),
@@ -39,40 +33,50 @@ def transform_pet_to_cat(pet: Dict) -> Dict:
         "imageUrl": pet.get("photoUrls", [None])[0] if pet.get("photoUrls") else None,
     }
 
+@dataclass
+class AgeRange:
+    min: Optional[int] = None
+    max: Optional[int] = None
+
+@dataclass
+class FetchFilters:
+    breed: Optional[str] = None
+    ageRange: Optional[Dict] = None  # We'll receive dict for ageRange, no nested dataclass for simplicity
+    limit: Optional[int] = 10
+
+@dataclass
+class SearchFilters:
+    breed: Optional[str] = None
+    ageRange: Optional[Dict] = None
+    nameContains: Optional[str] = None
+
+@dataclass
+class SearchRequest:
+    filters: Optional[Dict] = None  # filters dict, no nested dataclass for simplicity
+    sortBy: Optional[str] = None
+    limit: Optional[int] = 10
+
 async def fetch_cats_from_petstore(filters: Dict) -> List[Dict]:
-    """
-    Fetch pets from Petstore API and filter to simulate cats.
-    Petstore API doesn't have real cats, so we fetch pets and treat them as cats.
-    """
     async with httpx.AsyncClient() as client:
         try:
-            # Petstore API provides /pet/findByStatus?status=available
-            # We'll fetch available pets and treat them as cats.
             resp = await client.get(f"{PETSTORE_BASE_URL}/pet/findByStatus", params={"status": "available"})
             resp.raise_for_status()
             pets = resp.json()
 
-            # Filter by breed if specified (breed mapped from category.name)
             breed_filter = filters.get("breed")
-            age_min = filters.get("ageRange", {}).get("min")
-            age_max = filters.get("ageRange", {}).get("max")
+            age_min = filters.get("ageRange", {}).get("min") if filters.get("ageRange") else None
+            age_max = filters.get("ageRange", {}).get("max") if filters.get("ageRange") else None
             limit = filters.get("limit") or 10
 
             cats = []
             for pet in pets:
-                # Transform pet to cat model
                 cat = transform_pet_to_cat(pet)
-
-                # Breed filter
                 if breed_filter and breed_filter.lower() != cat["breed"].lower():
                     continue
-
-                # Age filter - using dummy age, so just check if provided
                 if age_min is not None and cat["age"] < age_min:
                     continue
                 if age_max is not None and cat["age"] > age_max:
                     continue
-
                 cats.append(cat)
                 if len(cats) >= limit:
                     break
@@ -84,12 +88,8 @@ async def fetch_cats_from_petstore(filters: Dict) -> List[Dict]:
             return []
 
 async def process_entity(job_id: str, filters: Dict):
-    """
-    Background task to fetch cats and store them.
-    """
     try:
         cats = await fetch_cats_from_petstore(filters)
-        # Store fetched cats in global storage (overwrite for simplicity)
         global cats_storage
         cats_storage = cats
         entity_job[job_id]["status"] = "completed"
@@ -102,14 +102,13 @@ async def process_entity(job_id: str, filters: Dict):
         logger.exception(f"Job {job_id} failed")
 
 @app.route("/cats/fetch", methods=["POST"])
-async def fetch_cats():
-    data = await request.get_json(force=True)
+@validate_request(FetchFilters)  # POST validation last per workaround
+async def fetch_cats(data: FetchFilters):
     job_id = generate_job_id()
     requested_at = datetime.utcnow().isoformat()
 
     entity_job[job_id] = {"status": "processing", "requestedAt": requested_at}
-    # Fire and forget the processing task
-    asyncio.create_task(process_entity(job_id, data))
+    asyncio.create_task(process_entity(job_id, data.__dict__))
 
     return jsonify({
         "status": "processing",
@@ -118,8 +117,8 @@ async def fetch_cats():
     }), 202
 
 @app.route("/cats", methods=["GET"])
+# Workaround issue: validate_querystring should go first in GET but we have no strict schema to validate here, so no @validate_querystring
 async def get_cats():
-    # Parse query params
     breed = request.args.get("breed")
     age_min = request.args.get("ageMin", type=int)
     age_max = request.args.get("ageMax", type=int)
@@ -137,13 +136,12 @@ async def get_cats():
     return jsonify(filtered_cats[:limit])
 
 @app.route("/cats/search", methods=["POST"])
-async def search_cats():
-    data = await request.get_json(force=True)
-    filters = data.get("filters", {})
-    sort_by = data.get("sortBy")
-    limit = data.get("limit") or 10
+@validate_request(SearchRequest)  # POST validation last per workaround
+async def search_cats(data: SearchRequest):
+    filters = data.filters or {}
+    sort_by = data.sortBy
+    limit = data.limit or 10
 
-    # Apply filters on stored cats
     result_cats = cats_storage
 
     breed = filters.get("breed")
@@ -172,4 +170,3 @@ async def search_cats():
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

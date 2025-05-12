@@ -6,11 +6,13 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -18,9 +20,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 entity_job: Dict[str, Dict[str, Any]] = {}
 
@@ -134,7 +133,7 @@ async def process_fetch_data(job_id: str, params: FetchDataRequest):
         entity_job[job_id]["status"] = "failed"
         logger.exception(f"Failed processing fetch data job {job_id}: {e}")
 
-@app.route("/cats/data/fetch", methods=["POST"])
+@routes_bp.route("/cats/data/fetch", methods=["POST"])
 @validate_request(FetchDataRequest)
 async def cats_data_fetch(data: FetchDataRequest):
     job_id = f"job_{datetime.utcnow().timestamp()}"
@@ -143,7 +142,7 @@ async def cats_data_fetch(data: FetchDataRequest):
     asyncio.create_task(process_fetch_data(job_id, data))
     return jsonify({"status": "processing", "jobId": job_id, "requestedAt": requested_at}), 202
 
-@app.route("/cats/data", methods=["GET"])
+@routes_bp.route("/cats/data", methods=["GET"])
 @validate_querystring(CatsDataGetQuery)
 async def cats_data_get():
     query_args = request.args
@@ -177,7 +176,7 @@ async def cats_data_get():
 
     return jsonify({"dataType": data_type, "data": data_items})
 
-@app.route("/cats/data/analyze", methods=["POST"])
+@routes_bp.route("/cats/data/analyze", methods=["POST"])
 @validate_request(AnalyzeDataRequest)
 async def cats_data_analyze(data: AnalyzeDataRequest):
     analysis_type = data.analysisType
@@ -223,9 +222,3 @@ async def cats_data_analyze(data: AnalyzeDataRequest):
 
     else:
         return jsonify({"error": f"Unsupported analysis type '{analysis_type}'"}), 400
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                        format='%(asctime)s %(levelname)s %(name)s: %(message)s')
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

@@ -1,0 +1,33 @@
+{
+    "description": "Workflow to fetch and finalize image data for Purrfect Pets",
+    "name": "purrfect_pets_image_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Begin processing image entity",
+            "end_state": "Image_processing_started",
+            "end_state_description": "Image processing has started",
+            "name": "start_image_processing",
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process image fetching and finalization",
+            "end_state": "Image_processed",
+            "end_state_description": "Image processing completed",
+            "name": "process_image",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_images"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Image_processing_started",
+            "start_state_description": "Image processing has started"
+        }
+    ]
+}

@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for processing pet entity data with normalization and enrichment steps",
+    "name": "pet_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet entity",
+            "end_state": "Status_normalized",
+            "end_state_description": "Pet status normalized",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Normalize category name of pet",
+            "end_state": "Category_normalized",
+            "end_state_description": "Pet category normalized",
+            "name": "normalize_category",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_category"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Status_normalized",
+            "start_state_description": "Pet status normalized"
+        },
+        {
+            "automated": true,
+            "description": "Add created_at timestamp if missing",
+            "end_state": "Created_at_added",
+            "end_state_description": "created_at timestamp added to pet",
+            "name": "add_created_at_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_created_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Category_normalized",
+            "start_state_description": "Pet category normalized"
+        }
+    ]
+}

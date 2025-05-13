@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 from typing import List, Optional, Dict
 
@@ -7,8 +6,8 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -20,8 +19,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
@@ -79,14 +77,14 @@ async def fetch_pets_from_petstore(filters: dict) -> List[dict]:
         pets.append(pet)
     return pets
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearchFilters)
 async def pets_search(data: PetSearchFilters):
     filters = data.__dict__
     pets = await fetch_pets_from_petstore(filters)
     return jsonify({"pets": pets})
 
-@app.route("/pets/add", methods=["POST"])
+@routes_bp.route("/pets/add", methods=["POST"])
 @validate_request(PetAdd)
 async def pets_add(data: PetAdd):
     pet_data = data.__dict__
@@ -102,7 +100,7 @@ async def pets_add(data: PetAdd):
         return jsonify({"error": "Failed to add pet"}), 500
     return jsonify({"id": pet_id})
 
-@app.route("/pets/update", methods=["POST"])
+@routes_bp.route("/pets/update", methods=["POST"])
 @validate_request(PetUpdate)
 async def pets_update(data: PetUpdate):
     pet_id = data.id
@@ -143,7 +141,7 @@ async def pets_update(data: PetUpdate):
 
     return jsonify({"message": "Pet updated successfully"})
 
-@app.route("/pets/<int:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<int:pet_id>", methods=["GET"])
 async def pets_get(pet_id: int):
     try:
         pet = await entity_service.get_item(
@@ -164,7 +162,7 @@ async def pets_get(pet_id: int):
     pet_out["type"] = cat.get("name") if cat else None
     return jsonify(pet_out)
 
-@app.route("/favorites/add", methods=["POST"])
+@routes_bp.route("/favorites/add", methods=["POST"])
 @validate_request(FavoriteAdd)
 async def favorites_add(data: FavoriteAdd):
     user_id = data.userId
@@ -174,7 +172,7 @@ async def favorites_add(data: FavoriteAdd):
         favs.append(pet_id)
     return jsonify({"message": "Pet added to favorites"})
 
-@app.route("/favorites/<int:user_id>", methods=["GET"])
+@routes_bp.route("/favorites/<int:user_id>", methods=["GET"])
 async def favorites_get(user_id: int):
     pet_ids = favorites_db.get(user_id, [])
     pets = []
@@ -195,6 +193,3 @@ async def favorites_get(user_id: int):
             pet_out["type"] = cat.get("name") if cat else None
             pets.append(pet_out)
     return jsonify({"userId": user_id, "favorites": pets})
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

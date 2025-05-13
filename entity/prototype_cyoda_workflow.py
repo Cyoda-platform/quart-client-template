@@ -1,63 +1,3 @@
-Understood! The goal is to **move all async logic from the endpoints into workflow functions** (`process_{entity_name}`) that will be invoked right before the entity persistence. This way, controllers remain thin and simple, and all data manipulation, fetching, and secondary entity creation happens in the workflow.
-
-### Key points and constraints:
-- The workflow function takes the entity data as the only argument.
-- It can modify the entity state directly (changing fields, adding fields).
-- It can perform async logic (network calls, additional entity calls).
-- It can create/update other entities of **different** entity models (but not the current entity model!).
-- The workflow function is awaited inside `entity_service.add_item` before persisting the entity.
-- The endpoint only creates the initial entity data and calls `add_item` with the workflow function.
-
----
-
-### What async logic do we have that should be moved?
-
-1. Fetching weather data from external API.
-2. Updating/adding cache entities.
-3. Managing job state.
-
----
-
-### Approach:
-
-- Define **one or more workflow functions** for the entity models involved:
-  - `process_weather_cache` - which, given an entity with lat/lon, fetches weather data and modifies the entity accordingly.
-  - `process_weather_fetch_job` (new) - which will fetch weather data for multiple locations and manage job state.
-  
-- In the `/weather/fetch` endpoint:
-  - Instead of launching an async task to process all locations, we create a new job entity with initial data (e.g. job id, locations, status).
-  - We call `entity_service.add_item` with the `process_weather_fetch_job` workflow.
-  - The workflow will asynchronously fetch weather for each location, add/update weather_cache entities (of different entity_model), and update the job status.
-  
-- In the `/weather/results` endpoint:
-  - It remains a simple GET fetching the cached weather entity by technical_id.
-  
----
-
-### Additional notes:
-
-- Since we **cannot add/update/delete the same entity model inside its own workflow** (to avoid recursion), for the job entity, the workflow can update other entities (e.g. `weather_cache`), and for the weather cache entity, the workflow can only update the entity itself.
-- For the weather fetch job, the workflow can update the job entity state directly (status, timestamps).
-- For weather cache, the workflow fetches data and updates the entity data before persistence.
-
----
-
-### Proposed new structure:
-
-- `process_weather_fetch_job(entity)`:
-  - entity contains e.g. `job_id`, `locations`, `status`
-  - For each location:
-    - Call `entity_service.add_item` with entity_model=`weather_cache`, data containing lat/lon (or minimal info), workflow=`process_weather_cache`
-  - Update job status on `entity` directly.
-- `process_weather_cache(entity)`:
-  - Given lat/lon in entity, fetch weather data from external API.
-  - Update entity with new data fields (weather data, timestamp, processed_at, etc).
-  
----
-
-### Now, full updated code reflecting these changes:
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -81,7 +21,6 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# Request schemas
 @dataclass
 class FetchRequest:
     locations: list  # List of {"latitude": float, "longitude": float}
@@ -91,16 +30,13 @@ class WeatherQuery:
     lat: float
     lon: float
 
-entity_name_cache = "weather_cache"  # entity name always underscore lowercase
-entity_name_job = "weather_fetch_job"  # new entity for fetch job
+entity_name_cache = "weather_cache"
+entity_name_job = "weather_fetch_job"
 
 MSC_GEOMET_BASE_URL = "https://api.msc-geomet.com/weather"  # TODO: replace with actual URL
 
 
 async def fetch_weather_data(lat: float, lon: float) -> Dict:
-    """
-    Helper to fetch weather data from external API.
-    """
     async with httpx.AsyncClient() as client:
         params = {"lat": lat, "lon": lon}
         response = await client.get(MSC_GEOMET_BASE_URL, params=params, timeout=10)
@@ -109,35 +45,26 @@ async def fetch_weather_data(lat: float, lon: float) -> Dict:
 
 
 async def process_weather_cache(entity: dict) -> dict:
-    """
-    Workflow function for 'weather_cache' entity.
-    Fetches weather data for the lat/lon and updates the entity before persistence.
-    """
     lat = entity.get("latitude")
     lon = entity.get("longitude")
     if lat is None or lon is None:
         logger.warning("process_weather_cache: latitude or longitude missing in entity")
-        return entity  # no modification
-
+        return entity
     try:
         data = await fetch_weather_data(lat, lon)
         entity["data"] = data
         entity["timestamp"] = datetime.utcnow().isoformat() + "Z"
         entity["processed_at"] = datetime.utcnow().isoformat() + "Z"
+        # Clear any previous fetch errors on success
+        entity.pop("fetch_error", None)
         logger.info(f"Weather data fetched and updated for ({lat}, {lon})")
     except Exception as e:
         logger.exception(f"Failed to fetch weather data in process_weather_cache: {e}")
-        # optionally add error info to entity
         entity["fetch_error"] = str(e)
     return entity
 
 
 async def process_weather_fetch_job(entity: dict) -> dict:
-    """
-    Workflow function for 'weather_fetch_job' entity.
-    Process the fetch job by adding/updating weather_cache entities with workflow.
-    Updates the job status in this entity.
-    """
     job_id = entity.get("job_id")
     locations = entity.get("locations", [])
     if not job_id or not isinstance(locations, list) or not locations:
@@ -151,7 +78,6 @@ async def process_weather_fetch_job(entity: dict) -> dict:
 
     logger.info(f"Starting job {job_id} for {len(locations)} locations")
 
-    # For each location, add or update weather_cache entity with workflow
     for loc in locations:
         lat = loc.get("latitude")
         lon = loc.get("longitude")
@@ -160,16 +86,12 @@ async def process_weather_fetch_job(entity: dict) -> dict:
             continue
 
         technical_id = f"{lat}_{lon}"
-
-        # Prepare cache entity minimal data
         cache_entity = {
             "latitude": lat,
             "longitude": lon,
-            # 'data', 'timestamp' etc will be filled by workflow
         }
 
         try:
-            # Try to update first (if exists)
             await entity_service.update_item(
                 token=cyoda_auth_service,
                 entity_model=entity_name_cache,
@@ -180,18 +102,18 @@ async def process_weather_fetch_job(entity: dict) -> dict:
             )
             logger.info(f"Updated existing cache entity for ({lat},{lon})")
         except Exception:
-            # If update fails, add new item with workflow function
-            await entity_service.add_item(
-                token=cyoda_auth_service,
-                entity_model=entity_name_cache,
-                entity_version=ENTITY_VERSION,
-                entity=cache_entity,
-                workflow=process_weather_cache,
-            )
-            logger.info(f"Added new cache entity for ({lat},{lon}) with workflow")
-
-        # Note: The workflow `process_weather_cache` will fetch and update weather data asynchronously
-        # before persistence.
+            try:
+                await entity_service.add_item(
+                    token=cyoda_auth_service,
+                    entity_model=entity_name_cache,
+                    entity_version=ENTITY_VERSION,
+                    entity=cache_entity,
+                    workflow=process_weather_cache,
+                )
+                logger.info(f"Added new cache entity for ({lat},{lon}) with workflow")
+            except Exception as e:
+                logger.exception(f"Failed to add cache entity for ({lat},{lon}): {e}")
+                # Continue processing other locations even if one fails
 
     entity["status"] = "done"
     entity["finished_at"] = datetime.utcnow().isoformat() + "Z"
@@ -207,7 +129,7 @@ async def weather_fetch(data: FetchRequest):
     if not isinstance(locations, list) or not locations:
         return jsonify({"status": "error", "message": "No locations provided"}), 400
 
-    job_id = f"job_{datetime.utcnow().timestamp()}"
+    job_id = f"job_{int(datetime.utcnow().timestamp() * 1000)}"
     job_entity = {
         "job_id": job_id,
         "locations": locations,
@@ -215,16 +137,18 @@ async def weather_fetch(data: FetchRequest):
         "requested_at": datetime.utcnow().isoformat() + "Z",
     }
 
-    # Add the job entity with the workflow to process it asynchronously before persistence
-    await entity_service.add_item(
-        token=cyoda_auth_service,
-        entity_model=entity_name_job,
-        entity_version=ENTITY_VERSION,
-        entity=job_entity,
-        workflow=process_weather_fetch_job,
-    )
+    try:
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model=entity_name_job,
+            entity_version=ENTITY_VERSION,
+            entity=job_entity,
+            workflow=process_weather_fetch_job,
+        )
+    except Exception as e:
+        logger.exception(f"Failed to create fetch job entity: {e}")
+        return jsonify({"status": "error", "message": "Failed to create fetch job"}), 500
 
-    # The processing is handled in the workflow function; no fire-and-forget needed here
     return jsonify(
         {
             "status": "success",
@@ -274,29 +198,3 @@ async def weather_results():
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation of changes:
-
-- Introduced a new entity model `weather_fetch_job` to represent each fetch request.
-- Endpoint `/weather/fetch` only creates the job entity and calls `add_item` with `process_weather_fetch_job` workflow.
-- `process_weather_fetch_job` asynchronously processes all locations by calling `entity_service.add_item` for `weather_cache` entities with `process_weather_cache` workflow.
-- `process_weather_cache` fetches the weather data from external API and updates the entity before persistence.
-- Removed all async fetching logic from endpoints.
-- No fire-and-forget tasks in endpoints, the workflow functions handle asynchronous fetching and persistence.
-- Job entity status is updated inside its workflow function (`new` → `processing` → `done` or `failed`).
-- Weather cache entities are created/updated by the job workflow, each enriched by their own workflow function.
-
----
-
-### Benefits:
-- Controllers are thin, only responsible for input validation and calling `add_item` with the proper workflow.
-- All business logic, async calls, entity manipulation, and state management are inside workflow functions.
-- Robust, maintainable, and easily testable.
-- Respects the constraint of no recursion on current entity model inside its own workflow.
-
----
-
-If you want, I can help refactor further or adjust error handling/logging. Let me know!

@@ -1,0 +1,55 @@
+{
+    "description": "Workflow for processing pet entity with timestamp and enrichment",
+    "name": "pet_entity_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet entity",
+            "end_state": "timestamps_processed",
+            "end_state_description": "Timestamps have been processed",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_timestamps"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Enrich the pet entity asynchronously",
+            "end_state": "enrichment_started",
+            "end_state_description": "Enrichment task has been started",
+            "name": "enrich_entity",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrichment"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "timestamps_processed",
+            "start_state_description": "Timestamps have been processed"
+        },
+        {
+            "automated": true,
+            "description": "Complete processing and return to final state",
+            "end_state": "processed",
+            "end_state_description": "Pet entity processing completed",
+            "name": "complete_processing",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "enrichment_started",
+            "start_state_description": "Enrichment task has been started"
+        }
+    ]
+}

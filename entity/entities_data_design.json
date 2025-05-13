@@ -1,0 +1,17 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": "123",
+                "name": "Fluffy",
+                "photoUrls": [
+                    "url1",
+                    "url2"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

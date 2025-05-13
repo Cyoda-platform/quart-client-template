@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to process pet adoption requests",
+    "name": "adoption_request_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Validate pet existence for adoption request",
+            "end_state": "Pet_validated",
+            "end_state_description": "Pet validation completed",
+            "name": "start_validation",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Set adoption request status to pending",
+            "end_state": "Pending_status_set",
+            "end_state_description": "Adoption request status set to pending",
+            "name": "set_pending_status",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_pending"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_validated",
+            "start_state_description": "Pet validation completed"
+        },
+        {
+            "automated": true,
+            "description": "Perform asynchronous approval of adoption request",
+            "end_state": "Approval_initiated",
+            "end_state_description": "Asynchronous approval process started",
+            "name": "async_approval",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_async_approval"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pending_status_set",
+            "start_state_description": "Adoption request status set to pending"
+        }
+    ]
+}

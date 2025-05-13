@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to validate location, fetch weather data and update timestamps",
+    "name": "weather_data_fetch_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing weather cache for entity",
+            "end_state": "location_validated",
+            "end_state_description": "Location validated",
+            "name": "start_weather_cache_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_location"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch weather data from external API",
+            "end_state": "weather_fetched",
+            "end_state_description": "Weather data fetched",
+            "name": "fetch_weather_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_weather"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "location_validated",
+            "start_state_description": "Location validated"
+        },
+        {
+            "automated": true,
+            "description": "Update timestamp fields after fetching weather data",
+            "end_state": "weather_cache_processed",
+            "end_state_description": "Weather cache processing completed",
+            "name": "update_timestamps",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_timestamps"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "weather_fetched",
+            "start_state_description": "Weather data fetched"
+        }
+    ]
+}

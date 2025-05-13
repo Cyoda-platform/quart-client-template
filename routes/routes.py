@@ -1,16 +1,200 @@
-from datetime import timezone, datetime
+
+from dataclasses import dataclass
+from typing import List, Optional, Dict
+
+import asyncio
 import logging
-from quart import Blueprint, request, abort
-from quart_schema import validate, validate_querystring, tag, operation_id
+from datetime import datetime
+
+import httpx
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request
+
 from app_init.app_init import BeanFactory
-from common.service.entity_service_interface import EntityService
+from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
-FINAL_STATES = {"FAILURE", "SUCCESS", "CANCELLED", "CANCELLED_BY_USER", "UNKNOWN", "FINISHED"}
-PROCESSING_STATE = "PROCESSING"
-routes_bp = Blueprint("routes", __name__)
+logger.setLevel(logging.INFO)
 
-factory = BeanFactory(config={"CHAT_REPOSITORY": "cyoda"})
-entity_service: EntityService = factory.get_services()["entity_service"]
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
+app = Quart(__name__)
+QuartSchema(app)
 
+PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
+
+@dataclass
+class PetSearchFilters:
+    type: Optional[str] = None
+    status: Optional[str] = None
+    name: Optional[str] = None
+
+@dataclass
+class PetAdd:
+    name: str
+    type: str
+    status: str
+    photoUrls: List[str]
+
+@dataclass
+class PetUpdate:
+    id: int
+    name: Optional[str] = None
+    type: Optional[str] = None
+    status: Optional[str] = None
+    photoUrls: Optional[List[str]] = None
+
+@dataclass
+class FavoriteAdd:
+    userId: int
+    petId: int
+
+favorites_db: Dict[int, List[int]] = {}
+
+async def fetch_pets_from_petstore(filters: dict) -> List[dict]:
+    pets = []
+    status = filters.get("status", "available")
+    type_filter = filters.get("type")
+    name_filter = filters.get("name")
+
+    url = f"{PETSTORE_API_BASE}/pet/findByStatus?status={status}"
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.exception(e)
+            return []
+
+    for pet in data:
+        pet_type = pet.get("category", {}).get("name", "").lower()
+        pet_name = pet.get("name", "").lower()
+        if type_filter and pet_type != type_filter.lower():
+            continue
+        if name_filter and name_filter.lower() not in pet_name:
+            continue
+        pets.append(pet)
+    return pets
+
+@app.route("/pets/search", methods=["POST"])
+@validate_request(PetSearchFilters)
+async def pets_search(data: PetSearchFilters):
+    filters = data.__dict__
+    pets = await fetch_pets_from_petstore(filters)
+    return jsonify({"pets": pets})
+
+@app.route("/pets/add", methods=["POST"])
+@validate_request(PetAdd)
+async def pets_add(data: PetAdd):
+    pet_data = data.__dict__
+    try:
+        pet_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="pet",
+            entity_version=ENTITY_VERSION,
+            entity=pet_data
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to add pet"}), 500
+    return jsonify({"id": pet_id})
+
+@app.route("/pets/update", methods=["POST"])
+@validate_request(PetUpdate)
+async def pets_update(data: PetUpdate):
+    pet_id = data.id
+    update_fields = data.__dict__.copy()
+    update_fields.pop("id", None)
+
+    # Remove None values
+    update_fields = {k: v for k, v in update_fields.items() if v is not None}
+
+    try:
+        existing_pet = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="pet",
+            entity_version=ENTITY_VERSION,
+            technical_id=pet_id,
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Pet not found"}), 404
+
+    if not existing_pet:
+        return jsonify({"error": "Pet not found"}), 404
+
+    existing_pet.update(update_fields)
+
+    try:
+        await entity_service.update_item(
+            token=cyoda_auth_service,
+            entity_model="pet",
+            entity_version=ENTITY_VERSION,
+            entity=existing_pet,
+            technical_id=pet_id,
+            meta={}
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to update pet"}), 500
+
+    return jsonify({"message": "Pet updated successfully"})
+
+@app.route("/pets/<int:pet_id>", methods=["GET"])
+async def pets_get(pet_id: int):
+    try:
+        pet = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="pet",
+            entity_version=ENTITY_VERSION,
+            technical_id=pet_id,
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Pet not found"}), 404
+
+    if not pet:
+        return jsonify({"error": "Pet not found"}), 404
+
+    pet_out = pet.copy()
+    cat = pet_out.pop("category", None)
+    pet_out["type"] = cat.get("name") if cat else None
+    return jsonify(pet_out)
+
+@app.route("/favorites/add", methods=["POST"])
+@validate_request(FavoriteAdd)
+async def favorites_add(data: FavoriteAdd):
+    user_id = data.userId
+    pet_id = data.petId
+    favs = favorites_db.setdefault(user_id, [])
+    if pet_id not in favs:
+        favs.append(pet_id)
+    return jsonify({"message": "Pet added to favorites"})
+
+@app.route("/favorites/<int:user_id>", methods=["GET"])
+async def favorites_get(user_id: int):
+    pet_ids = favorites_db.get(user_id, [])
+    pets = []
+    for pid in pet_ids:
+        try:
+            pet = await entity_service.get_item(
+                token=cyoda_auth_service,
+                entity_model="pet",
+                entity_version=ENTITY_VERSION,
+                technical_id=pid,
+            )
+        except Exception as e:
+            logger.exception(e)
+            continue
+        if pet:
+            pet_out = pet.copy()
+            cat = pet_out.pop("category", None)
+            pet_out["type"] = cat.get("name") if cat else None
+            pets.append(pet_out)
+    return jsonify({"userId": user_id, "favorites": pets})
+
+if __name__ == "__main__":
+    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

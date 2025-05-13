@@ -42,10 +42,7 @@ class BeanFactory:
                 repository=self.entity_repository
             )
             self.grpc_client = GrpcClient(auth=self.cyoda_auth_service)
-            self.cyoda_init_service = CyodaInitService(
-                cyoda_repository=self.entity_repository,
-                cyoda_auth_service=self.cyoda_auth_service
-            )
+
         except Exception as e:
             logger.exception("Error during BeanFactory initialization:", e)
             raise

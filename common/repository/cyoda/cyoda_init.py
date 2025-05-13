@@ -8,7 +8,7 @@ from common.auth.cyoda_auth import CyodaAuthService
 from common.config.config import ENTITY_VERSION, CHAT_ID, CYODA_AI_URL, CYODA_API_URL, IMPORT_WORKFLOWS
 from common.repository.cyoda.cyoda_repository import CyodaRepository
 from common.repository.cyoda.util.workflow_to_dto_converter import parse_ai_workflow_to_dto
-from common.utils.utils import send_post_request, send_cyoda_request
+from common.utils.utils import send_cyoda_request
 from common.utils.workflow_enricher import enrich_workflow
 
 logging.basicConfig(level=logging.INFO)
@@ -24,9 +24,8 @@ class CyodaInitService:
         self.entity_dir = Path(__file__).resolve().parent.parent.parent.parent / 'entity'
         self.API_V_WORKFLOWS_ = "api/v1/workflows"
         self.cyoda_auth_service=cyoda_auth_service
-        asyncio.run(self._initialize_service())
 
-    async def _initialize_service(self):
+    async def initialize_service(self):
         await self.init_cyoda(token=self.cyoda_auth_service)
 
     async def init_cyoda(self, token: CyodaAuthService):
@@ -69,4 +68,19 @@ class CyodaInitService:
                     return response
         return None
 
+
+
+def main():
+    # Initialize required services and repository
+    cyoda_auth_service = CyodaAuthService()
+    cyoda_repository = CyodaRepository(cyoda_auth_service=cyoda_auth_service)  # Make sure this can be instantiated or mocked appropriately
+
+    # Create the CyodaInitService instance
+    init_service = CyodaInitService(cyoda_repository, cyoda_auth_service)
+
+    # Run the async start method using asyncio
+    asyncio.run(init_service.initialize_service())
+
+if __name__ == "__main__":
+    main()
 

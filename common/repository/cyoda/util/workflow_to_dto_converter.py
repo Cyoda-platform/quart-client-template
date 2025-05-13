@@ -208,7 +208,7 @@ def parse_ai_workflow_to_dto(input_workflow, class_name=TREE_NODE_ENTITY):
         "transitionIds": [],
         "criteriaIds": [],
         "stateIds": ["noneState"],
-        "active": False,
+        "active": True,
         "useDecisionTree": False,
         "decisionTrees": [],
         "metaData": {"documentLink": ""}

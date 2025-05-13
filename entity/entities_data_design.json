@@ -1,0 +1,30 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": {
+                    "id": 1,
+                    "name": "Dogs"
+                },
+                "id": "string_example",
+                "name": "Fluffy",
+                "photoUrls": [
+                    "https://example.com/photo1.jpg",
+                    "https://example.com/photo2.jpg"
+                ],
+                "status": "available",
+                "tags": [
+                    {
+                        "id": 101,
+                        "name": "friendly"
+                    },
+                    {
+                        "id": 102,
+                        "name": "small"
+                    }
+                ]
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

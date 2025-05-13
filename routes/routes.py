@@ -1,12 +1,12 @@
- import asyncio
+import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,8 +14,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -167,7 +166,7 @@ async def process_order(entity):
     return entity
 
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchPetsRequest)
 async def pets_search(data: SearchPetsRequest):
     pets = await fetch_pets(data.category, data.status, data.name)
@@ -177,7 +176,7 @@ async def pets_search(data: SearchPetsRequest):
     return jsonify({"pets": pets})
 
 
-@app.route("/pets/favorite", methods=["POST"])
+@routes_bp.route("/pets/favorite", methods=["POST"])
 @validate_request(FavoritePetRequest)
 async def pets_favorite(data: FavoritePetRequest):
     favorite_pet_data = {
@@ -204,7 +203,7 @@ async def pets_favorite(data: FavoritePetRequest):
     })
 
 
-@app.route("/pets/favorites", methods=["GET"])
+@routes_bp.route("/pets/favorites", methods=["GET"])
 async def pets_favorites():
     try:
         favorites = await entity_service.get_items(
@@ -218,7 +217,7 @@ async def pets_favorites():
     return jsonify({"favorites": favorites})
 
 
-@app.route("/pets/order", methods=["POST"])
+@routes_bp.route("/pets/order", methods=["POST"])
 @validate_request(OrderPetRequest)
 async def pets_order(data: OrderPetRequest):
     order_record = {
@@ -240,9 +239,3 @@ async def pets_order(data: OrderPetRequest):
         return jsonify({"message": "Failed to place order"}), 500
 
     return jsonify({"orderId": order_id})
-
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

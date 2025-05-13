@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for processing orders in sequential steps: initialize, place order, and finalize",
+    "name": "order_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initialize the order processing",
+            "end_state": "order_initialized",
+            "end_state_description": "Order initialized",
+            "name": "initialize_order",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_initialize"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Place the order with petstore",
+            "end_state": "order_placed",
+            "end_state_description": "Order placed",
+            "name": "place_order",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_place_order"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "order_initialized",
+            "start_state_description": "Order initialized"
+        },
+        {
+            "automated": true,
+            "description": "Finalize the order processing",
+            "end_state": "order_finalized",
+            "end_state_description": "Order finalized",
+            "name": "finalize_order",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_finalize"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "order_placed",
+            "start_state_description": "Order placed"
+        }
+    ]
+}

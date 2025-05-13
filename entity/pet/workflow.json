@@ -1,0 +1,78 @@
+{
+    "description": "Workflow for processing pet entity through normalization, enrichment, and transformation steps.",
+    "name": "pet_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet entity by adding processed timestamp",
+            "end_state": "Processed_timestamp_added",
+            "end_state_description": "Processed timestamp has been added to entity",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_processed_timestamp"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Normalize the pet name to title case",
+            "end_state": "Name_normalized",
+            "end_state_description": "Pet name has been normalized",
+            "name": "normalize_name",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_name"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processed_timestamp_added",
+            "start_state_description": "Processed timestamp has been added to entity"
+        },
+        {
+            "automated": true,
+            "description": "Enrich category with description if category id present",
+            "end_state": "Category_enriched",
+            "end_state_description": "Category has been enriched with description",
+            "name": "enrich_category",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrich_category"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Name_normalized",
+            "start_state_description": "Pet name has been normalized"
+        },
+        {
+            "automated": true,
+            "description": "Transform tags to uppercase strings",
+            "end_state": "Tags_transformed",
+            "end_state_description": "Tags have been transformed to uppercase",
+            "name": "transform_tags",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_transform_tags"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Category_enriched",
+            "start_state_description": "Category has been enriched with description"
+        }
+    ]
+}

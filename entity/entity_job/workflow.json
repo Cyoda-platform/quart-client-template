@@ -1,0 +1,55 @@
+{
+    "description": "Workflow for fetching and processing weather data from MSC GeoMet",
+    "name": "weather_data_fetch_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the weather data fetch job",
+            "end_state": "Job_Queued",
+            "end_state_description": "Job has been queued for processing",
+            "name": "start_entity_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_entity_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch weather data from MSC GeoMet",
+            "end_state": "Job_Processing",
+            "end_state_description": "Job is processing weather data",
+            "name": "fetch_weather_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_data"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Job_Queued",
+            "start_state_description": "Job is queued"
+        },
+        {
+            "automated": true,
+            "description": "Complete the weather data fetch job",
+            "end_state": "Job_Completed",
+            "end_state_description": "Job has completed successfully",
+            "name": "complete_job",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Job_Processing",
+            "start_state_description": "Job is processing"
+        }
+    ]
+}

@@ -1,0 +1,38 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "date": "2024-06-01",
+                "location": "Vilnius",
+                "parameters": [
+                    "temperature",
+                    "humidity",
+                    "wind_speed"
+                ]
+            },
+            "entity_name": "fetch_weather_request"
+        },
+        {
+            "entity_data_example": {
+                "fetch_id": "uuid-generated-string",
+                "message": "Data fetching started",
+                "status": "success"
+            },
+            "entity_name": "weather_fetch_response"
+        },
+        {
+            "entity_data_example": {
+                "date": "2024-06-01",
+                "fetch_id": "uuid-generated-string",
+                "location": "Vilnius",
+                "parameters": {
+                    "humidity": 56,
+                    "temperature": 23.4,
+                    "wind_speed": 5.4
+                },
+                "retrieved_at": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "weather_result_response"
+        }
+    ]
+}

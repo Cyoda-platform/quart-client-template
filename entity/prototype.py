@@ -1,18 +1,42 @@
-```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Workaround: validate_request must come last on POST, and first on GET due to quart-schema defect
+
+# Request models
+@dataclass
+class PetSearchRequest:
+    type: Optional[str]
+    status: Optional[str]
+    name: Optional[str]
+
+@dataclass
+class AddPetRequest:
+    name: str
+    type: str
+    status: str
+    # photoUrls handling is unclear; using comma-separated string as placeholder
+    photoUrls: Optional[str] = None  # TODO: handle list of URLs properly
+
+@dataclass
+class UpdatePetRequest:
+    name: Optional[str]
+    type: Optional[str]
+    status: Optional[str]
+    photoUrls: Optional[str] = None  # TODO: handle list of URLs properly
 
 # Local in-memory cache for pets added/updated/deleted locally
 local_pets: Dict[int, Dict] = {}
@@ -24,74 +48,49 @@ external_pets_cache: Dict[str, List[Dict]] = {}
 # Petstore API base URL
 PETSTORE_API_BASE = "https://petstore3.swagger.io/api/v3"
 
-# Lock for local_pets id generation (simple async safe)
+# Lock for local_pets id generation (async safe)
 local_pets_lock = asyncio.Lock()
 
-
 def make_cache_key(filters: Dict) -> str:
-    # Create a simple cache key based on filters dict sorted by keys
     key = "|".join(f"{k}={v}" for k, v in sorted(filters.items()) if v)
     return key or "all"
 
-
 @app.route("/pets/search", methods=["POST"])
-async def search_pets():
-    """
-    POST /pets/search
-    Accepts optional filters: type, status, name
-    Fetches live Petstore API data and returns matching pets.
-    """
-    data = await request.get_json(force=True)
-    pet_type = data.get("type")
-    status = data.get("status")
-    name = data.get("name")
-
+@validate_request(PetSearchRequest)
+async def search_pets(data: PetSearchRequest):
     filters = {
-        "type": pet_type,
-        "status": status,
-        "name": name,
+        "type": data.type,
+        "status": data.status,
+        "name": data.name,
     }
-
     cache_key = make_cache_key(filters)
     if cache_key in external_pets_cache:
         logger.info(f"Returning cached external pets for key: {cache_key}")
-        pets = external_pets_cache[cache_key]
-        return jsonify({"pets": pets})
-
-    # Build Petstore API URL and query params based on filters
-    # Petstore API endpoint: GET /pet/findByStatus or /pet/findByTags or /pet/{petId}
-    # The official Petstore API supports filtering by status only for "findByStatus" 
-    # No direct filter by type or name, so will filter client-side after fetch.
+        return jsonify({"pets": external_pets_cache[cache_key]})
 
     pets = []
     async with httpx.AsyncClient() as client:
         try:
-            # If status provided, call /pet/findByStatus
-            if status:
-                r = await client.get(f"{PETSTORE_API_BASE}/pet/findByStatus", params={"status": status})
+            if data.status:
+                r = await client.get(f"{PETSTORE_API_BASE}/pet/findByStatus", params={"status": data.status})
                 r.raise_for_status()
                 pets = r.json()
             else:
-                # If no status, fallback to get all pets by iterating statuses (TODO: Petstore API has no "get all pets" endpoint)
-                # TODO: Petstore API does not provide an endpoint to get all pets without status filter.
-                # As a placeholder, fetch with status "available"
                 r = await client.get(f"{PETSTORE_API_BASE}/pet/findByStatus", params={"status": "available"})
                 r.raise_for_status()
                 pets = r.json()
 
-            # Filter by type and name locally (case-insensitive)
-            if pet_type:
-                pets = [p for p in pets if p.get("category", {}).get("name", "").lower() == pet_type.lower()]
-            if name:
-                pets = [p for p in pets if name.lower() in p.get("name", "").lower()]
+            if data.type:
+                pets = [p for p in pets if p.get("category", {}).get("name", "").lower() == data.type.lower()]
+            if data.name:
+                pets = [p for p in pets if data.name.lower() in p.get("name", "").lower()]
         except Exception as e:
             logger.exception(e)
             return jsonify({"pets": [], "error": "Failed to fetch pets from Petstore API"}), 500
 
-    # Simplify pet data to match our API response model
-    simplified_pets = []
+    simplified = []
     for p in pets:
-        simplified_pets.append({
+        simplified.append({
             "id": p.get("id"),
             "name": p.get("name"),
             "type": p.get("category", {}).get("name"),
@@ -99,109 +98,69 @@ async def search_pets():
             "photoUrls": p.get("photoUrls", []),
         })
 
-    # Cache result for this filter key (simple cache, no expiration)
-    external_pets_cache[cache_key] = simplified_pets
-
-    return jsonify({"pets": simplified_pets})
-
+    external_pets_cache[cache_key] = simplified
+    return jsonify({"pets": simplified})
 
 @app.route("/pets/<int:pet_id>", methods=["GET"])
 async def get_pet(pet_id: int):
-    """
-    GET /pets/{petId}
-    Returns cached or locally stored pet details.
-    """
-    # Check local pets first
     pet = local_pets.get(pet_id)
     if pet:
         return jsonify(pet)
-
-    # If not local, try to find in the last cached external pets (inefficient but per requirements)
     for pets_list in external_pets_cache.values():
         for p in pets_list:
             if p["id"] == pet_id:
                 return jsonify(p)
-
     return jsonify({"error": "Pet not found"}), 404
 
-
 @app.route("/pets", methods=["POST"])
-async def add_pet():
-    """
-    POST /pets
-    Add a new pet locally.
-    """
-    data = await request.get_json(force=True)
-    name = data.get("name")
-    pet_type = data.get("type")
-    status = data.get("status")
-    photoUrls = data.get("photoUrls", [])
-
-    if not name or not pet_type or not status:
+@validate_request(AddPetRequest)
+async def add_pet(data: AddPetRequest):
+    if not data.name or not data.type or not data.status:
         return jsonify({"error": "Missing required fields: name, type, status"}), 400
-
     async with local_pets_lock:
         global local_pet_id_counter
         pet_id = local_pet_id_counter
         local_pet_id_counter += 1
-
         local_pets[pet_id] = {
             "id": pet_id,
-            "name": name,
-            "type": pet_type,
-            "status": status,
-            "photoUrls": photoUrls,
+            "name": data.name,
+            "type": data.type,
+            "status": data.status,
+            "photoUrls": data.photoUrls.split(",") if data.photoUrls else [],
         }
-
-    logger.info(f"Added local pet {pet_id}: {name}")
+    logger.info(f"Added local pet {pet_id}: {data.name}")
     return jsonify({"id": pet_id, "message": "Pet added successfully"}), 201
 
-
 @app.route("/pets/<int:pet_id>/update", methods=["POST"])
-async def update_pet(pet_id: int):
-    """
-    POST /pets/{petId}/update
-    Update pet locally.
-    """
-    data = await request.get_json(force=True)
+@validate_request(UpdatePetRequest)
+async def update_pet(data: UpdatePetRequest, pet_id: int):
     pet = local_pets.get(pet_id)
     if not pet:
         return jsonify({"error": "Pet not found"}), 404
-
-    # Update fields if provided
-    for field in ("name", "type", "status", "photoUrls"):
-        if field in data:
-            pet[field] = data[field]
-
+    if data.name is not None:
+        pet["name"] = data.name
+    if data.type is not None:
+        pet["type"] = data.type
+    if data.status is not None:
+        pet["status"] = data.status
+    if data.photoUrls is not None:
+        pet["photoUrls"] = data.photoUrls.split(",")
     logger.info(f"Updated local pet {pet_id}")
     return jsonify({"message": "Pet updated successfully"})
 
-
 @app.route("/pets/<int:pet_id>/delete", methods=["POST"])
 async def delete_pet(pet_id: int):
-    """
-    POST /pets/{petId}/delete
-    Delete pet locally.
-    """
     pet = local_pets.pop(pet_id, None)
     if not pet:
         return jsonify({"error": "Pet not found"}), 404
-
     logger.info(f"Deleted local pet {pet_id}")
     return jsonify({"message": "Pet deleted successfully"})
 
-
 if __name__ == '__main__':
     import sys
-
-    import logging.config
-
-    # Basic logging config for console output
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         stream=sys.stdout,
     )
-
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

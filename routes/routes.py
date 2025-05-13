@@ -5,11 +5,13 @@ from datetime import datetime
 from uuid import uuid4
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +19,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class PetSearch:
@@ -130,7 +129,7 @@ async def process_adoption_request(entity_data):
 
     return entity_data
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearch)
 async def pets_search(data: PetSearch):
     pets = await fetch_pets_from_petstore(data.type, data.status, data.name)
@@ -146,7 +145,7 @@ async def pets_search(data: PetSearch):
             logger.exception(e)
     return jsonify({"pets": pets})
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptRequest)
 async def pets_adopt(data: AdoptRequest):
     adoption_id = str(uuid4())
@@ -169,7 +168,7 @@ async def pets_adopt(data: AdoptRequest):
 
     return jsonify({"message": "Adoption request submitted successfully", "adoptionId": adoption_id})
 
-@app.route("/pets/<pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<pet_id>", methods=["GET"])
 async def get_pet(pet_id):
     try:
         pet = await entity_service.get_item(
@@ -185,7 +184,7 @@ async def get_pet(pet_id):
         return jsonify({"message": "Pet not found"}), 404
     return jsonify(pet)
 
-@app.route("/adoptions/<adoption_id>", methods=["GET"])
+@routes_bp.route("/adoptions/<adoption_id>", methods=["GET"])
 async def get_adoption(adoption_id):
     try:
         adoption = await entity_service.get_item(
@@ -200,6 +199,3 @@ async def get_adoption(adoption_id):
     if not adoption:
         return jsonify({"message": "Adoption request not found"}), 404
     return jsonify(adoption)
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

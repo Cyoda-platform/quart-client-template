@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for processing pet entities, normalizing type, adding creation timestamp, and ensuring tags presence.",
+    "name": "pet_entity_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the pet entity",
+            "end_state": "Type_normalized",
+            "end_state_description": "Pet type normalized",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_type"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add creation timestamp to pet entity",
+            "end_state": "Creation_timestamp_added",
+            "end_state_description": "Creation timestamp added to pet entity",
+            "name": "add_creation_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_created_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Type_normalized",
+            "start_state_description": "Pet type normalized"
+        },
+        {
+            "automated": true,
+            "description": "Ensure tags attribute exists and is a list",
+            "end_state": "Tags_ensured",
+            "end_state_description": "Tags attribute ensured in pet entity",
+            "name": "ensure_tags_list",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_ensure_tags"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Creation_timestamp_added",
+            "start_state_description": "Creation timestamp added to pet entity"
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "data": {
+                    "description": "Clear sky",
+                    "humidity": 80,
+                    "temperature": 25.6,
+                    "wind_speed": 5.4
+                },
+                "latitude": 12.34,
+                "longitude": 56.78,
+                "timestamp": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "weather_cache"
+        }
+    ]
+}

@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to validate pet availability, parse shipment date, and update order status and timestamp",
+    "name": "order_pet_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Validate that the pet is available for order",
+            "end_state": "Pet_validated",
+            "end_state_description": "Pet availability validated",
+            "name": "validate_pet_availability",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_pet_availability"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Parse and normalize the shipment date",
+            "end_state": "Ship_date_parsed",
+            "end_state_description": "Shipment date parsed and normalized",
+            "name": "parse_ship_date",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_parse_ship_date"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_validated",
+            "start_state_description": "Pet availability validated"
+        },
+        {
+            "automated": true,
+            "description": "Set order status to placed and add processed timestamp",
+            "end_state": "Order_processed",
+            "end_state_description": "Order status set and processed timestamp added",
+            "name": "set_status_and_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_status_and_timestamp"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Ship_date_parsed",
+            "start_state_description": "Shipment date parsed and normalized"
+        }
+    ]
+}

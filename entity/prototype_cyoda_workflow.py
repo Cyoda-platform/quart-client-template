@@ -1,6 +1,35 @@
-Certainly! I've updated the code to add the required workflow function as a parameter to the `entity_service.add_item` call. The workflow function is implemented with the required prefix `process_` followed by the entity name in underscore lowercase (`entity_job` in this case).
+Understood! We'll move as much logic as possible from the endpoints into the workflow functions (`process_entity_job` here), so that the controller code is minimal and the business logic, including async tasks, is handled inside the workflow.
 
-Here is the complete updated code:
+This means:
+
+- The queueing logic and setting initial state can remain in the controller (since `add_item` requires an entity to be passed).
+- The heavy lifting like fetching weather data, updating the entity status and results will be done inside the workflow function.
+- Since the workflow function is called **before** persistence, to change the entity state we just modify the entity dict.
+- For asynchronous work that requires external updates (such as updating the same entity after fetching results), we cannot call `update_item` on the same entity_model inside the workflow (would cause recursion).
+- So, for async tasks that require updating the entity later, we have two options:
+  1. Split the operation into multiple entities - e.g., create separate entities for jobs status and results, or
+  2. Schedule fire-and-forget tasks external to the workflow (e.g., via message queue or separate worker).
+
+But since the prompt says the workflow function **is a direct alternative for fire-and-forget async tasks**, and we cannot update the same entity_model inside the workflow function, the best approach here is to move all **initial state setting** and **fire-and-forget async task launching** into the workflow, but keep only the initial `add_item` call in the controller.
+
+Therefore, the workflow function will:
+
+- Set the entity state to "queued" or "processing"
+- Launch the async fetch weather task (fire and forget)
+- That async fetch weather task will update the entity later with the results via `update_item` (allowed because it's outside the workflow and updating the same entity_model is allowed there).
+
+### Summary of changes:
+
+- Controller just calls `add_item` with minimal data.
+- The workflow function `process_entity_job`:
+  - sets initial status `"queued"`
+  - schedules the async fetch task (`asyncio.create_task(...)`).
+- The fetch task runs outside the workflow and updates the entity when done.
+- No direct update calls to the same entity_model inside the workflow.
+
+---
+
+## Updated Code
 
 ```python
 from dataclasses import dataclass
@@ -57,20 +86,41 @@ async def fetch_weather_from_msgeomet(location: str, parameters: list, date: str
             logger.exception(f"Error fetching weather from MSC GeoMet: {e}")
             return None
 
-# Workflow function for entity_job entity
 async def process_entity_job(entity):
     """
     Workflow function applied to 'entity_job' entities asynchronously before persistence.
-    This can modify the entity or perform side operations.
-    Here, we don't update the same entity_model inside to avoid recursion.
+    
+    This function sets initial state and schedules the async fetch task.
     """
-    # Example: Add a timestamp if not present
+    # Ensure requestedAt is set
     if "requestedAt" not in entity:
         entity["requestedAt"] = datetime.utcnow().isoformat() + "Z"
-    # You can add more logic here if needed
+    
+    # Set initial status
+    entity["status"] = "queued"
+    
+    # Extract necessary info for async fetch task
+    location = entity.get("location")
+    parameters = entity.get("parameters")
+    date = entity.get("date")
+    technical_id = entity.get("technical_id")  # We need to set or pass this to identify entity later
+    
+    # If technical_id is not set, generate one and set it
+    if not technical_id:
+        technical_id = str(uuid.uuid4())
+        entity["technical_id"] = technical_id
+    
+    # Launch the async processing task (fire and forget)
+    asyncio.create_task(_async_process_entity_job(technical_id, location, parameters, date))
+    
+    # Return entity with updated status and technical_id
     return entity
 
-async def process_entity(job_id: str, location: str, parameters: list, date: str):
+async def _async_process_entity_job(job_id: str, location: str, parameters: list, date: str):
+    """
+    The actual async task that fetches weather data and updates the entity_job.
+    Runs outside the workflow function.
+    """
     try:
         # Update status to processing
         await entity_service.update_item(
@@ -123,39 +173,24 @@ async def process_entity(job_id: str, location: str, parameters: list, date: str
 @app.route("/weather/fetch", methods=["POST"])
 @validate_request(FetchWeatherRequest)
 async def fetch_weather(data: FetchWeatherRequest):
-    location = data.location
-    parameters = data.parameters
-    date = data.date
-    job_id = str(uuid.uuid4())
-    requested_at = datetime.utcnow().isoformat() + "Z"
-    # Store initial job info by adding item to entity_service with workflow
-    await entity_service.add_item(
+    # Compose the initial entity with request data
+    entity = {
+        "location": data.location,
+        "parameters": data.parameters,
+        "date": data.date,
+        # Note: don't set status or requestedAt here, workflow will handle it
+    }
+    # Add the entity with workflow function; this will set status and launch async task automatically
+    entity_id = await entity_service.add_item(
         token=cyoda_auth_service,
         entity_model="entity_job",
         entity_version=ENTITY_VERSION,
-        entity={
-            "status": "queued",
-            "requestedAt": requested_at
-        },
-        workflow=process_entity_job  # Added workflow function here
+        entity=entity,
+        workflow=process_entity_job
     )
-    # Note: add_item returns id, but here we want to keep generated UUID as id, so we save manually with that id:
-    # Instead of add_item, we do update_item with technical_id=job_id, so we keep that UUID as id:
-    await entity_service.update_item(
-        token=cyoda_auth_service,
-        entity_model="entity_job",
-        entity_version=ENTITY_VERSION,
-        technical_id=job_id,
-        entity={
-            "status": "queued",
-            "requestedAt": requested_at
-        },
-        meta={}
-    )
-    asyncio.create_task(process_entity(job_id, location, parameters, date))
     return jsonify({
         "status": "success",
-        "fetch_id": job_id,
+        "fetch_id": entity_id,
         "message": "Data fetching started"
     })
 
@@ -182,11 +217,22 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Changes made:
+---
 
-- Added an async workflow function called `process_entity_job` that matches the naming convention `process_{entity_name}`, where `entity_name` is `entity_job`.
-- Passed this function as the `workflow` argument to `entity_service.add_item` in the `fetch_weather` route.
-- The workflow function receives the entity data, and you can modify it before persistence. In this example, it just ensures `requestedAt` timestamp is set.
-- No changes were made to `update_item` calls as per instructions (only `add_item` requires the workflow function).
+### Explanation:
 
-If you want me to customize the workflow function logic further, just let me know!
+- The controller `fetch_weather` now only prepares the entity data (location, parameters, date).
+- It calls `add_item` with the `workflow=process_entity_job`.
+- The workflow function:
+  - Adds `requestedAt` timestamp,
+  - Sets status `"queued"`,
+  - Generates a `technical_id` if not set,
+  - Launches the async task `_async_process_entity_job` via `asyncio.create_task()` that will fetch and update the entity asynchronously.
+- The async task `_async_process_entity_job` runs outside the workflow and updates the entity status and result via `update_item`.
+- This approach removes all heavy logic and fire-and-forget task launching from the controller.
+- The workflow function modifies the entity in-place before persistence, as required.
+- Controller remains clean, only handling validation and initial entity creation.
+
+---
+
+If you want, I can help you split the `technical_id` generation logic or add validation inside the workflow too. Let me know!

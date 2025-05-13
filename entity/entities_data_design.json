@@ -1,0 +1,25 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "description": "friendly and playful",
+                "id": "123",
+                "imageUrl": "http://example.com/image.jpg",
+                "name": "fluffy",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "adopterName": "john doe",
+                "adoptionId": "abc-123",
+                "contactInfo": "john@example.com",
+                "petId": "123",
+                "status": "pending"
+            },
+            "entity_name": "adoption_request"
+        }
+    ]
+}

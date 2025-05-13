@@ -2,9 +2,8 @@ from dataclasses import dataclass
 import logging
 from datetime import datetime
 from typing import Dict, Any
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
-import httpx
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -16,8 +15,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 PETSTORE_BASE = "https://petstore.swagger.io/v2"
 
@@ -38,6 +36,7 @@ class OrderRequest:
 async def fetch_pets_from_petstore(filters: Dict[str, Any]) -> Dict[str, Any]:
     url = f"{PETSTORE_BASE}/pet/findByStatus"
     params = {"status": filters.get("status") or "available,pending,sold"}
+    import httpx
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(url, params=params, timeout=10)
@@ -70,13 +69,13 @@ async def fetch_pets_from_petstore(filters: Dict[str, Any]) -> Dict[str, Any]:
         result.append(pet_obj)
     return {"pets": result}
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearchFilters)
 async def pets_search(filters: PetSearchFilters):
     result = await fetch_pets_from_petstore(filters.__dict__)
     return jsonify(result)
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pet_details(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -94,6 +93,7 @@ async def pet_details(pet_id: str):
 
 async def place_order_petstore(order: Dict[str, Any]) -> Dict[str, Any]:
     url = f"{PETSTORE_BASE}/store/order"
+    import httpx
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.post(url, json=order, timeout=10)
@@ -133,7 +133,7 @@ async def process_order(entity: Dict[str, Any]):
     # except Exception:
     #     logger.exception("Failed to fetch or add supplementary pet details")
 
-@app.route("/orders", methods=["POST"])
+@routes_bp.route("/orders", methods=["POST"])
 @validate_request(OrderRequest)
 async def orders_place(data: OrderRequest):
     order_payload = {
@@ -155,7 +155,7 @@ async def orders_place(data: OrderRequest):
         return jsonify({"error": "Failed to place order"}), 500
     return jsonify({"orderId": str(order_id), "status": "placed", "message": "Order successfully placed"})
 
-@app.route("/orders/<string:order_id>", methods=["GET"])
+@routes_bp.route("/orders/<string:order_id>", methods=["GET"])
 async def orders_get(order_id: str):
     try:
         order = await entity_service.get_item(
@@ -170,6 +170,3 @@ async def orders_get(order_id: str):
     if not order:
         return jsonify({"error": "Order not found"}), 404
     return jsonify(order)
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

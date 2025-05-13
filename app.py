@@ -19,7 +19,7 @@ app = Quart(__name__)
 
 QuartSchema(app,
             info={"title": "Cyoda Client API", "version": "0.1.0"},
-            tags=[{"name": "deploy", "description": "Cloud Client API: prototype"}],
+            tags=[{"name": "Cyoda Client", "description": "Cloud Client API: prototype"}],
             security=[{"bearerAuth": []}],
             security_schemes={
                 "bearerAuth": {

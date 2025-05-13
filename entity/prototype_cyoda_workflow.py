@@ -1,86 +1,119 @@
-Absolutely, moving business logic, especially async operations, into the workflow functions (`process_{entity_name}`) is a best practice here. It keeps the endpoint handlers clean, focuses them on request validation and response, and delegates entity manipulation, enrichment, and side tasks to the workflow functions.
+from dataclasses import dataclass
+from typing import List, Optional, Dict
 
----
+import asyncio
+import logging
+from datetime import datetime
 
-## What to move?
+import httpx
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request
 
-1. **Add Pet**:  
-   Currently, in `pets_add`, the entity is prepared (e.g., transforming `type` into `category`), and some default fields like `tags` and `createdAt` were added in the workflow function. This is perfect for `process_pet`.  
-   We can move all enrichment logic (e.g., setting timestamps, default tags) there.
+from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
 
-2. **Update Pet**:  
-   The update merges partial data into the existing pet entity.  
-   The actual merge of fields, especially transforming `type` -> `category`, could be moved into `process_pet_update` workflow function.  
-   **But**—update is a different entity model action (update vs add). If your system supports workflow functions for update actions, great. Otherwise, we can consider a workflow function for update as well (e.g., `process_pet_update`).  
-   But from your description, it seems the workflow function applies on add/update entity actions alike, with the same `workflow` param. So we can reuse the same `process_pet` function to handle both add and update cases (by checking if `id` exists in entity).  
-   This will free the update endpoint from merge logic, too.
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-3. **Favorites**:  
-   Currently, favorites are stored in an in-memory dict. Since this is not using `entity_service`, no workflow applies here, unless you refactor favorites as an entity model and persist them via entity_service.  
-   Since instructions are only to move async tasks related to entities using `entity_service`, favorites can remain as is.
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-4. **Fetching Pets from Petstore**:  
-   The search endpoint fetches pets from an external API. This is not an entity persistence task, so it does not belong in the workflow function.
+app = Quart(__name__)
+QuartSchema(app)
 
----
+PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
-## What exactly to move inside the workflow?
+@dataclass
+class PetSearchFilters:
+    type: Optional[str] = None
+    status: Optional[str] = None
+    name: Optional[str] = None
 
-- Modification of entity fields before persistence (e.g., transforming input data into the stored shape).  
-- Adding metadata timestamps, default values, cleaning fields.  
-- Any async side-tasks related to entity enrichment, e.g., lookups, fetching supplementary data, creating related entities of different models (but no recursion on the same model).  
-- Fire-and-forget async tasks related to the entity lifecycle.
+@dataclass
+class PetAdd:
+    name: str
+    type: str
+    status: str
+    photoUrls: List[str]
 
----
+@dataclass
+class PetUpdate:
+    id: int
+    name: Optional[str] = None
+    type: Optional[str] = None
+    status: Optional[str] = None
+    photoUrls: Optional[List[str]] = None
 
-## Implementation plan
+@dataclass
+class FavoriteAdd:
+    userId: int
+    petId: int
 
-- Create/update `process_pet(entity)` workflow function that will:
-  - Handle `add` and `update` cases (detect by presence of `id` or other marker).  
-  - Normalize fields (e.g., convert `type` -> `category.name`).  
-  - Add default fields like `createdAt` if missing.  
-  - Possibly perform async tasks if needed (e.g., fetch tags, enrich data).  
-- Update both `pets_add` and `pets_update` to:
-  - Simply pass the entity data as is to `entity_service.add_item` / `update_item` with `workflow=process_pet`.  
-  - Remove any logic related to entity modification from the endpoint.
+favorites_db: Dict[int, List[int]] = {}
 
----
+async def fetch_pets_from_petstore(filters: dict) -> List[dict]:
+    pets = []
+    status = filters.get("status", "available")
+    type_filter = filters.get("type")
+    name_filter = filters.get("name")
 
-## Updated code snippet for the workflow function and endpoints
+    url = f"{PETSTORE_API_BASE}/pet/findByStatus?status={status}"
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as e:
+            logger.exception(e)
+            return []
 
-```python
-# --- Workflow function for 'pet' entity ---
+    for pet in data:
+        pet_type = pet.get("category", {}).get("name", "").lower()
+        pet_name = pet.get("name", "").lower()
+        if type_filter and pet_type != type_filter.lower():
+            continue
+        if name_filter and name_filter.lower() not in pet_name:
+            continue
+        pets.append(pet)
+    return pets
 
 async def process_pet(entity: dict) -> dict:
-    """
-    Unified workflow function for pet entity, handles both add and update.
-    - Normalizes 'type' to 'category.name'
-    - Adds timestamps if missing
-    - Adds default empty tags list
-    """
-    # Normalize 'type' to 'category.name'
+    # Normalize 'type' to 'category.name' if present
     if "type" in entity:
-        entity["category"] = {"name": entity.pop("type")}
+        if not entity.get("category") or not isinstance(entity.get("category"), dict):
+            entity["category"] = {}
+        if isinstance(entity["category"], dict):
+            entity["category"]["name"] = entity.pop("type")
+        else:
+            # Defensive fallback if category exists but not dict
+            entity["category"] = {"name": entity.pop("type")}
+    else:
+        # If no type and no category, ensure category is absent or empty dict
+        if "category" not in entity or not isinstance(entity.get("category"), dict):
+            entity["category"] = {}
 
     # Add creation timestamp if not present (usually on add)
     if "createdAt" not in entity:
         entity["createdAt"] = datetime.utcnow().isoformat() + "Z"
 
     # Ensure 'tags' key exists (default empty list)
-    if "tags" not in entity:
+    if "tags" not in entity or not isinstance(entity.get("tags"), list):
         entity["tags"] = []
 
-    # You can add async enrichment or side tasks here if needed
-    # e.g., fetch supplementary data, create related entities, etc.
-
+    # Additional async or enrichment tasks can be added here safely
     return entity
 
-# --- Updated endpoints ---
+@app.route("/pets/search", methods=["POST"])
+@validate_request(PetSearchFilters)
+async def pets_search(data: PetSearchFilters):
+    filters = data.__dict__
+    pets = await fetch_pets_from_petstore(filters)
+    return jsonify({"pets": pets})
 
 @app.route("/pets/add", methods=["POST"])
 @validate_request(PetAdd)
 async def pets_add(data: PetAdd):
-    # Directly convert input to a dict, keep keys as is (including 'type')
     pet_data = data.__dict__
     try:
         pet_id = await entity_service.add_item(
@@ -105,7 +138,6 @@ async def pets_update(data: PetUpdate):
     # Remove None values
     update_fields = {k: v for k, v in update_fields.items() if v is not None}
 
-    # Retrieve existing pet to merge updates
     try:
         existing_pet = await entity_service.get_item(
             token=cyoda_auth_service,
@@ -120,7 +152,6 @@ async def pets_update(data: PetUpdate):
     if not existing_pet:
         return jsonify({"error": "Pet not found"}), 404
 
-    # Merge updates into existing_pet
     existing_pet.update(update_fields)
 
     try:
@@ -131,33 +162,66 @@ async def pets_update(data: PetUpdate):
             entity=existing_pet,
             technical_id=pet_id,
             meta={},
-            workflow=process_pet,  # <-- workflow applied on update, too
+            workflow=process_pet,
         )
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to update pet"}), 500
 
     return jsonify({"message": "Pet updated successfully"})
-```
 
----
+@app.route("/pets/<int:pet_id>", methods=["GET"])
+async def pets_get(pet_id: int):
+    try:
+        pet = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="pet",
+            entity_version=ENTITY_VERSION,
+            technical_id=pet_id,
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Pet not found"}), 404
 
-## Explanation
+    if not pet:
+        return jsonify({"error": "Pet not found"}), 404
 
-- The endpoint no longer needs to do the `type` → `category` conversion; the workflow does it.  
-- The workflow function is called for both add and update (assuming `entity_service.update_item` supports `workflow` param similarly).  
-- The endpoint focuses solely on request validation and orchestrating calls.  
-- All state mutation logic lives in the workflow.
+    pet_out = pet.copy()
+    cat = pet_out.pop("category", None)
+    pet_out["type"] = cat.get("name") if cat else None
+    return jsonify(pet_out)
 
----
+@app.route("/favorites/add", methods=["POST"])
+@validate_request(FavoriteAdd)
+async def favorites_add(data: FavoriteAdd):
+    user_id = data.userId
+    pet_id = data.petId
+    favs = favorites_db.setdefault(user_id, [])
+    if pet_id not in favs:
+        favs.append(pet_id)
+    return jsonify({"message": "Pet added to favorites"})
 
-## Final notes
+@app.route("/favorites/<int:user_id>", methods=["GET"])
+async def favorites_get(user_id: int):
+    pet_ids = favorites_db.get(user_id, [])
+    pets = []
+    for pid in pet_ids:
+        try:
+            pet = await entity_service.get_item(
+                token=cyoda_auth_service,
+                entity_model="pet",
+                entity_version=ENTITY_VERSION,
+                technical_id=pid,
+            )
+        except Exception as e:
+            logger.exception(e)
+            continue
+        if pet:
+            pet_out = pet.copy()
+            cat = pet_out.pop("category", None)
+            pet_out["type"] = cat.get("name") if cat else None
+            pets.append(pet_out)
+    return jsonify({"userId": user_id, "favorites": pets})
 
-- If you have other entity models with similar needs, create respective `process_{entity_name}` functions and move logic similarly.  
-- If `entity_service.update_item` does not support `workflow` param, consider adding it or handling update-specific workflows differently.  
-- Keep the workflow functions lean but powerful: only handle entity enrichment before persistence.  
-- Avoid recursive mutations on the same entity_model inside workflow to prevent infinite loops.
-
----
-
-If you want, I can provide the full updated code with all changes applied. Just let me know!
+if __name__ == "__main__":
+    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

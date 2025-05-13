@@ -1,6 +1,11 @@
-Certainly! I've updated the code to include the required `workflow` parameter in the `entity_service.add_item` calls and implemented the corresponding workflow function `process_pets_fun_fact` following your naming conventions.
+Certainly! I've updated your code to add the required `workflow` parameter to the `entity_service.add_item` call(s) and implemented the corresponding workflow function(s) with the correct naming conventions.
 
-Here is the complete updated code:
+Specifically:
+- Added an async workflow function called `process_pets_fun_fact` (following prefix `process_` + entity name in underscore lowercase).
+- Updated the call to `entity_service.add_item` in the `/pets/fun-facts` POST route to pass this workflow function.
+- The workflow function can modify the entity data before persistence. Here it adds a timestamp as an example.
+
+Below is the complete updated code:
 
 ```python
 from dataclasses import dataclass
@@ -30,8 +35,6 @@ class PetSearch:
 @dataclass
 class FunFactRequest:
     category: Optional[str] = None
-
-# Removed local caches pets_cache and fun_fact_cache
 
 PET_ENTITY_NAME = "pets"  # entity name underscored lowercase
 FUN_FACT_ENTITY_NAME = "pets_fun_fact"
@@ -95,12 +98,11 @@ async def fetch_random_pet_fact(category: Opt[str] = None) -> str:
 async def process_pets_fun_fact(entity_data: dict) -> dict:
     """
     Workflow function applied to pets_fun_fact entity before persistence.
-    You can modify the entity_data here as needed.
+    You can modify the entity_data here.
     """
-    # Example: Add a timestamp if not present
+    # Example: add a timestamp if not present
     if "timestamp" not in entity_data:
         entity_data["timestamp"] = datetime.utcnow().isoformat() + "Z"
-    # You can add more processing logic here if needed
     return entity_data
 
 @app.route("/pets/search", methods=["POST"])
@@ -112,11 +114,7 @@ async def pets_search(data: PetSearch):
     pets = await fetch_pets_from_petstore(data.__dict__)
     if pets is None:
         return jsonify({"error": "Failed to fetch pets from external API"}), 502
-    # Instead of caching locally, save pets list as new entity items (bulk operation not specified, so save individually)
-    # Here we assume each pet is saved as an individual entity
-    # We do not return the pets immediately, but their ids via add_item. But add_item adds one item at a time.
-    # Since no bulk add, skip add and cache, just return pets for now
-    # To keep business logic, we keep this endpoint as is (since it's external API data)
+    # Currently not saving pets as entities, just returning API data
     return jsonify({"pets": pets})
 
 @app.route("/pets/fun-facts", methods=["POST"])
@@ -126,7 +124,6 @@ async def pets_fun_facts(data: FunFactRequest):
     session_id = get_session_id()
     logger.info(f"Received fun fact request from session {session_id} category={data.category}")
     fact = await fetch_random_pet_fact(data.category)
-    # Save fact as entity using entity_service
     entity_data = {"fact": fact, "category": data.category}
     try:
         id = await entity_service.add_item(
@@ -144,14 +141,12 @@ async def pets_fun_facts(data: FunFactRequest):
 @app.route("/pets", methods=["GET"])
 async def pets_get():
     session_id = get_session_id()
-    # Retrieve all pets saved as entities
     try:
         pets = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model=PET_ENTITY_NAME,
             entity_version=ENTITY_VERSION,
         )
-        # We expect pets is a list of entities with string id
     except Exception as e:
         logger.exception("Failed to get pets entities")
         return jsonify({"error": "Failed to retrieve pets"}), 500
@@ -160,7 +155,6 @@ async def pets_get():
 @app.route("/pets/fun-fact", methods=["GET"])
 async def pets_fun_fact_get():
     session_id = get_session_id()
-    # Retrieve last saved fun fact (no order specified, so get all and return last)
     try:
         facts = await entity_service.get_items(
             token=cyoda_auth_service,
@@ -177,8 +171,14 @@ if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added the async workflow function `process_pets_fun_fact` that accepts the entity data dictionary, modifies it by adding a timestamp if missing, and returns it.
-- Updated the call to `entity_service.add_item` in the `/pets/fun-facts` POST route to pass the `workflow=process_pets_fun_fact` argument.
+---
 
-Let me know if you want me to add similar workflow functions for other entity models or any further adjustments!
+**Notes:**
+
+- The workflow function `process_pets_fun_fact` is async and accepts a single argument: the entity dict.
+- It modifies the entity data in-place (or returns a new dict) before persistence.
+- The workflow function is passed as the `workflow` keyword argument to `entity_service.add_item`.
+- The entity model names are in underscore lowercase, matching your spec.
+- I did not add workflow functions to other entity models because your code only adds entities for `pets_fun_fact`. If needed, you can do so similarly.
+
+Let me know if you want me to add workflows for other entity models or any other changes!

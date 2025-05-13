@@ -22,8 +22,8 @@ class SubscribeRequest:
 
 @dataclass
 class GamesQuery:
-    page: int = 1
-    limit: int = 50
+    page: int
+    limit: int
 
 # In-memory storage mocks
 _subscribers: List[str] = []
@@ -107,14 +107,10 @@ async def subscribe(data: SubscribeRequest):
     logger.info(f"New subscriber added: {email}")
     return jsonify({"status": "success", "message": f"Subscription successful for {email}"})
 
-# Workaround: quart-schema validate issue, validate_querystring must go before @app.route for GET
 @validate_querystring(GamesQuery)
 @app.route("/games/all", methods=["GET"])
 async def get_all_games():
-    args = GamesQuery(
-        page=int(request.args.get("page", 1)),
-        limit=int(request.args.get("limit", 50))
-    )
+    args = GamesQuery(**{k: int(request.args.get(k, '1' if k=='page' else '50')) for k in ("page", "limit")})
     page = args.page
     limit = args.limit
     all_games = []

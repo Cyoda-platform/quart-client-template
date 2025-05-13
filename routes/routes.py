@@ -5,8 +5,8 @@ from typing import Optional, List
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class WeatherFetchRequest:
@@ -100,7 +99,7 @@ async def process_weather_fetch_request(entity: dict) -> dict:
 
     return entity
 
-@app.route("/weather/fetch", methods=["POST"])
+@routes_bp.route("/weather/fetch", methods=["POST"])
 @validate_request(WeatherFetchRequest)
 async def weather_fetch(data: WeatherFetchRequest):
     try:
@@ -119,7 +118,7 @@ async def weather_fetch(data: WeatherFetchRequest):
         logger.exception("Failed to process weather fetch request")
         return jsonify({"status": "failure", "message": "Failed to start weather fetch"}), 500
 
-@app.route("/weather/results", methods=["GET"])
+@routes_bp.route("/weather/results", methods=["GET"])
 @validate_querystring(WeatherResultsQuery)
 async def weather_results():
     location = request.args.get("location")
@@ -159,9 +158,3 @@ async def weather_results():
     except Exception:
         logger.exception("Error retrieving weather results")
         return jsonify({"message": "Error retrieving weather results"}), 500
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                        format="%(asctime)s %(levelname)s %(name)s - %(message)s")
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

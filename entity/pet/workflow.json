@@ -1,0 +1,78 @@
+{
+    "description": "Workflow for processing pet data and adoption requests in Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start by fetching pets from external sources",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets data fetched from external sources",
+            "name": "start_fetch_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch pets from external data sources",
+                        "name": "process_fetch_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Filter fetched pets based on criteria",
+            "end_state": "Pets_filtered",
+            "end_state_description": "Pets filtered based on criteria",
+            "name": "filter_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Filter pets according to entity criteria",
+                        "name": "process_filter_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets data fetched from external sources"
+        },
+        {
+            "automated": true,
+            "description": "Process adoption request logic, validation, and status update",
+            "end_state": "Adoption_processed",
+            "end_state_description": "Adoption request processed",
+            "name": "handle_adoption_request",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Handle adoption request processing",
+                        "name": "process_adoption_request"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_filtered",
+            "start_state_description": "Pets filtered based on criteria"
+        },
+        {
+            "automated": true,
+            "description": "Finalize the entity state before persistence",
+            "end_state": "Processing_finalized",
+            "end_state_description": "Entity state finalized and ready for persistence",
+            "name": "finalize_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Finalize entity state such as timestamps",
+                        "name": "process_finalize"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Adoption_processed",
+            "start_state_description": "Adoption request processed"
+        }
+    ]
+}

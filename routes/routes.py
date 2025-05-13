@@ -5,8 +5,8 @@ import logging
 import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,8 +14,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -80,33 +79,27 @@ async def fetch_petstore_pets(filters: dict):
     return normalized
 
 async def process_pet(entity: dict) -> dict:
-    # Normalize status to lowercase
     if "status" in entity and isinstance(entity["status"], str):
         entity["status"] = entity["status"].lower()
-    # Normalize category name to lowercase
     if "category" in entity and isinstance(entity["category"], dict):
         name = entity["category"].get("name")
         if name and isinstance(name, str):
             entity["category"]["name"] = name.lower()
-    # Add created_at timestamp if not present
     if "created_at" not in entity:
         entity["created_at"] = datetime.datetime.utcnow().isoformat() + "Z"
-    # Placeholder for additional enrichment or async calls
     return entity
 
 async def process_pet_update(entity: dict) -> dict:
-    # Normalize status to lowercase if present
     if "status" in entity and isinstance(entity["status"], str):
         entity["status"] = entity["status"].lower()
     if "category" in entity and isinstance(entity["category"], dict):
         name = entity["category"].get("name")
         if name and isinstance(name, str):
             entity["category"]["name"] = name.lower()
-    # Add updated_at timestamp
     entity["updated_at"] = datetime.datetime.utcnow().isoformat() + "Z"
     return entity
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchPetsRequest)
 async def pets_search(data: SearchPetsRequest):
     filters = {"type": data.type, "status": data.status, "name": data.name}
@@ -116,7 +109,7 @@ async def pets_search(data: SearchPetsRequest):
             pets_cache[pet["id"]] = pet
     return jsonify({"pets": pets})
 
-@app.route("/pets/add", methods=["POST"])
+@routes_bp.route("/pets/add", methods=["POST"])
 @validate_request(AddPetRequest)
 async def pets_add(data: AddPetRequest):
     if data.type not in ("cat", "dog") or data.status not in ("available", "pending", "sold"):
@@ -141,7 +134,7 @@ async def pets_add(data: AddPetRequest):
         pets_cache[str(pet_id)] = {**petstore_pet, "id": str(pet_id)}
     return jsonify({"message": "Pet added successfully", "petId": str(pet_id)})
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pets_get(pet_id: str):
     async with pets_cache_lock:
         pet = pets_cache.get(pet_id)
@@ -163,7 +156,7 @@ async def pets_get(pet_id: str):
             pets_cache[pet_id] = pet
     return jsonify(pet)
 
-@app.route("/pets/update/<string:pet_id>", methods=["POST"])
+@routes_bp.route("/pets/update/<string:pet_id>", methods=["POST"])
 @validate_request(UpdatePetRequest)
 async def pets_update(data: UpdatePetRequest, pet_id: str):
     async with pets_cache_lock:
@@ -211,7 +204,7 @@ async def pets_update(data: UpdatePetRequest, pet_id: str):
         }
     return jsonify({"message": "Pet updated successfully"})
 
-@app.route("/pets/delete/<string:pet_id>", methods=["POST"])
+@routes_bp.route("/pets/delete/<string:pet_id>", methods=["POST"])
 async def pets_delete(pet_id: str):
     try:
         await entity_service.delete_item(
@@ -227,8 +220,3 @@ async def pets_delete(pet_id: str):
     async with pets_cache_lock:
         pets_cache.pop(pet_id, None)
     return jsonify({"message": "Pet deleted successfully"})
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

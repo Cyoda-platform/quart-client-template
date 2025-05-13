@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for processing petstore orders including placing and finalizing",
+    "name": "order_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initialize order processing",
+            "end_state": "order_processing_started",
+            "end_state_description": "Order processing started",
+            "name": "start_order_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_order"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Place order with petstore",
+            "end_state": "order_placed",
+            "end_state_description": "Order has been placed",
+            "name": "place_order",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_place_order"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "order_processing_started",
+            "start_state_description": "Order processing started"
+        },
+        {
+            "automated": true,
+            "description": "Finalize the order",
+            "end_state": "order_finalized",
+            "end_state_description": "Order processing finalized",
+            "name": "finalize_order",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_finalize_order"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "order_placed",
+            "start_state_description": "Order has been placed"
+        }
+    ]
+}

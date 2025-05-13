@@ -1,0 +1,24 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": "123",
+                "name": "Buddy",
+                "status": "available",
+                "tags": [
+                    "friendly",
+                    "small"
+                ],
+                "type": "dog"
+            },
+            "entity_name": "pets"
+        },
+        {
+            "entity_data_example": {
+                "category": "dogs",
+                "fact": "Dogs have about 1,700 taste buds."
+            },
+            "entity_name": "pets_fun_fact"
+        }
+    ]
+}

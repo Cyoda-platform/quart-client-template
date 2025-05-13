@@ -1,17 +1,14 @@
-import asyncio
+from datetime import timezone, datetime
 import logging
-from datetime import datetime
-
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart import Blueprint, request, abort, jsonify
+from quart_schema import validate, validate_querystring, tag, operation_id
 from app_init.app_init import BeanFactory
-from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+FINAL_STATES = {'FAILURE', 'SUCCESS', 'CANCELLED', 'CANCELLED_BY_USER', 'UNKNOWN', 'FINISHED'}
+PROCESSING_STATE = 'PROCESSING'
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -20,6 +17,8 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 entity_name = "pet"  # entity name always underscore lowercase
 
 # --- Workflow function ---
+
+import asyncio
 
 async def process_pet(entity: dict) -> dict:
     """
@@ -65,7 +64,7 @@ async def process_pet(entity: dict) -> dict:
 
 # --- Routes ---
 
-@app.route("/pets", methods=["POST"])
+@routes_bp.route("/pets", methods=["POST"])
 async def add_update_pet():
     """
     Add or update pet.
@@ -80,7 +79,7 @@ async def add_update_pet():
         new_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             entity=data
         )
     except Exception as e:
@@ -90,7 +89,7 @@ async def add_update_pet():
     # Return only the id, do not retrieve the item immediately
     return jsonify({"id": str(new_id), "message": "Pet added successfully"}), 200
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 async def search_pets_by_status():
     """
     Search pets by status via external Petstore API.
@@ -123,7 +122,7 @@ async def search_pets_by_status():
         pets = await entity_service.get_items_by_condition(
             token=cyoda_auth_service,
             entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             condition=condition
         )
     except Exception as e:
@@ -132,7 +131,7 @@ async def search_pets_by_status():
 
     return jsonify(pets), 200
 
-@app.route("/pets/<pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<pet_id>", methods=["GET"])
 async def get_pet(pet_id: str):
     """
     Retrieve pet details from entity_service by string id.
@@ -141,7 +140,7 @@ async def get_pet(pet_id: str):
         pet = await entity_service.get_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             technical_id=pet_id
         )
     except Exception as e:
@@ -153,7 +152,7 @@ async def get_pet(pet_id: str):
 
     return jsonify(pet), 200
 
-@app.route("/pets/<pet_id>/delete", methods=["POST"])
+@routes_bp.route("/pets/<pet_id>/delete", methods=["POST"])
 async def delete_pet(pet_id: str):
     """
     Delete pet by ID via entity_service.
@@ -162,7 +161,7 @@ async def delete_pet(pet_id: str):
         await entity_service.delete_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             technical_id=pet_id,
             meta={}
         )
@@ -171,15 +170,3 @@ async def delete_pet(pet_id: str):
         return jsonify({"error": "Failed to delete pet via entity_service"}), 502
 
     return jsonify({"message": "Pet deleted successfully"}), 200
-
-
-if __name__ == '__main__':
-    import sys
-
-    # Simple console handler for logging
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

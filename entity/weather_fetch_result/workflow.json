@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to fetch weather data from MSC GeoMet API and process results",
+    "name": "weather_data_fetch_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching weather data from external API",
+            "end_state": "Fetching",
+            "end_state_description": "Weather data fetching in progress",
+            "name": "start_fetch",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_external_api"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process the fetched weather data results",
+            "end_state": "Fetched",
+            "end_state_description": "Weather data has been fetched and processed",
+            "name": "process_fetch_result",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_weather_fetch_result"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Fetching",
+            "start_state_description": "Weather data fetching in progress"
+        }
+    ]
+}

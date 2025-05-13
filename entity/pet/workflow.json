@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for processing pet entities through normalization and photo handling",
+    "name": "pet_management_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet entity",
+            "end_state": "Normalized_fields",
+            "end_state_description": "Pet fields normalized",
+            "name": "start_processing_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_fields"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process pet photos",
+            "end_state": "Photos_handled",
+            "end_state_description": "Pet photos processed",
+            "name": "handle_pet_photos",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_handle_photos"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Normalized_fields",
+            "start_state_description": "Pet fields normalized"
+        },
+        {
+            "automated": true,
+            "description": "Finalize pet processing by setting processed timestamp",
+            "end_state": "Processed",
+            "end_state_description": "Pet processing completed",
+            "name": "finalize_pet_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Photos_handled",
+            "start_state_description": "Pet photos processed"
+        }
+    ]
+}

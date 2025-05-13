@@ -1,39 +1,7 @@
-Got it! The idea is to move all the business logic that can be executed *before* persisting the entity into the workflow function `process_pet`. This makes the controllers (endpoints) slimmer and more focused on HTTP concerns only.
-
-### What can we move into `process_pet`?
-
-- Any modification of the entity before saving, e.g. adding timestamps, default values.
-- Any asynchronous side effects related to the entity, like fetching supplementary data or adding related entities of different models.
-- Any validation or enrichment logic on the entity itself.
-- Fire-and-forget tasks related to this entity *before* persistence.
-
-### What cannot be moved?
-
-- Calls to `entity_service.add_item`, `update_item`, or `delete_item` on the same entity_model (to avoid recursion).
-- Business logic that depends on HTTP request/response or external parameters that are not part of the entity.
-- Retrieval of the entity after persistence (controllers still handle these).
-
----
-
-### Concrete changes I'll apply:
-
-1. Move the timestamp addition inside `process_pet`.
-2. Move any logic that enriches the entity or modifies it before saving.
-3. Leave the endpoints to just call `add_item` with the workflow.
-4. For the search, get, and delete endpoints, no entity modification is involved before persistence, so those stay as-is.
-5. If there were async tasks like notifications or logging that can be done before saving, move them to `process_pet` (if examples existed).
-
----
-
-### Updated full code with maximum logic moved into `process_pet`
-
-```python
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Optional
 
-import httpx
 from quart import Quart, jsonify, request
 from quart_schema import QuartSchema
 from app_init.app_init import BeanFactory
@@ -56,39 +24,42 @@ entity_name = "pet"  # entity name always underscore lowercase
 async def process_pet(entity: dict) -> dict:
     """
     Workflow function applied to the pet entity asynchronously before persistence.
-
-    Here you can modify the entity state, e.g. add timestamps, enrich data,
-    or fetch/add supplementary entities of different models asynchronously.
-
-    WARNING: Do NOT add/update/delete entity of the same model (pet) here.
+    Modify entity state or perform async tasks related to this entity.
+    Do NOT add/update/delete entities of the same model here to avoid recursion.
     """
 
     # Add or update a 'last_modified' timestamp
     entity['last_modified'] = datetime.utcnow().isoformat() + 'Z'
 
-    # Example: Set created_at timestamp if not present
+    # Set created_at timestamp if not present
     if 'created_at' not in entity:
         entity['created_at'] = datetime.utcnow().isoformat() + 'Z'
 
-    # Example: Enrich entity by fetching some external data (fire and forget)
-    # (Dummy example - you can replace with actual enrichment)
+    # Example async fire-and-forget enrichment task
     async def enrich_entity():
-        # Simulate async I/O task, e.g. fetch metadata or validate something
-        await asyncio.sleep(0.1)
-        # You can modify entity here (allowed)
-        entity['enriched'] = True
+        try:
+            # Simulate async I/O, e.g. fetch external metadata or validation
+            await asyncio.sleep(0.1)
+            # Modify entity safely in async context
+            entity['enriched'] = True
+        except Exception as e:
+            logger.error(f"Enrichment task failed: {e}")
 
-    # Run enrichment concurrently without blocking
+    # Run enrichment task concurrently without awaiting - fire and forget
     asyncio.create_task(enrich_entity())
 
-    # Example: Add related entity of a different entity_model (allowed)
-    # await entity_service.add_item(
-    #     token=cyoda_auth_service,
-    #     entity_model="pet_metadata",
-    #     entity_version=ENTITY_VERSION,
-    #     entity={"pet_id": entity.get("id"), "metadata": "example"},
-    #     workflow=None
-    # )
+    # Example: Add supplementary entity of a different entity_model (allowed)
+    # Uncomment and customize if needed
+    # try:
+    #     await entity_service.add_item(
+    #         token=cyoda_auth_service,
+    #         entity_model="pet_metadata",
+    #         entity_version=ENTITY_VERSION,
+    #         entity={"pet_id": entity.get("id"), "metadata": "example"},
+    #         workflow=None
+    #     )
+    # except Exception as e:
+    #     logger.error(f"Failed to add supplementary pet_metadata entity: {e}")
 
     return entity
 
@@ -114,7 +85,7 @@ async def add_update_pet():
             workflow=process_pet
         )
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to add pet via entity_service")
         return jsonify({"error": "Failed to add pet via entity_service"}), 502
 
     # Return only the id, do not retrieve the item immediately
@@ -157,7 +128,7 @@ async def search_pets_by_status():
             condition=condition
         )
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to fetch pets via entity_service")
         return jsonify({"error": "Failed to fetch pets via entity_service"}), 502
 
     return jsonify(pets), 200
@@ -175,7 +146,7 @@ async def get_pet(pet_id: str):
             technical_id=pet_id
         )
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to retrieve pet via entity_service")
         return jsonify({"error": "Failed to retrieve pet via entity_service"}), 502
 
     if not pet:
@@ -197,7 +168,7 @@ async def delete_pet(pet_id: str):
             meta={}
         )
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to delete pet via entity_service")
         return jsonify({"error": "Failed to delete pet via entity_service"}), 502
 
     return jsonify({"message": "Pet deleted successfully"}), 200
@@ -213,20 +184,3 @@ if __name__ == '__main__':
     logger.addHandler(handler)
 
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Summary of changes:
-
-- The only logic before persistence is inside the `process_pet` async function.
-- The controller `/pets` endpoint simply passes the entity and workflow function to `entity_service.add_item`.
-- The example enrichment function runs asynchronously fire-and-forget inside the workflow.
-- You can add more async enrichments or supplementary entity creations inside `process_pet` (but not for the same model).
-- The other endpoints remain clean and focused on their own tasks.
-
-This approach makes the codebase more robust, easier to maintain, and better aligned with the new workflow paradigm.
-
----
-
-If you want me to move any additional business logic or async tasks you currently have into the workflow function, please provide those code snippets and I will help refactor accordingly!

@@ -1,0 +1,18 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "details": {
+                    "age": 3,
+                    "breed": "Siamese",
+                    "color": "cream and brown"
+                },
+                "id": "123",
+                "name": "whiskers",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

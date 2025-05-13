@@ -4,8 +4,8 @@ import logging
 from datetime import datetime
 import uuid
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request
 
 import httpx
 from app_init.app_init import BeanFactory
@@ -13,8 +13,7 @@ from app_init.app_init import BeanFactory
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -129,7 +128,7 @@ async def _async_process_entity_job(job_id: str, location: str, parameters: list
         except Exception as update_exc:
             logger.exception(f"Failed to update entity_job with error status for job_id {job_id}: {update_exc}")
 
-@app.route("/weather/fetch", methods=["POST"])
+@routes_bp.route("/weather/fetch", methods=["POST"])
 @validate_request(FetchWeatherRequest)
 async def fetch_weather(data: FetchWeatherRequest):
     entity = {
@@ -149,7 +148,7 @@ async def fetch_weather(data: FetchWeatherRequest):
         "message": "Data fetching started"
     })
 
-@app.route("/weather/result/<string:fetch_id>", methods=["GET"])
+@routes_bp.route("/weather/result/<string:fetch_id>", methods=["GET"])
 async def get_result(fetch_id: str):
     job = await entity_service.get_item(
         token=cyoda_auth_service,
@@ -168,6 +167,3 @@ async def get_result(fetch_id: str):
         "fetch_id": fetch_id,
         **job.get("result", {}),
     })
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

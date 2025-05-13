@@ -1,0 +1,60 @@
+{
+    "description": "FSM for weather fetch job processing",
+    "name": "weather_fetch_job_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Validate job input data",
+            "end_state": "job_validated",
+            "end_state_description": "Job input validated",
+            "name": "validate_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process location list and update cache",
+            "end_state": "locations_processed",
+            "end_state_description": "Locations processed and cache updated",
+            "name": "process_locations",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_process_locations"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "job_validated",
+            "start_state_description": "Job input validated"
+        },
+        {
+            "automated": true,
+            "description": "Finalize job status and timestamps",
+            "end_state": "job_finished",
+            "end_state_description": "Job finalized and completed",
+            "name": "finalize_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_finalize_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "locations_processed",
+            "start_state_description": "Locations processed and cache updated"
+        }
+    ]
+}

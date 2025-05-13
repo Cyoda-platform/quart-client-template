@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class PetQuery:
@@ -168,7 +167,7 @@ async def process_entity_job(job_id: str, data: Dict[str, Any]):
         entity_jobs[job_id]["status"] = "error"
         entity_jobs[job_id]["result"] = str(e)
 
-@app.route("/pets/query", methods=["POST"])
+@routes_bp.route("/pets/query", methods=["POST"])
 @validate_request(PetQuery)
 async def pets_query(data: PetQuery):
     job_id = datetime.utcnow().isoformat() + "-" + str(id(data))
@@ -180,7 +179,7 @@ async def pets_query(data: PetQuery):
     asyncio.create_task(process_entity_job(job_id, data.__dict__))
     return jsonify({"job_id": job_id, "status": "processing"}), 202
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def list_pets():
     pets = await entity_service.get_items(
         token=cyoda_auth_service,
@@ -189,7 +188,7 @@ async def list_pets():
     )
     return jsonify(pets)
 
-@app.route("/pets/<pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<pet_id>", methods=["GET"])
 async def get_pet(pet_id):
     pet = await entity_service.get_item(
         token=cyoda_auth_service,
@@ -201,15 +200,9 @@ async def get_pet(pet_id):
         return jsonify({"error": "Pet not found"}), 404
     return jsonify(pet)
 
-@app.route("/pets/job_status/<job_id>", methods=["GET"])
+@routes_bp.route("/pets/job_status/<job_id>", methods=["GET"])
 async def get_job_status(job_id):
     job = entity_jobs.get(job_id)
     if not job:
         return jsonify({"error": "Job ID not found"}), 404
     return jsonify(job)
-
-if __name__ == "__main__":
-    import sys
-    if sys.platform == "win32":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

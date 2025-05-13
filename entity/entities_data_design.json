@@ -1,0 +1,23 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": 101,
+                "name": "Mittens",
+                "photoUrls": [
+                    "url1"
+                ],
+                "status": "sold",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "petId": 101,
+                "userId": 1
+            },
+            "entity_name": "favorite"
+        }
+    ]
+}

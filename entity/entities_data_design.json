@@ -1,0 +1,36 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": "Dogs",
+                "id": 123,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "http://example.com/photo1.jpg",
+                    "http://example.com/photo2.jpg"
+                ],
+                "status": "available"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "category": "Dogs",
+                "id": 123,
+                "name": "Fluffy",
+                "status": "available"
+            },
+            "entity_name": "favorite_pet"
+        },
+        {
+            "entity_data_example": {
+                "orderId": 456,
+                "petId": 123,
+                "quantity": 2,
+                "shipDate": "2024-06-01T12:00:00Z",
+                "status": "placed"
+            },
+            "entity_name": "order"
+        }
+    ]
+}

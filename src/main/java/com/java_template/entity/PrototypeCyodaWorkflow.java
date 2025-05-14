@@ -1,43 +1,8 @@
-Certainly! Moving logic from the controller endpoints into the `process{EntityName}` workflow functions is a great approach for separation of concerns, making controllers slimmer and pushing async or side-effect logic into the workflow layer where it belongs.
-
----
-
-### What to move to workflow functions?
-
-1. **Defaulting and state modification**  
-   Setting default values (like default status) should be done inside the workflow.
-
-2. **Async side-effects / fire-and-forget logic**  
-   Any asynchronous processing related to entity state changes (e.g. logging, event dispatching, calling other services, adding/updating supplementary entities) should be inside the workflow.
-
-3. **Fetching or updating supplementary related entities** (of different entityModel)  
-   If needed, can happen inside workflow functions (NOT the current entityModel).
-
----
-
-### What *cannot* be done inside workflow?
-
-- Cannot add/update/delete the current entityModel inside the workflow for the same entity (would cause infinite recursion).
-
----
-
-### Implementation plan
-
-- Convert the `processPet` workflow to:
-  - Default `status` if missing or invalid
-  - Trigger any async side-effects (logging, event dispatch, etc.)
-  - Possibly add supplementary entities (if needed, example shown)
-- Remove such logic from controllers.
-
----
-
-### Updated code snippet with these principles applied
-
-```java
 package com.java_template.entity;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.java_template.common.service.EntityService;
 import jakarta.validation.Valid;
@@ -58,7 +23,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 
 import static com.java_template.common.config.Config.*;
 
@@ -101,7 +65,7 @@ public class CyodaEntityControllerPrototype {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_GATEWAY, "Unexpected format");
         }
 
-        List<ObjectNode> petsToAdd = new ArrayList<>();
+        List<CompletableFuture<UUID>> addFutures = new ArrayList<>();
         int count = 0;
         for (JsonNode node : root) {
             long id = node.path("id").asLong(-1);
@@ -111,19 +75,13 @@ public class CyodaEntityControllerPrototype {
             petNode.put("name", node.path("name").asText("Unnamed"));
             petNode.put("status", node.path("status").asText("unknown"));
             petNode.put("type", node.path("category").path("name").asText("Unknown"));
-            petsToAdd.add(petNode);
+            // Add pet with workflow processing
+            addFutures.add(entityService.addItem(ENTITY_NAME, ENTITY_VERSION, petNode, this::processPet));
             count++;
         }
-        if (!petsToAdd.isEmpty()) {
-            // Pass workflow function so processing (e.g. defaulting status) happens before persistence
-            List<CompletableFuture<UUID>> futures = new ArrayList<>();
-            for (ObjectNode petNode : petsToAdd) {
-                futures.add(entityService.addItem(ENTITY_NAME, ENTITY_VERSION, petNode, this::processPet));
-            }
-            // Await all
-            for (CompletableFuture<UUID> f : futures) {
-                f.get();
-            }
+        // Wait for all additions to complete
+        for (CompletableFuture<UUID> future : addFutures) {
+            future.get();
         }
         Map<String, Object> resp = new HashMap<>();
         resp.put("message", "Pets data fetched and updated successfully");
@@ -134,28 +92,16 @@ public class CyodaEntityControllerPrototype {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Pet> listPets(@RequestParam(required = false) @Pattern(regexp = "available|pending|sold", message = "Invalid status") String status) throws ExecutionException, InterruptedException {
         logger.info("Listing pets with status {}", status);
-        CompletableFuture<List<ObjectNode>> itemsFuture;
+        CompletableFuture<ArrayNode> itemsFuture;
         if (status == null || status.isEmpty()) {
-            itemsFuture = entityService.getItems(ENTITY_NAME, ENTITY_VERSION).thenApply(arr -> {
-                List<ObjectNode> list = new ArrayList<>();
-                arr.forEach(node -> {
-                    if (node instanceof ObjectNode) list.add((ObjectNode) node);
-                });
-                return list;
-            });
+            itemsFuture = entityService.getItems(ENTITY_NAME, ENTITY_VERSION);
         } else {
             String condition = String.format("status='%s'", status);
-            itemsFuture = entityService.getItemsByCondition(ENTITY_NAME, ENTITY_VERSION, condition).thenApply(arr -> {
-                List<ObjectNode> list = new ArrayList<>();
-                arr.forEach(node -> {
-                    if (node instanceof ObjectNode) list.add((ObjectNode) node);
-                });
-                return list;
-            });
+            itemsFuture = entityService.getItemsByCondition(ENTITY_NAME, ENTITY_VERSION, condition);
         }
-        List<ObjectNode> items = itemsFuture.get();
+        ArrayNode items = itemsFuture.get();
         List<Pet> result = new ArrayList<>();
-        for (ObjectNode item : items) {
+        for (JsonNode item : items) {
             long technicalId = item.path("technicalId").asLong(-1);
             if (technicalId < 0) continue;
             String name = item.path("name").asText("Unnamed");
@@ -168,37 +114,31 @@ public class CyodaEntityControllerPrototype {
         return result;
     }
 
-    /**
-     * Workflow function that processes a Pet entity before persistence.
-     * Modifies entity state directly.
-     * Performs async side-effects (e.g., logging, event triggering).
-     * Can add supplementary entities of different entityModel.
-     */
+    // Workflow function to process Pet entity before persistence
     private CompletableFuture<ObjectNode> processPet(Object entity) {
         return CompletableFuture.supplyAsync(() -> {
             if (!(entity instanceof ObjectNode)) {
                 logger.warn("Entity passed to processPet is not an ObjectNode");
-                return (ObjectNode) entity; // Defensive fallback
+                return (ObjectNode) entity;
             }
             ObjectNode petNode = (ObjectNode) entity;
 
-            // Default status if missing or invalid
+            // Validate and default status
             String status = petNode.path("status").asText(null);
             if (status == null || status.isEmpty() || !isValidStatus(status)) {
                 petNode.put("status", "available");
                 logger.debug("Defaulted pet status to 'available'");
             }
 
-            // Example async side-effect: log entity addition
+            // Log the processing
             logger.info("Processing pet entity before persistence: {}", petNode);
 
-            // Example: add supplementary entity of different entityModel (e.g., PetAudit)
+            // Example: add supplementary entity of different entityModel "PetAudit"
             try {
                 ObjectNode auditEntity = petNode.deepCopy();
                 auditEntity.put("auditTimestamp", System.currentTimeMillis());
                 auditEntity.put("auditAction", "ADD_OR_UPDATE");
-                // Add supplementary entity asynchronously, different entityModel "PetAudit"
-                entityService.addItem("PetAudit", ENTITY_VERSION, auditEntity, (e) -> CompletableFuture.completedFuture((ObjectNode) e))
+                entityService.addItem("PetAudit", ENTITY_VERSION, auditEntity, e -> CompletableFuture.completedFuture((ObjectNode) e))
                         .exceptionally(ex -> {
                             logger.error("Failed to add PetAudit entity", ex);
                             return null;
@@ -219,9 +159,8 @@ public class CyodaEntityControllerPrototype {
         petNode.put("type", req.getType());
         if (req.getStatus() != null && !req.getStatus().isEmpty()) {
             petNode.put("status", req.getStatus());
-        } // Else workflow will default
-
-        // Call addItem with workflow processPet to handle all logic
+        }
+        // Add pet entity with workflow processing
         CompletableFuture<UUID> idFuture = entityService.addItem(ENTITY_NAME, ENTITY_VERSION, petNode, this::processPet);
         UUID technicalId = idFuture.get();
         Map<String, Object> resp = new HashMap<>();
@@ -247,7 +186,7 @@ public class CyodaEntityControllerPrototype {
         // Update status directly on ObjectNode
         existingItem.put("status", req.getStatus());
 
-        // Use updateItem with workflow function to handle side-effects and validation
+        // Update entity with workflow processing
         CompletableFuture<UUID> updatedItemId = entityService.updateItem(ENTITY_NAME, ENTITY_VERSION, technicalId, existingItem, this::processPet);
         updatedItemId.get();
 
@@ -304,26 +243,3 @@ public class CyodaEntityControllerPrototype {
         private String status;
     }
 }
-```
-
----
-
-### Summary of main changes:
-
-- **All entity state mutation and defaulting moved into `processPet` workflow function.**  
-  Controllers only prepare and pass the entity (ObjectNode) and invoke `entityService.addItem/updateItem` with workflow.
-
-- **Async side-effect logic (logging, adding supplementary entities) shifted into `processPet`.**  
-  For example, adding a supplementary `"PetAudit"` entity is done inside the workflow asynchronously.
-
-- **Controllers now only do minimal data transformation, validation, and call service methods with workflow.**  
-
-- **`updatePetStatus` endpoint updated to use `updateItem` with workflow to perform side effects and validation.**
-
-- **Helper method `isValidStatus` added to centralize status validation inside workflow.**
-
----
-
-This design makes your controller code cleaner and moves all business logic and asynchronous workflows to the proper layer, utilizing the workflow function capabilities fully.
-
-If you want me to help move any additional logic or provide tests, just ask.

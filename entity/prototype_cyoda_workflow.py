@@ -1,21 +1,3 @@
-Understood. To make the code more robust and move async processing logic out of endpoints, we can refactor all async tasks and business logic that occur *before* or *during* persistence into the respective workflow functions.
-
-### What will be moved:
-- Validation, enrichment, status changes, related entity lookups, and DTCC message creation/transmission related to `fpml_message` will move into `process_fpml_message(entity)`.
-- Any trade-specific processing (if applicable) can remain or be enhanced in `process_trade(entity)`.
-- Legal entity creation/update logic will move into `process_legal_entity(entity)`.
-
-### Important:
-- Workflow functions receive the entity *before* persistence and can modify it directly.
-- They can read/add other entities but **cannot** add/update/delete the same entity_model to avoid recursion.
-- Async operations are allowed.
-- After workflow returns, the entity will be persisted with the modified data.
-
----
-
-# Refactored complete code with workflows implementing the logic:
-
-```python
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -40,7 +22,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 app = Quart(__name__)
 QuartSchema(app)
 
-# Data classes for request validation
 @dataclass
 class Fpml_message_request:
     payload: str
@@ -87,13 +68,8 @@ async def transmit_dtcc_message(payload: dict) -> bool:
             logger.exception("DTCC message transmission failed")
             return False
 
-# --- Workflow functions ---
-
+# Workflow for fpml_message
 async def process_fpml_message(entity):
-    """
-    Processes fpml_message entity before persistence.
-    Validates, matches trades, updates trade status, creates/transmits DTCC message.
-    """
     try:
         # Validate payload XML
         valid = await validate_fpml_xml(entity["payload"])
@@ -102,9 +78,9 @@ async def process_fpml_message(entity):
             entity["status"] = "ERROR"
             processing_log.append({"timestamp": now_iso(), "event": "Validation failed"})
             entity["processingLog"] = processing_log
-            return entity  # Early return, will persist with error status
+            return entity
 
-        # Get trades (all trades)
+        # Get all trades
         trades_list = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model="trade",
@@ -113,7 +89,7 @@ async def process_fpml_message(entity):
 
         matched_trade = None
         for trade in trades_list:
-            if trade["tradeId"] in entity["payload"]:
+            if trade.get("tradeId") and trade["tradeId"] in entity["payload"]:
                 matched_trade = trade
                 break
 
@@ -124,14 +100,12 @@ async def process_fpml_message(entity):
             entity["status"] = "MATCHED"
             processing_log.append({"timestamp": now_iso(), "event": f"Matched {matched_trade['id']}"})
 
-        # Mark message validated
         entity["status"] = "VALIDATED"
         processing_log.append({"timestamp": now_iso(), "event": "Validated"})
         entity["processingLog"] = processing_log
 
-        # Handle trade creation or update accordingly
+        # Create or update trade accordingly
         if matched_trade is None:
-            # Create new trade linked to this message
             trade_id = str(uuid.uuid4())
             new_trade = {
                 "id": trade_id,
@@ -141,12 +115,11 @@ async def process_fpml_message(entity):
                 "party2LEI": "LEI0000002",
                 "tradeDetails": {},
                 "status": "UNCONFIRMED",
-                "originalFpMLMessageId": entity.get("id"),  # id not set yet, will be after persist, so None here
+                "originalFpMLMessageId": entity.get("id"),  # id not set yet, will be None here
                 "events": [],
                 "latestVersion": 1,
                 "processingLog": [{"timestamp": now_iso(), "event": "Trade created"}],
             }
-            # Add new trade asynchronously, with workflow
             await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model="trade",
@@ -155,13 +128,10 @@ async def process_fpml_message(entity):
                 workflow=process_trade
             )
         else:
-            # Update existing trade's latestVersion and log
             matched_trade["latestVersion"] += 1
             trade_processing_log = matched_trade.get("processingLog", [])
             trade_processing_log.append({"timestamp": now_iso(), "event": "Trade updated"})
             matched_trade["processingLog"] = trade_processing_log
-
-            # Update trade entity asynchronously
             await entity_service.update_item(
                 token=cyoda_auth_service,
                 entity_model="trade",
@@ -170,10 +140,6 @@ async def process_fpml_message(entity):
                 technical_id=matched_trade["id"],
                 meta={}
             )
-
-        # Note: We cannot update the current fpml_message entity again here (would cause recursion)
-        # Instead, related trade processing happens inside process_trade workflow
-
     except Exception:
         logger.exception("Exception in process_fpml_message workflow")
         entity["status"] = "ERROR"
@@ -182,21 +148,15 @@ async def process_fpml_message(entity):
         entity["processingLog"] = processing_log
     return entity
 
-
+# Workflow for trade
 async def process_trade(entity):
-    """
-    Processes trade entity before persistence.
-    Enriches trade with legal entities, validates, updates status, and creates DTCC messages.
-    """
     try:
         processing_log = entity.get("processingLog", [])
 
-        # Confirm trade status progression
         if entity.get("status") in (None, "UNCONFIRMED"):
             entity["status"] = "CONFIRMED"
             processing_log.append({"timestamp": now_iso(), "event": "Confirmed"})
 
-        # Lookup legal entities for parties
         party1_lei = entity.get("party1LEI")
         party2_lei = entity.get("party2LEI")
 
@@ -220,13 +180,10 @@ async def process_trade(entity):
             return entity
 
         processing_log.append({"timestamp": now_iso(), "event": "Enriched"})
-
-        # Mark trade as validated
         entity["status"] = "VALIDATED"
         processing_log.append({"timestamp": now_iso(), "event": "Validated trade"})
         entity["processingLog"] = processing_log
 
-        # Create DTCC message for this trade
         dtcc_id = str(uuid.uuid4())
         dtcc_msg = {
             "id": dtcc_id,
@@ -259,22 +216,16 @@ async def process_trade(entity):
             entity["status"] = "ERROR"
             processing_log.append({"timestamp": now_iso(), "event": "DTCC failure"})
             entity["processingLog"] = processing_log
-
     except Exception:
         logger.exception("Exception in process_trade workflow")
         entity["status"] = "ERROR"
         processing_log = entity.get("processingLog", [])
         processing_log.append({"timestamp": now_iso(), "event": "Exception in trade workflow"})
         entity["processingLog"] = processing_log
-
     return entity
 
-
+# Workflow for legal_entity
 async def process_legal_entity(entity):
-    """
-    Processes legal_entity entity before persistence.
-    Sets status and lastUpdated timestamp.
-    """
     try:
         entity["status"] = "ACTIVE"
         entity["lastUpdated"] = now_iso()
@@ -282,8 +233,6 @@ async def process_legal_entity(entity):
         logger.exception("Exception in process_legal_entity workflow")
         entity["status"] = "ERROR"
     return entity
-
-# --- End of workflow functions ---
 
 @app.route("/api/fpml-messages", methods=["POST"])
 @validate_request(Fpml_message_request)
@@ -310,10 +259,6 @@ async def receive_fpml_message(data: Fpml_message_request):
 @app.route("/api/legal-entities", methods=["POST"])
 @validate_request(Legal_entity_upload)
 async def upload_legal_entities(data: Legal_entity_upload):
-    # We cannot process all legal entities in workflows directly as workflow only works per entity.
-    # So we split bulk upload into single add_item calls with workflow.
-
-    # Fire-and-forget tasks to add each legal_entity item with workflow
     async def add_legal_entity_entity(rec: Legal_entity_record):
         entity = {
             "lei": rec.lei,
@@ -329,9 +274,6 @@ async def upload_legal_entities(data: Legal_entity_upload):
                 technical_id=rec.lei
             )
             if existing:
-                # Update existing legal_entity - cannot call update with workflow, so update directly without workflow
-                # Because workflow triggers only on add_item
-                # We do minimal update here
                 entity["status"] = existing.get("status", "ACTIVE")
                 entity["lastUpdated"] = now_iso()
                 await entity_service.update_item(
@@ -343,7 +285,6 @@ async def upload_legal_entities(data: Legal_entity_upload):
                     meta={}
                 )
             else:
-                # Add new legal_entity with workflow
                 await entity_service.add_item(
                     token=cyoda_auth_service,
                     entity_model="legal_entity",
@@ -354,9 +295,7 @@ async def upload_legal_entities(data: Legal_entity_upload):
         except Exception:
             logger.exception(f"Failed to process legal_entity {rec.lei}")
 
-    # Launch all tasks concurrently, fire and forget
     asyncio.create_task(asyncio.gather(*(add_legal_entity_entity(rec) for rec in data.entities)))
-
     return jsonify({"uploadedCount": len(data.entities), "status": "PENDING_UPLOAD"}), 200
 
 @app.route("/api/trades/<trade_id>/status", methods=["POST"])
@@ -371,7 +310,6 @@ async def update_trade_status(data: Trade_status_request, trade_id):
         )
         if not trade:
             return jsonify({"error": "Trade not found"}), 404
-
         trade["status"] = data.newStatus
         processing_log = trade.get("processingLog", [])
         processing_log.append({
@@ -380,8 +318,6 @@ async def update_trade_status(data: Trade_status_request, trade_id):
             "details": data.eventDetails or {}
         })
         trade["processingLog"] = processing_log
-
-        # Update without workflow to avoid recursion
         await entity_service.update_item(
             token=cyoda_auth_service,
             entity_model="trade",
@@ -420,37 +356,3 @@ async def get_dtcc_message(dtcc_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-# Explanation
-
-- **`process_fpml_message(entity)`**:  
-  - Validates XML, updates message status and logs.  
-  - Matches or creates trade(s) by calling `entity_service.add_item` or `update_item` on other entity models.  
-  - **Does not call add/update/delete on `fpml_message` itself** to avoid recursion.  
-  - Trade processing and DTCC message handling is deferred to the trade workflow.
-
-- **`process_trade(entity)`**:  
-  - Enriches trades with legal entity data.  
-  - Updates status and logs.  
-  - Creates and transmits DTCC message, updating in-memory dtcc_messages state.  
-  - On failure, sets error statuses and logs.  
-  - Does not call `add_item` or `update_item` on trade to avoid recursion, just modifies the entity.
-
-- **`process_legal_entity(entity)`**:  
-  - Sets status and lastUpdated timestamp.  
-  - Simple modification before persistence.
-
-- **Endpoints**:  
-  - `POST /api/fpml-messages` just adds an fpml_message with workflow; no further logic.  
-  - `POST /api/legal-entities` loops through entities and adds or updates them, adding new ones with workflow; existing ones updated without workflow since update doesn't support workflow.  
-  - `POST /api/trades/<trade_id>/status` updates status directly (no workflow to avoid recursive update).  
-  - Gets remain simple.
-
----
-
-This refactoring moves the business logic and async workflows into the workflow functions, dramatically simplifying endpoint handlers and improving maintainability and robustness.
-
-If you want me to further enhance or adjust, please ask!

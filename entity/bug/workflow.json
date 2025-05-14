@@ -19,6 +19,15 @@
             },
             "start_state": "None",
             "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Finalize bug update",
+            "end_state": "Bug_update_completed",
+            "end_state_description": "Bug update processing completed",
+            "name": "finalize_update",
+            "start_state": "Bug_update_in_progress",
+            "start_state_description": "Bug update processing started"
         }
     ]
 }

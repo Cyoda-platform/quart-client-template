@@ -1,59 +1,3 @@
-Got it! We want to move as much async logic as possible from the endpoints into the `process_{entity_name}` workflow functions. This will clean up controllers and centralize entity processing logic.
-
-Per your instructions:
-
-- Workflow functions get the entity dict as input.
-- They can modify the entity before persistence by changing its fields.
-- They can add/get other entities of different models (but cannot add/update/delete entities of the same model to avoid recursion).
-- They can run async code.
-- Fire-and-forget or other async tasks related to entity enrichment or side effects are perfect candidates to move inside the workflow function.
-- The controller just passes the entity to `entity_service.add_item(..., workflow=process_entity)` and returns immediately.
-
----
-
-### What async logic do we have now in endpoints?
-
-- `fetch_pets` endpoint triggers fetching pets from external API, enriching each pet, and adding them to entity_service.
-- `process_entity` (called in a background task) performs the fetch and add loop.
-- The enrichment of pets with fun facts happens in `process_pet`.
-- Other endpoints mostly get/update/delete entity items, with no complex logic.
-
----
-
-### How to refactor?
-
-- The `fetch_pets` POST endpoint currently triggers a background async task to fetch pets and add them one by one.
-- We want to move the entire "fetch pets from external API, enrich, add entities" logic into the workflow function.
-- But the workflow function runs **per-entity** (per item passed to add_item), so it doesn't make sense to put a bulk fetch into the `process_pet` workflow function.
-- However, the initial trigger to fetch pets from external API and add them can be modeled as adding a "job" entity, with its own workflow function, say `process_pet_fetch_job`.
-- This job entity's workflow would call the external API, fetch pets, then add pet entities (with their own workflow `process_pet`).
-- This design moves the entire fetch logic into the workflow functions and keeps the controller very thin.
-- The controller just creates a job entity (with the fetch parameters) and calls `add_item` with `process_pet_fetch_job` as workflow.
-- The job workflow fetches pets and adds them.
-- The pet workflow enriches pets with fun facts.
-
----
-
-### Proposed entity models and workflows:
-
-- `pet_fetch_job` entity model (for requests to fetch pets)
-  - workflow: `process_pet_fetch_job`
-- `pet` entity model (actual pet items)
-  - workflow: `process_pet`
-
----
-
-### Implementing this:
-
-- The `/pets/fetch` endpoint will just create a `pet_fetch_job` entity with filter criteria.
-- The job entity's workflow will run, fetch pets, and add `pet` entities.
-- The `pet` workflow enriches each pet with fun facts.
-
----
-
-### Complete updated code with these changes:
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -61,7 +5,7 @@ from datetime import datetime
 from typing import List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import entity_service, BeanFactory
@@ -104,6 +48,9 @@ async def process_pet(entity: dict) -> dict:
     Enrich pet with a fun fact before persistence.
     """
     import random
+    # Defensive: Ensure entity is a dict and can be modified
+    if not isinstance(entity, dict):
+        return entity
     entity['funFact'] = random.choice(fun_facts_cache)
     return entity
 
@@ -114,25 +61,35 @@ async def process_pet_fetch_job(entity: dict) -> dict:
     Update job entity status and metadata.
     """
     try:
-        filter_data = entity.get("filter", {})
+        # Defensive: Ensure entity dict has 'filter'
+        filter_data = entity.get("filter") if isinstance(entity, dict) else {}
+        if not isinstance(filter_data, dict):
+            filter_data = {}
+
         status = filter_data.get("status")
         pet_type = filter_data.get("type")
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=10) as client:
             params = {}
             if status:
                 params["status"] = status
             resp = await client.get("https://petstore3.swagger.io/api/v3/pet/findByStatus", params=params)
             resp.raise_for_status()
             pets = resp.json()
+            if not isinstance(pets, list):
+                pets = []
 
         # Filter pets by type if specified
         if pet_type:
             pets = [pet for pet in pets if pet.get("category", {}).get("name", "").lower() == pet_type.lower()]
 
+        count_added = 0
         # Add pet entities, passing the pet workflow
         for pet in pets:
             try:
+                # Defensive: skip invalid pet objects
+                if not isinstance(pet, dict):
+                    continue
                 await entity_service.add_item(
                     token=cyoda_auth_service,
                     entity_model=PET_ENTITY_NAME,
@@ -140,12 +97,13 @@ async def process_pet_fetch_job(entity: dict) -> dict:
                     entity=pet,
                     workflow=process_pet
                 )
+                count_added += 1
             except Exception as e:
                 logger.exception(f"Failed to add pet entity: {e}")
 
         entity["status"] = "completed"
         entity["completedAt"] = datetime.utcnow().isoformat()
-        entity["count"] = len(pets)
+        entity["count"] = count_added
     except Exception as e:
         logger.exception(f"Failed processing pet fetch job: {e}")
         entity["status"] = "failed"
@@ -162,7 +120,7 @@ async def fetch_pets(data: PetFetchRequest):
     The workflow will fetch pets and add pet entities asynchronously.
     """
     job_entity = {
-        "filter": data.filter,
+        "filter": data.filter if isinstance(data.filter, dict) else {},
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat()
     }
@@ -212,6 +170,8 @@ async def get_pet_by_id(pet_id: str):
 @validate_request(dict)  # generic dict for update payload
 async def update_pet(data: dict, pet_id: str):
     try:
+        if not isinstance(data, dict):
+            return jsonify({"error": "Invalid update data"}), 400
         await entity_service.update_item(
             token=cyoda_auth_service,
             entity_model=PET_ENTITY_NAME,
@@ -249,27 +209,3 @@ async def get_fun_fact(data: FunFactRequest):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation
-
-- **Workflow functions:**
-  - `process_pet_fetch_job` handles fetching pets from the external API and adds them as `pet` entities.
-  - `process_pet` enriches each pet entity with a fun fact before persistence.
-
-- **Controllers:**
-  - `/pets/fetch` just creates a `pet_fetch_job` entity (with filters).
-  - The heavy lifting happens inside the job workflow, which runs asynchronously.
-  - The rest of the endpoints remain thin and straightforward.
-
-- **Benefits:**
-  - Clear separation of concerns.
-  - All async side effects and enrichment logic moved into workflows.
-  - Controllers just create entities and return job IDs or results.
-  - Avoid infinite recursion by workflows never adding/updating/deleting entities of their own model.
-
----
-
-Let me know if you want me to help with additional entity models, workflows, or other refactoring!

@@ -1,0 +1,44 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "age": 3,
+                "description": "a playful dog who loves fetch",
+                "fun_fact": "dogs have about 1,700 taste buds!",
+                "id": 123,
+                "name": "fluffy",
+                "recommended_toys": [
+                    "ball",
+                    "frisbee"
+                ],
+                "status": "available",
+                "type": "dog"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "max": 5,
+                "min": 1
+            },
+            "entity_name": "age_range"
+        },
+        {
+            "entity_data_example": {
+                "age_range": {
+                    "max": 5,
+                    "min": 1
+                },
+                "status": "available",
+                "type": "dog"
+            },
+            "entity_name": "search_pets"
+        },
+        {
+            "entity_data_example": {
+                "pet_id": "123"
+            },
+            "entity_name": "pet_details_request"
+        }
+    ]
+}

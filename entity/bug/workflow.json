@@ -1,0 +1,24 @@
+{
+    "description": "Workflow for processing bug updates",
+    "name": "bug_update_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initial update transition",
+            "end_state": "Bug_update_in_progress",
+            "end_state_description": "Bug update processing started",
+            "name": "start_update",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_bug_update"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

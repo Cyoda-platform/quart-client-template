@@ -1,11 +1,11 @@
+from datetime import datetime
 import asyncio
 import logging
-from datetime import datetime
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,12 +13,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class PetSearch:
@@ -50,8 +49,6 @@ entity_jobs: Dict[str, Dict[str, Any]] = {}
 PET_ENTITY_NAME = "pet"
 
 async def process_pet(entity: Dict[str, Any]) -> Dict[str, Any]:
-    # Workflow function applied to pet entity asynchronously before persistence.
-    # Modify entity state here, add related entities of different models if needed.
     entity["processed"] = True
     entity["processedAt"] = datetime.utcnow().isoformat()
     # Example: Add a supplementary entity (commented out - enable as needed)
@@ -214,7 +211,7 @@ async def process_search(criteria: Dict[str, Any]) -> None:
             "error": str(e)
         })
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearch)
 async def pets_search(data: PetSearch):
     job_id = f"search_{datetime.utcnow().timestamp()}"
@@ -224,7 +221,7 @@ async def pets_search(data: PetSearch):
     asyncio.create_task(process_search(criteria))
     return jsonify({"job_id": job_id}), 202
 
-@app.route("/pets/add", methods=["POST"])
+@routes_bp.route("/pets/add", methods=["POST"])
 @validate_request(PetAdd)
 async def pets_add(data: PetAdd):
     job_id = f"add_{datetime.utcnow().timestamp()}"
@@ -233,7 +230,7 @@ async def pets_add(data: PetAdd):
     asyncio.create_task(process_add_pet(payload, job_id))
     return jsonify({"job_id": job_id}), 202
 
-@app.route("/pets/update", methods=["POST"])
+@routes_bp.route("/pets/update", methods=["POST"])
 @validate_request(PetUpdate)
 async def pets_update(data: PetUpdate):
     job_id = f"update_{datetime.utcnow().timestamp()}"
@@ -242,7 +239,7 @@ async def pets_update(data: PetUpdate):
     asyncio.create_task(process_update_pet(payload, job_id))
     return jsonify({"job_id": job_id}), 202
 
-@app.route("/pets/delete", methods=["POST"])
+@routes_bp.route("/pets/delete", methods=["POST"])
 @validate_request(PetDelete)
 async def pets_delete(data: PetDelete):
     job_id = f"delete_{datetime.utcnow().timestamp()}"
@@ -251,14 +248,14 @@ async def pets_delete(data: PetDelete):
     asyncio.create_task(process_delete_pet(payload, job_id))
     return jsonify({"job_id": job_id}), 202
 
-@app.route("/pets/job_status/<job_id>", methods=["GET"])
+@routes_bp.route("/pets/job_status/<job_id>", methods=["GET"])
 async def job_status(job_id: str):
     job = entity_jobs.get(job_id)
     if not job:
         return jsonify({"error": "Job not found"}), 404
     return jsonify(job)
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def get_pet(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -273,6 +270,3 @@ async def get_pet(pet_id: str):
     except Exception as e:
         logger.exception("Failed to retrieve pet")
         return jsonify({"error": "Failed to retrieve pet"}), 500
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

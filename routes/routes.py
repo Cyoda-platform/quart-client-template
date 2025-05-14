@@ -1,13 +1,11 @@
 from dataclasses import dataclass
-import asyncio
-import logging
 import uuid
 from datetime import datetime
 from typing import Optional
 
-import httpx
-from quart import Quart, jsonify, request, abort
-from quart_schema import QuartSchema, validate_request, validate_querystring
+import logging
+from quart import Blueprint, jsonify, request, abort
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -15,12 +13,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 # Request models
 @dataclass
@@ -86,7 +83,7 @@ def validate_comment_input(data: dict):
     if "message" not in data or not isinstance(data["message"], str) or not data["message"].strip():
         abort(400, "Field 'message' is required and must be non-empty string")
 
-@app.route("/api/bugs", methods=["POST"])
+@routes_bp.route("/api/bugs", methods=["POST"])
 @validate_request(CreateBugRequest)
 async def create_bug(data: CreateBugRequest):
     bug_data = data.__dict__
@@ -104,8 +101,8 @@ async def create_bug(data: CreateBugRequest):
         logger.exception(e)
         abort(500, "Failed to create bug")
 
+@routes_bp.route("/api/bugs", methods=["GET"])
 @validate_querystring(ListBugsQuery)
-@app.route("/api/bugs", methods=["GET"])
 async def list_bugs():
     status_filter = request.args.get("status")
     severity_filter = request.args.get("severity")
@@ -162,7 +159,7 @@ async def list_bugs():
     ]
     return jsonify({"total": total, "page": page, "page_size": page_size, "bugs": bugs_list})
 
-@app.route("/api/bugs/<bug_id>", methods=["GET"])
+@routes_bp.route("/api/bugs/<bug_id>", methods=["GET"])
 async def get_bug(bug_id):
     try:
         bug = await entity_service.get_item(
@@ -178,13 +175,13 @@ async def get_bug(bug_id):
         abort(500, "Failed to retrieve bug")
 
     bug_with_comments = dict(bug)
-    if hasattr(app, 'comments'):
-        bug_with_comments["comments"] = app.comments.get(bug_id, [])
+    if hasattr(routes_bp, 'comments'):
+        bug_with_comments["comments"] = routes_bp.comments.get(bug_id, [])
     else:
         bug_with_comments["comments"] = []
     return jsonify(bug_with_comments)
 
-@app.route("/api/bugs/<bug_id>/update", methods=["POST"])
+@routes_bp.route("/api/bugs/<bug_id>/update", methods=["POST"])
 @validate_request(UpdateBugRequest)
 async def update_bug(bug_id, data: UpdateBugRequest):
     payload = data.__dict__
@@ -220,7 +217,7 @@ async def update_bug(bug_id, data: UpdateBugRequest):
         logger.exception(e)
         abort(500, "Failed to update bug")
 
-@app.route("/api/bugs/<bug_id>/comments", methods=["POST"])
+@routes_bp.route("/api/bugs/<bug_id>/comments", methods=["POST"])
 @validate_request(AddCommentRequest)
 async def add_comment(bug_id, data: AddCommentRequest):
     try:
@@ -244,9 +241,9 @@ async def add_comment(bug_id, data: AddCommentRequest):
         "message": data.message.strip(),
         "created_at": now
     }
-    if not hasattr(app, 'comments'):
-        app.comments = {}
-    app.comments.setdefault(bug_id, []).append(comment)
+    if not hasattr(routes_bp, 'comments'):
+        routes_bp.comments = {}
+    routes_bp.comments.setdefault(bug_id, []).append(comment)
     logger.info(f"Added comment {comment_id} to bug {bug_id}")
     return jsonify({
         "comment_id": comment_id,
@@ -255,8 +252,3 @@ async def add_comment(bug_id, data: AddCommentRequest):
         "message": comment["message"],
         "created_at": now
     }), 201
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

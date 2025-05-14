@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.java_template.common.service.EntityService;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -12,30 +14,27 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.annotations.jaxrs.PathParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.server.ResponseStatusException;
 
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import static com.java_template.common.config.Config.*;
-
-@Validated
-@RestController
-@RequestMapping("/cyoda-pets")
+@Path("/cyoda-pets")
+@ApplicationScoped
 public class CyodaEntityControllerPrototype {
 
     private static final Logger logger = LoggerFactory.getLogger(CyodaEntityControllerPrototype.class);
-    private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final EntityService entityService;
     private static final String ENTITY_NAME = "Pet";
+    private static final String ENTITY_VERSION = "v1"; // Assuming ENTITY_VERSION is needed as in original
     private final List<String> petFacts = Arrays.asList(
             "Cats sleep for 70% of their lives.",
             "Dogs have three eyelids.",
@@ -44,25 +43,40 @@ public class CyodaEntityControllerPrototype {
     );
     private static final String PETSTORE_API_BASE = "https://petstore.swagger.io/v2";
 
+    @Inject
     public CyodaEntityControllerPrototype(EntityService entityService) {
         this.entityService = entityService;
     }
 
-    @PostMapping(value = "/fetch", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Object> fetchPets(@Valid @RequestBody(required = false) FetchFilter filter) throws ExecutionException, InterruptedException {
+    @POST
+    @Path("/fetch")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response fetchPets(@Valid FetchFilter filter) throws ExecutionException, InterruptedException {
         logger.info("Fetching pets with filter {}", filter);
         String statusFilter = filter != null ? filter.getStatus() : "";
         String url = PETSTORE_API_BASE + "/pet/findByStatus?status=" + statusFilter;
-        String json = restTemplate.getForObject(url, String.class);
+
+        // Using java.net.HttpURLConnection for fetching external API as no RestTemplate in Jakarta EE
+        String json;
+        try {
+            json = java.net.http.HttpClient.newHttpClient()
+                    .send(java.net.http.HttpRequest.newBuilder(java.net.URI.create(url)).GET().build(), java.net.http.HttpResponse.BodyHandlers.ofString())
+                    .body();
+        } catch (Exception e) {
+            logger.error("Error fetching from petstore", e);
+            return Response.status(Response.Status.BAD_GATEWAY).entity(Map.of("error", "Failed to fetch from petstore")).build();
+        }
+
         JsonNode root;
         try {
             root = objectMapper.readTree(json);
         } catch (Exception e) {
             logger.error("Error parsing JSON from petstore", e);
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_GATEWAY, "Unexpected format");
+            return Response.status(Response.Status.BAD_GATEWAY).entity(Map.of("error", "Unexpected format")).build();
         }
         if (!root.isArray()) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_GATEWAY, "Unexpected format");
+            return Response.status(Response.Status.BAD_GATEWAY).entity(Map.of("error", "Unexpected format")).build();
         }
 
         List<CompletableFuture<UUID>> addFutures = new ArrayList<>();
@@ -75,22 +89,23 @@ public class CyodaEntityControllerPrototype {
             petNode.put("name", node.path("name").asText("Unnamed"));
             petNode.put("status", node.path("status").asText("unknown"));
             petNode.put("type", node.path("category").path("name").asText("Unknown"));
-            
+
             addFutures.add(entityService.addItem(ENTITY_NAME, ENTITY_VERSION, petNode));
             count++;
         }
-        
+
         for (CompletableFuture<UUID> future : addFutures) {
             future.get();
         }
         Map<String, Object> resp = new HashMap<>();
         resp.put("message", "Pets data fetched and updated successfully");
         resp.put("count", count);
-        return resp;
+        return Response.ok(resp).build();
     }
 
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<Pet> listPets(@RequestParam(required = false) @Pattern(regexp = "available|pending|sold", message = "Invalid status") String status) throws ExecutionException, InterruptedException {
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response listPets(@QueryParam("status") @Pattern(regexp = "available|pending|sold", message = "Invalid status") String status) throws ExecutionException, InterruptedException {
         logger.info("Listing pets with status {}", status);
         CompletableFuture<ArrayNode> itemsFuture;
         if (status == null || status.isEmpty()) {
@@ -111,11 +126,13 @@ public class CyodaEntityControllerPrototype {
                 result.add(new Pet(technicalId, name, type, petStatus));
             }
         }
-        return result;
+        return Response.ok(result).build();
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Object> addPet(@Valid @RequestBody PetCreateRequest req) throws ExecutionException, InterruptedException {
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response addPet(@Valid PetCreateRequest req) throws ExecutionException, InterruptedException {
         logger.info("Adding pet {}", req);
         ObjectNode petNode = objectMapper.createObjectNode();
         petNode.put("name", req.getName());
@@ -123,30 +140,33 @@ public class CyodaEntityControllerPrototype {
         if (req.getStatus() != null && !req.getStatus().isEmpty()) {
             petNode.put("status", req.getStatus());
         }
-        
+
         CompletableFuture<UUID> idFuture = entityService.addItem(ENTITY_NAME, ENTITY_VERSION, petNode);
         UUID technicalId = idFuture.get();
         Map<String, Object> resp = new HashMap<>();
         resp.put("id", technicalId.toString());
         resp.put("message", "New pet added successfully");
-        return resp;
+        return Response.ok(resp).build();
     }
 
-    @PostMapping(value = "/{id}/status", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, Object> updatePetStatus(@PathVariable String id, @Valid @RequestBody StatusUpdateRequest req) throws ExecutionException, InterruptedException {
+    @POST
+    @Path("/{id}/status")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response updatePetStatus(@PathParam("id") String id, @Valid StatusUpdateRequest req) throws ExecutionException, InterruptedException {
         logger.info("Updating status for pet {} to {}", id, req.getStatus());
         UUID technicalId;
         try {
             technicalId = UUID.fromString(id);
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Invalid pet id format");
+            return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", "Invalid pet id format")).build();
         }
         CompletableFuture<ObjectNode> itemFuture = entityService.getItem(ENTITY_NAME, ENTITY_VERSION, technicalId);
         ObjectNode existingItem = itemFuture.get();
         if (existingItem == null || existingItem.isEmpty()) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Pet not found");
+            return Response.status(Response.Status.NOT_FOUND).entity(Map.of("error", "Pet not found")).build();
         }
-        
+
         existingItem.put("status", req.getStatus());
 
         CompletableFuture<UUID> updatedItemId = entityService.updateItem(ENTITY_NAME, ENTITY_VERSION, technicalId, existingItem);
@@ -155,14 +175,16 @@ public class CyodaEntityControllerPrototype {
         Map<String, Object> resp = new HashMap<>();
         resp.put("id", id);
         resp.put("message", "Pet status updated successfully");
-        return resp;
+        return Response.ok(resp).build();
     }
 
-    @GetMapping(value = "/fun/fact", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Map<String, String> randomPetFact() {
+    @GET
+    @Path("/fun/fact")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response randomPetFact() {
         String fact = petFacts.get(new Random().nextInt(petFacts.size()));
         logger.info("Random pet fact: {}", fact);
-        return Collections.singletonMap("fact", fact);
+        return Response.ok(Collections.singletonMap("fact", fact)).build();
     }
 
     private boolean isValidStatus(String status) {

@@ -1,55 +1,90 @@
-Understood. Moving as much logic as possible into the `process_{entity_name}` workflow function is a great way to centralize business logic, keep endpoints slim, and ensure consistency before data persistence.
+from dataclasses import dataclass
+import asyncio
+import logging
+import uuid
+from datetime import datetime
+from typing import Optional
 
----
+import httpx
+from quart import Quart, jsonify, request, abort
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
-### What can be moved into the workflow function `process_bug`?
+from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
 
-In your current `create_bug` endpoint, the following logic can be moved into `process_bug`:
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-- Setting default fields like `"status": "open"`
-- Setting timestamps `"created_at"` and `"updated_at"`
-- Validations related to entity state (already partly in request validation, but extra business rules can be enforced)
-- Possibly augmenting or normalizing data (e.g., trimming strings)
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-For other operations like update, we can add a `process_bug_update` workflow function to handle similar logic before update persistence if your system supports that (not specified, so only create is updated here).
+app = Quart(__name__)
+QuartSchema(app)
 
----
+# Request models
+@dataclass
+class CreateBugRequest:
+    title: str
+    description: str
+    reported_by: str
+    severity: str
+    steps_to_reproduce: Optional[str] = None
 
-### Important constraints:
+@dataclass
+class UpdateBugRequest:
+    status: Optional[str] = None
+    description: Optional[str] = None
+    severity: Optional[str] = None
+    steps_to_reproduce: Optional[str] = None
 
-- The workflow function **cannot** call `add/update/delete` on the same entity model (`bug` here) to avoid recursion.
-- It **can** call add/get on *other* entity models if needed.
-- It **must** modify the entity dict directly to change the persisted data.
-- It **runs asynchronously** before persistence.
+@dataclass
+class AddCommentRequest:
+    author: str
+    message: str
 
----
+@dataclass
+class ListBugsQuery:
+    status: Optional[str] = None
+    severity: Optional[str] = None
+    search: Optional[str] = None
+    page: Optional[int] = None
+    page_size: Optional[int] = None
+    sort_by: Optional[str] = None
+    sort_order: Optional[str] = None
 
-### Plan:
+SEVERITY_LEVELS = {"low", "medium", "high"}
+STATUS_VALUES = {"open", "in_progress", "closed"}
 
-- Remove all logic from the endpoint that mutates or sets default fields.
-- Move those mutations and data augmentations inside the workflow function.
-- Endpoint receives validated data, passes as-is to `add_item` with workflow.
-- Workflow sets default fields, timestamps, normalization.
-- Return the ID from `add_item` as usual.
+def iso8601_now() -> str:
+    return datetime.utcnow().isoformat() + "Z"
 
----
+def validate_bug_input(data: dict, update: bool = False):
+    if not update:
+        if "title" not in data or not isinstance(data["title"], str) or not data["title"].strip():
+            abort(400, "Field 'title' is required and must be non-empty string")
+        if "description" not in data or not isinstance(data["description"], str):
+            abort(400, "Field 'description' is required and must be string")
+        if "reported_by" not in data or not isinstance(data["reported_by"], str):
+            abort(400, "Field 'reported_by' is required and must be string")
+        if "severity" not in data or data["severity"] not in SEVERITY_LEVELS:
+            abort(400, f"Field 'severity' is required and must be one of {SEVERITY_LEVELS}")
+        if "steps_to_reproduce" in data and not isinstance(data["steps_to_reproduce"], str):
+            abort(400, "Field 'steps_to_reproduce' must be string if provided")
+    else:
+        if "status" in data and data["status"] not in STATUS_VALUES:
+            abort(400, f"Field 'status' must be one of {STATUS_VALUES}")
+        for field in ["description", "steps_to_reproduce"]:
+            if field in data and not isinstance(data[field], str):
+                abort(400, f"Field '{field}' must be string if provided")
+        if "severity" in data and data["severity"] not in SEVERITY_LEVELS:
+            abort(400, f"Field 'severity' must be one of {SEVERITY_LEVELS}")
 
-### Implementation
-
-I will:
-
-- Refactor `create_bug` endpoint to pass raw validated data as-is.
-- Implement `process_bug` workflow to add default fields and timestamps, normalize strings.
-- Move any "async task" (e.g. logging) into the workflow as well.
-- For update, create a workflow function `process_bug_update` and pass it similarly to `update_item` (assuming update_item supports `workflow`)—if not, we keep update logic minimal.
-- Comments cannot be moved because they are handled outside entity_service.
-
----
-
-### Updated complete code snippet (focused on create and update workflows):
-
-```python
-# ... (imports and other code unchanged)
+def validate_comment_input(data: dict):
+    if "author" not in data or not isinstance(data["author"], str) or not data["author"].strip():
+        abort(400, "Field 'author' is required and must be non-empty string")
+    if "message" not in data or not isinstance(data["message"], str) or not data["message"].strip():
+        abort(400, "Field 'message' is required and must be non-empty string")
 
 # Workflow function for 'bug' entity on create
 async def process_bug(entity: dict) -> dict:
@@ -74,9 +109,6 @@ async def process_bug(entity: dict) -> dict:
         entity["created_at"] = now
     entity["updated_at"] = now
 
-    # Additional async tasks can be awaited here if needed
-    # For example, logging, sending notifications, etc.
-
     return entity
 
 # Workflow function for 'bug' entity on update
@@ -100,9 +132,8 @@ async def process_bug_update(entity: dict) -> dict:
 @app.route("/api/bugs", methods=["POST"])
 @validate_request(CreateBugRequest)
 async def create_bug(data: CreateBugRequest):
-    # Simply pass the data dict as is to entity_service.add_item
     bug_data = data.__dict__
-    # validation already done by decorator and optionally in workflow
+    validate_bug_input(bug_data)
     try:
         bug_id = await entity_service.add_item(
             token=cyoda_auth_service,
@@ -117,10 +148,91 @@ async def create_bug(data: CreateBugRequest):
         logger.exception(e)
         abort(500, "Failed to create bug")
 
+@validate_querystring(ListBugsQuery)
+@app.route("/api/bugs", methods=["GET"])
+async def list_bugs():
+    status_filter = request.args.get("status")
+    severity_filter = request.args.get("severity")
+    search = request.args.get("search", "").strip().lower()
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+    except ValueError:
+        page = 1
+    try:
+        page_size = max(1, min(100, int(request.args.get("page_size", 20))))
+    except ValueError:
+        page_size = 20
+    sort_by = request.args.get("sort_by", "created_at")
+    sort_order = request.args.get("sort_order", "desc")
+    sort_order = sort_order if sort_order in {"asc", "desc"} else "desc"
+
+    try:
+        all_bugs = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model="bug",
+            entity_version=ENTITY_VERSION,
+        )
+    except Exception as e:
+        logger.exception(e)
+        abort(500, "Failed to retrieve bugs")
+
+    def bug_matches(bug):
+        if status_filter and bug.get("status") != status_filter:
+            return False
+        if severity_filter and bug.get("severity") != severity_filter:
+            return False
+        if search and search not in bug.get("title", "").lower() and search not in bug.get("description", "").lower():
+            return False
+        return True
+
+    filtered = list(filter(bug_matches, all_bugs))
+    reverse = sort_order == "desc"
+    if sort_by in {"created_at", "severity", "status"}:
+        if sort_by == "severity":
+            severity_order = {"low": 0, "medium": 1, "high": 2}
+            def key_func(b): return severity_order.get(b.get("severity"), -1)
+        else:
+            def key_func(b): return b.get(sort_by, "")
+        filtered.sort(key=key_func, reverse=reverse)
+
+    total = len(filtered)
+    start = (page - 1) * page_size
+    end = start + page_size
+    paged = filtered[start:end]
+    bugs_list = [
+        {"bug_id": b.get("bug_id"), "title": b.get("title"), "status": b.get("status"),
+         "severity": b.get("severity"), "created_at": b.get("created_at")}
+        for b in paged
+    ]
+    return jsonify({"total": total, "page": page, "page_size": page_size, "bugs": bugs_list})
+
+@app.route("/api/bugs/<bug_id>", methods=["GET"])
+async def get_bug(bug_id):
+    try:
+        bug = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="bug",
+            entity_version=ENTITY_VERSION,
+            technical_id=bug_id,
+        )
+        if not bug:
+            abort(404, "Bug not found")
+    except Exception as e:
+        logger.exception(e)
+        abort(500, "Failed to retrieve bug")
+
+    bug_with_comments = dict(bug)
+    if hasattr(app, 'comments'):
+        bug_with_comments["comments"] = app.comments.get(bug_id, [])
+    else:
+        bug_with_comments["comments"] = []
+    return jsonify(bug_with_comments)
+
 @app.route("/api/bugs/<bug_id>/update", methods=["POST"])
 @validate_request(UpdateBugRequest)
 async def update_bug(bug_id, data: UpdateBugRequest):
-    # Fetch existing bug
+    payload = data.__dict__
+    validate_bug_input(payload, update=True)
     try:
         existing_bug = await entity_service.get_item(
             token=cyoda_auth_service,
@@ -133,13 +245,10 @@ async def update_bug(bug_id, data: UpdateBugRequest):
 
         # Merge update fields into existing bug
         updated_bug = dict(existing_bug)
-        update_fields = data.__dict__
-        for k, v in update_fields.items():
+        for k, v in payload.items():
             if v is not None:
                 updated_bug[k] = v
 
-        # Pass merged entity to update_item with workflow
-        # Assuming entity_service.update_item supports workflow parameter like add_item
         await entity_service.update_item(
             token=cyoda_auth_service,
             entity_model="bug",
@@ -147,7 +256,7 @@ async def update_bug(bug_id, data: UpdateBugRequest):
             entity=updated_bug,
             technical_id=bug_id,
             meta={},
-            workflow=process_bug_update,  # new workflow for updates
+            workflow=process_bug_update,
         )
         logger.info(f"Bug {bug_id} updated")
         return jsonify({"bug_id": bug_id, "updated_at": updated_bug.get("updated_at")})
@@ -156,22 +265,43 @@ async def update_bug(bug_id, data: UpdateBugRequest):
         logger.exception(e)
         abort(500, "Failed to update bug")
 
-# Comments and list/get endpoints remain unchanged (cannot move logic into bug workflow)
+@app.route("/api/bugs/<bug_id>/comments", methods=["POST"])
+@validate_request(AddCommentRequest)
+async def add_comment(bug_id, data: AddCommentRequest):
+    try:
+        bug = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="bug",
+            entity_version=ENTITY_VERSION,
+            technical_id=bug_id,
+        )
+        if not bug:
+            abort(404, "Bug not found")
+    except Exception as e:
+        logger.exception(e)
+        abort(500, "Failed to verify bug existence")
 
-# ... rest of your code unchanged
-```
+    comment_id = str(uuid.uuid4())
+    now = iso8601_now()
+    comment = {
+        "comment_id": comment_id,
+        "author": data.author.strip(),
+        "message": data.message.strip(),
+        "created_at": now
+    }
+    if not hasattr(app, 'comments'):
+        app.comments = {}
+    app.comments.setdefault(bug_id, []).append(comment)
+    logger.info(f"Added comment {comment_id} to bug {bug_id}")
+    return jsonify({
+        "comment_id": comment_id,
+        "bug_id": bug_id,
+        "author": comment["author"],
+        "message": comment["message"],
+        "created_at": now
+    }), 201
 
----
-
-### Explanation
-
-- `create_bug` endpoint now just passes validated data; workflow handles defaults, trimming, timestamps.
-- `process_bug` sets defaults and timestamps, normalizes strings.
-- `update_bug` merges incoming partial update fields with existing bug, then calls `entity_service.update_item` with a new workflow function `process_bug_update` that normalizes fields and updates timestamps.
-- This approach removes mutation logic from controllers — business rules and data consistency are handled in workflows.
-- If `entity_service.update_item` does not support workflow parameter, we can adjust accordingly or keep some logic in controller, but you asked to move as much as possible into workflows.
-- Comments handling cannot be moved as they are a different entity model or outside entity_service.
-
----
-
-If you want, I can provide the full complete file with all changes included. Would you like that?
+if __name__ == "__main__":
+    import sys
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

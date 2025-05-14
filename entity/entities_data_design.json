@@ -1,0 +1,36 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "bug_id": "123e4567-e89b-12d3-a456-426614174000",
+                "comments": [
+                    {
+                        "author": "bob@example.com",
+                        "comment_id": "c123e4567-e89b-12d3-a456-426614174000",
+                        "created_at": "2024-06-02T08:30:00Z",
+                        "message": "This bug is critical and needs urgent attention."
+                    }
+                ],
+                "created_at": "2024-06-01T12:00:00Z",
+                "description": "Detailed description of the bug",
+                "reported_by": "alice@example.com",
+                "severity": "high",
+                "status": "open",
+                "steps_to_reproduce": "Step 1: Do this\nStep 2: Do that",
+                "title": "Example bug title",
+                "updated_at": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "bug"
+        },
+        {
+            "entity_data_example": {
+                "author": "bob@example.com",
+                "bug_id": "123e4567-e89b-12d3-a456-426614174000",
+                "comment_id": "c123e4567-e89b-12d3-a456-426614174000",
+                "created_at": "2024-06-02T08:30:00Z",
+                "message": "This bug is critical and needs urgent attention."
+            },
+            "entity_name": "comment"
+        }
+    ]
+}

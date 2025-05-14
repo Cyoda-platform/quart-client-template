@@ -4,11 +4,13 @@ from dataclasses import dataclass
 from typing import Dict, Any, Optional
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -16,9 +18,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class AgeRange:
@@ -146,7 +145,7 @@ def enrich_pet_details(pet: Dict[str, Any]) -> Dict[str, Any]:
         "recommendedToys": toys.get(pet_type, ["toy"])
     }
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchPets)
 async def pets_search(data: SearchPets):
     filters = {
@@ -203,12 +202,12 @@ async def pets_search(data: SearchPets):
     await cache.set("last_search_results", simplified_pets)
     return jsonify({"pets": simplified_pets})
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def pets_get_last_search():
     pets = await cache.get("last_search_results")
     return jsonify({"pets": pets or []})
 
-@app.route("/pets/details", methods=["POST"])
+@routes_bp.route("/pets/details", methods=["POST"])
 @validate_request(PetDetailsRequest)
 async def pets_details(data: PetDetailsRequest):
     pet_id = str(data.petId)
@@ -236,14 +235,14 @@ async def pets_details(data: PetDetailsRequest):
     await cache.set(f"pet_details_{pet_id}", pet)
     return jsonify(pet)
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pets_get_details(pet_id: str):
     pet = await cache.get(f"pet_details_{pet_id}")
     if pet is None:
         return jsonify({"error": "Pet details not cached. Please POST /pets/details first."}), 404
     return jsonify(pet)
 
-@app.route("/pets/add", methods=["POST"])
+@routes_bp.route("/pets/add", methods=["POST"])
 @validate_request(AddPetRequest)
 async def add_pet(data: AddPetRequest):
     pet_data = {
@@ -266,12 +265,3 @@ async def add_pet(data: AddPetRequest):
         return jsonify({"error": "Failed to add pet"}), 500
 
     return jsonify({"id": entity_id})
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

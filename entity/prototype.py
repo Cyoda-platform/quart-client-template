@@ -1,0 +1,110 @@
+```python
+import asyncio
+import logging
+from datetime import datetime
+from typing import Dict, Any
+
+import httpx
+from quart import Quart, request, jsonify
+from quart_schema import QuartSchema
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+app = Quart(__name__)
+QuartSchema(app)
+
+# In-memory cache for weather data and jobs
+weather_data_cache: Dict[str, Dict[str, Any]] = {}
+entity_jobs: Dict[str, Dict[str, Any]] = {}
+
+# Constants / config for MSC GeoMet API
+# TODO: Confirm exact MSC GeoMet API endpoint and query parameters
+MSC_GEOMET_BASE_URL = "https://opendata-download-metfcst.smhi.se/api/category/pmp3g/version/2/geotype/point/lon/{lon}/lat/{lat}/data.json"
+
+# Helper to generate job id (simple timestamp based)
+def generate_job_id() -> str:
+    return datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+
+async def fetch_weather_from_mscc_geomet(location: str, data_type: str) -> Dict[str, Any]:
+    """
+    Fetch weather data from MSC GeoMet public API.
+    location is expected as "lat,lon" string (e.g. "59.3293,18.0686").
+    data_type is currently not used in detail due to MSC GeoMet API limits.
+    """
+    try:
+        lat_lon = location.split(",")
+        if len(lat_lon) != 2:
+            raise ValueError("Invalid location format. Expected 'lat,lon' e.g. '59.3293,18.0686'")
+        lat, lon = lat_lon[0].strip(), lat_lon[1].strip()
+
+        url = MSC_GEOMET_BASE_URL.format(lat=lat, lon=lon)
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+        # TODO: Process data further according to data_type ("current", "forecast", etc)
+        return data
+    except Exception as e:
+        logger.exception(e)
+        raise
+
+async def process_entity(job_id: str, location: str, data_type: str):
+    try:
+        entity_jobs[job_id]["status"] = "processing"
+        weather = await fetch_weather_from_mscc_geomet(location, data_type)
+        # Store in cache keyed by location and data_type
+        cache_key = f"{location}|{data_type}"
+        weather_data_cache[cache_key] = {
+            "location": location,
+            "data_type": data_type,
+            "data": weather,
+            "updatedAt": datetime.utcnow().isoformat() + "Z"
+        }
+        entity_jobs[job_id]["status"] = "done"
+        entity_jobs[job_id]["result_key"] = cache_key
+    except Exception:
+        entity_jobs[job_id]["status"] = "failed"
+
+@app.route("/weather/fetch", methods=["POST"])
+async def weather_fetch():
+    data = await request.get_json()
+    location = data.get("location")
+    data_type = data.get("data_type")
+    if not location or not data_type:
+        return jsonify({"status": "error", "message": "Missing 'location' or 'data_type'"}), 400
+
+    job_id = generate_job_id()
+    entity_jobs[job_id] = {
+        "status": "queued",
+        "requestedAt": datetime.utcnow().isoformat() + "Z"
+    }
+
+    # Fire and forget processing task
+    asyncio.create_task(process_entity(job_id, location, data_type))
+
+    return jsonify({
+        "status": "success",
+        "message": "Weather data fetch started",
+        "job_id": job_id
+    })
+
+@app.route("/weather/data", methods=["GET"])
+async def weather_data():
+    location = request.args.get("location")
+    data_type = request.args.get("data_type")
+    if not location or not data_type:
+        return jsonify({"status": "error", "message": "Missing 'location' or 'data_type' query parameters"}), 400
+
+    cache_key = f"{location}|{data_type}"
+    data = weather_data_cache.get(cache_key)
+    if not data:
+        return jsonify({"status": "error", "message": "No data found for given parameters"}), 404
+
+    return jsonify(data)
+
+if __name__ == '__main__':
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+```

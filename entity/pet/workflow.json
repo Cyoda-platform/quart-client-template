@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to process pet entity through setting default status, normalizing type, and adding fun facts and toys",
+    "name": "pet_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet entity",
+            "end_state": "default_status_set",
+            "end_state_description": "Default status has been set",
+            "name": "start_processing_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_default_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Normalize pet type to lowercase",
+            "end_state": "type_normalized",
+            "end_state_description": "Pet type has been normalized",
+            "name": "normalize_pet_type",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_type"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "default_status_set",
+            "start_state_description": "Default status has been set"
+        },
+        {
+            "automated": true,
+            "description": "Add fun facts and recommended toys for the pet",
+            "end_state": "fun_facts_and_toys_added",
+            "end_state_description": "Fun facts and recommended toys have been added",
+            "name": "add_fun_facts_and_toys",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_fun_facts_and_toys"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "type_normalized",
+            "start_state_description": "Pet type has been normalized"
+        }
+    ]
+}

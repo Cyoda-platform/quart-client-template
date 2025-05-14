@@ -1,0 +1,107 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "payload": "<FpML XML content as string>",
+                "processingLog": [
+                    {
+                        "event": "Received",
+                        "timestamp": "2024-06-01T12:00:00Z"
+                    }
+                ],
+                "receivedTimestamp": "2024-06-01T12:00:00Z",
+                "status": "PENDING"
+            },
+            "entity_name": "fpml_message"
+        },
+        {
+            "entity_data_example": {
+                "address": "123 Business Rd, Business City",
+                "countryCode": "US",
+                "lastUpdated": "2024-06-01T12:00:00Z",
+                "legalName": "Acme Corporation",
+                "lei": "5493001KJTIIGC8Y1R12",
+                "status": "ACTIVE"
+            },
+            "entity_name": "legal_entity"
+        },
+        {
+            "entity_data_example": {
+                "events": [
+                    {
+                        "eventType": "TradeCreated",
+                        "timestamp": "2024-06-01T12:00:00Z"
+                    }
+                ],
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "latestVersion": 2,
+                "originalFpMLMessageId": "123e4567-e89b-12d3-a456-426614174000",
+                "party1LEI": "5493001KJTIIGC8Y1R12",
+                "party2LEI": "5493001KJTIIGC8Y1R13",
+                "processingLog": [
+                    {
+                        "event": "Trade created",
+                        "timestamp": "2024-06-01T12:00:00Z"
+                    },
+                    {
+                        "event": "Validated trade",
+                        "timestamp": "2024-06-01T12:05:00Z"
+                    }
+                ],
+                "productType": "Interest Rate Swap",
+                "status": "VALIDATED",
+                "tradeDetails": {
+                    "currency": "USD",
+                    "maturityDate": "2025-06-01",
+                    "notional": 1000000
+                },
+                "tradeId": "trade-a1b2c3d4"
+            },
+            "entity_name": "trade"
+        },
+        {
+            "entity_data_example": {
+                "acknowledgementTimestamp": "2024-06-01T12:12:00Z",
+                "creationTimestamp": "2024-06-01T12:10:00Z",
+                "id": "d1e2f3g4-h5i6-7890-jklm-nopqrstuvwx1",
+                "payload": {
+                    "details": {
+                        "currency": "USD",
+                        "maturityDate": "2025-06-01",
+                        "notional": 1000000
+                    },
+                    "tradeId": "trade-a1b2c3d4"
+                },
+                "processingLog": [
+                    {
+                        "event": "DTCC created",
+                        "timestamp": "2024-06-01T12:10:00Z"
+                    },
+                    {
+                        "event": "Transmitted",
+                        "timestamp": "2024-06-01T12:11:00Z"
+                    },
+                    {
+                        "event": "Acknowledged",
+                        "timestamp": "2024-06-01T12:12:00Z"
+                    }
+                ],
+                "relatedTradeId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "status": "ACKNOWLEDGED",
+                "transmissionTimestamp": "2024-06-01T12:11:00Z",
+                "type": "New Trade"
+            },
+            "entity_name": "dtcc_message"
+        },
+        {
+            "entity_data_example": {
+                "eventDetails": {
+                    "referenceId": "dtcc-msg-001",
+                    "source": "DTCC acknowledgement"
+                },
+                "newStatus": "CONFIRMED"
+            },
+            "entity_name": "trade_status_update"
+        }
+    ]
+}

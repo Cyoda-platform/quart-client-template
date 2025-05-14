@@ -1,0 +1,78 @@
+{
+    "description": "Workflow for processing pet entity actions in Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start search action processing",
+            "end_state": "Search_processed",
+            "end_state_description": "Search action processed",
+            "name": "start_search",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_search"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Start add action processing",
+            "end_state": "Add_processed",
+            "end_state_description": "Add action processed",
+            "name": "start_add",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Search_processed",
+            "start_state_description": "Search action processed"
+        },
+        {
+            "automated": true,
+            "description": "Start update action processing",
+            "end_state": "Update_processed",
+            "end_state_description": "Update action processed",
+            "name": "start_update",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Add_processed",
+            "start_state_description": "Add action processed"
+        },
+        {
+            "automated": true,
+            "description": "Start delete action processing",
+            "end_state": "Delete_processed",
+            "end_state_description": "Delete action processed",
+            "name": "start_delete",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_delete"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Update_processed",
+            "start_state_description": "Update action processed"
+        }
+    ]
+}

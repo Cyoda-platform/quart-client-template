@@ -1,0 +1,25 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com",
+                "post_id": 1
+            },
+            "entity_name": "analyze_request"
+        },
+        {
+            "entity_data_example": {
+                "post_id": 1,
+                "report": {
+                    "details": {
+                        "negative": 1,
+                        "neutral": 1,
+                        "positive": 3
+                    },
+                    "summary": "Sentiment analysis indicates mostly positive comments."
+                }
+            },
+            "entity_name": "report"
+        }
+    ]
+}

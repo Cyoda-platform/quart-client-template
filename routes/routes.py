@@ -4,8 +4,8 @@ from datetime import datetime
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,12 +13,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class AnalyzeRequest:
@@ -98,7 +97,7 @@ async def process_analyze_request(entity: dict):
         entity["error"] = str(e)
         entity["completed_at"] = datetime.utcnow().isoformat()
 
-@app.route("/comments/analyze", methods=["POST"])
+@routes_bp.route("/comments/analyze", methods=["POST"])
 @validate_request(AnalyzeRequest)
 async def analyze_comments(data: AnalyzeRequest):
     entity = {
@@ -122,7 +121,7 @@ async def analyze_comments(data: AnalyzeRequest):
         "entity_id": entity_id,
     }), 202
 
-@app.route("/reports/<string:post_id>", methods=["GET"])
+@routes_bp.route("/reports/<string:post_id>", methods=["GET"])
 async def get_report(post_id):
     try:
         item = await entity_service.get_item(
@@ -137,6 +136,3 @@ async def get_report(post_id):
     except Exception as e:
         logger.exception("Failed to retrieve report")
         return jsonify({"error": "Failed to retrieve report"}), 500
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

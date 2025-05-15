@@ -11,15 +11,28 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
+import org.osgi.service.blueprint.annotation.Bean;
+import org.osgi.service.blueprint.annotation.Property;
+import org.osgi.service.blueprint.annotation.Reference;
+import org.osgi.service.blueprint.annotation.Service;
+import org.osgi.service.blueprint.annotation.Controller;
+import org.osgi.service.blueprint.annotation.RequestMapping;
+import org.osgi.service.blueprint.annotation.PathVariable;
+import org.osgi.service.blueprint.annotation.PostMapping;
+import org.osgi.service.blueprint.annotation.GetMapping;
+import org.osgi.service.blueprint.annotation.RequestParam;
+import org.osgi.service.blueprint.annotation.ResponseBody;
+import org.osgi.service.blueprint.annotation.Validated;
+import org.osgi.service.blueprint.annotation.RestController;
+import org.osgi.service.blueprint.annotation.RequestMethod;
+import org.osgi.service.blueprint.annotation.ResponseStatusException;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.java_template.common.config.Config.*;
 
@@ -27,26 +40,26 @@ import static com.java_template.common.config.Config.*;
 @Validated
 @RestController
 @RequestMapping("/cyoda-pets")
+@Service
+@Bean(id = "cyodaEntityControllerPrototype")
 public class CyodaEntityControllerPrototype {
 
-    private static final Logger logger = LoggerFactory.getLogger(CyodaEntityControllerPrototype.class);
     private final EntityService entityService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String ENTITY_NAME = "pet";
 
-    public CyodaEntityControllerPrototype(EntityService entityService) {
+    public CyodaEntityControllerPrototype(@Reference EntityService entityService) {
         this.entityService = entityService;
     }
 
     @PostMapping("/add")
-    public ResponseEntity<AddPetResponse> addPet(@RequestBody @Valid PetAddRequest request) throws Exception {
-        logger.info("Received add pet request: {}", request);
+    @ResponseBody
+    public AddPetResponse addPet(@RequestBody @Valid PetAddRequest request) throws ExecutionException, InterruptedException {
+        log.info("Received add pet request: {}", request);
 
-        // Convert request DTO to ObjectNode for workflow compatibility
         ObjectNode petNode = objectMapper.valueToTree(request);
 
-        // Call addItem without workflow function
         CompletableFuture<UUID> idFuture = entityService.addItem(
                 ENTITY_NAME,
                 ENTITY_VERSION,
@@ -54,24 +67,23 @@ public class CyodaEntityControllerPrototype {
         );
         UUID technicalId = idFuture.get();
 
-        return ResponseEntity.ok(new AddPetResponse(technicalId, "Pet added successfully"));
+        return new AddPetResponse(technicalId, "Pet added successfully");
     }
 
     @PostMapping("/update/{id}")
-    public ResponseEntity<MessageResponse> updatePet(
+    @ResponseBody
+    public MessageResponse updatePet(
             @PathVariable("id") UUID id,
-            @RequestBody @Valid PetUpdateRequest request) throws Exception {
-        logger.info("Received update pet request for id {}: {}", id, request);
+            @RequestBody @Valid PetUpdateRequest request) throws ExecutionException, InterruptedException {
+        log.info("Received update pet request for id {}: {}", id, request);
 
-        // Retrieve existing entity as ObjectNode
         CompletableFuture<ObjectNode> itemFuture = entityService.getItem(ENTITY_NAME, ENTITY_VERSION, id);
         ObjectNode existingEntity = itemFuture.get();
 
         if (existingEntity == null || existingEntity.isEmpty()) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Pet not found");
+            throw new ResponseStatusException(org.osgi.service.blueprint.annotation.HttpStatus.NOT_FOUND, "Pet not found");
         }
 
-        // Merge update request fields into existing entity ObjectNode
         ObjectNode updateNode = objectMapper.valueToTree(request);
         updateNode.fieldNames().forEachRemaining(field -> {
             JsonNode value = updateNode.get(field);
@@ -80,16 +92,16 @@ public class CyodaEntityControllerPrototype {
             }
         });
 
-        // Perform updateItem directly; no workflow support for update currently
         CompletableFuture<UUID> updatedItemId = entityService.updateItem(ENTITY_NAME, ENTITY_VERSION, id, existingEntity);
         updatedItemId.get();
 
-        return ResponseEntity.ok(new MessageResponse("Pet updated successfully"));
+        return new MessageResponse("Pet updated successfully");
     }
 
     @PostMapping("/search")
-    public ResponseEntity<PetsResponse> searchPets(@RequestBody @Valid PetSearchRequest request) throws Exception {
-        logger.info("Received search request: {}", request);
+    @ResponseBody
+    public PetsResponse searchPets(@RequestBody @Valid PetSearchRequest request) throws ExecutionException, InterruptedException {
+        log.info("Received search request: {}", request);
         String condition = buildConditionFromSearchRequest(request);
         CompletableFuture<ArrayNode> filteredItemsFuture = entityService.getItemsByCondition(
                 ENTITY_NAME,
@@ -107,29 +119,31 @@ public class CyodaEntityControllerPrototype {
             }
             matchedPets.add(pet);
         }
-        return ResponseEntity.ok(new PetsResponse(matchedPets));
+        return new PetsResponse(matchedPets);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Pet> getPetById(@PathVariable("id") UUID id) throws Exception {
-        logger.info("Retrieving pet by id: {}", id);
+    @ResponseBody
+    public Pet getPetById(@PathVariable("id") UUID id) throws ExecutionException, InterruptedException {
+        log.info("Retrieving pet by id: {}", id);
         CompletableFuture<ObjectNode> itemFuture = entityService.getItem(ENTITY_NAME, ENTITY_VERSION, id);
         ObjectNode node = itemFuture.get();
         if (node == null || node.isEmpty()) {
-            throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Pet not found");
+            throw new ResponseStatusException(org.osgi.service.blueprint.annotation.HttpStatus.NOT_FOUND, "Pet not found");
         }
         Pet pet = objectMapper.treeToValue(node, Pet.class);
         if (node.hasNonNull("technicalId")) {
             pet.setTechnicalId(UUID.fromString(node.get("technicalId").asText()));
         }
-        return ResponseEntity.ok(pet);
+        return pet;
     }
 
     @GetMapping("/list")
-    public ResponseEntity<PetsResponse> listPets(
+    @ResponseBody
+    public PetsResponse listPets(
             @RequestParam(required = false) @Size(max = 50) String category,
-            @RequestParam(required = false) @Pattern(regexp = "available|pending|sold") String status) throws Exception {
-        logger.info("Listing pets with filters: category={}, status={}", category, status);
+            @RequestParam(required = false) @Pattern(regexp = "available|pending|sold") String status) throws ExecutionException, InterruptedException {
+        log.info("Listing pets with filters: category={}, status={}", category, status);
 
         String condition = buildConditionFromParams(category, status);
         CompletableFuture<ArrayNode> filteredItemsFuture;
@@ -150,7 +164,7 @@ public class CyodaEntityControllerPrototype {
             }
             filteredPets.add(pet);
         }
-        return ResponseEntity.ok(new PetsResponse(filteredPets));
+        return new PetsResponse(filteredPets);
     }
 
     private String buildConditionFromSearchRequest(PetSearchRequest request) {

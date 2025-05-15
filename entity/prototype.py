@@ -1,12 +1,12 @@
-```python
 import asyncio
 import logging
 from datetime import datetime
 from typing import Dict
+from dataclasses import dataclass
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,8 +14,12 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+@dataclass
+class AnalyzeRequest:
+    post_id: int
+    email: str
+
 # In-memory async-safe storage for reports and job statuses
-# Use asyncio.Lock to guard concurrent access
 class Storage:
     def __init__(self):
         self._reports: Dict[int, dict] = {}
@@ -38,24 +42,13 @@ class Storage:
         async with self._lock:
             return self._reports.get(post_id)
 
-
 storage = Storage()
 
-# Sentiment analysis placeholder
 def analyze_comments_sentiment(comments):
-    """
-    Simple mock sentiment analysis:
-    - count positive if body contains 'good', 'great', 'positive'
-    - count negative if body contains 'bad', 'worst', 'negative'
-    - else neutral
-    TODO: Replace with real sentiment analysis logic if needed
-    """
     positive_keywords = {"good", "great", "positive", "love", "excellent"}
     negative_keywords = {"bad", "worst", "negative", "hate", "terrible"}
 
-    positive = 0
-    negative = 0
-    neutral = 0
+    positive = negative = neutral = 0
 
     for comment in comments:
         body = comment.get("body", "").lower()
@@ -66,23 +59,14 @@ def analyze_comments_sentiment(comments):
         else:
             neutral += 1
 
-    summary = "Sentiment analysis indicates mostly "
     if positive > max(negative, neutral):
-        summary += "positive comments."
+        summary = "Sentiment analysis indicates mostly positive comments."
     elif negative > max(positive, neutral):
-        summary += "negative comments."
+        summary = "Sentiment analysis indicates mostly negative comments."
     else:
-        summary += "neutral or mixed comments."
+        summary = "Sentiment analysis indicates neutral or mixed comments."
 
-    return {
-        "summary": summary,
-        "details": {
-            "positive": positive,
-            "negative": negative,
-            "neutral": neutral,
-        },
-    }
-
+    return {"summary": summary, "details": {"positive": positive, "negative": negative, "neutral": neutral}}
 
 async def fetch_comments(post_id: int):
     url = f"https://jsonplaceholder.typicode.com/comments?postId={post_id}"
@@ -91,12 +75,9 @@ async def fetch_comments(post_id: int):
         resp.raise_for_status()
         return resp.json()
 
-
 async def send_report_email(email: str, post_id: int, report: dict):
     # TODO: Implement real email sending
-    # For prototype, we just log the sending action
-    logger.info(f"Sending report for post_id {post_id} to email {email}:\n{report}")
-
+    logger.info(f"Sending report for post_id {post_id} to {email}: {report}")
 
 async def process_entity(job_id: str, post_id: int, email: str):
     try:
@@ -109,29 +90,19 @@ async def process_entity(job_id: str, post_id: int, email: str):
         logger.exception(e)
         await storage.set_job(job_id, {"status": "failed", "error": str(e), "completedAt": datetime.utcnow().isoformat()})
 
-
 @app.route("/comments/analyze", methods=["POST"])
-async def analyze_comments():
-    data = await request.get_json()
-    post_id = data.get("post_id")
-    email = data.get("email")
-
-    if not post_id or not email:
-        return jsonify({"error": "Missing required fields: post_id and email"}), 400
-
+@validate_request(AnalyzeRequest)  # workaround: validate_request must follow route decorator for POST due to quart-schema defect
+async def analyze_comments(data: AnalyzeRequest):
+    post_id = data.post_id
+    email = data.email
     job_id = f"{post_id}-{datetime.utcnow().timestamp()}"
-
     await storage.set_job(job_id, {"status": "processing", "requestedAt": datetime.utcnow().isoformat()})
-
-    # Fire and forget processing task
     asyncio.create_task(process_entity(job_id, post_id, email))
-
     return jsonify({
         "status": "processing",
         "message": "Analysis started and report will be sent to the provided email.",
         "job_id": job_id
     }), 202
-
 
 @app.route("/reports/<int:post_id>", methods=["GET"])
 async def get_report(post_id):
@@ -140,7 +111,5 @@ async def get_report(post_id):
         return jsonify({"error": "Report not found for given post_id"}), 404
     return jsonify({"post_id": post_id, "report": report})
 
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

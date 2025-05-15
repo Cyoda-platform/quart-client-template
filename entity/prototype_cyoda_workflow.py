@@ -1,9 +1,21 @@
-Certainly! I've updated the code to add the required workflow function parameter to `entity_service.add_item`. This includes:
+Understood! We want to refactor such that the endpoint handlers become thin controllers, delegating all async logic and side effects (fetching comments, analyzing, sending emails, storing reports) into the workflow function `process_analyze_request`.
 
-- Implementing the workflow function named `process_analyze_request` (underscore-lowercase entity name).
-- Passing this workflow function as the `workflow` argument when calling `entity_service.add_item`.
+Key points:
 
-Here's the complete updated `entity/prototype_cyoda.py`:
+- The endpoint will only validate the request and call `entity_service.add_item` with the raw entity data and the workflow function.
+- The workflow function will:
+  - Fetch comments asynchronously
+  - Analyze sentiment
+  - Send email
+  - Store the analysis report as a different entity_model (e.g. "analyze_report")
+  - Update the original entity's state (e.g. status, timestamps) to reflect progress or results
+- The workflow function can add/get other entities but must NOT add/update/delete entities of the same model (`analyze_request`) to avoid recursion.
+- We will remove the in-memory `storage` and async task management from the controller.
+- The report retrieval endpoint remains unchanged.
+
+---
+
+### Complete refactored code with logic moved into workflow function
 
 ```python
 import asyncio
@@ -34,21 +46,12 @@ class AnalyzeRequest:
     post_id: int
     email: str
 
-# In-memory async-safe storage for job statuses only (reports will now be retrieved via entity_service)
-class Storage:
-    def __init__(self):
-        self._jobs: Dict[str, dict] = {}
-        self._lock = asyncio.Lock()
-
-    async def set_job(self, job_id: str, data: dict):
-        async with self._lock:
-            self._jobs[job_id] = data
-
-    async def get_job(self, job_id: str):
-        async with self._lock:
-            return self._jobs.get(job_id)
-
-storage = Storage()
+async def fetch_comments(post_id: int):
+    url = f"https://jsonplaceholder.typicode.com/comments?postId={post_id}"
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(url, timeout=10)
+        resp.raise_for_status()
+        return resp.json()
 
 def analyze_comments_sentiment(comments):
     positive_keywords = {"good", "great", "positive", "love", "excellent"}
@@ -74,13 +77,6 @@ def analyze_comments_sentiment(comments):
 
     return {"summary": summary, "details": {"positive": positive, "negative": negative, "neutral": neutral}}
 
-async def fetch_comments(post_id: int):
-    url = f"https://jsonplaceholder.typicode.com/comments?postId={post_id}"
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=10)
-        resp.raise_for_status()
-        return resp.json()
-
 async def send_report_email(email: str, post_id: int, report: dict):
     # TODO: Implement real email sending
     logger.info(f"Sending report for post_id {post_id} to {email}: {report}")
@@ -88,63 +84,95 @@ async def send_report_email(email: str, post_id: int, report: dict):
 # Workflow function applied to the entity asynchronously before persistence
 # This function must be async and take the entity data as the only argument
 async def process_analyze_request(entity: dict):
-    # Example workflow processing:
-    # You can modify the entity data before it is persisted, e.g. add extra fields or validation
-    entity['processed_at'] = datetime.utcnow().isoformat()
-    # You can also perform side effects or add/get other entities here if needed.
-    # Must NOT add/update/delete entities of the same model 'analyze_request' to avoid recursion.
-    # For this example, just add a log entry
-    logger.info(f"Workflow processing entity before persistence: {entity}")
+    """
+    Workflow function for 'analyze_request' entity.
 
-async def process_entity(job_id: str, post_id: int, email: str):
+    - Fetches comments asynchronously.
+    - Analyzes sentiment.
+    - Sends report email.
+    - Persists the analysis report as a separate entity 'analyze_report'.
+    - Updates the current entity state with status and timestamps.
+    """
     try:
+        post_id = entity["post_id"]
+        if isinstance(post_id, str) and post_id.isdigit():
+            post_id = int(post_id)  # ensure int type for API call
+        email = entity["email"]
+
+        # Mark processing started
+        entity["status"] = "processing"
+        entity["processing_started_at"] = datetime.utcnow().isoformat()
+
+        # Fetch comments
         comments = await fetch_comments(post_id)
+
+        # Analyze sentiment
         report = analyze_comments_sentiment(comments)
 
-        # Store the report using entity_service - note: post_id must be string technical_id, so convert to str
-        data = {
+        # Send email with the report
+        await send_report_email(email, post_id, report)
+
+        # Store the report as a separate entity 'analyze_report'
+        report_entity = {
             "post_id": str(post_id),
             "report": report,
             "email": email,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.utcnow().isoformat(),
         }
-        # Add item - returns id only, pass workflow function
-        id = await entity_service.add_item(
+        # Add the report entity asynchronously - must NOT do this on same model 'analyze_request'
+        await entity_service.add_item(
             token=cyoda_auth_service,
-            entity_model="analyze_request",
+            entity_model="analyze_report",
             entity_version=ENTITY_VERSION,
-            entity=data,
-            workflow=process_analyze_request
+            entity=report_entity,
+            workflow=None  # No workflow for report entity
         )
-        # We do not retrieve the stored report immediately as per instructions
 
-        await send_report_email(email, post_id, report)
-        await storage.set_job(job_id, {"status": "completed", "completedAt": datetime.utcnow().isoformat()})
+        # Update current entity status to completed
+        entity["status"] = "completed"
+        entity["completed_at"] = datetime.utcnow().isoformat()
+        entity["result_summary"] = report.get("summary")
+
     except Exception as e:
-        logger.exception(e)
-        await storage.set_job(job_id, {"status": "failed", "error": str(e), "completedAt": datetime.utcnow().isoformat()})
+        logger.exception("Error in process_analyze_request workflow")
+        entity["status"] = "failed"
+        entity["error"] = str(e)
+        entity["completed_at"] = datetime.utcnow().isoformat()
 
 @app.route("/comments/analyze", methods=["POST"])
-@validate_request(AnalyzeRequest)  # workaround: validate_request must follow route decorator for POST due to quart-schema defect
+@validate_request(AnalyzeRequest)  # validate input
 async def analyze_comments(data: AnalyzeRequest):
-    post_id = data.post_id
-    email = data.email
-    job_id = f"{post_id}-{datetime.utcnow().timestamp()}"
-    await storage.set_job(job_id, {"status": "processing", "requestedAt": datetime.utcnow().isoformat()})
-    asyncio.create_task(process_entity(job_id, post_id, email))
+    # Prepare the raw entity dict to persist analyze_request
+    entity = {
+        "post_id": data.post_id,
+        "email": data.email,
+        "created_at": datetime.utcnow().isoformat(),
+        "status": "requested",
+    }
+
+    # Add the entity with the workflow function; this will trigger async processing before persistence
+    entity_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="analyze_request",
+        entity_version=ENTITY_VERSION,
+        entity=entity,
+        workflow=process_analyze_request,
+    )
+
+    # Return immediately with accepted status and entity ID
     return jsonify({
         "status": "processing",
         "message": "Analysis started and report will be sent to the provided email.",
-        "job_id": job_id
+        "entity_id": entity_id,
     }), 202
 
-@app.route("/reports/<string:post_id>", methods=["GET"])  # id is now string
+@app.route("/reports/<string:post_id>", methods=["GET"])
 async def get_report(post_id):
     try:
         # Retrieve report from entity_service by technical_id (string)
         item = await entity_service.get_item(
             token=cyoda_auth_service,
-            entity_model="analyze_request",
+            entity_model="analyze_report",
             entity_version=ENTITY_VERSION,
             technical_id=post_id
         )
@@ -152,15 +180,37 @@ async def get_report(post_id):
             return jsonify({"error": "Report not found for given post_id"}), 404
         return jsonify({"post_id": post_id, "report": item.get("report")})
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to retrieve report")
         return jsonify({"error": "Failed to retrieve report"}), 500
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added async def `process_analyze_request(entity: dict)` workflow function, which modifies the entity by adding a `processed_at` timestamp and logs it.
-- Passed `workflow=process_analyze_request` to `entity_service.add_item()` inside `process_entity`.
+---
 
-Let me know if you need any further modifications!
+### Explanation of changes:
+
+- **Endpoint `/comments/analyze`**:
+  - Simply validates input and calls `entity_service.add_item` with the raw entity data plus the workflow function `process_analyze_request`.
+  - Does NOT start background tasks or store job status locally.
+- **Workflow function `process_analyze_request`**:
+  - Runs asynchronously before the entity is persisted.
+  - Fetches comments, analyzes sentiment, sends email.
+  - Persists the analysis report as a separate entity `"analyze_report"`.
+  - Updates the current entity's status, timestamps, and result summary.
+- **Report retrieval `/reports/<post_id>`**:
+  - Now fetches from `"analyze_report"` entities by technical ID (string post_id).
+- **Removed `Storage` and manual async task management**:
+  - All async work is done inside the workflow function invoked by `add_item`.
+
+---
+
+This approach strictly follows the requirement:
+
+- The workflow function is the single place for async logic.
+- The controller is thin and only manages HTTP request/response.
+- Workflow can safely add/get entities of different models (e.g. adding `analyze_report`) but does not modify the current `analyze_request` entity except by modifying its dict in-place.
+- The workflow function can be fully async, can await tasks, and can update entity state before persistence.
+
+Let me know if you want me to help with any additional improvements or testing notes!

@@ -11,10 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 import org.osgi.service.blueprint.annotation.Bean;
-import org.osgi.service.blueprint.annotation.Property;
 import org.osgi.service.blueprint.annotation.Reference;
 import org.osgi.service.blueprint.annotation.Service;
 import org.osgi.service.blueprint.annotation.Controller;
@@ -25,20 +22,20 @@ import org.osgi.service.blueprint.annotation.GetMapping;
 import org.osgi.service.blueprint.annotation.RequestParam;
 import org.osgi.service.blueprint.annotation.ResponseBody;
 import org.osgi.service.blueprint.annotation.Validated;
-import org.osgi.service.blueprint.annotation.RestController;
-import org.osgi.service.blueprint.annotation.RequestMethod;
+import org.osgi.service.blueprint.annotation.RequestBody;
 import org.osgi.service.blueprint.annotation.ResponseStatusException;
+import org.osgi.service.blueprint.annotation.RequestMethod;
+import org.osgi.service.blueprint.annotation.HttpStatus;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 import static com.java_template.common.config.Config.*;
 
 @Slf4j
 @Validated
-@RestController
+@Controller
 @RequestMapping("/cyoda-pets")
 @Service
 @Bean(id = "cyodaEntityControllerPrototype")
@@ -53,7 +50,7 @@ public class CyodaEntityControllerPrototype {
         this.entityService = entityService;
     }
 
-    @PostMapping("/add")
+    @PostMapping(value = "/add")
     @ResponseBody
     public AddPetResponse addPet(@RequestBody @Valid PetAddRequest request) throws ExecutionException, InterruptedException {
         log.info("Received add pet request: {}", request);
@@ -70,7 +67,7 @@ public class CyodaEntityControllerPrototype {
         return new AddPetResponse(technicalId, "Pet added successfully");
     }
 
-    @PostMapping("/update/{id}")
+    @PostMapping(value = "/update/{id}")
     @ResponseBody
     public MessageResponse updatePet(
             @PathVariable("id") UUID id,
@@ -81,7 +78,7 @@ public class CyodaEntityControllerPrototype {
         ObjectNode existingEntity = itemFuture.get();
 
         if (existingEntity == null || existingEntity.isEmpty()) {
-            throw new ResponseStatusException(org.osgi.service.blueprint.annotation.HttpStatus.NOT_FOUND, "Pet not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found");
         }
 
         ObjectNode updateNode = objectMapper.valueToTree(request);
@@ -98,7 +95,7 @@ public class CyodaEntityControllerPrototype {
         return new MessageResponse("Pet updated successfully");
     }
 
-    @PostMapping("/search")
+    @PostMapping(value = "/search")
     @ResponseBody
     public PetsResponse searchPets(@RequestBody @Valid PetSearchRequest request) throws ExecutionException, InterruptedException {
         log.info("Received search request: {}", request);
@@ -122,14 +119,14 @@ public class CyodaEntityControllerPrototype {
         return new PetsResponse(matchedPets);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}")
     @ResponseBody
     public Pet getPetById(@PathVariable("id") UUID id) throws ExecutionException, InterruptedException {
         log.info("Retrieving pet by id: {}", id);
         CompletableFuture<ObjectNode> itemFuture = entityService.getItem(ENTITY_NAME, ENTITY_VERSION, id);
         ObjectNode node = itemFuture.get();
         if (node == null || node.isEmpty()) {
-            throw new ResponseStatusException(org.osgi.service.blueprint.annotation.HttpStatus.NOT_FOUND, "Pet not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pet not found");
         }
         Pet pet = objectMapper.treeToValue(node, Pet.class);
         if (node.hasNonNull("technicalId")) {
@@ -138,11 +135,11 @@ public class CyodaEntityControllerPrototype {
         return pet;
     }
 
-    @GetMapping("/list")
+    @GetMapping(value = "/list")
     @ResponseBody
     public PetsResponse listPets(
-            @RequestParam(required = false) @Size(max = 50) String category,
-            @RequestParam(required = false) @Pattern(regexp = "available|pending|sold") String status) throws ExecutionException, InterruptedException {
+            @RequestParam(value = "category", required = false) @Size(max = 50) String category,
+            @RequestParam(value = "status", required = false) @Pattern(regexp = "available|pending|sold") String status) throws ExecutionException, InterruptedException {
         log.info("Listing pets with filters: category={}, status={}", category, status);
 
         String condition = buildConditionFromParams(category, status);
@@ -195,8 +192,6 @@ public class CyodaEntityControllerPrototype {
     private String escapeSingleQuotes(String input) {
         return input.replace("'", "''");
     }
-
-    // DTOs and entity POJO
 
     @Data
     @NoArgsConstructor

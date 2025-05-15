@@ -1,14 +1,3 @@
-Certainly! To make the controller leaner and move all asynchronous and entity-preparation logic into the workflow function `processPet`, we can:
-
-- Move any async "fire-and-forget" tasks and entity modification logic from controller methods into the `processPet` method.
-- Use `ObjectNode` as the function argument and modify it directly as required (instead of using `Pet` POJO), since the workflow function works with raw JSON entity data.
-- Keep the controller endpoints focused purely on HTTP handling and validation, delegating business logic and async workflows to the workflow function.
-
----
-
-### Updated code with all async logic moved into `processPet` workflow function:
-
-```java
 package com.java_template.entity;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,7 +20,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 import static com.java_template.common.config.Config.*;
 
@@ -53,11 +41,10 @@ public class CyodaEntityControllerPrototype {
 
     /**
      * Workflow function for processing Pet entity before persistence.
-     * This function receives the raw ObjectNode representing the entity.
-     * Modify the entity state directly by updating fields in the ObjectNode.
-     *
-     * You can get/add secondary entities of other entityModels here asynchronously.
-     * Do NOT add/update/delete entity of the same entityModel "pet" inside this function.
+     * Receives the raw ObjectNode representing the entity.
+     * Modify entity state by updating fields in the ObjectNode.
+     * Can perform async tasks and add/get secondary entities of different entityModels.
+     * Cannot add/update/delete entity of the same entityModel "pet" to avoid infinite recursion.
      */
     private CompletableFuture<ObjectNode> processPet(ObjectNode entity) {
         logger.info("Processing pet entity in workflow function");
@@ -68,15 +55,15 @@ public class CyodaEntityControllerPrototype {
             entity.put("status", "available");
         }
 
-        // Example: Fire-and-forget async logging or other async task
-        CompletableFuture.runAsync(() -> logger.info("Async task inside workflow for pet: {}", entity));
+        // Example async fire-and-forget task: log pet name if present
+        CompletableFuture.runAsync(() -> {
+            String petName = entity.hasNonNull("name") ? entity.get("name").asText() : "unknown";
+            logger.info("Async workflow task: Pet name is '{}'", petName);
+        });
 
-        // Example: You can add/get secondary entities of different entityModel here if needed.
-        // For example:
-        // CompletableFuture<UUID> relatedEntityId = entityService.addItem("relatedEntityModel", ENTITY_VERSION, relatedEntityData, null);
-        // You can chain or combine these futures if needed.
+        // Example: Add or get secondary entities of different entityModels asynchronously if needed
+        // Note: Do NOT add/update/delete entity of this entityModel "pet" here
 
-        // Return completed future with the modified entity
         return CompletableFuture.completedFuture(entity);
     }
 
@@ -84,7 +71,7 @@ public class CyodaEntityControllerPrototype {
     public ResponseEntity<AddPetResponse> addPet(@RequestBody @Valid PetAddRequest request) throws Exception {
         logger.info("Received add pet request: {}", request);
 
-        // Convert request DTO to ObjectNode instead of Pet POJO to work directly with raw JSON entity
+        // Convert request DTO to ObjectNode for workflow compatibility
         ObjectNode petNode = objectMapper.valueToTree(request);
 
         // Call addItem with workflow function to process entity before persistence
@@ -122,12 +109,9 @@ public class CyodaEntityControllerPrototype {
             }
         });
 
-        // For updateItem, workflow function is NOT required (as per current requirements)
+        // Perform updateItem directly; no workflow support for update currently
         CompletableFuture<UUID> updatedItemId = entityService.updateItem(ENTITY_NAME, ENTITY_VERSION, id, existingEntity);
         updatedItemId.get();
-
-        // Previously we had a fire-and-forget async log here, move into workflow if needed
-        // Since updateItem does not accept workflow, optionally create a separate async method here or skip
 
         return ResponseEntity.ok(new MessageResponse("Pet updated successfully"));
     }
@@ -147,7 +131,9 @@ public class CyodaEntityControllerPrototype {
         for (int i = 0; i < filteredItems.size(); i++) {
             ObjectNode node = (ObjectNode) filteredItems.get(i);
             Pet pet = objectMapper.treeToValue(node, Pet.class);
-            pet.setTechnicalId(UUID.fromString(node.get("technicalId").asText()));
+            if (node.hasNonNull("technicalId")) {
+                pet.setTechnicalId(UUID.fromString(node.get("technicalId").asText()));
+            }
             matchedPets.add(pet);
         }
         return ResponseEntity.ok(new PetsResponse(matchedPets));
@@ -162,7 +148,9 @@ public class CyodaEntityControllerPrototype {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND, "Pet not found");
         }
         Pet pet = objectMapper.treeToValue(node, Pet.class);
-        pet.setTechnicalId(UUID.fromString(node.get("technicalId").asText()));
+        if (node.hasNonNull("technicalId")) {
+            pet.setTechnicalId(UUID.fromString(node.get("technicalId").asText()));
+        }
         return ResponseEntity.ok(pet);
     }
 
@@ -186,7 +174,9 @@ public class CyodaEntityControllerPrototype {
         for (int i = 0; i < items.size(); i++) {
             ObjectNode node = (ObjectNode) items.get(i);
             Pet pet = objectMapper.treeToValue(node, Pet.class);
-            pet.setTechnicalId(UUID.fromString(node.get("technicalId").asText()));
+            if (node.hasNonNull("technicalId")) {
+                pet.setTechnicalId(UUID.fromString(node.get("technicalId").asText()));
+            }
             filteredPets.add(pet);
         }
         return ResponseEntity.ok(new PetsResponse(filteredPets));
@@ -227,7 +217,7 @@ public class CyodaEntityControllerPrototype {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class Pet {
-        @JsonIgnore
+        @com.fasterxml.jackson.annotation.JsonIgnore
         private UUID technicalId;
         private String name;
         private String category;
@@ -294,17 +284,3 @@ public class CyodaEntityControllerPrototype {
         private String message;
     }
 }
-```
-
----
-
-### Summary of improvements:
-- `processPet(ObjectNode entity)` is now the single place where:
-  - Entity defaulting (like status) is handled.
-  - Async "fire-and-forget" tasks related to the entity can be executed.
-  - Supplementary entities can be added or fetched asynchronously.
-- Controller methods just convert request DTOs to `ObjectNode` and delegate persistence to `entityService.addItem` with the workflow function.
-- Update method merges update fields into existing entity JSON and saves directly.
-- This decouples business logic and async workflows from endpoint handlers, improving maintainability and robustness.
-
-Let me know if you want me to help move update-related async tasks into a workflow function too, if that becomes supported in the future!

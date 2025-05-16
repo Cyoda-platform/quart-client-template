@@ -1,0 +1,39 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "name": "fluffy",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet_search"
+        },
+        {
+            "entity_data_example": {
+                "adopter_name": "alice",
+                "contact": "alice@example.com",
+                "pet_id": "123"
+            },
+            "entity_name": "pet_adopt"
+        },
+        {
+            "entity_data_example": {
+                "type": "dog"
+            },
+            "entity_name": "pet_fun_facts"
+        },
+        {
+            "entity_data_example": {
+                "description": "a cute fluffy cat",
+                "id": 123,
+                "name": "fluffy",
+                "photoUrls": [
+                    "http://example.com/photo1.jpg"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

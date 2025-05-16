@@ -5,8 +5,8 @@ from typing import Dict
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class AnalyzeRequest:
@@ -50,7 +49,7 @@ async def send_report_email(email: str, post_id: int, summary: dict):
     # Placeholder for real email sending logic
     logger.info(f"Sending report email to {email} for post {post_id} with summary {summary}")
 
-@app.route("/comments/analyze", methods=["POST"])
+@routes_bp.route("/comments/analyze", methods=["POST"])
 @validate_request(AnalyzeRequest)
 async def analyze_comments_endpoint(data: AnalyzeRequest):
     """
@@ -81,7 +80,7 @@ async def analyze_comments_endpoint(data: AnalyzeRequest):
         "entity_id": entity_id
     }), 202
 
-@app.route("/reports/<string:post_id>", methods=["GET"])
+@routes_bp.route("/reports/<string:post_id>", methods=["GET"])
 async def get_report(post_id: str):
     try:
         report = await entity_service.get_item(
@@ -97,6 +96,3 @@ async def get_report(post_id: str):
     if not report:
         return jsonify({"error": f"No report found for post_id {post_id}"}), 404
     return jsonify(report)
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

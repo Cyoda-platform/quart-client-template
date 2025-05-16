@@ -1,0 +1,57 @@
+{
+    "description": "Workflow for handling pet entity lifecycle and external data enrichment",
+    "name": "PurrfectPets_Workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initialize pet entity with generated ID if missing",
+            "end_state": "Pet_initialized",
+            "end_state_description": "Pet entity has an ID",
+            "name": "initialize_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "processpet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch external pet data if name is missing",
+            "end_state": "External_data_fetched",
+            "end_state_description": "External pet data fetched and applied",
+            "name": "fetch_external_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "processFetchExternalData"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_initialized",
+            "start_state_description": "Pet entity has an ID"
+        },
+        {
+            "automated": true,
+            "description": "Complete pet processing with audit addition",
+            "end_state": "Pet_processing_completed",
+            "end_state_description": "Pet processing completed with audit",
+            "name": "complete_pet_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "processAddAudit"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "External_data_fetched",
+            "start_state_description": "External pet data fetched and applied"
+        }
+    ]
+}

@@ -1,43 +1,3 @@
-Understood! To comply with the new design requirement, we should move **all** asynchronous and processing logic currently in the endpoint and the background task into the workflow function `process_prototype`. This includes:
-
-- Fetching comments
-- Analyzing comments
-- Sending report email
-- Creating and saving supplementary entities (if any)
-- Updating entity state before persistence
-
-The endpoint will then simply construct the initial entity data (the minimal input), call `add_item` with the workflow function, and return immediately. The workflow function will orchestrate the heavy lifting asynchronously before the entity is persisted.
-
----
-
-### Key points:
-
-- The workflow function is async and receives the entity dictionary that will be persisted.
-- It can modify the entity dict directly to update the state that will be saved.
-- It can call `entity_service.add_item` on **different** entity models (not the current one) to add supplementary entities.
-- It can perform async tasks like HTTP calls and sending emails.
-- We **must not** add/update/delete the current entity model inside the workflow function to prevent infinite recursion.
-
----
-
-### Approach:
-
-- The endpoint receives `post_id` and `email` as input.
-- It creates a minimal entity with those inputs plus initial status info.
-- Calls `entity_service.add_item` with `workflow=process_prototype`.
-- The workflow function:
-  - Fetches comments asynchronously
-  - Analyzes comments
-  - Updates the `entity` dict with summary, report URL, timestamps, status
-  - Sends email report
-  - Optionally adds other entities if needed
-- The entity is persisted **after** the workflow function completes.
-
----
-
-### Updated complete code:
-
-```python
 import asyncio
 import logging
 from datetime import datetime
@@ -45,7 +5,7 @@ from typing import Dict
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -68,7 +28,7 @@ class AnalyzeRequest:
 
 async def fetch_comments(post_id: int):
     url = f"https://jsonplaceholder.typicode.com/comments?postId={post_id}"
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         r = await client.get(url)
         r.raise_for_status()
         return r.json()
@@ -87,13 +47,13 @@ def analyze_comments(comments: list):
     return {"total_comments": total, "positive": positive, "negative": negative, "neutral": neutral}
 
 async def send_report_email(email: str, post_id: int, summary: dict):
-    # TODO: Implement real email sending.
+    # Placeholder for real email sending logic
     logger.info(f"Sending report email to {email} for post {post_id} with summary {summary}")
 
 async def process_prototype(entity: dict):
     """
     Workflow function applied to the 'prototype' entity asynchronously before persistence.
-    It fetches comments, analyzes them, updates entity state, and sends report email.
+    It performs fetching, analyzing, email sending, and updates entity state accordingly.
     """
     try:
         post_id = entity.get("post_id")
@@ -102,22 +62,26 @@ async def process_prototype(entity: dict):
         if post_id is None or email is None:
             raise ValueError("Entity must contain 'post_id' and 'email' fields")
 
-        # Fetch comments
+        # Fetch comments with timeout and error handling
         comments = await fetch_comments(post_id)
 
-        # Analyze comments
+        # Analyze comments synchronously
         summary = analyze_comments(comments)
 
-        # Update entity state (this will be persisted)
+        # Update state - these changes will be persisted after workflow finishes
         entity['summary'] = summary
         entity['detailed_report_url'] = f"https://example.com/report_post_{post_id}.pdf"
         entity['status'] = "completed"
         entity['processedAt'] = datetime.utcnow().isoformat()
 
-        # Send report email
+        # Send report email asynchronously
         await send_report_email(email, post_id, summary)
 
         logger.info(f"Workflow processing for prototype entity with post_id {post_id} completed successfully.")
+    except httpx.RequestError as e:
+        entity['status'] = "failed"
+        entity['error'] = f"Network error during comment fetch: {str(e)}"
+        logger.exception("Network error in process_prototype workflow: %s", e)
     except Exception as e:
         entity['status'] = "failed"
         entity['error'] = str(e)
@@ -127,10 +91,9 @@ async def process_prototype(entity: dict):
 @validate_request(AnalyzeRequest)
 async def analyze_comments_endpoint(data: AnalyzeRequest):
     """
-    Minimal endpoint: constructs the minimal entity and calls add_item with workflow.
-    Heavy processing is delegated to the workflow function.
+    Endpoint accepts post_id and email, creates minimal entity with status 'processing',
+    calls add_item with workflow function to handle processing asynchronously.
     """
-    # Minimal initial entity data; status starts as "processing"
     entity = {
         "post_id": data.post_id,
         "email": data.email,
@@ -138,7 +101,6 @@ async def analyze_comments_endpoint(data: AnalyzeRequest):
         "requestedAt": datetime.utcnow().isoformat()
     }
 
-    # Add the entity with the workflow function to handle async processing & updates
     try:
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
@@ -167,7 +129,7 @@ async def get_report(post_id: str):
             technical_id=post_id
         )
     except Exception as e:
-        logger.exception(e)
+        logger.exception("Failed to retrieve report for post_id %s: %s", post_id, e)
         return jsonify({"error": f"Failed to retrieve report for post_id {post_id}"}), 500
 
     if not report:
@@ -176,21 +138,3 @@ async def get_report(post_id: str):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation of the changes:
-
-- **All async logic moved into `process_prototype`:** The workflow function now fetches comments, analyzes them, updates the entity with results, and sends the email.
-- **Endpoint is simplified:** It only validates input, creates a minimal entity with status "processing", and calls `add_item` with the workflow function.
-- **Entity state updates:** The workflow function adds `"summary"`, `"detailed_report_url"`, `"status"`, and `"processedAt"` fields directly to the entity dict, which will be persisted after the workflow completes.
-- **Error handling in workflow:** If any error occurs during processing, the entity status is set to `"failed"` and the error message is saved in the entity.
-- **No infinite recursion:** The workflow does not call `add_item` or update the current entity model (`prototype`) again.
-- **Logging:** Added logs in the workflow for success and failure cases.
-
----
-
-This fully complies with the new architectural approach and offloads all async processing from the controllers to the workflow function, making the code more robust and maintainable.
-
-Let me know if you'd like me to refactor further or explain any part!

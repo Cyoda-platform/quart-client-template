@@ -1,7 +1,22 @@
-Here's the updated complete `entity/prototype_cyoda.py` file with the required changes:
+Understood. We will refactor the code so that all asynchronous logic currently executed from the endpoint is moved inside the workflow function `process_analyze_request`. This includes:
 
-- Added the workflow function `process_analyze_request` (underscore lowercase entity name: `analyze_request`).
-- Passed the workflow function as the `workflow` argument to `entity_service.add_item`.
+- Fetching comments
+- Analyzing comments
+- Sending the report email
+- Updating the job status in the `entity_jobs` cache
+- Storing the report in the `reports_cache`
+
+The endpoint will become very thin: it only validates input, triggers `entity_service.add_item()` with the workflow, and returns the response immediately.
+
+**Important points:**
+
+- We cannot call `entity_service.add/update/delete` on the same entity model (`analyze_request`) inside the workflow or it may cause infinite recursion.
+- We can, however, add/get entities of other models if needed (not required here).
+- We modify the entity object directly to reflect any state changes that should be persisted.
+
+---
+
+### Updated full code below:
 
 ```python
 import asyncio
@@ -11,7 +26,7 @@ from typing import Dict, Any
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -82,10 +97,24 @@ async def send_report_email(email: str, post_id: int, report: Dict[str, Any]):
     await asyncio.sleep(0.1)
 
 
-async def process_entity(job_id: str, data: Dict[str, Any]):
+# Workflow function applied to analyze_request entity before persistence
+async def process_analyze_request(entity: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    This workflow function executes the entire processing:
+    - Fetch comments
+    - Analyze them
+    - Store report in cache
+    - Update job status
+    - Send email
+    """
+    post_id = entity.get("post_id")
+    email = entity.get("email")
+    job_id = f"{post_id}-{datetime.utcnow().isoformat()}Z"
+
+    # Mark job as processing
+    entity_jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat() + "Z"}
+
     try:
-        post_id = data["post_id"]
-        email = data["email"]
         comments = await fetch_comments(post_id)
         report_data = analyze_comments(comments)
         reports_cache[str(post_id)] = {
@@ -98,52 +127,50 @@ async def process_entity(job_id: str, data: Dict[str, Any]):
             "details": report_data["details"],
         }
         await send_report_email(email, post_id, reports_cache[str(post_id)])
+
         entity_jobs[job_id]["status"] = "completed"
         entity_jobs[job_id]["finishedAt"] = datetime.utcnow().isoformat() + "Z"
+
+        # Add job_id to entity so client can track it
+        entity["job_id"] = job_id
+        # Add requestedAt timestamp to entity
+        entity["requestedAt"] = entity_jobs[job_id]["requestedAt"]
+        # Add report summary to entity (optional convenience)
+        entity["report_summary"] = reports_cache[str(post_id)]["summary"]
+
     except Exception as e:
         logger.exception(e)
         entity_jobs[job_id]["status"] = "failed"
         entity_jobs[job_id]["error"] = str(e)
         entity_jobs[job_id]["finishedAt"] = datetime.utcnow().isoformat() + "Z"
+        # Reflect failure in entity state so it is persisted
+        entity["job_id"] = job_id
+        entity["error"] = str(e)
+        entity["status"] = "failed"
 
-
-# New workflow function as required by the updated entity_service.add_item
-async def process_analyze_request(entity: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Workflow function to be applied to the analyze_request entity before persistence.
-    You can modify entity state here or call other entity_service methods with different entity_model.
-    """
-    # Example: add a timestamp field before persistence
-    entity["requestedAt"] = datetime.utcnow().isoformat() + "Z"
-    # Could add more logic here if needed
     return entity
 
 
 @app.route("/api/comments/analyze", methods=["POST"])
-@validate_request(AnalyzeRequest)  # issue workaround: validation last for POST
+@validate_request(AnalyzeRequest)
 async def analyze_comments_endpoint(data: AnalyzeRequest):
-    post_id = data.post_id
-    email = data.email
-    requested_at = datetime.utcnow().isoformat() + "Z"
-    job_id = f"{post_id}-{requested_at}"
-    entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
-    # Prepare data dict to add via entity_service
-    entity_data = {"post_id": post_id, "email": email}
+    entity_data = {"post_id": data.post_id, "email": data.email}
     try:
         id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="analyze_request",
             entity_version=ENTITY_VERSION,
             entity=entity_data,
-            workflow=process_analyze_request  # Pass the workflow function here
+            workflow=process_analyze_request  # All async logic moved here
         )
-        # We only return the id, actual processing happens asynchronously as before
-        asyncio.create_task(process_entity(job_id, entity_data))
+        # The workflow adds job_id and other info to entity which is persisted.
+        # We return the id and job_id (if available) to client.
+        job_id = entity_data.get("job_id", None)
         return jsonify({
             "status": "processing",
             "message": "Analysis started and email will be sent upon completion.",
             "job_id": job_id,
-            "id": id  # returning id from entity_service
+            "id": id
         }), 202
     except Exception as e:
         logger.exception(e)
@@ -164,10 +191,24 @@ if __name__ == "__main__":
 
 ---
 
-### Explanation of the changes:
+### What has changed:
 
-- Added the async workflow function `process_analyze_request(entity: Dict[str, Any])` which modifies the entity data before it is persisted.  
-- Passed this workflow function to `entity_service.add_item()` as the `workflow` argument.  
-- The workflow function name follows the required pattern: `process_` + entity name (`analyze_request`) in underscore lowercase.
+- **All async logic moved to `process_analyze_request`** workflow function.
+- `process_analyze_request` manages the entire lifecycle: fetching comments, analyzing, caching reports, sending email, and updating job status.
+- The endpoint just calls `entity_service.add_item()` passing the workflow, then returns immediately with `id` and `job_id`.
+- `entity_jobs` and `reports_cache` remain as in-memory caches for job tracking and reports.
+- The workflow adds job tracking info (`job_id`, timestamps, status) and optionally report summary or error info directly to the entity dict which will be persisted.
 
-Let me know if you want the workflow function to do anything specific beyond this example timestamp addition.
+---
+
+### Benefits:
+
+- Controllers (endpoints) are freed from excessive logic.
+- The entire async processing is encapsulated in the workflow function which is the recommended approach.
+- Robust and clean separation of concerns.
+- No recursion risk because we don’t update the same entity via `entity_service` inside the workflow.
+- Future enhancements can be done inside workflow functions without changes to endpoints.
+
+---
+
+If you want, I can help adapt this pattern for other entities or further improve error handling/logging/reporting.

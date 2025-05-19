@@ -1,0 +1,36 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com",
+                "post_id": 1
+            },
+            "entity_name": "analyze_request"
+        },
+        {
+            "entity_data_example": {
+                "details": [
+                    {
+                        "comment_id": 1,
+                        "keywords": [
+                            "magna",
+                            "voluptate"
+                        ],
+                        "sentiment": "positive"
+                    }
+                ],
+                "post_id": 1,
+                "summary": {
+                    "keywords": [
+                        "voluptate",
+                        "dolor",
+                        "accusantium"
+                    ],
+                    "sentiment_score": 0.75,
+                    "total_comments": 5
+                }
+            },
+            "entity_name": "analysis_report"
+        }
+    ]
+}

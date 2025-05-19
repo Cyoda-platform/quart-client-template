@@ -1,25 +1,22 @@
-import asyncio
+from datetime import timezone, datetime
 import logging
-from datetime import datetime
-from typing import Dict, Any
-from dataclasses import dataclass
-
-import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
-
+from quart import Blueprint, request, abort, jsonify
+from quart_schema import validate, validate_querystring, tag, operation_id, validate_request
 from app_init.app_init import BeanFactory
-from common.config.config import ENTITY_VERSION
+from dataclasses import dataclass
+from typing import Dict, Any
+import asyncio
+import httpx
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+FINAL_STATES = {'FAILURE', 'SUCCESS', 'CANCELLED', 'CANCELLED_BY_USER', 'UNKNOWN', 'FINISHED'}
+PROCESSING_STATE = 'PROCESSING'
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class AnalyzeRequest:
@@ -78,7 +75,7 @@ async def send_report_email(email: str, post_id: int, report: Dict[str, Any]):
     await asyncio.sleep(0.1)
 
 
-@app.route("/api/comments/analyze", methods=["POST"])
+@routes_bp.route("/api/comments/analyze", methods=["POST"])
 @validate_request(AnalyzeRequest)
 async def analyze_comments_endpoint(data: AnalyzeRequest):
     entity_data = {"post_id": data.post_id, "email": data.email}
@@ -86,7 +83,7 @@ async def analyze_comments_endpoint(data: AnalyzeRequest):
         id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="analyze_request",
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             entity=entity_data
         )
         job_id = entity_data.get("job_id", None)
@@ -103,13 +100,9 @@ async def analyze_comments_endpoint(data: AnalyzeRequest):
         return jsonify({"error": "Failed to start analysis"}), 500
 
 
-@app.route("/api/reports/<string:post_id>", methods=["GET"])
+@routes_bp.route("/api/reports/<string:post_id>", methods=["GET"])
 async def get_report(post_id: str):
     report = reports_cache.get(post_id)
     if not report:
         return jsonify({"error": "Report not found or still processing"}), 404
     return jsonify(report)
-
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

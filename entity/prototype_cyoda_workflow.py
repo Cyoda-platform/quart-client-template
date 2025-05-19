@@ -1,24 +1,3 @@
-Understood. We will refactor the code so that all asynchronous logic currently executed from the endpoint is moved inside the workflow function `process_analyze_request`. This includes:
-
-- Fetching comments
-- Analyzing comments
-- Sending the report email
-- Updating the job status in the `entity_jobs` cache
-- Storing the report in the `reports_cache`
-
-The endpoint will become very thin: it only validates input, triggers `entity_service.add_item()` with the workflow, and returns the response immediately.
-
-**Important points:**
-
-- We cannot call `entity_service.add/update/delete` on the same entity model (`analyze_request`) inside the workflow or it may cause infinite recursion.
-- We can, however, add/get entities of other models if needed (not required here).
-- We modify the entity object directly to reflect any state changes that should be persisted.
-
----
-
-### Updated full code below:
-
-```python
 import asyncio
 import logging
 from datetime import datetime
@@ -55,7 +34,7 @@ COMMENTS_API_URL = "https://jsonplaceholder.typicode.com/comments"
 
 
 async def fetch_comments(post_id: int) -> list:
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(COMMENTS_API_URL, params={"postId": post_id})
         resp.raise_for_status()
         return resp.json()
@@ -69,12 +48,13 @@ def analyze_comments(comments: list) -> Dict[str, Any]:
     word_freq: Dict[str, int] = {}
     details = []
     for c in comments:
-        words = [w.strip(".,!?").lower() for w in c.get("body", "").split()]
+        body = c.get("body", "")
+        words = [w.strip(".,!?").lower() for w in body.split()]
         filtered_words = [w for w in words if w and w not in stopwords]
         for w in filtered_words:
             word_freq[w] = word_freq.get(w, 0) + 1
-        sentiment = "positive" if len(c.get("body", "")) > 100 else "neutral"
-        comment_keywords = list(set(filtered_words))[:3]
+        sentiment = "positive" if len(body) > 100 else "neutral"
+        comment_keywords = list(dict.fromkeys(filtered_words))[:3]  # preserve order, unique
         details.append({
             "comment_id": c.get("id"),
             "sentiment": sentiment,
@@ -93,60 +73,79 @@ def analyze_comments(comments: list) -> Dict[str, Any]:
 
 
 async def send_report_email(email: str, post_id: int, report: Dict[str, Any]):
+    # Simulated email sending; in production, replace with real email sending logic
     logger.info(f"Sending report email to {email} for post_id {post_id} with report summary: {report['summary']}")
     await asyncio.sleep(0.1)
 
 
-# Workflow function applied to analyze_request entity before persistence
 async def process_analyze_request(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
-    This workflow function executes the entire processing:
-    - Fetch comments
-    - Analyze them
-    - Store report in cache
-    - Update job status
-    - Send email
+    Workflow function applied asynchronously before persisting analyze_request entity.
+    Executes full processing: fetch comments, analyze, cache report, send email, update job status.
     """
     post_id = entity.get("post_id")
     email = entity.get("email")
+
+    if post_id is None or email is None:
+        entity["status"] = "failed"
+        entity["error"] = "Missing required post_id or email"
+        return entity
+
     job_id = f"{post_id}-{datetime.utcnow().isoformat()}Z"
 
-    # Mark job as processing
+    # Initialize job status
     entity_jobs[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat() + "Z"}
 
     try:
         comments = await fetch_comments(post_id)
-        report_data = analyze_comments(comments)
-        reports_cache[str(post_id)] = {
-            "post_id": post_id,
-            "summary": {
-                "total_comments": report_data["total_comments"],
-                "sentiment_score": report_data["sentiment_score"],
-                "keywords": report_data["keywords"],
-            },
-            "details": report_data["details"],
-        }
-        await send_report_email(email, post_id, reports_cache[str(post_id)])
-
-        entity_jobs[job_id]["status"] = "completed"
-        entity_jobs[job_id]["finishedAt"] = datetime.utcnow().isoformat() + "Z"
-
-        # Add job_id to entity so client can track it
-        entity["job_id"] = job_id
-        # Add requestedAt timestamp to entity
-        entity["requestedAt"] = entity_jobs[job_id]["requestedAt"]
-        # Add report summary to entity (optional convenience)
-        entity["report_summary"] = reports_cache[str(post_id)]["summary"]
-
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Failed to fetch comments for post_id {post_id}: {e}")
         entity_jobs[job_id]["status"] = "failed"
-        entity_jobs[job_id]["error"] = str(e)
+        entity_jobs[job_id]["error"] = f"Failed to fetch comments: {str(e)}"
         entity_jobs[job_id]["finishedAt"] = datetime.utcnow().isoformat() + "Z"
-        # Reflect failure in entity state so it is persisted
         entity["job_id"] = job_id
-        entity["error"] = str(e)
         entity["status"] = "failed"
+        entity["error"] = str(e)
+        return entity
+
+    try:
+        report_data = analyze_comments(comments)
+    except Exception as e:
+        logger.exception(f"Failed to analyze comments for post_id {post_id}: {e}")
+        entity_jobs[job_id]["status"] = "failed"
+        entity_jobs[job_id]["error"] = f"Failed to analyze comments: {str(e)}"
+        entity_jobs[job_id]["finishedAt"] = datetime.utcnow().isoformat() + "Z"
+        entity["job_id"] = job_id
+        entity["status"] = "failed"
+        entity["error"] = str(e)
+        return entity
+
+    # Cache report data safely
+    reports_cache[str(post_id)] = {
+        "post_id": post_id,
+        "summary": {
+            "total_comments": report_data["total_comments"],
+            "sentiment_score": report_data["sentiment_score"],
+            "keywords": report_data["keywords"],
+        },
+        "details": report_data["details"],
+    }
+
+    try:
+        await send_report_email(email, post_id, reports_cache[str(post_id)])
+    except Exception as e:
+        logger.error(f"Failed to send report email to {email} for post_id {post_id}: {e}")
+        # Email failure does not fail the job; just log it
+
+    # Update job status to completed
+    entity_jobs[job_id]["status"] = "completed"
+    entity_jobs[job_id]["finishedAt"] = datetime.utcnow().isoformat() + "Z"
+
+    # Add job info and report summary to entity for persistence
+    entity["job_id"] = job_id
+    entity["requestedAt"] = entity_jobs[job_id]["requestedAt"]
+    entity["status"] = "completed"
+    entity["report_summary"] = reports_cache[str(post_id)]["summary"]
 
     return entity
 
@@ -161,11 +160,11 @@ async def analyze_comments_endpoint(data: AnalyzeRequest):
             entity_model="analyze_request",
             entity_version=ENTITY_VERSION,
             entity=entity_data,
-            workflow=process_analyze_request  # All async logic moved here
+            workflow=process_analyze_request
         )
-        # The workflow adds job_id and other info to entity which is persisted.
-        # We return the id and job_id (if available) to client.
         job_id = entity_data.get("job_id", None)
+        # job_id may not be set immediately because workflow runs async before persistence
+        # However, per spec workflow is awaited before persistence so job_id should be present
         return jsonify({
             "status": "processing",
             "message": "Analysis started and email will be sent upon completion.",
@@ -187,28 +186,3 @@ async def get_report(post_id: str):
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### What has changed:
-
-- **All async logic moved to `process_analyze_request`** workflow function.
-- `process_analyze_request` manages the entire lifecycle: fetching comments, analyzing, caching reports, sending email, and updating job status.
-- The endpoint just calls `entity_service.add_item()` passing the workflow, then returns immediately with `id` and `job_id`.
-- `entity_jobs` and `reports_cache` remain as in-memory caches for job tracking and reports.
-- The workflow adds job tracking info (`job_id`, timestamps, status) and optionally report summary or error info directly to the entity dict which will be persisted.
-
----
-
-### Benefits:
-
-- Controllers (endpoints) are freed from excessive logic.
-- The entire async processing is encapsulated in the workflow function which is the recommended approach.
-- Robust and clean separation of concerns.
-- No recursion risk because we don’t update the same entity via `entity_service` inside the workflow.
-- Future enhancements can be done inside workflow functions without changes to endpoints.
-
----
-
-If you want, I can help adapt this pattern for other entities or further improve error handling/logging/reporting.

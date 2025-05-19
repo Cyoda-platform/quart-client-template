@@ -1,0 +1,91 @@
+{
+    "description": "Workflow to fetch comments, analyze them, cache report, send email, and update job status",
+    "name": "comments_analysis_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the analysis workflow",
+            "end_state": "comments_fetched",
+            "end_state_description": "Comments have been fetched",
+            "name": "start_analysis",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_fetch_comments"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Analyze the fetched comments",
+            "end_state": "comments_analyzed",
+            "end_state_description": "Comments have been analyzed",
+            "name": "analyze_fetched_comments",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_analyze_comments"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "comments_fetched",
+            "start_state_description": "Comments have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Cache the analysis report",
+            "end_state": "report_cached",
+            "end_state_description": "Analysis report cached",
+            "name": "cache_analysis_report",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_cache_report"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "comments_analyzed",
+            "start_state_description": "Comments have been analyzed"
+        },
+        {
+            "automated": true,
+            "description": "Send the analysis report via email",
+            "end_state": "email_sent",
+            "end_state_description": "Report email sent",
+            "name": "send_email_report",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_send_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "report_cached",
+            "start_state_description": "Analysis report cached"
+        },
+        {
+            "automated": true,
+            "description": "Update the job status to completed",
+            "end_state": "analysis_completed",
+            "end_state_description": "Analysis workflow completed",
+            "name": "update_job_completion_status",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_update_job_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "email_sent",
+            "start_state_description": "Report email sent"
+        }
+    ]
+}

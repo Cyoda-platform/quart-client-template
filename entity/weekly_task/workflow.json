@@ -1,0 +1,114 @@
+{
+    "description": "Workflow to fetch cat fact, send emails to subscribers, and update metrics",
+    "name": "weekly_cat_fact_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch a new cat fact from external API",
+            "end_state": "Cat_fact_fetched",
+            "end_state_description": "Cat fact has been fetched",
+            "name": "fetch_cat_fact",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_cat_fact"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Update last_fact entity with the fetched cat fact",
+            "end_state": "Last_fact_updated",
+            "end_state_description": "Last fact entity updated",
+            "name": "update_last_fact",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_last_fact"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Cat_fact_fetched",
+            "start_state_description": "Cat fact has been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Fetch all subscriber emails",
+            "end_state": "Subscribers_fetched",
+            "end_state_description": "Subscribers have been fetched",
+            "name": "fetch_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Last_fact_updated",
+            "start_state_description": "Last fact entity updated"
+        },
+        {
+            "automated": true,
+            "description": "Send cat fact emails to all subscribers",
+            "end_state": "Emails_sent",
+            "end_state_description": "Emails have been sent to subscribers",
+            "name": "send_emails",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_emails"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Subscribers_fetched",
+            "start_state_description": "Subscribers have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Update email sent metrics",
+            "end_state": "Metrics_updated",
+            "end_state_description": "Metrics have been updated",
+            "name": "update_metrics",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_metrics"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Emails_sent",
+            "start_state_description": "Emails have been sent to subscribers"
+        },
+        {
+            "automated": true,
+            "description": "Mark the weekly task as completed",
+            "end_state": "Task_completed",
+            "end_state_description": "Weekly task completed",
+            "name": "set_task_completed",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_task_completed"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Metrics_updated",
+            "start_state_description": "Metrics have been updated"
+        }
+    ]
+}

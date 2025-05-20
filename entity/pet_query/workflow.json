@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for processing pet queries and pet details in Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing a pet query",
+            "end_state": "Pet_query_processed",
+            "end_state_description": "Pet query has been processed",
+            "name": "start_pet_query",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_query"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Start processing a pet detail request",
+            "end_state": "Pet_detail_processed",
+            "end_state_description": "Pet detail has been processed",
+            "name": "start_pet_detail",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_detail"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

@@ -1,0 +1,78 @@
+{
+    "description": "Workflow for weekly cat fact subscription lifecycle",
+    "name": "weekly_cat_fact_subscription_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Set subscription timestamp if missing",
+            "end_state": "Subscription_timestamp_set",
+            "end_state_description": "Subscription timestamp has been set",
+            "name": "set_subscription_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_subscribed_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch cat fact if the entity needs it",
+            "end_state": "Cat_fact_fetched_or_skipped",
+            "end_state_description": "Cat fact has been fetched or fetching skipped",
+            "name": "fetch_cat_fact_if_needed",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_cat_fact"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Subscription_timestamp_set",
+            "start_state_description": "Subscription timestamp has been set"
+        },
+        {
+            "automated": true,
+            "description": "Send cat fact emails if fact fetched and emails not sent",
+            "end_state": "Cat_fact_emails_sent_or_skipped",
+            "end_state_description": "Cat fact emails have been sent or skipped",
+            "name": "send_cat_fact_emails_if_ready",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_emails"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Cat_fact_fetched_or_skipped",
+            "start_state_description": "Cat fact has been fetched or fetching skipped"
+        },
+        {
+            "automated": true,
+            "description": "Update reporting stats after sending emails",
+            "end_state": "Reporting_updated",
+            "end_state_description": "Reporting stats updated",
+            "name": "update_reporting",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_reporting"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Cat_fact_emails_sent_or_skipped",
+            "start_state_description": "Cat fact emails have been sent or skipped"
+        }
+    ]
+}

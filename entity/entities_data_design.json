@@ -1,0 +1,22 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com"
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "emails_sent": 50
+            },
+            "entity_name": "metrics"
+        },
+        {
+            "entity_data_example": {
+                "fact": "Cats sleep 70% of their lives."
+            },
+            "entity_name": "last_fact"
+        }
+    ]
+}

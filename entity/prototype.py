@@ -1,12 +1,12 @@
-```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,8 +14,10 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory "database" mock (async-safe cache)
-# Use asyncio.Lock to coordinate access
+@dataclass
+class Signup:
+    email: str
+
 class InMemoryDB:
     def __init__(self):
         self._lock = asyncio.Lock()
@@ -57,90 +59,71 @@ class InMemoryDB:
         async with self._lock:
             return dict(self._interactions)
 
-
 db = InMemoryDB()
-
 CAT_FACT_API = "https://catfact.ninja/fact"
 
-# TODO: Replace with real email sending implementation
 async def send_email(to_email: str, subject: str, content: str):
     logger.info(f"Sending email to {to_email} with subject '{subject}'")
-    # Simulate async email sending delay
     await asyncio.sleep(0.1)
     # TODO: Integrate with real SMTP or email provider
     return True
 
-
 @app.route("/api/signup", methods=["POST"])
-async def signup():
-    data = await request.get_json(force=True)
-    email = data.get("email")
+# Workaround: validation last for POST due to quart-schema defect
+@validate_request(Signup)
+async def signup(data: Signup):
+    email = data.email
     if not email or "@" not in email:
         return jsonify({"success": False, "message": "Invalid email"}), 400
-
     added = await db.add_subscriber(email)
     if added:
         return jsonify({"success": True, "message": "User subscribed successfully"})
     else:
         return jsonify({"success": True, "message": "User already subscribed"})
 
-
 @app.route("/api/subscribers", methods=["GET"])
 async def get_subscribers():
     subscribers = await db.get_subscribers()
     return jsonify({"subscribers": subscribers, "count": len(subscribers)})
-
 
 async def fetch_cat_fact() -> str:
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(CAT_FACT_API, timeout=10)
             response.raise_for_status()
-            data = response.json()
-            fact = data.get("fact")
+            fact = response.json().get("fact")
             if not fact:
                 raise ValueError("No 'fact' field in API response")
             logger.info(f"Fetched cat fact: {fact}")
             return fact
     except Exception as e:
         logger.exception(e)
-        return "Cats are mysterious creatures!"  # fallback fact
-
+        return "Cats are mysterious creatures!"
 
 async def process_weekly_task():
     fact = await fetch_cat_fact()
     await db.update_last_fact(fact)
     subscribers = await db.get_subscribers()
-    send_tasks = []
-    for email in subscribers:
-        send_tasks.append(send_email(email, "Your Weekly Cat Fact 🐱", fact))
+    send_tasks = [send_email(email, "Your Weekly Cat Fact 🐱", fact) for email in subscribers]
     results = await asyncio.gather(*send_tasks, return_exceptions=True)
     sent_count = sum(1 for r in results if r is True)
     await db.increment_emails_sent(sent_count)
     logger.info(f"Sent cat fact emails to {sent_count} subscribers")
     return fact, sent_count
 
-
 @app.route("/api/trigger-weekly", methods=["POST"])
 async def trigger_weekly():
-    # Fire and forget pattern
     requested_at = datetime.utcnow().isoformat()
-    entity_job = { "status": "processing", "requestedAt": requested_at }
-
+    entity_job = {"status": "processing", "requestedAt": requested_at}
     async def process_entity(entity_job):
         try:
             fact, sent_count = await process_weekly_task()
-            entity_job["status"] = "done"
-            entity_job["cat_fact"] = fact
-            entity_job["emails_sent"] = sent_count
+            entity_job.update({"status": "done", "cat_fact": fact, "emails_sent": sent_count})
         except Exception as e:
             entity_job["status"] = "failed"
             logger.exception(e)
-
     asyncio.create_task(process_entity(entity_job))
-    # Return immediately acknowledging processing started
     return jsonify({"success": True, "message": "Weekly cat fact sending started"}), 202
-
 
 @app.route("/api/report", methods=["GET"])
 async def get_report():
@@ -155,15 +138,11 @@ async def get_report():
         }
     })
 
-
 if __name__ == '__main__':
     import sys
-    import logging.config
-
     logging.basicConfig(
         stream=sys.stdout,
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

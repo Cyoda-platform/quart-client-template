@@ -5,11 +5,9 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request
 
-from app_init.app_init import entity_service
-from common.config.config import ENTITY_VERSION
 from app_init.app_init import BeanFactory
 
 logger = logging.getLogger(__name__)
@@ -19,8 +17,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class QueryFilters:
@@ -92,7 +89,7 @@ async def process_pet_detail(pet_id: str) -> None:
     await asyncio.sleep(1)  # Simulate async processing
     logger.info(f"Finished processing pet detail for id: {pet_id}")
 
-@app.route("/pets/query", methods=["POST"])
+@routes_bp.route("/pets/query", methods=["POST"])
 @validate_request(QueryFilters)
 async def pets_query(data: QueryFilters):
     query_entity = {
@@ -105,7 +102,7 @@ async def pets_query(data: QueryFilters):
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=ENTITY_PET_QUERY,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             entity=query_entity
         )
     except Exception as e:
@@ -117,13 +114,13 @@ async def pets_query(data: QueryFilters):
         "requestedAt": query_entity["requested_at"]
     }), 202
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def get_pets():
     try:
         items = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model=ENTITY_PET,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
         )
         if not items:
             return jsonify({"error": "No pets data found."}), 404
@@ -132,7 +129,7 @@ async def get_pets():
         logger.error(f"Failed to retrieve pets data: {e}")
         return jsonify({"error": "Failed to retrieve pets data."}), 500
 
-@app.route("/pets/details", methods=["POST"])
+@routes_bp.route("/pets/details", methods=["POST"])
 @validate_request(PetIdRequest)
 async def pet_details_post(data: PetIdRequest):
     detail_entity = {
@@ -143,7 +140,7 @@ async def pet_details_post(data: PetIdRequest):
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=ENTITY_PET_DETAIL,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             entity=detail_entity
         )
     except Exception as e:
@@ -156,13 +153,13 @@ async def pet_details_post(data: PetIdRequest):
         "petId": data.id
     }), 202
 
-@app.route("/pets/details/<pet_id>", methods=["GET"])
+@routes_bp.route("/pets/details/<pet_id>", methods=["GET"])
 async def pet_details_get(pet_id: str):
     try:
         pet_detail = await entity_service.get_item(
             token=cyoda_auth_service,
             entity_model=ENTITY_PET,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             technical_id=pet_id,
         )
         if pet_detail is None:
@@ -179,13 +176,10 @@ async def add_new_pet(data: Dict[str, Any]) -> str:
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=ENTITY_PET,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             entity=data
         )
         return entity_id
     except Exception as e:
         logger.error(f"Failed to add new pet entity: {e}")
         raise
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

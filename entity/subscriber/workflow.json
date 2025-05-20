@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to process subscriber entity for validation, duplication check and timestamp addition",
+    "name": "subscriber_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start subscription processing by validating email",
+            "end_state": "Email_validated",
+            "end_state_description": "Email has been validated",
+            "name": "start_subscription_process",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Check if subscriber email already exists",
+            "end_state": "Duplicate_checked",
+            "end_state_description": "Subscriber duplication checked",
+            "name": "check_duplicate_subscriber",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_check_duplicate"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Email_validated",
+            "start_state_description": "Email has been validated"
+        },
+        {
+            "automated": true,
+            "description": "Add creation timestamp to subscriber entity",
+            "end_state": "Timestamp_added",
+            "end_state_description": "Creation timestamp has been added",
+            "name": "add_creation_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_timestamps"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Duplicate_checked",
+            "start_state_description": "Subscriber duplication checked"
+        }
+    ]
+}

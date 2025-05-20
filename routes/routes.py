@@ -2,14 +2,16 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +19,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class Signup:
@@ -163,7 +162,8 @@ async def process_weekly_task(entity: Dict) -> None:
     entity["emails_sent"] = sent_count
     entity["taskCompletedAt"] = datetime.utcnow().isoformat()
 
-@app.route("/api/signup", methods=["POST"])
+
+@routes_bp.route("/api/signup", methods=["POST"])
 @validate_request(Signup)
 async def signup(data: Signup):
     entity = {"email": data.email}
@@ -182,7 +182,8 @@ async def signup(data: Signup):
         logger.warning(f"Signup failed: {msg}")
         return jsonify({"success": False, "message": msg}), 400
 
-@app.route("/api/subscribers", methods=["GET"])
+
+@routes_bp.route("/api/subscribers", methods=["GET"])
 async def get_subscribers():
     try:
         subscribers = await entity_service.get_items(
@@ -197,7 +198,8 @@ async def get_subscribers():
         logger.error(f"Failed to get subscribers: {e}")
         return jsonify({"subscribers": [], "count": 0})
 
-@app.route("/api/trigger-weekly", methods=["POST"])
+
+@routes_bp.route("/api/trigger-weekly", methods=["POST"])
 async def trigger_weekly():
     entity = {"requestedAt": datetime.utcnow().isoformat()}
     try:
@@ -212,7 +214,8 @@ async def trigger_weekly():
         logger.error(f"Failed to trigger weekly task: {e}")
         return jsonify({"success": False, "message": "Failed to start weekly task"}), 500
 
-@app.route("/api/report", methods=["GET"])
+
+@routes_bp.route("/api/report", methods=["GET"])
 async def get_report():
     try:
         subscribers = await entity_service.get_items(
@@ -250,12 +253,3 @@ async def get_report():
                 "clicks": 0,
             }
         })
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

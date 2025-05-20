@@ -1,0 +1,24 @@
+{
+    "description": "Workflow for processing pet detail requests in Purrfect Pets API",
+    "name": "pet_detail_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet detail workflow",
+            "end_state": "Pet_detail_processed",
+            "end_state_description": "Pet detail has been processed",
+            "name": "start_pet_detail_workflow",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_detail_workflow"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

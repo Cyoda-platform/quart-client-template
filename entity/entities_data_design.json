@@ -1,0 +1,22 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "additionalInfo": {},
+                "category": "cat",
+                "description": "A very friendly cat",
+                "id": 1,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "http://example.com/photo1.jpg"
+                ],
+                "status": "available",
+                "tags": [
+                    "cute",
+                    "small"
+                ]
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

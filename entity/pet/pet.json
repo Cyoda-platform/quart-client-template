@@ -1,0 +1,24 @@
+{
+    "adoption_date": "2020-05-20",
+    "age": 3,
+    "breed": "Golden Retriever",
+    "microchip_id": "A123456789",
+    "name": "Buddy",
+    "owner": {
+        "contact_number": "123-456-7890",
+        "name": "John Doe"
+    },
+    "special_needs": false,
+    "type": "Dog",
+    "vaccinations": [
+        {
+            "date_administered": "2022-01-15",
+            "vaccine_name": "Rabies"
+        },
+        {
+            "date_administered": "2022-02-10",
+            "vaccine_name": "Distemper"
+        }
+    ],
+    "weight": 30.5
+}

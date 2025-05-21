@@ -1,13 +1,13 @@
-```python
 import asyncio
 import logging
 import uuid
 from datetime import datetime
-from typing import Dict
+from typing import Dict, List
+from dataclasses import dataclass
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,39 +15,36 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+# Data models for request validation
+@dataclass
+class PetSearch:
+    type: str
+    status: str
+    tags: List[str]
+
+@dataclass
+class PetRecommendation:
+    preferredType: str
+    maxResults: int
+
 # In-memory "cache" to mock persistence
-# Structure:
-# search_cache: {searchId: {status:str, requestedAt:datetime, result: dict}}
-# rec_cache: {recId: {status:str, requestedAt:datetime, result: dict}}
 search_cache: Dict[str, dict] = {}
 rec_cache: Dict[str, dict] = {}
 
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
 async def fetch_pets_from_petstore(params: dict) -> list:
-    """
-    Calls Petstore API to find pets by status or tags or type.
-    Petstore /pet/findByStatus supports status parameter.
-    For type and tags, we will filter client-side (TODO: refine if needed).
-    """
-    status = params.get("status")
-    # Petstore supports status query param (e.g. available, pending, sold)
-    # If no status, default to "available"
-    if not status:
-        status = "available"
-
+    status = params.get("status") or "available"
     url = f"{PETSTORE_API_BASE}/pet/findByStatus"
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(url, params={"status": status})
             resp.raise_for_status()
             pets = resp.json()
-            # Filter by type and tags client-side
             pet_type = params.get("type")
             tags = set(params.get("tags", []))
             filtered = []
             for pet in pets:
-                # pet["category"]["name"] is type in Petstore spec (may be missing)
                 pet_cat = pet.get("category", {}).get("name", "").lower()
                 if pet_type and pet_type.lower() != pet_cat:
                     continue
@@ -66,11 +63,6 @@ async def fetch_pets_from_petstore(params: dict) -> list:
         return []
 
 async def generate_recommendations(preferred_type: str, max_results: int) -> list:
-    """
-    Generate recommendations using Petstore API data.
-    Simple logic: fetch available pets, filter by preferred type,
-    return up to max_results pets with a made-up description.
-    """
     try:
         pets = await fetch_pets_from_petstore({"status": "available", "type": preferred_type})
         recommendations = []
@@ -80,7 +72,6 @@ async def generate_recommendations(preferred_type: str, max_results: int) -> lis
                 "name": pet["name"],
                 "description": f"A lovely {preferred_type} looking for a home!"
             })
-        # If not enough pets found, fill with random fun placeholders (TODO: improve logic)
         while len(recommendations) < max_results:
             recommendations.append({
                 "id": 0,
@@ -117,10 +108,10 @@ async def process_recommendation_job(rec_id: str, prefs: dict):
         logger.exception(e)
         rec_cache[rec_id]["status"] = "failed"
 
-
 @app.route("/pets/search", methods=["POST"])
-async def pets_search():
-    data = await request.get_json(force=True)
+# workaround: placing validate_request after route due to quart-schema defect
+@validate_request(PetSearch)
+async def pets_search(data: PetSearch):
     search_id = str(uuid.uuid4())
     requested_at = datetime.utcnow()
     search_cache[search_id] = {
@@ -128,10 +119,8 @@ async def pets_search():
         "requestedAt": requested_at,
         "result": None,
     }
-    # Fire and forget processing
-    asyncio.create_task(process_search_job(search_id, data))
+    asyncio.create_task(process_search_job(search_id, data.__dict__))
     return jsonify({"searchId": search_id, "status": "processing"}), 202
-
 
 @app.route("/pets/search/<search_id>", methods=["GET"])
 async def get_search_result(search_id):
@@ -144,10 +133,10 @@ async def get_search_result(search_id):
         return jsonify({"searchId": search_id, "status": "failed"}), 500
     return jsonify(cached["result"])
 
-
 @app.route("/pets/recommendation", methods=["POST"])
-async def pets_recommendation():
-    data = await request.get_json(force=True)
+# workaround: placing validate_request after route due to quart-schema defect
+@validate_request(PetRecommendation)
+async def pets_recommendation(data: PetRecommendation):
     rec_id = str(uuid.uuid4())
     requested_at = datetime.utcnow()
     rec_cache[rec_id] = {
@@ -155,9 +144,8 @@ async def pets_recommendation():
         "requestedAt": requested_at,
         "result": None,
     }
-    asyncio.create_task(process_recommendation_job(rec_id, data))
+    asyncio.create_task(process_recommendation_job(rec_id, data.__dict__))
     return jsonify({"recId": rec_id, "status": "processing"}), 202
-
 
 @app.route("/pets/recommendation/<rec_id>", methods=["GET"])
 async def get_recommendation_result(rec_id):
@@ -170,7 +158,5 @@ async def get_recommendation_result(rec_id):
         return jsonify({"recId": rec_id, "status": "failed"}), 500
     return jsonify(cached["result"])
 
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

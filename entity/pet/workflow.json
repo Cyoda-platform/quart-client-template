@@ -1,0 +1,96 @@
+{
+    "description": "Workflow for managing the pet entity states and transitions",
+    "name": "pet_entity_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Create a new pet entity",
+            "end_state": "Pet_created",
+            "end_state_description": "Pet entity has been created",
+            "name": "create_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_create_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Update existing pet information",
+            "end_state": "Pet_info_updated",
+            "end_state_description": "Pet information has been updated",
+            "name": "update_pet_info",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_pet_info"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_created",
+            "start_state_description": "Pet entity has been created"
+        },
+        {
+            "automated": true,
+            "description": "Record a vaccination for the pet",
+            "end_state": "Pet_vaccinated",
+            "end_state_description": "Pet has been vaccinated",
+            "name": "vaccinate_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_vaccinate_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_info_updated",
+            "start_state_description": "Pet information has been updated"
+        },
+        {
+            "automated": true,
+            "description": "Adopt the pet",
+            "end_state": "Pet_adopted",
+            "end_state_description": "Pet has been adopted",
+            "name": "adopt_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_adopt_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_vaccinated",
+            "start_state_description": "Pet has been vaccinated"
+        },
+        {
+            "automated": true,
+            "description": "Deactivate the pet entity",
+            "end_state": "Pet_deactivated",
+            "end_state_description": "Pet entity has been deactivated",
+            "name": "deactivate_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_deactivate_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_adopted",
+            "start_state_description": "Pet has been adopted"
+        }
+    ]
+}

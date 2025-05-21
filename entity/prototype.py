@@ -1,13 +1,13 @@
-```python
 import asyncio
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional, List
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,8 +15,20 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+# Data classes for request validation
+@dataclass
+class PetSearchRequest:
+    type: Optional[str]
+    status: Optional[str]
+    tags: Optional[List[str]]
+
+@dataclass
+class AdoptionRequest:
+    pet_id: int
+    adopter_name: str
+    contact_info: str
+
 # In-memory async-safe caches
-# Use asyncio.Lock to protect shared state
 pets_search_cache: Dict[str, Dict[str, Any]] = {}
 adoption_workflow_cache: Dict[str, Dict[str, Any]] = {}
 pets_search_lock = asyncio.Lock()
@@ -26,19 +38,10 @@ PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
 
 async def fetch_pets_from_petstore(criteria: Dict[str, Any]) -> Any:
-    """
-    Fetch pets from the Petstore API by status and tags.
-    Petstore API supports GET /pet/findByStatus?status=available,sold,...
-    and GET /pet/findByTags?tags=tag1,tag2
-    We'll combine by status primarily, then filter by type and tags locally.
-    """
     async with httpx.AsyncClient() as client:
-        # Petstore API does not have 'type' filtering endpoint,
-        # so we filter after retrieval by status.
         status = criteria.get("status", "available")
         tags = criteria.get("tags", [])
         try:
-            # Petstore defines status as available, pending, sold
             resp = await client.get(f"{PETSTORE_BASE_URL}/pet/findByStatus", params={"status": status})
             resp.raise_for_status()
             pets = resp.json()
@@ -46,7 +49,6 @@ async def fetch_pets_from_petstore(criteria: Dict[str, Any]) -> Any:
             logger.exception(f"Error fetching pets from Petstore API: {e}")
             return []
 
-    # Filter by type if provided
     pet_type = criteria.get("type")
     filtered = []
     for pet in pets:
@@ -77,10 +79,6 @@ async def process_pet_search_job(search_id: str, criteria: Dict[str, Any]):
 
 
 async def process_adoption_workflow(adoption_id: str, adoption_data: Dict[str, Any]):
-    """
-    Simulate an adoption workflow with progressive steps.
-    TODO: Replace with real workflow integration or state machine.
-    """
     try:
         steps = [
             "application_received",
@@ -94,10 +92,9 @@ async def process_adoption_workflow(adoption_id: str, adoption_data: Dict[str, A
             adoption_workflow_cache[adoption_id]["steps_completed"] = []
 
         for step in steps:
-            await asyncio.sleep(1)  # Simulate processing delay
+            await asyncio.sleep(1)
             async with adoption_lock:
                 adoption_workflow_cache[adoption_id]["steps_completed"].append(step)
-                # Update status at last step
                 if step == "completed":
                     adoption_workflow_cache[adoption_id]["status"] = "completed"
                 else:
@@ -111,25 +108,22 @@ async def process_adoption_workflow(adoption_id: str, adoption_data: Dict[str, A
 
 
 @app.route("/pets/search", methods=["POST"])
-async def pets_search():
-    data = await request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-
+@validate_request(PetSearchRequest)  # Workaround: validate_request after @app.route due to quart-schema defect
+async def pets_search(data: PetSearchRequest):
+    criteria = data.__dict__
     search_id = str(uuid.uuid4())
     requested_at = datetime.utcnow().isoformat()
     search_entry = {
         "status": "processing",
         "requestedAt": requested_at,
-        "criteria": data,
+        "criteria": criteria,
         "pets": [],
         "count": 0,
     }
     async with pets_search_lock:
         pets_search_cache[search_id] = search_entry
 
-    # Fire and forget the processing task
-    asyncio.create_task(process_pet_search_job(search_id, data))
+    asyncio.create_task(process_pet_search_job(search_id, criteria))
 
     return jsonify({"search_id": search_id, "count": 0}), 202
 
@@ -143,7 +137,6 @@ async def get_pets_search_results(search_id):
         if entry["status"] == "processing":
             return jsonify({"status": "processing"}), 202
 
-        # Map petstore pets to required response format
         pets_resp = []
         for p in entry.get("pets", []):
             pets_resp.append(
@@ -159,29 +152,21 @@ async def get_pets_search_results(search_id):
 
 
 @app.route("/adoptions", methods=["POST"])
-async def create_adoption():
-    data = await request.get_json()
-    if not data:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-
-    required_fields = ["pet_id", "adopter_name", "contact_info"]
-    if not all(field in data for field in required_fields):
-        return jsonify({"error": f"Missing one of required fields: {required_fields}"}), 400
-
+@validate_request(AdoptionRequest)  # Workaround: validate_request after @app.route due to quart-schema defect
+async def create_adoption(data: AdoptionRequest):
     adoption_id = str(uuid.uuid4())
     adoption_entry = {
         "status": "initiated",
         "requestedAt": datetime.utcnow().isoformat(),
-        "pet_id": data["pet_id"],
-        "adopter_name": data["adopter_name"],
-        "contact_info": data["contact_info"],
+        "pet_id": data.pet_id,
+        "adopter_name": data.adopter_name,
+        "contact_info": data.contact_info,
         "steps_completed": [],
     }
     async with adoption_lock:
         adoption_workflow_cache[adoption_id] = adoption_entry
 
-    # Fire and forget adoption workflow processing
-    asyncio.create_task(process_adoption_workflow(adoption_id, data))
+    asyncio.create_task(process_adoption_workflow(adoption_id, data.__dict__))
 
     return jsonify({"adoption_id": adoption_id, "status": "initiated"}), 202
 
@@ -205,9 +190,5 @@ async def get_adoption_status(adoption_id):
 
 if __name__ == '__main__':
     import sys
-
-    # Setup logging to console
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

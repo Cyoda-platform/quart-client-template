@@ -1,0 +1,48 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "completedAt": "2024-06-01T12:00:00Z",
+                "count": 2,
+                "pets": [
+                    {
+                        "id": 123,
+                        "name": "Fluffy",
+                        "status": "available",
+                        "tags": [
+                            "cute",
+                            "small"
+                        ],
+                        "type": "cat"
+                    },
+                    {
+                        "id": 456,
+                        "name": "Rex",
+                        "status": "sold",
+                        "tags": [
+                            "friendly",
+                            "large"
+                        ],
+                        "type": "dog"
+                    }
+                ],
+                "status": "completed"
+            },
+            "entity_name": "pets_search"
+        },
+        {
+            "entity_data_example": {
+                "adopter_name": "Jane Doe",
+                "adoption_id": "abc123xyz",
+                "contact_info": "jane.doe@example.com",
+                "pet_id": 123,
+                "status": "processing",
+                "steps_completed": [
+                    "application_received",
+                    "background_check"
+                ]
+            },
+            "entity_name": "adoptions"
+        }
+    ]
+}

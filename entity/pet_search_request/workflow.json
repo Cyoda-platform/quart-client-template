@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for Purrfect Pets entity handling pet search and pet details retrieval.",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing a pet search request, setting status and fetching results.",
+            "end_state": "pet_search_results_fetched",
+            "end_state_description": "Pet search results have been fetched and stored",
+            "name": "start_pet_search_request",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_search_request"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Start processing a pet details request, fetching and enriching pet details.",
+            "end_state": "pet_details_fetched",
+            "end_state_description": "Pet details have been fetched and enriched",
+            "name": "start_pet_details_request",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_details_request"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "pet_search_results_fetched",
+            "start_state_description": "Pet search results have been fetched and stored"
+        }
+    ]
+}

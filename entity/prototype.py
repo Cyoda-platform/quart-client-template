@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,7 +14,17 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory cache for pets data and jobs, stored per app context to avoid globals
+# Data models
+@dataclass
+class FetchPetsRequest:
+    category: Optional[str] = None
+    status: Optional[str] = None
+
+@dataclass
+class RecommendationRequest:
+    category: Optional[str] = None
+
+# In-memory cache for pets data and jobs
 class AppState:
     def __init__(self):
         self.pets: Dict[int, Dict] = {}
@@ -24,8 +34,6 @@ class AppState:
 app.state = AppState()
 
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
-
-# Helper: enrich pet with fun fact (simple static facts for prototype)
 fun_facts = [
     "Cats sleep 70% of their lives.",
     "Dogs have three eyelids.",
@@ -35,7 +43,6 @@ fun_facts = [
 ]
 
 def generate_fun_fact(pet_name: Optional[str] = None) -> str:
-    # TODO: Enhance with dynamic or contextual facts
     import random
     fact = random.choice(fun_facts)
     if pet_name:
@@ -43,12 +50,9 @@ def generate_fun_fact(pet_name: Optional[str] = None) -> str:
     return fact
 
 async def fetch_pets_from_petstore(category: Optional[str], status: Optional[str]) -> List[Dict]:
-    # Petstore API /pet/findByStatus supports status query param
-    # category filtering isn't supported directly, so will filter locally if provided
     params = {}
     if status:
         params["status"] = status
-
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(f"{PETSTORE_BASE_URL}/pet/findByStatus", params=params)
@@ -57,14 +61,11 @@ async def fetch_pets_from_petstore(category: Optional[str], status: Optional[str
         except Exception as e:
             logger.exception(e)
             return []
-
     if category:
-        # The Petstore API returns pets with 'category': {'id':..., 'name': ...}
         pets_data = [
             pet for pet in pets_data
             if pet.get("category") and pet["category"].get("name", "").lower() == category.lower()
         ]
-
     return pets_data
 
 async def process_fetch_pet_job(job_id: str, category: Optional[str], status: Optional[str]) -> None:
@@ -74,7 +75,6 @@ async def process_fetch_pet_job(job_id: str, category: Optional[str], status: Op
         for pet in pets_data:
             pet_id = app.state.next_id
             app.state.next_id += 1
-
             new_pets[pet_id] = {
                 "id": pet_id,
                 "name": pet.get("name", "Unknown"),
@@ -92,21 +92,17 @@ async def process_fetch_pet_job(job_id: str, category: Optional[str], status: Op
         logger.exception(f"Fetch job {job_id} failed: {e}")
 
 @app.route("/pets/fetch", methods=["POST"])
-async def pets_fetch():
-    data = await request.get_json(force=True)
-    category = data.get("category")
-    status = data.get("status")
-
+# Workaround for validate_request defect: validation last for POST requests
+@validate_request(FetchPetsRequest)
+async def pets_fetch(data: FetchPetsRequest):
+    category = data.category
+    status = data.status
     job_id = f"job-{datetime.utcnow().isoformat()}"
-
     app.state.entity_jobs[job_id] = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat()
     }
-
-    # Fire-and-forget processing job
     asyncio.create_task(process_fetch_pet_job(job_id, category, status))
-
     return jsonify({
         "message": f"Fetch job {job_id} started",
         "jobId": job_id
@@ -114,28 +110,22 @@ async def pets_fetch():
 
 @app.route("/pets", methods=["GET"])
 async def pets_list():
-    # Return all cached pets
     pets_list = list(app.state.pets.values())
     return jsonify(pets_list)
 
 @app.route("/pets/recommendation", methods=["POST"])
-async def pets_recommendation():
-    data = await request.get_json(force=True)
-    category = data.get("category")
-
-    # Filter pets by category if provided
+# Workaround for validate_request defect: validation last for POST requests
+@validate_request(RecommendationRequest)
+async def pets_recommendation(data: RecommendationRequest):
+    category = data.category
     filtered_pets = [
         pet for pet in app.state.pets.values()
         if category is None or pet["category"].lower() == category.lower()
     ]
-
     if not filtered_pets:
         return jsonify({"message": "No pets available for recommendation"}), 404
-
     import random
     pet = random.choice(filtered_pets)
-
-    # TODO: Can enhance funFact dynamically here if needed
     response = {
         "id": pet["id"],
         "name": pet["name"],
@@ -154,12 +144,9 @@ async def pet_detail(pet_id):
 
 if __name__ == '__main__':
     import sys
-    import logging
-
     logging.basicConfig(
         stream=sys.stdout,
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s %(message)s"
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

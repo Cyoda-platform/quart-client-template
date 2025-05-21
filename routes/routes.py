@@ -1,11 +1,12 @@
+from datetime import timezone, datetime
 import asyncio
 import logging
 from dataclasses import dataclass
 from typing import List, Optional
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request, abort
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,31 +14,22 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
 
 # --- Workflow functions ---
 
 async def process_pet_search_request(entity):
-    """
-    Workflow for pet_search_request entity.
-    Set initial status if missing.
-    """
     if "status" not in entity:
         entity["status"] = "processing"
-    # Placeholder for async processing tasks related to search
     return entity
 
 
 async def process_pet_detail(entity):
-    """
-    Workflow for pet_detail entity.
-    Enrich pet detail by fetching data from external API.
-    """
     if entity.get("status") == "completed" or entity.get("status") == "failed":
         return entity
 
@@ -48,7 +40,7 @@ async def process_pet_detail(entity):
         entity["data"] = None
         return entity
 
-    entity["status"] = "processing"  # mark as processing
+    entity["status"] = "processing"
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -94,7 +86,7 @@ class PetDetailsRequest:
     petIds: List[str]
 
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearchRequest)
 async def pets_search(data: PetSearchRequest):
     search_data = {
@@ -115,7 +107,7 @@ async def pets_search(data: PetSearchRequest):
     return jsonify({"searchId": search_id})
 
 
-@app.route("/pets/search/<string:search_id>", methods=["GET"])
+@routes_bp.route("/pets/search/<string:search_id>", methods=["GET"])
 async def get_search_results(search_id):
     try:
         entry = await entity_service.get_item(
@@ -141,7 +133,7 @@ async def get_search_results(search_id):
     return jsonify({"searchId": search_id, "results": results})
 
 
-@app.route("/pets/details", methods=["POST"])
+@routes_bp.route("/pets/details", methods=["POST"])
 @validate_request(PetDetailsRequest)
 async def pets_details(data: PetDetailsRequest):
     pet_ids = data.petIds
@@ -170,7 +162,6 @@ async def pets_details(data: PetDetailsRequest):
                     technical_id=pet_id
                 )
             elif entity.get("status") not in ("completed", "failed"):
-                # Trigger re-processing if status is neither completed nor failed
                 await entity_service.add_item(
                     token=cyoda_auth_service,
                     entity_model="pet_detail",
@@ -200,7 +191,7 @@ async def pets_details(data: PetDetailsRequest):
     return jsonify({"pets": pets_response})
 
 
-@app.route("/pets/details/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/details/<string:pet_id>", methods=["GET"])
 async def get_pet_details(pet_id):
     try:
         entry = await entity_service.get_item(
@@ -223,9 +214,3 @@ async def get_pet_details(pet_id):
         return jsonify({"petId": pet_id, "status": "failed", "data": None}), 500
 
     return jsonify(entry.get("data"))
-
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

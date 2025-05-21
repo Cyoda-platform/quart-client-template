@@ -1,17 +1,18 @@
 {
-    "description": "Workflow for pet entity on branch b615581c-3aae-11b2-94c9-0e61bf128027",
-    "name": "pet_workflow",
+    "description": "Workflow managing the lifecycle of a pet entity in the system.",
+    "name": "pet_lifecycle_management",
     "transitions": [
         {
             "automated": true,
-            "description": "Create a new pet entry",
-            "end_state": "Pet_created",
-            "end_state_description": "A new pet has been created",
-            "name": "create_pet",
+            "description": "Register a new pet",
+            "end_state": "Pet_registered",
+            "end_state_description": "The pet has been registered",
+            "name": "register_pet",
             "processes": {
                 "externalized_processors": [
                     {
-                        "name": "process_create_pet"
+                        "description": "",
+                        "name": "process_register_pet"
                     }
                 ],
                 "schedule_transition_processors": []
@@ -21,54 +22,57 @@
         },
         {
             "automated": true,
-            "description": "Update pet information",
-            "end_state": "Pet_info_updated",
-            "end_state_description": "Pet information has been updated",
-            "name": "update_pet_info",
+            "description": "Perform a vet checkup for the pet",
+            "end_state": "Vet_checked",
+            "end_state_description": "The pet has undergone a vet checkup",
+            "name": "vet_checkup",
             "processes": {
                 "externalized_processors": [
                     {
-                        "name": "process_update_pet_info"
+                        "description": "",
+                        "name": "process_vet_checkup"
                     }
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Pet_created",
-            "start_state_description": "A new pet has been created"
+            "start_state": "Pet_registered",
+            "start_state_description": "The pet has been registered"
         },
         {
             "automated": true,
-            "description": "Pet is adopted",
-            "end_state": "Pet_adopted",
-            "end_state_description": "Pet has been adopted",
-            "name": "adopt_pet",
+            "description": "Update the health status of the pet",
+            "end_state": "Health_status_updated",
+            "end_state_description": "The health status of the pet has been updated",
+            "name": "update_health_status",
             "processes": {
                 "externalized_processors": [
                     {
-                        "name": "process_adopt_pet"
+                        "description": "",
+                        "name": "process_update_health_status"
                     }
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Pet_info_updated",
-            "start_state_description": "Pet information has been updated"
+            "start_state": "Vet_checked",
+            "start_state_description": "The pet has undergone a vet checkup"
         },
         {
             "automated": true,
-            "description": "Archive pet record",
-            "end_state": "Pet_archived",
-            "end_state_description": "Pet record has been archived",
-            "name": "archive_pet",
+            "description": "Deactivate the pet from the system",
+            "end_state": "Pet_deactivated",
+            "end_state_description": "The pet has been deactivated",
+            "name": "deactivate_pet",
             "processes": {
                 "externalized_processors": [
                     {
-                        "name": "process_archive_pet"
+                        "description": "",
+                        "name": "process_deactivate_pet"
                     }
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Pet_adopted",
-            "start_state_description": "Pet has been adopted"
+            "start_state": "Health_status_updated",
+            "start_state_description": "The health status of the pet has been updated"
         }
     ]
 }

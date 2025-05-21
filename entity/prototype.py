@@ -1,18 +1,23 @@
-```python
 import asyncio
 import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
+from dataclasses import dataclass
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # validate_request last for POST, validate_querystring first for GET
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+@dataclass
+class PetsSearch:
+    category: Optional[str]
+    status: Optional[str]
 
 # Local in-memory cache for prototype (async-safe usage via asyncio.Lock)
 class Cache:
@@ -47,11 +52,8 @@ async def fetch_petstore_categories() -> Dict[str, Any]:
     url = f"{PETSTORE_BASE}/store/inventory"
     # Petstore does not provide direct categories endpoint, so workaround:
     # TODO: Petstore API lacks a categories endpoint, so we mock categories from pets data.
-    # This is a prototype workaround.
     async with httpx.AsyncClient() as client:
-        # Fetch pets to extract categories dynamically
         try:
-            # Fetch all pets with status=available as a sample
             pets_resp = await client.get(f"{PETSTORE_BASE}/pet/findByStatus", params={"status": "available"})
             pets_resp.raise_for_status()
             pets = pets_resp.json()
@@ -59,7 +61,6 @@ async def fetch_petstore_categories() -> Dict[str, Any]:
             logger.exception(e)
             return {"categories": []}
 
-    # Extract unique categories from pets
     category_set = set()
     for pet in pets:
         cat = pet.get("category")
@@ -73,11 +74,9 @@ async def fetch_petstore_categories() -> Dict[str, Any]:
 async def fetch_petstore_pets(category_name: Optional[str], status: Optional[str]) -> Dict[str, Any]:
     async with httpx.AsyncClient() as client:
         try:
-            # Petstore API supports filtering only by status, not by category directly
             params = {}
             if status:
                 params["status"] = status
-            # Fetch pets by status (if given), else fetch all statuses
             statuses = [status] if status else ["available", "pending", "sold"]
 
             all_filtered_pets = []
@@ -85,7 +84,6 @@ async def fetch_petstore_pets(category_name: Optional[str], status: Optional[str
                 resp = await client.get(f"{PETSTORE_BASE}/pet/findByStatus", params={"status": st})
                 resp.raise_for_status()
                 pets = resp.json()
-                # Filter by category name if given
                 if category_name:
                     pets = [
                         pet for pet in pets
@@ -93,7 +91,6 @@ async def fetch_petstore_pets(category_name: Optional[str], status: Optional[str
                     ]
                 all_filtered_pets.extend(pets)
 
-            # Normalize pets data for response
             pets_out = []
             for pet in all_filtered_pets:
                 pets_out.append({
@@ -112,9 +109,6 @@ async def fetch_petstore_pets(category_name: Optional[str], status: Optional[str
 
 @app.route("/categories/fetch", methods=["POST"])
 async def categories_fetch():
-    """
-    Fetch pet categories from Petstore API and cache them.
-    """
     requested_at = datetime.utcnow().isoformat()
     logger.info(f"Categories fetch requested at {requested_at}")
 
@@ -123,17 +117,12 @@ async def categories_fetch():
         await cache.set_categories(data)
         logger.info("Categories cached successfully")
 
-    # Fire and forget
     asyncio.create_task(process_categories())
-
     return jsonify({"status": "processing", "requestedAt": requested_at}), 202
 
 
 @app.route("/categories", methods=["GET"])
 async def categories_get():
-    """
-    Retrieve cached pet categories.
-    """
     cats = await cache.get_categories()
     if cats is None:
         return jsonify({"categories": [], "message": "No categories cached yet"}), 404
@@ -141,15 +130,10 @@ async def categories_get():
 
 
 @app.route("/pets/search", methods=["POST"])
-async def pets_search():
-    """
-    Search pets with optional filters by category and status.
-    Triggers fetching from Petstore API and caches results.
-    """
-    data = await request.get_json(force=True)
-    category = data.get("category")
-    status = data.get("status")
-
+@validate_request(PetsSearch)  # workaround: place validation last for POST
+async def pets_search(data: PetsSearch):
+    category = data.category
+    status = data.status
     requested_at = datetime.utcnow().isoformat()
     logger.info(f"Pets search requested at {requested_at} with category={category} status={status}")
 
@@ -158,17 +142,12 @@ async def pets_search():
         await cache.set_pets(pets_data)
         logger.info("Pets search results cached")
 
-    # Fire and forget
     asyncio.create_task(process_pets())
-
     return jsonify({"status": "processing", "requestedAt": requested_at}), 202
 
 
 @app.route("/pets", methods=["GET"])
 async def pets_get():
-    """
-    Retrieve cached pet list (last search results).
-    """
     pets = await cache.get_pets()
     if pets is None:
         return jsonify({"pets": [], "message": "No pets cached yet"}), 404
@@ -185,4 +164,3 @@ if __name__ == '__main__':
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

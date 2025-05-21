@@ -1,11 +1,29 @@
-Certainly! I've updated the calls to `entity_service.add_item` to include the new `workflow` parameter and implemented the corresponding workflow functions with the required naming convention (`process_{entity_name}`) in underscore lowercase.
+Absolutely! Moving the asynchronous logic and related state updates from the endpoints into the workflow functions is a cleaner, more robust approach. The workflow functions allow us to handle pre-persistence modifications and side effects, including async operations, without cluttering controller code.
 
-Here is the complete updated code with the workflow function parameter added and implemented accordingly:
+I'll refactor your code accordingly, moving the asynchronous workflows inside the `process_pets_search` and `process_adoptions` functions, and simplifying the endpoints to just pass the initial entity data and let the workflow handle the rest.
+
+---
+
+### Key changes:
+- `process_pets_search` will:
+  - Fetch pets from petstore API asynchronously.
+  - Update the entity's `status`, `pets`, `count`, and `completedAt` fields directly in the entity dict.
+  - Since we cannot update the same entity via `entity_service` inside workflow (to avoid recursion), we only mutate the entity dict, which will be persisted once workflow finishes.
+  - For supplementary data, if needed, we can add other entities of different models (not used here).
+- `process_adoptions` will:
+  - Run the adoption processing steps sequentially with async delays.
+  - Update the entity's `steps_completed` and `status` fields directly.
+  - Since we cannot update the same entity via `entity_service` inside workflow, we mutate the entity dict.
+  - For simulating "fire and forget" style progress, we rely on the workflow function's async nature.
+- Endpoints just add the initial entity and return the ID, no longer launching background tasks.
+
+---
+
+### Refactored complete code:
 
 ```python
 import asyncio
 import logging
-import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, Any, Optional, List
@@ -35,13 +53,14 @@ class PetSearchRequest:
 
 @dataclass
 class AdoptionRequest:
-    pet_id: str  # changed to string per instruction
+    pet_id: str
     adopter_name: str
     contact_info: str
 
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
-async def fetch_pets_from_petstore(criteria: Dict[str, Any]) -> Any:
+
+async def fetch_pets_from_petstore(criteria: Dict[str, Any]) -> List[Dict[str, Any]]:
     async with httpx.AsyncClient() as client:
         status = criteria.get("status", "available")
         tags = criteria.get("tags", [])
@@ -66,56 +85,32 @@ async def fetch_pets_from_petstore(criteria: Dict[str, Any]) -> Any:
 
     return filtered
 
+
 async def process_pets_search(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
     Workflow function for 'pets_search' entity.
-    This function can modify the entity before persistence if needed.
-    For now, it just returns the entity unchanged.
+    This function asynchronously fetches pets from petstore and updates the entity accordingly.
     """
-    # Example: can modify entity state here if needed
+    try:
+        criteria = entity.get("criteria", {})
+        pets = await fetch_pets_from_petstore(criteria)
+        entity["status"] = "completed"
+        entity["pets"] = pets
+        entity["count"] = len(pets)
+        entity["completedAt"] = datetime.utcnow().isoformat()
+    except Exception as e:
+        logger.exception(f"Error in process_pets_search workflow: {e}")
+        entity["status"] = "failed"
+        entity["error"] = str(e)
     return entity
+
 
 async def process_adoptions(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
     Workflow function for 'adoptions' entity.
-    This function can modify the entity before persistence if needed.
-    For now, it just returns the entity unchanged.
+    This function simulates adoption steps sequentially with async delays,
+    updating the entity's status and steps_completed fields.
     """
-    # Example: can modify entity state here if needed
-    return entity
-
-async def process_pet_search_job(search_id: str, criteria: Dict[str, Any]):
-    try:
-        pets = await fetch_pets_from_petstore(criteria)
-        data = {
-            "status": "completed",
-            "pets": pets,
-            "count": len(pets),
-            "completedAt": datetime.utcnow().isoformat(),
-        }
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="pets_search",
-            entity_version=ENTITY_VERSION,
-            entity=data,
-            technical_id=search_id,
-            meta={}
-        )
-    except Exception as e:
-        logger.exception(f"Error processing pet search job {search_id}: {e}")
-        try:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="pets_search",
-                entity_version=ENTITY_VERSION,
-                entity={"status": "failed", "error": str(e)},
-                technical_id=search_id,
-                meta={}
-            )
-        except Exception as e2:
-            logger.exception(f"Failed to update error state for pet search job {search_id}: {e2}")
-
-async def process_adoption_workflow(adoption_id: str, adoption_data: Dict[str, Any]):
     try:
         steps = [
             "application_received",
@@ -124,47 +119,22 @@ async def process_adoption_workflow(adoption_id: str, adoption_data: Dict[str, A
             "pet_delivered",
             "completed",
         ]
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="adoptions",
-            entity_version=ENTITY_VERSION,
-            entity={"status": "processing", "steps_completed": []},
-            technical_id=adoption_id,
-            meta={}
-        )
+        entity["status"] = "processing"
+        entity["steps_completed"] = []
 
         for step in steps:
-            await asyncio.sleep(1)
-            current_data = await entity_service.get_item(
-                token=cyoda_auth_service,
-                entity_model="adoptions",
-                entity_version=ENTITY_VERSION,
-                technical_id=adoption_id
-            )
-            steps_completed = current_data.get("steps_completed", [])
-            steps_completed.append(step)
-            status = "completed" if step == "completed" else step
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="adoptions",
-                entity_version=ENTITY_VERSION,
-                entity={"steps_completed": steps_completed, "status": status},
-                technical_id=adoption_id,
-                meta={}
-            )
+            await asyncio.sleep(1)  # simulate async processing delay
+            entity["steps_completed"].append(step)
+            # Update status to last completed step or 'completed' if done
+            entity["status"] = "completed" if step == "completed" else step
+
     except Exception as e:
-        logger.exception(f"Error in adoption workflow {adoption_id}: {e}")
-        try:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="adoptions",
-                entity_version=ENTITY_VERSION,
-                entity={"status": "failed", "error": str(e)},
-                technical_id=adoption_id,
-                meta={}
-            )
-        except Exception as e2:
-            logger.exception(f"Failed to update error state for adoption workflow {adoption_id}: {e2}")
+        logger.exception(f"Error in process_adoptions workflow: {e}")
+        entity["status"] = "failed"
+        entity["error"] = str(e)
+
+    return entity
+
 
 @app.route("/pets/search", methods=["POST"])
 @validate_request(PetSearchRequest)
@@ -183,15 +153,14 @@ async def pets_search(data: PetSearchRequest):
             entity_model="pets_search",
             entity_version=ENTITY_VERSION,
             entity=search_entry,
-            workflow=process_pets_search
+            workflow=process_pets_search  # Workflow handles async fetching & updating
         )
     except Exception as e:
         logger.exception(f"Error adding pets_search item: {e}")
         return jsonify({"error": "Failed to initiate search"}), 500
 
-    asyncio.create_task(process_pet_search_job(search_id, criteria))
-
     return jsonify({"search_id": search_id, "count": 0}), 202
+
 
 @app.route("/pets/search/<search_id>", methods=["GET"])
 async def get_pets_search_results(search_id):
@@ -225,6 +194,7 @@ async def get_pets_search_results(search_id):
         )
     return jsonify({"search_id": search_id, "pets": pets_resp})
 
+
 @app.route("/adoptions", methods=["POST"])
 @validate_request(AdoptionRequest)
 async def create_adoption(data: AdoptionRequest):
@@ -242,15 +212,14 @@ async def create_adoption(data: AdoptionRequest):
             entity_model="adoptions",
             entity_version=ENTITY_VERSION,
             entity=adoption_entry,
-            workflow=process_adoptions
+            workflow=process_adoptions  # Workflow handles adoption steps progression
         )
     except Exception as e:
         logger.exception(f"Error creating adoption item: {e}")
         return jsonify({"error": "Failed to create adoption"}), 500
 
-    asyncio.create_task(process_adoption_workflow(adoption_id, data.__dict__))
-
     return jsonify({"adoption_id": adoption_id, "status": "initiated"}), 202
+
 
 @app.route("/adoptions/<adoption_id>", methods=["GET"])
 async def get_adoption_status(adoption_id):
@@ -278,6 +247,7 @@ async def get_adoption_status(adoption_id):
         }
     )
 
+
 if __name__ == '__main__':
     import sys
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -286,10 +256,13 @@ if __name__ == '__main__':
 
 ---
 
-### Summary of changes:
-- Added two workflow functions `process_pets_search` and `process_adoptions` matching the entity model names in underscore lowercase.
-- Passed the corresponding workflow functions as the `workflow` argument to `entity_service.add_item` calls for `"pets_search"` and `"adoptions"` entities.
-- Workflow functions are async and accept the entity dict as the only argument, returning the (possibly modified) entity.
-- Currently, the workflow functions return the entity unchanged, but you can extend them to modify the entity before persistence if needed.
+### Explanation:
 
-Let me know if you need the workflow functions to have any specific logic before persistence!
+- **Endpoints**: Just create initial entities and specify the workflow function when adding the item. No background tasks or explicit async logic remain.
+- **Workflow functions**: `process_pets_search` and `process_adoptions` handle the entire async processing logic, mutate the entity's dictionary directly, which the service will persist after the workflow function completes.
+- **No recursion**: We do not call `add_item` or `update_item` on the same entity inside workflow, only mutate the entity dict.
+- **Error handling**: Errors inside workflow functions update the entity state to `"failed"` and add an `"error"` message to the entity dict.
+
+This approach fully embraces the new workflow function capability, keeps controllers clean and focused, and ensures all async processing and state updates happen reliably inside the workflow.
+
+Let me know if you want me to also add any supplementary entities or further separate logic inside these workflow functions!

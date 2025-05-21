@@ -1,6 +1,6 @@
 {
-    "description": "Workflow for managing the pet entity states and transitions",
-    "name": "pet_entity_workflow",
+    "description": "Workflow managing the lifecycle of a pet entity from creation to deactivation",
+    "name": "pet_entity_lifecycle",
     "transitions": [
         {
             "automated": true,
@@ -22,10 +22,10 @@
         },
         {
             "automated": true,
-            "description": "Update existing pet information",
-            "end_state": "Pet_info_updated",
+            "description": "Update pet information",
+            "end_state": "Pet_updated",
             "end_state_description": "Pet information has been updated",
-            "name": "update_pet_info",
+            "name": "update_pet",
             "processes": {
                 "externalized_processors": [
                     {
@@ -40,7 +40,7 @@
         },
         {
             "automated": true,
-            "description": "Record a vaccination for the pet",
+            "description": "Record vaccination for the pet",
             "end_state": "Pet_vaccinated",
             "end_state_description": "Pet has been vaccinated",
             "name": "vaccinate_pet",
@@ -53,7 +53,7 @@
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Pet_info_updated",
+            "start_state": "Pet_updated",
             "start_state_description": "Pet information has been updated"
         },
         {

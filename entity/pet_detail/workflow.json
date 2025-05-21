@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to fetch and enrich pet detail data from external Petstore API",
+    "name": "pet_detail_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet detail request and fetch data",
+            "end_state": "pet_detail_processing",
+            "end_state_description": "Pet detail is being processed",
+            "name": "start_pet_detail_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_detail"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Complete processing pet detail request, marking success or failure",
+            "end_state": "pet_detail_completed",
+            "end_state_description": "Pet detail processing completed successfully",
+            "name": "complete_pet_detail_processing",
+            "start_state": "pet_detail_processing",
+            "start_state_description": "Pet detail is being processed"
+        },
+        {
+            "automated": true,
+            "description": "Error occurred during pet detail processing",
+            "end_state": "pet_detail_failed",
+            "end_state_description": "Pet detail processing failed",
+            "name": "fail_pet_detail_processing",
+            "start_state": "pet_detail_processing",
+            "start_state_description": "Pet detail is being processed"
+        }
+    ]
+}

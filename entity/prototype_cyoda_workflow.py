@@ -1,16 +1,24 @@
-Here's the updated complete code with the `workflow` parameter added to `entity_service.add_item` calls and appropriate workflow functions implemented according to your specification:
+Understood! We will refactor the code to move all async logic that enriches or processes entities into the respective workflow functions, leaving the endpoints clean and focused on just receiving requests and returning responses.
+
+### Key points:
+- The workflow functions (e.g. `process_pet_search_request`, `process_pet_detail`) are async and invoked just before persisting the entity.
+- They receive the entity data dict, can mutate it directly.
+- They can also call `entity_service` methods on _other_ entities, but not update/add/delete the current entity to avoid recursion.
+- Fire-and-forget async tasks related to entity enrichment and external API calls belong in the workflows.
+
+---
+
+Here's the **fully refactored code**, with all async enrichment logic moved into workflow functions:
 
 ```python
 import asyncio
 import logging
-import uuid
 from dataclasses import dataclass
-from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -29,26 +37,66 @@ QuartSchema(app)
 
 async def process_pet_search_request(entity):
     """
-    Workflow function for pet_search_request entity.
-    You can modify entity state here before persistence.
+    Workflow for pet_search_request entity.
+    Here you can implement async processing or enrichment related to a search request.
+    For demonstration, just set status to 'processing' if not set.
     """
-    # For example, initialize status if not set
     if "status" not in entity:
         entity["status"] = "processing"
-    # Could trigger some async processing here if needed
+    # Could add logic here to trigger search processing asynchronously
     return entity
+
 
 async def process_pet_detail(entity):
     """
-    Workflow function for pet_detail entity.
-    You can modify entity state here before persistence.
+    Workflow for pet_detail entity.
+    This function enriches the pet detail entity by fetching and adding data from external API.
     """
-    # Example: Ensure status field exists
-    if "status" not in entity:
-        entity["status"] = "processing"
+    # If already processed, skip
+    if entity.get("status") == "completed":
+        return entity
+    if entity.get("status") == "failed":
+        return entity
+
+    pet_id = entity.get("id")
+    if not pet_id:
+        logger.warning("pet_detail entity missing 'id'")
+        entity["status"] = "failed"
+        entity["data"] = None
+        return entity
+
+    entity["status"] = "processing"  # mark as processing
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(f"https://petstore.swagger.io/v2/pet/{pet_id}")
+            resp.raise_for_status()
+            pet = resp.json()
+
+        name = pet.get("name", "Mysterious Pet")
+        category = pet.get("category", {}).get("name", "Unknown Category")
+        status = pet.get("status", "unknown")
+        fun_description = f"{name} is a wonderful {category.lower()} currently {status} and waiting for a loving home! 😻"
+
+        enriched = {
+            "id": pet_id,
+            "name": name,
+            "category": category,
+            "status": status,
+            "funDescription": fun_description,
+        }
+
+        entity["status"] = "completed"
+        entity["data"] = enriched
+
+    except Exception as e:
+        logger.exception(f"Failed to enrich pet_detail entity with id {pet_id}: {e}")
+        entity["status"] = "failed"
+        entity["data"] = None
+
     return entity
 
-# Request schemas
+
 @dataclass
 class PetSearchRequest:
     status: str
@@ -56,7 +104,8 @@ class PetSearchRequest:
 
 @dataclass
 class PetDetailsRequest:
-    petIds: List[str]  # changed from int to str for id compliance
+    petIds: List[str]
+
 
 @app.route("/pets/search", methods=["POST"])
 @validate_request(PetSearchRequest)
@@ -71,12 +120,14 @@ async def pets_search(data: PetSearchRequest):
             entity_model="pet_search_request",
             entity_version=ENTITY_VERSION,
             entity=search_data,
-            workflow=process_pet_search_request  # Added workflow function
+            workflow=process_pet_search_request
         )
     except Exception as e:
         logger.exception(f"Failed to add pet_search_request item: {e}")
         return jsonify({"error": "Failed to process search request"}), 500
+
     return jsonify({"searchId": search_id})
+
 
 @app.route("/pets/search/<string:search_id>", methods=["GET"])
 async def get_search_results(search_id):
@@ -103,75 +154,56 @@ async def get_search_results(search_id):
     results = entry.get("results")
     return jsonify({"searchId": search_id, "results": results})
 
+
 @app.route("/pets/details", methods=["POST"])
 @validate_request(PetDetailsRequest)
 async def pets_details(data: PetDetailsRequest):
     pet_ids = data.petIds
     pets_response = []
 
-    async def fetch_and_enrich_pet(pet_id: str):
+    # For each pet_id, get or create pet_detail entity, triggering workflow enrichment
+    async def get_pet_detail_entity(pet_id: str):
         try:
-            pet_data = await entity_service.get_item(
+            # Try to get existing entity
+            entity = await entity_service.get_item(
                 token=cyoda_auth_service,
                 entity_model="pet_detail",
                 entity_version=ENTITY_VERSION,
                 technical_id=pet_id
             )
-            if pet_data and pet_data.get("status") == "completed" and pet_data.get("data"):
-                return pet_data["data"]
-            # If no cached data or not completed, fetch from external API
-            async with httpx.AsyncClient() as client:
-                resp = await client.get(f"https://petstore.swagger.io/v2/pet/{pet_id}")
-                resp.raise_for_status()
-                pet = resp.json()
-                name = pet.get("name", "Mysterious Pet")
-                category = pet.get("category", {}).get("name", "Unknown Category")
-                status = pet.get("status", "unknown")
-                fun_description = f"{name} is a wonderful {category.lower()} currently {status} and waiting for a loving home! 😻"
-                enriched = {
-                    "id": pet_id,
-                    "name": name,
-                    "category": category,
-                    "status": status,
-                    "funDescription": fun_description,
-                }
-                # Save enriched data with status completed
-                entity_payload = {
-                    "status": "completed",
-                    "data": enriched
-                }
-                try:
-                    await entity_service.update_item(
-                        token=cyoda_auth_service,
-                        entity_model="pet_detail",
-                        entity_version=ENTITY_VERSION,
-                        entity=entity_payload,
-                        technical_id=pet_id,
-                        meta={}
-                    )
-                except Exception as e:
-                    logger.exception(f"Failed to update pet_detail for {pet_id}: {e}")
-                return enriched
-        except Exception as e:
-            # On error, update status to failed
-            logger.exception(f"Failed to fetch/enrich pet details for {pet_id}: {e}")
-            try:
-                await entity_service.update_item(
+            if entity is None:
+                # Create new entity with just id, workflow will enrich it
+                new_entity = {"id": pet_id}
+                await entity_service.add_item(
                     token=cyoda_auth_service,
                     entity_model="pet_detail",
                     entity_version=ENTITY_VERSION,
-                    entity={"status": "failed", "data": None},
-                    technical_id=pet_id,
-                    meta={}
+                    entity=new_entity,
+                    workflow=process_pet_detail
                 )
-            except Exception as ee:
-                logger.exception(f"Failed to update failed status for pet_detail {pet_id}: {ee}")
+                # Re-fetch after creation to get enriched data
+                entity = await entity_service.get_item(
+                    token=cyoda_auth_service,
+                    entity_model="pet_detail",
+                    entity_version=ENTITY_VERSION,
+                    technical_id=pet_id
+                )
+            return entity
+        except Exception as e:
+            logger.exception(f"Failed to get or create pet_detail for id {pet_id}: {e}")
             return None
 
-    tasks = [fetch_and_enrich_pet(pid) for pid in pet_ids]
-    results = await asyncio.gather(*tasks)
-    pets_response = [pet for pet in results if pet is not None]
+    tasks = [get_pet_detail_entity(pid) for pid in pet_ids]
+    entities = await asyncio.gather(*tasks)
+
+    for ent in entities:
+        if ent and ent.get("status") == "completed" and ent.get("data"):
+            pets_response.append(ent["data"])
+        else:
+            logger.warning(f"Pet detail entity incomplete or failed: {ent}")
+
     return jsonify({"pets": pets_response})
+
 
 @app.route("/pets/details/<string:pet_id>", methods=["GET"])
 async def get_pet_details(pet_id):
@@ -197,17 +229,34 @@ async def get_pet_details(pet_id):
 
     return jsonify(entry.get("data"))
 
+
 if __name__ == '__main__':
     import sys
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added two async workflow functions:
-  - `process_pet_search_request` for `"pet_search_request"`
-  - `process_pet_detail` for `"pet_detail"`
-- Added `workflow=process_pet_search_request` to the `entity_service.add_item` call for `"pet_search_request"`.
-- If you add more `add_item` calls for other entities in the future, add similar workflow functions following the `process_{entity_name}` naming convention, where the entity name is underscore lowercase.
+---
 
-Let me know if you want me to add workflows for any other entities or further customize these!
+### What changed?
+
+- **`process_pet_detail`** now contains the logic to fetch external pet info, enrich the entity, and set status/data accordingly.
+- The `/pets/details` POST endpoint simply ensures the pet_detail entities exist (creating if missing) and triggers workflow enrichment by calling `add_item` with the workflow.
+- The GET endpoints remain thin, just returning states and data.
+- `process_pet_search_request` is a placeholder you can extend with async processing as needed.
+- No `entity_service.update_item` called inside workflows on the same entity (to avoid recursion).
+- External API fetching and enrichment is done inside the workflow.
+
+---
+
+This approach ensures:
+
+- Controllers are clean and only orchestrate requests/responses.
+- All async enrichment and side effects happen inside workflow functions.
+- The entity state is mutated directly inside workflow functions and then persisted atomically.
+- You avoid recursion by not updating the current entity in the workflow.
+- You can extend workflows with further async tasks (e.g. fire-and-forget notifications, indexing, etc.)
+
+---
+
+If you want, I can help you add workflows for other entity models or further improve error handling/logging inside them.

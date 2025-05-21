@@ -1,16 +1,3 @@
-Understood! We will refactor the code to move all async logic that enriches or processes entities into the respective workflow functions, leaving the endpoints clean and focused on just receiving requests and returning responses.
-
-### Key points:
-- The workflow functions (e.g. `process_pet_search_request`, `process_pet_detail`) are async and invoked just before persisting the entity.
-- They receive the entity data dict, can mutate it directly.
-- They can also call `entity_service` methods on _other_ entities, but not update/add/delete the current entity to avoid recursion.
-- Fire-and-forget async tasks related to entity enrichment and external API calls belong in the workflows.
-
----
-
-Here's the **fully refactored code**, with all async enrichment logic moved into workflow functions:
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -38,24 +25,20 @@ QuartSchema(app)
 async def process_pet_search_request(entity):
     """
     Workflow for pet_search_request entity.
-    Here you can implement async processing or enrichment related to a search request.
-    For demonstration, just set status to 'processing' if not set.
+    Set initial status if missing.
     """
     if "status" not in entity:
         entity["status"] = "processing"
-    # Could add logic here to trigger search processing asynchronously
+    # Placeholder for async processing tasks related to search
     return entity
 
 
 async def process_pet_detail(entity):
     """
     Workflow for pet_detail entity.
-    This function enriches the pet detail entity by fetching and adding data from external API.
+    Enrich pet detail by fetching data from external API.
     """
-    # If already processed, skip
-    if entity.get("status") == "completed":
-        return entity
-    if entity.get("status") == "failed":
+    if entity.get("status") == "completed" or entity.get("status") == "failed":
         return entity
 
     pet_id = entity.get("id")
@@ -68,7 +51,7 @@ async def process_pet_detail(entity):
     entity["status"] = "processing"  # mark as processing
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.get(f"https://petstore.swagger.io/v2/pet/{pet_id}")
             resp.raise_for_status()
             pet = resp.json()
@@ -89,8 +72,12 @@ async def process_pet_detail(entity):
         entity["status"] = "completed"
         entity["data"] = enriched
 
+    except (httpx.RequestError, httpx.HTTPStatusError) as e:
+        logger.warning(f"HTTP error fetching pet_detail for id {pet_id}: {e}")
+        entity["status"] = "failed"
+        entity["data"] = None
     except Exception as e:
-        logger.exception(f"Failed to enrich pet_detail entity with id {pet_id}: {e}")
+        logger.exception(f"Unexpected error enriching pet_detail entity with id {pet_id}: {e}")
         entity["status"] = "failed"
         entity["data"] = None
 
@@ -161,10 +148,8 @@ async def pets_details(data: PetDetailsRequest):
     pet_ids = data.petIds
     pets_response = []
 
-    # For each pet_id, get or create pet_detail entity, triggering workflow enrichment
     async def get_pet_detail_entity(pet_id: str):
         try:
-            # Try to get existing entity
             entity = await entity_service.get_item(
                 token=cyoda_auth_service,
                 entity_model="pet_detail",
@@ -172,7 +157,6 @@ async def pets_details(data: PetDetailsRequest):
                 technical_id=pet_id
             )
             if entity is None:
-                # Create new entity with just id, workflow will enrich it
                 new_entity = {"id": pet_id}
                 await entity_service.add_item(
                     token=cyoda_auth_service,
@@ -181,7 +165,21 @@ async def pets_details(data: PetDetailsRequest):
                     entity=new_entity,
                     workflow=process_pet_detail
                 )
-                # Re-fetch after creation to get enriched data
+                entity = await entity_service.get_item(
+                    token=cyoda_auth_service,
+                    entity_model="pet_detail",
+                    entity_version=ENTITY_VERSION,
+                    technical_id=pet_id
+                )
+            elif entity.get("status") not in ("completed", "failed"):
+                # Trigger re-processing if status is neither completed nor failed
+                await entity_service.add_item(
+                    token=cyoda_auth_service,
+                    entity_model="pet_detail",
+                    entity_version=ENTITY_VERSION,
+                    entity=entity,
+                    workflow=process_pet_detail
+                )
                 entity = await entity_service.get_item(
                     token=cyoda_auth_service,
                     entity_model="pet_detail",
@@ -234,29 +232,3 @@ if __name__ == '__main__':
     import sys
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### What changed?
-
-- **`process_pet_detail`** now contains the logic to fetch external pet info, enrich the entity, and set status/data accordingly.
-- The `/pets/details` POST endpoint simply ensures the pet_detail entities exist (creating if missing) and triggers workflow enrichment by calling `add_item` with the workflow.
-- The GET endpoints remain thin, just returning states and data.
-- `process_pet_search_request` is a placeholder you can extend with async processing as needed.
-- No `entity_service.update_item` called inside workflows on the same entity (to avoid recursion).
-- External API fetching and enrichment is done inside the workflow.
-
----
-
-This approach ensures:
-
-- Controllers are clean and only orchestrate requests/responses.
-- All async enrichment and side effects happen inside workflow functions.
-- The entity state is mutated directly inside workflow functions and then persisted atomically.
-- You avoid recursion by not updating the current entity in the workflow.
-- You can extend workflows with further async tasks (e.g. fire-and-forget notifications, indexing, etc.)
-
----
-
-If you want, I can help you add workflows for other entity models or further improve error handling/logging inside them.

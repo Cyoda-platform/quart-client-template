@@ -1,12 +1,12 @@
 {
-    "description": "Workflow for managing pet entity states and transitions.",
+    "description": "Workflow for pet entity on branch b615581c-3aae-11b2-94c9-0e61bf128027",
     "name": "pet_workflow",
     "transitions": [
         {
             "automated": true,
-            "description": "Create a new pet entity",
+            "description": "Create a new pet entry",
             "end_state": "Pet_created",
-            "end_state_description": "A pet entity has been created",
+            "end_state_description": "A new pet has been created",
             "name": "create_pet",
             "processes": {
                 "externalized_processors": [
@@ -34,18 +34,18 @@
                 "schedule_transition_processors": []
             },
             "start_state": "Pet_created",
-            "start_state_description": "A pet entity has been created"
+            "start_state_description": "A new pet has been created"
         },
         {
             "automated": true,
-            "description": "Schedule a vet visit for the pet",
-            "end_state": "Vet_visit_scheduled",
-            "end_state_description": "Vet visit has been scheduled",
-            "name": "schedule_vet_visit",
+            "description": "Pet is adopted",
+            "end_state": "Pet_adopted",
+            "end_state_description": "Pet has been adopted",
+            "name": "adopt_pet",
             "processes": {
                 "externalized_processors": [
                     {
-                        "name": "process_schedule_vet_visit"
+                        "name": "process_adopt_pet"
                     }
                 ],
                 "schedule_transition_processors": []
@@ -55,37 +55,20 @@
         },
         {
             "automated": true,
-            "description": "Complete the scheduled vet visit",
-            "end_state": "Vet_visit_completed",
-            "end_state_description": "Vet visit has been completed",
-            "name": "complete_vet_visit",
-            "processes": {
-                "externalized_processors": [
-                    {
-                        "name": "process_complete_vet_visit"
-                    }
-                ],
-                "schedule_transition_processors": []
-            },
-            "start_state": "Vet_visit_scheduled",
-            "start_state_description": "Vet visit has been scheduled"
-        },
-        {
-            "automated": true,
-            "description": "Archive the pet record",
-            "end_state": "Pet_record_archived",
+            "description": "Archive pet record",
+            "end_state": "Pet_archived",
             "end_state_description": "Pet record has been archived",
-            "name": "archive_pet_record",
+            "name": "archive_pet",
             "processes": {
                 "externalized_processors": [
                     {
-                        "name": "process_archive_pet_record"
+                        "name": "process_archive_pet"
                     }
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Vet_visit_completed",
-            "start_state_description": "Vet visit has been completed"
+            "start_state": "Pet_adopted",
+            "start_state_description": "Pet has been adopted"
         }
     ]
 }

@@ -6,10 +6,9 @@ from datetime import datetime
 from typing import Dict, Any, Optional, List
 
 import httpx
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 from app_init.app_init import BeanFactory
-
 from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ class PetSearchRequest:
 
 @dataclass
 class AdoptionRequest:
-    pet_id: str  # changed to string as per instruction
+    pet_id: str  # changed to string per instruction
     adopter_name: str
     contact_info: str
 
@@ -69,7 +68,7 @@ async def process_pet_search_job(search_id: str, criteria: Dict[str, Any]):
             "status": "completed",
             "pets": pets,
             "count": len(pets),
-            "completedAt": datetime.utcnow().isoformat()
+            "completedAt": datetime.utcnow().isoformat(),
         }
         await entity_service.update_item(
             token=cyoda_auth_service,
@@ -81,16 +80,12 @@ async def process_pet_search_job(search_id: str, criteria: Dict[str, Any]):
         )
     except Exception as e:
         logger.exception(f"Error processing pet search job {search_id}: {e}")
-        data = {
-            "status": "failed",
-            "error": str(e)
-        }
         try:
             await entity_service.update_item(
                 token=cyoda_auth_service,
                 entity_model="pets_search",
                 entity_version=ENTITY_VERSION,
-                entity=data,
+                entity={"status": "failed", "error": str(e)},
                 technical_id=search_id,
                 meta={}
             )
@@ -117,7 +112,6 @@ async def process_adoption_workflow(adoption_id: str, adoption_data: Dict[str, A
 
         for step in steps:
             await asyncio.sleep(1)
-            # get current state
             current_data = await entity_service.get_item(
                 token=cyoda_auth_service,
                 entity_model="adoptions",
@@ -135,7 +129,6 @@ async def process_adoption_workflow(adoption_id: str, adoption_data: Dict[str, A
                 technical_id=adoption_id,
                 meta={}
             )
-
     except Exception as e:
         logger.exception(f"Error in adoption workflow {adoption_id}: {e}")
         try:
@@ -151,20 +144,18 @@ async def process_adoption_workflow(adoption_id: str, adoption_data: Dict[str, A
             logger.exception(f"Failed to update error state for adoption workflow {adoption_id}: {e2}")
 
 @app.route("/pets/search", methods=["POST"])
-@validate_request(PetSearchRequest)  # Workaround: validate_request after @app.route due to quart-schema defect
+@validate_request(PetSearchRequest)
 async def pets_search(data: PetSearchRequest):
     criteria = data.__dict__
-    search_id = str(uuid.uuid4())
-    requested_at = datetime.utcnow().isoformat()
     search_entry = {
         "status": "processing",
-        "requestedAt": requested_at,
+        "requestedAt": datetime.utcnow().isoformat(),
         "criteria": criteria,
         "pets": [],
         "count": 0,
     }
     try:
-        await entity_service.add_item(
+        search_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="pets_search",
             entity_version=ENTITY_VERSION,
@@ -172,27 +163,6 @@ async def pets_search(data: PetSearchRequest):
         )
     except Exception as e:
         logger.exception(f"Error adding pets_search item: {e}")
-        return jsonify({"error": "Failed to initiate search"}), 500
-
-    # The add_item call returns an id, but we already generated one as search_id,
-    # so we must keep consistent. Because we cannot set the id explicitly in add_item,
-    # fallback: store the search_entry with generated id via update_item after add_item?
-    # But per instruction, skip if not enough functions; so we keep our id and use update_item to store it.
-
-    # Actually, to store with custom id, we need to use update_item not add_item.
-    # So instead of add_item, use update_item with technical_id=search_id
-    try:
-        # Overwrite with correct id
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="pets_search",
-            entity_version=ENTITY_VERSION,
-            entity=search_entry,
-            technical_id=search_id,
-            meta={}
-        )
-    except Exception as e:
-        logger.exception(f"Error updating pets_search item with id {search_id}: {e}")
         return jsonify({"error": "Failed to initiate search"}), 500
 
     asyncio.create_task(process_pet_search_job(search_id, criteria))
@@ -232,9 +202,8 @@ async def get_pets_search_results(search_id):
     return jsonify({"search_id": search_id, "pets": pets_resp})
 
 @app.route("/adoptions", methods=["POST"])
-@validate_request(AdoptionRequest)  # Workaround: validate_request after @app.route due to quart-schema defect
+@validate_request(AdoptionRequest)
 async def create_adoption(data: AdoptionRequest):
-    adoption_id = str(uuid.uuid4())
     adoption_entry = {
         "status": "initiated",
         "requestedAt": datetime.utcnow().isoformat(),
@@ -244,16 +213,14 @@ async def create_adoption(data: AdoptionRequest):
         "steps_completed": [],
     }
     try:
-        await entity_service.update_item(
+        adoption_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="adoptions",
             entity_version=ENTITY_VERSION,
-            entity=adoption_entry,
-            technical_id=adoption_id,
-            meta={}
+            entity=adoption_entry
         )
     except Exception as e:
-        logger.exception(f"Error creating adoption item with id {adoption_id}: {e}")
+        logger.exception(f"Error creating adoption item: {e}")
         return jsonify({"error": "Failed to create adoption"}), 500
 
     asyncio.create_task(process_adoption_workflow(adoption_id, data.__dict__))

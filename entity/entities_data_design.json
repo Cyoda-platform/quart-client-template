@@ -1,0 +1,21 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": "dog",
+                "status": "available"
+            },
+            "entity_name": "pet_search_request"
+        },
+        {
+            "entity_data_example": {
+                "category": "dog",
+                "funDescription": "Fluffy is a wonderful dog currently available and waiting for a loving home! \ud83d\ude3b",
+                "id": "123",
+                "name": "Fluffy",
+                "status": "available"
+            },
+            "entity_name": "pet_detail"
+        }
+    ]
+}

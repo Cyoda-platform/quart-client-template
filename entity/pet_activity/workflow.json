@@ -1,0 +1,60 @@
+{
+    "description": "Workflow managing the tracking and updating of pet activities.",
+    "name": "pet_activity_tracking",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start tracking a new activity for the pet",
+            "end_state": "Activity_started",
+            "end_state_description": "The pet activity has started",
+            "name": "start_activity",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_start_activity"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Update ongoing activity details",
+            "end_state": "Activity_updated",
+            "end_state_description": "The pet activity details have been updated",
+            "name": "update_activity",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_activity"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Activity_started",
+            "start_state_description": "The pet activity has started"
+        },
+        {
+            "automated": true,
+            "description": "Complete the pet activity",
+            "end_state": "Activity_completed",
+            "end_state_description": "The pet activity has been completed",
+            "name": "complete_activity",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_complete_activity"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Activity_updated",
+            "start_state_description": "The pet activity details have been updated"
+        }
+    ]
+}

@@ -1,0 +1,91 @@
+{
+    "description": "Workflow for managing pet entity states and transitions.",
+    "name": "pet_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Create a new pet entity",
+            "end_state": "Pet_created",
+            "end_state_description": "A pet entity has been created",
+            "name": "create_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_create_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Update pet information",
+            "end_state": "Pet_info_updated",
+            "end_state_description": "Pet information has been updated",
+            "name": "update_pet_info",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_update_pet_info"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_created",
+            "start_state_description": "A pet entity has been created"
+        },
+        {
+            "automated": true,
+            "description": "Schedule a vet visit for the pet",
+            "end_state": "Vet_visit_scheduled",
+            "end_state_description": "Vet visit has been scheduled",
+            "name": "schedule_vet_visit",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_schedule_vet_visit"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_info_updated",
+            "start_state_description": "Pet information has been updated"
+        },
+        {
+            "automated": true,
+            "description": "Complete the scheduled vet visit",
+            "end_state": "Vet_visit_completed",
+            "end_state_description": "Vet visit has been completed",
+            "name": "complete_vet_visit",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_complete_vet_visit"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Vet_visit_scheduled",
+            "start_state_description": "Vet visit has been scheduled"
+        },
+        {
+            "automated": true,
+            "description": "Archive the pet record",
+            "end_state": "Pet_record_archived",
+            "end_state_description": "Pet record has been archived",
+            "name": "archive_pet_record",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_archive_pet_record"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Vet_visit_completed",
+            "start_state_description": "Vet visit has been completed"
+        }
+    ]
+}

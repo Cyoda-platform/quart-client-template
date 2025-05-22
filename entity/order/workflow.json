@@ -1,0 +1,51 @@
+{
+    "description": "Workflow for processing an order with pet validation and logging",
+    "name": "order_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Validate pet availability",
+            "end_state": "Pet_validated",
+            "end_state_description": "Pet availability has been validated",
+            "name": "validate_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Log the processed order",
+            "end_state": "Order_logged",
+            "end_state_description": "Order has been logged",
+            "name": "log_order",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_log_order"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_validated",
+            "start_state_description": "Pet availability has been validated"
+        },
+        {
+            "automated": true,
+            "description": "Finalize the order processing",
+            "end_state": "Order_processed",
+            "end_state_description": "Order processing is complete",
+            "name": "finalize_order",
+            "start_state": "Order_logged",
+            "start_state_description": "Order has been logged"
+        }
+    ]
+}

@@ -1,0 +1,22 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "age": 5,
+                "id": "123",
+                "name": "Buddy",
+                "status": "available",
+                "type": "dog"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "adopter_contact": "alice@example.com",
+                "adopter_name": "Alice Smith",
+                "pet_id": "123"
+            },
+            "entity_name": "adopt_pet_request"
+        }
+    ]
+}

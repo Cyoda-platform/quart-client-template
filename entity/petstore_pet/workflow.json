@@ -1,0 +1,24 @@
+{
+    "description": "Workflow for processing petstore_pet entity in Purrfect Pets API",
+    "name": "purrfect_pets_petstore_pet_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing petstore_pet entity",
+            "end_state": "Pet_processed",
+            "end_state_description": "Petstore pet entity has been processed",
+            "name": "start_processing_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Process petstore pet entity including setting processed timestamp and adding personality",
+                        "name": "process_petstore_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

@@ -5,25 +5,21 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
-from app_init.app_init import entity_service
+from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
-# Initialize auth services and entity_service
-from app_init.app_init import BeanFactory
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-# Dataclasses for request validation
 @dataclass
 class PetFetchFilter:
     type: str
@@ -49,10 +45,9 @@ class AdoptRequest:
     petId: str
     adopter: Adopter
 
-# In-memory cache for favorites only (stateful, not persisted)
 favorites_cache: set = set()
 
-PET_ENTITY_NAME = "pet"  # entity name underscore lowercase
+PET_ENTITY_NAME = "pet"
 ADOPTIONREQUEST_ENTITY_NAME = "adoptionrequest"
 
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
@@ -93,15 +88,12 @@ async def process_fetch_request(data: Dict) -> Dict:
 
     pets = await fetch_pets_from_petstore(pet_type, status)
 
-    # Mark favorites from favorites_cache
     for pet in pets:
         pet["isFavorite"] = pet["id"] in favorites_cache
 
-    # Apply actions
-    # markFavorite affects only in-memory cache, safe to do here
     for pet_id in actions.get("markFavorite", []):
         favorites_cache.add(pet_id)
-    # updateAdoptionStatus updates pet status in the response only, no persistence here
+
     for pid, new_status in (actions.get("updateAdoptionStatus") or {}).items():
         for pet in pets:
             if pet["id"] == pid:
@@ -109,8 +101,8 @@ async def process_fetch_request(data: Dict) -> Dict:
 
     return {"pets": pets, "message": "Pets fetched and processed successfully."}
 
-@app.route("/pets/fetch", methods=["POST"])
-@validate_request(FetchRequest)  # workaround: validate_request must be last for POST due to quart-schema issue
+@routes_bp.route("/pets/fetch", methods=["POST"])
+@validate_request(FetchRequest)
 async def pets_fetch(data: FetchRequest):
     try:
         result = await process_fetch_request(asdict(data))
@@ -119,7 +111,7 @@ async def pets_fetch(data: FetchRequest):
         logger.exception(e)
         return jsonify({"message": "Internal Server Error"}), 500
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def pets_get():
     try:
         pets = await entity_service.get_items(
@@ -127,7 +119,6 @@ async def pets_get():
             entity_model=PET_ENTITY_NAME,
             entity_version=ENTITY_VERSION,
         )
-        # Mark favorites
         for pet in pets:
             pet["isFavorite"] = pet["id"] in favorites_cache
         return jsonify({"pets": pets})
@@ -135,7 +126,7 @@ async def pets_get():
         logger.exception(e)
         return jsonify({"pets": []})
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def get_pet(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -152,11 +143,10 @@ async def get_pet(pet_id: str):
         logger.exception(e)
         return jsonify({"message": "Internal Server Error"}), 500
 
-@app.route("/pets", methods=["POST"])
-@validate_request(dict)  # generic dict since no dataclass for pet creation
+@routes_bp.route("/pets", methods=["POST"])
+@validate_request(dict)
 async def create_pet(data):
     try:
-        # data is dict with pet data
         pet_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=PET_ENTITY_NAME,
@@ -168,8 +158,8 @@ async def create_pet(data):
         logger.exception(e)
         return jsonify({"message": "Internal Server Error"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["PUT"])
-@validate_request(dict)  # generic dict for pet update
+@routes_bp.route("/pets/<string:pet_id>", methods=["PUT"])
+@validate_request(dict)
 async def update_pet(pet_id: str, data):
     try:
         await entity_service.update_item(
@@ -185,7 +175,7 @@ async def update_pet(pet_id: str, data):
         logger.exception(e)
         return jsonify({"message": "Internal Server Error"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["DELETE"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["DELETE"])
 async def delete_pet(pet_id: str):
     try:
         await entity_service.delete_item(
@@ -200,7 +190,7 @@ async def delete_pet(pet_id: str):
         logger.exception(e)
         return jsonify({"message": "Internal Server Error"}), 500
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptRequest)
 async def pets_adopt(data: AdoptRequest):
     try:
@@ -215,6 +205,3 @@ async def pets_adopt(data: AdoptRequest):
     except Exception as e:
         logger.exception(e)
         return jsonify({"success": False, "message": str(e)}), 400
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

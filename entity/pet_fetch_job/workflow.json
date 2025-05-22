@@ -1,0 +1,37 @@
+{
+    "description": "Workflow for handling pet fetching and processing in the Purrfect Pets API app",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pet data from Petstore API",
+            "end_state": "Fetching_pets",
+            "end_state_description": "Fetching pet data from external API",
+            "name": "start_fetch_pet_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates fetching pets and processing entities",
+                        "name": "process_pet_fetch_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Complete pet fetch job and update status",
+            "end_state": "Fetch_completed",
+            "end_state_description": "Pet fetching and processing completed",
+            "name": "complete_fetch_pet_job",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Fetching_pets",
+            "start_state_description": "Currently fetching pets"
+        }
+    ]
+}

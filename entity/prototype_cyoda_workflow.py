@@ -1,16 +1,55 @@
-Certainly! I updated the code to add a workflow function parameter to `entity_service.add_item` calls, and implemented a corresponding workflow function named `process_petstore_pet` (underscore lowercase entity name: `petstore_pet`). This function will be applied asynchronously before the entity is persisted.
+Understood! You want to refactor the code to move all asynchronous and "heavy" logic currently inside the endpoints into workflow functions named `process_{entity_name}` (underscore lowercase), which will be supplied as the `workflow` argument to `entity_service.add_item`. This will:
 
-In the provided code, there is no direct call to `entity_service.add_item` yet, so I will add an example route `POST /pets/add` to demonstrate usage of `entity_service.add_item` with the new workflow parameter, including the workflow function implementation.
+- Make controllers leaner and focused on request/response.
+- Move all async logic (including fire-and-forget tasks) into the workflow function.
+- Workflow functions can mutate the entity before persistence.
+- Workflow functions can get/add other entities of different models.
+- But workflow function **must NOT** call add/update/delete on the same entity model (to avoid recursion).
+- The workflow function is async and fully supported.
 
-Here is the complete updated code including:
+---
 
-- Implementation of `process_petstore_pet(entity)` workflow function.
-- Addition of a new route `/pets/add` that accepts a pet entity in JSON, calls `entity_service.add_item` with the workflow function.
-- The new code integrates with existing imports and style.
+### How this applies to your code
+
+Currently:
+
+- The `/pets/fetch` endpoint triggers a fire-and-forget async task `process_entity` which fetches pets from Petstore, optionally enhances them, and stores results in `entity_job` dictionary.
+- `/pets/filter` and `/pets` endpoints query this dictionary.
+- The new `/pets/add` endpoint adds an entity with workflow `process_petstore_pet`.
+
+---
+
+### My plan to refactor
+
+We can move the fetch and enhance logic into a workflow function `process_pet_fetch_job` (underscore lowercase of entity model name e.g. `pet_fetch_job`).
+
+Instead of maintaining `entity_job` dictionary in memory, we persist the job entity itself with status and pets list.
+
+I will:
+
+1. Define new entity model `pet_fetch_job` to represent a fetch job entity.
+2. Move all logic from `/pets/fetch` handler's async task into `process_pet_fetch_job` workflow function.
+3. Update `/pets/fetch` endpoint to create a `pet_fetch_job` entity with the filter and enhance params, and pass workflow `process_pet_fetch_job`.
+4. `/pets` and `/pets/filter` endpoints will query the pet_fetch_job entity by its ID, and return the status and pets.
+5. Keep `/pets/add` and `process_petstore_pet` as is (with minor improvements maybe).
+
+---
+
+### Benefits
+
+- Job state and data is persisted in the entity storage.
+- Async processing done in workflow on entity before persistence.
+- Controllers only create the entity and return its ID.
+- No in-memory global state.
+- Everything follows your new spec for workflow.
+
+---
+
+### Here is the **complete updated code** with this approach:
 
 ```python
-from dataclasses import dataclass
-from typing import Optional, List, Dict
+from dataclasses import dataclass, asdict
+from typing import Optional, List, Dict, Any
 import asyncio
 import logging
 from datetime import datetime
@@ -32,7 +71,10 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# Data classes for request validation
+# ==========================
+# Data classes for validation
+# ==========================
+
 @dataclass
 class PetFetchFilter:
     status: Optional[str] = None
@@ -58,17 +100,34 @@ class PetsFilterRequest:
     job_id: str
     filter: PetsFilterFilter
 
-# New data class for adding a pet entity
 @dataclass
 class PetAddRequest:
-    pet: Dict
+    pet: Dict[str, Any]
 
-# In-memory store for jobs
-entity_job: Dict[str, Dict] = {}
+# ==========================
+# Constants
+# ==========================
 
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
-async def fetch_pets_from_petstore(status: Optional[str], pet_type: Optional[str]) -> List[Dict]:
+# ==========================
+# Workflow functions
+# ==========================
+
+async def process_petstore_pet(entity: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Workflow function for 'petstore_pet' entity.
+    Mutate entity before persistence.
+    """
+    logger.info("Processing petstore_pet entity workflow")
+    # Add processed timestamp
+    entity.setdefault("processed_at", datetime.utcnow().isoformat())
+    if "personality" not in entity:
+        entity["personality"] = "adorable and unique"
+    # Could add more enrichment here
+    return entity
+
+async def fetch_pets_from_petstore(status: Optional[str], pet_type: Optional[str]) -> List[Dict[str, Any]]:
     url = f"{PETSTORE_BASE_URL}/pet/findByStatus"
     params = {"status": status or "available"}
     async with httpx.AsyncClient() as client:
@@ -77,102 +136,168 @@ async def fetch_pets_from_petstore(status: Optional[str], pet_type: Optional[str
             resp.raise_for_status()
             pets = resp.json()
         except Exception as e:
-            logger.exception(f"Error fetching pets: {e}")
+            logger.exception(f"Error fetching pets from petstore: {e}")
             return []
     if pet_type:
-        pets = [p for p in pets if p.get("category", {}).get("name", "").lower() == pet_type.lower()]
+        pet_type_lower = pet_type.lower()
+        pets = [p for p in pets if p.get("category", {}).get("name", "").lower() == pet_type_lower]
     return pets
 
-def add_personality_traits(pets: List[Dict]) -> List[Dict]:
+def add_personality_traits(pets: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     personality_map = {
-        "cat": ["playful and curious", "lazy and cuddly", "mischievous and clever", "independent and mysterious"],
-        "dog": ["friendly and loyal", "energetic and goofy", "calm and protective", "eager and attentive"],
+        "cat": [
+            "playful and curious",
+            "lazy and cuddly",
+            "mischievous and clever",
+            "independent and mysterious",
+        ],
+        "dog": [
+            "friendly and loyal",
+            "energetic and goofy",
+            "calm and protective",
+            "eager and attentive",
+        ],
     }
     import random
     enhanced = []
     for pet in pets:
-        copy = pet.copy()
-        pet_type = copy.get("category", {}).get("name", "").lower()
-        copy["personality"] = random.choice(personality_map.get(pet_type, ["adorable and unique"]))
-        enhanced.append(copy)
+        pet_copy = pet.copy()
+        pet_type = pet_copy.get("category", {}).get("name", "").lower()
+        pet_copy["personality"] = random.choice(personality_map.get(pet_type, ["adorable and unique"]))
+        enhanced.append(pet_copy)
     return enhanced
 
-async def process_entity(job_id: str, filt: PetFetchFilter, enhance: bool):
+# New workflow for pet_fetch_job entity
+async def process_pet_fetch_job(entity: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Workflow function for 'pet_fetch_job' entity.
+    Fetch pets from petstore, enhance if requested,
+    and update entity's status and pets list.
+    """
+    logger.info(f"Started processing pet_fetch_job id={entity.get('id', '(no id)')}")
     try:
-        pets = await fetch_pets_from_petstore(filt.status, filt.type)
-        logger.info(f"Job {job_id}: fetched {len(pets)} pets")
-        if enhance:
-            pets = add_personality_traits(pets)
-            logger.info(f"Job {job_id}: enhanced pets")
-        entity_job[job_id]["pets"] = pets
-        entity_job[job_id]["status"] = "done"
-    except Exception as e:
-        logger.exception(f"Error in job {job_id}: {e}")
-        entity_job[job_id]["status"] = "error"
-        entity_job[job_id]["pets"] = []
+        filt = entity.get("filter", {})
+        status = filt.get("status")
+        pet_type = filt.get("type")
+        pets = await fetch_pets_from_petstore(status, pet_type)
+        logger.info(f"Fetched {len(pets)} pets for pet_fetch_job")
 
-# New workflow function for entity 'petstore_pet' (underscore lowercase entity name)
-async def process_petstore_pet(entity: Dict) -> Dict:
-    """
-    Workflow function applied to 'petstore_pet' entity before persistence.
-    You can modify entity state here asynchronously.
-    """
-    logger.info("Processing petstore_pet entity workflow")
-    # Example: add a timestamp and ensure personality field
-    entity.setdefault("processed_at", datetime.utcnow().isoformat())
-    if "personality" not in entity:
-        # Add default personality trait if missing
-        entity["personality"] = "adorable and unique"
-    # You can add additional async calls or modifications here if needed.
+        if entity.get("enhance", False):
+            pets = add_personality_traits(pets)
+            logger.info("Enhanced pets with personality traits")
+
+        # Update entity with results
+        entity["pets"] = pets
+        entity["status"] = "done"
+        entity["finished_at"] = datetime.utcnow().isoformat()
+    except Exception as e:
+        logger.exception("Error in pet_fetch_job workflow")
+        entity["status"] = "error"
+        entity["error_message"] = str(e)
+        entity["pets"] = []
     return entity
 
+# ==========================
+# Routes / Controllers
+# ==========================
+
 @app.route("/pets/fetch", methods=["POST"])
-# Issue workaround: for POST, place validate_request decorator after route decorator
 @validate_request(PetsFetchRequest)
 async def pets_fetch(data: PetsFetchRequest):
-    filt = data.filter
-    enhance = data.enhance or False
-    job_id = datetime.utcnow().isoformat() + "-" + str(id(data))
-    entity_job[job_id] = {"status": "processing", "requestedAt": datetime.utcnow().isoformat(), "pets": []}
-    asyncio.create_task(process_entity(job_id, filt, enhance))
-    return jsonify({"job_id": job_id, "status": "processing"}), 202
+    """
+    Create a new pet_fetch_job entity with filter and enhance,
+    pass workflow to process pet fetch asynchronously before persistence.
+    Return the new job id immediately.
+    """
+    entity_data = {
+        "filter": asdict(data.filter),
+        "enhance": data.enhance or False,
+        "status": "processing",
+        "created_at": datetime.utcnow().isoformat(),
+        # pets will be added by workflow
+    }
+    try:
+        entity_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="pet_fetch_job",
+            entity_version=ENTITY_VERSION,
+            entity=entity_data,
+            workflow=process_pet_fetch_job
+        )
+        return jsonify({"job_id": entity_id, "status": "processing"}), 202
+    except Exception as e:
+        logger.exception(f"Failed to create pet_fetch_job entity: {e}")
+        return jsonify({"error": "Failed to start pet fetch job"}), 500
 
-# Issue workaround: for GET, place validate_querystring decorator before route decorator
-@validate_querystring(PetsGetQuery)
 @app.route("/pets", methods=["GET"])
+@validate_querystring(PetsGetQuery)
 async def pets_get():
+    """
+    Query a pet_fetch_job entity by job_id and return its status and pets list if done.
+    """
     job_id = request.args.get("job_id")
-    if not job_id or job_id not in entity_job:
-        return jsonify({"error": "job_id missing or not found"}), 400
-    job = entity_job[job_id]
-    return jsonify({"status": job["status"], "pets": job.get("pets", [])})
+    if not job_id:
+        return jsonify({"error": "job_id is required"}), 400
+    try:
+        job_entity = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="pet_fetch_job",
+            entity_version=ENTITY_VERSION,
+            entity_id=job_id
+        )
+        if not job_entity:
+            return jsonify({"error": f"job_id {job_id} not found"}), 404
+
+        status = job_entity.get("status", "unknown")
+        pets = job_entity.get("pets", []) if status == "done" else []
+        return jsonify({"status": status, "pets": pets})
+    except Exception as e:
+        logger.exception(f"Error fetching pet_fetch_job: {e}")
+        return jsonify({"error": "Internal server error"}), 500
 
 @app.route("/pets/filter", methods=["POST"])
-# Issue workaround: for POST, place validate_request decorator after route decorator
 @validate_request(PetsFilterRequest)
 async def pets_filter(data: PetsFilterRequest):
+    """
+    Filter pets from a completed pet_fetch_job entity by given filter criteria.
+    """
     job_id = data.job_id
-    if job_id not in entity_job:
-        return jsonify({"error": "job_id missing or not found"}), 400
-    if entity_job[job_id]["status"] != "done":
-        return jsonify({"error": "pets data not ready"}), 400
-    pets = entity_job[job_id]["pets"]
     f = data.filter
-    def match(p):
-        if f.type and p.get("category", {}).get("name", "").lower() != f.type.lower():
-            return False
-        if f.status and p.get("status", "").lower() != f.status.lower():
-            return False
-        if f.personality and f.personality.lower() not in p.get("personality", "").lower():
-            return False
-        return True
-    filtered = [p for p in pets if match(p)]
-    return jsonify({"pets": filtered})
+    if not job_id:
+        return jsonify({"error": "job_id is required"}), 400
+    try:
+        job_entity = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="pet_fetch_job",
+            entity_version=ENTITY_VERSION,
+            entity_id=job_id
+        )
+        if not job_entity:
+            return jsonify({"error": f"job_id {job_id} not found"}), 404
+        if job_entity.get("status") != "done":
+            return jsonify({"error": "pets data not ready"}), 400
 
-# New route to demonstrate usage of entity_service.add_item with workflow parameter
+        pets = job_entity.get("pets", [])
+        def match(p: Dict[str, Any]) -> bool:
+            if f.type and p.get("category", {}).get("name", "").lower() != f.type.lower():
+                return False
+            if f.status and p.get("status", "").lower() != f.status.lower():
+                return False
+            if f.personality and f.personality.lower() not in p.get("personality", "").lower():
+                return False
+            return True
+        filtered = [p for p in pets if match(p)]
+        return jsonify({"pets": filtered})
+    except Exception as e:
+        logger.exception(f"Error filtering pets for job_id {job_id}: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+
 @app.route("/pets/add", methods=["POST"])
 @validate_request(PetAddRequest)
 async def pets_add(data: PetAddRequest):
+    """
+    Add a petstore_pet entity with workflow processing before persistence.
+    """
     pet_entity = data.pet
     try:
         entity_id = await entity_service.add_item(
@@ -187,19 +312,35 @@ async def pets_add(data: PetAddRequest):
         logger.exception(f"Error adding petstore_pet entity: {e}")
         return jsonify({"error": "Failed to add pet entity"}), 500
 
+# ==========================
+# Main app run
+# ==========================
+
 if __name__ == "__main__":
     import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        stream=sys.stdout,
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
 ```
 
 ---
 
-### Summary of changes:
+### Explanation:
 
-- Added async workflow function `process_petstore_pet(entity: Dict)` that modifies the entity before persistence.
-- Added a new `PetAddRequest` data class for validation of add requests.
-- Added `/pets/add` POST endpoint that calls `entity_service.add_item` with the new `workflow=process_petstore_pet` parameter.
-- The rest of your code remains unchanged.
+- **New entity model `pet_fetch_job`:** Represents the fetch job, with fields for filter, enhance, status, pets list, timestamps.
+- **Workflow `process_pet_fetch_job`:** Does the entire async fetch, optional enhancement, and updates the entity state before persistence.
+- **`/pets/fetch` endpoint:** Just adds a `pet_fetch_job` entity with the workflow function, returns job_id immediately.
+- **`/pets` and `/pets/filter` endpoints:** Query the persisted job entity to get current status and pets.
+- Removed all in-memory global state (`entity_job` dict).
+- All complex async logic is inside workflow functions.
+- `process_petstore_pet` remains as before for adding pets.
+- Controllers are now thin and simple.
 
-Let me know if you want me to integrate this workflow into some other existing route instead!
+---
+
+This fully embraces your requirement that all async tasks should be moved to workflow functions applied before persistence, making controllers lightweight and codebase more robust.
+
+Let me know if you want me to help with tests, documentation, or further improvements!

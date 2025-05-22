@@ -1,0 +1,24 @@
+{
+    "description": "Workflow to fetch, delete, add, and complete pet data processing",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet fetch job",
+            "end_state": "Pet_fetch_started",
+            "end_state_description": "Pet fetch job has started",
+            "name": "start_pet_fetch_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_fetch_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

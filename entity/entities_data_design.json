@@ -1,0 +1,46 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "description": "A lovely cat.",
+                "id": 123,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "http://example.com/photo1.jpg",
+                    "http://example.com/photo2.jpg"
+                ],
+                "status": "available",
+                "tags": [
+                    "friendly",
+                    "playful"
+                ],
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "fetch_pets_request"
+        },
+        {
+            "entity_data_example": {
+                "maxResults": 3,
+                "preferredType": "dog"
+            },
+            "entity_name": "recommend_pets_request"
+        },
+        {
+            "entity_data_example": {
+                "funFact": "Fluffy loves to play and cuddle! \ud83d\ude38",
+                "id": 123,
+                "name": "Fluffy",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet_recommendation_response_item"
+        }
+    ]
+}

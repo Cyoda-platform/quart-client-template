@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to process pet adoption requests",
+    "name": "adoption_request_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Validate the adoption request data",
+            "end_state": "Validated",
+            "end_state_description": "Adoption request data validated",
+            "name": "start_validation",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_adoptionrequest"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Check if the pet exists",
+            "end_state": "PetChecked",
+            "end_state_description": "Pet existence verified",
+            "name": "check_pet_availability",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_check_pet_exists"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Validated",
+            "start_state_description": "Adoption request data validated"
+        },
+        {
+            "automated": true,
+            "description": "Update the adoption request status and timestamp",
+            "end_state": "StatusUpdated",
+            "end_state_description": "Adoption request status and timestamp updated",
+            "name": "update_request_status",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_status_and_timestamp"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "PetChecked",
+            "start_state_description": "Pet existence verified"
+        }
+    ]
+}

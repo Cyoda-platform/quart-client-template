@@ -1,6 +1,35 @@
-Certainly! I've updated the `pets_sync` function to include a workflow function parameter `process_pet` that will be applied to each entity before persistence, according to your instructions. The workflow function is defined with the prefix `process_` followed by the underscore lowercase entity name (`pet`).
+Absolutely, moving business logic into the workflow functions is a clean architectural approach that helps keep controllers (endpoints) slim, easier to maintain, and robust. Async tasks like data enrichment, additional entity fetches, or setting derived attributes are perfect candidates for the workflow functions.
 
-Here is your updated complete code with the workflow function implemented and used in the `add_item` call:
+---
+
+### What to move into `process_pet` workflow:
+
+1. **In `/pets/sync`:**
+   - The logic to enrich tags based on category (`purrfect`, `woof-tastic`, `pet-tastic`) can be moved to `process_pet`.
+   - Adding timestamps or additional metadata.
+2. **Search/filter logic** is about querying, so it stays in the controller.
+3. **In `/pets/adopt`:**
+   - Status update to `"adopted"` can stay in controller because it is an update to the existing entity.
+   - But any enrichment or side entities could potentially be moved if applicable.
+4. Any other enrichment or async calls related to pet entities can move to `process_pet`.
+
+---
+
+### What *cannot* be moved:
+- You cannot use `entity_service.add/update/delete` on the **same** entity inside its workflow (infinite recursion).
+- But you can get/add entities of a different model.
+- The workflow function **modifies the entity in place** before persistence.
+
+---
+
+### Below is the updated code with the following changes:
+
+- The tag enrichment logic and timestamp addition moved from `/pets/sync` to `process_pet`.
+- The `transform_petstore_pet` function simplified to just basic mapping.
+- The adoption entity update logic remains in the controller (because it updates the same entity).
+- Any other pet entity enrichment logic that was inline moved to `process_pet`.
+
+---
 
 ```python
 import asyncio
@@ -56,28 +85,39 @@ PET_ENTITY_NAME = "pet"
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
 def transform_petstore_pet(pet: Dict) -> Dict:
-    pet_id = pet.get("id")
-    name = pet.get("name", "")
-    category = pet.get("category") or {}
-    status = pet.get("status", "available")
-    tags = [t.get("name") for t in pet.get("tags", []) if "name" in t]
-    if category.get("name", "").lower() == "cat":
-        tags.append("purrfect")
-    elif category.get("name", "").lower() == "dog":
-        tags.append("woof-tastic")
-    else:
-        tags.append("pet-tastic")
-    return {"id": str(pet_id), "name": name, "category": category, "status": status, "tags": tags}
+    # Minimal transformation: keep only what's needed
+    return {
+        "id": str(pet.get("id")),
+        "name": pet.get("name", ""),
+        "category": pet.get("category") or {},
+        "status": pet.get("status", "available"),
+        "tags": [t.get("name") for t in pet.get("tags", []) if "name" in t],
+    }
 
 # Workflow function for 'pet' entity
 async def process_pet(entity: Dict) -> Dict:
     """
     Workflow function applied to pet entity asynchronously before persistence.
-    You can modify the entity here.
+    Moves enrichment and additional logic here.
     """
-    # Example: Add a timestamp for when the pet was processed
+    # Enrich tags based on category
+    category_name = entity.get("category", {}).get("name", "").lower()
+    tags = entity.get("tags", [])
+    # Avoid duplicate tags
+    if category_name == "cat" and "purrfect" not in tags:
+        tags.append("purrfect")
+    elif category_name == "dog" and "woof-tastic" not in tags:
+        tags.append("woof-tastic")
+    elif category_name and "pet-tastic" not in tags:
+        tags.append("pet-tastic")
+    entity["tags"] = tags
+
+    # Add a processed timestamp
     entity['processed_at'] = datetime.utcnow().isoformat() + 'Z'
-    # You can add more logic here if needed
+
+    # Example: could fetch or add supplementary entities of other models here if needed
+    # e.g. await entity_service.add_item(...) with different entity_model
+
     return entity
 
 @app.route("/pets/sync", methods=["POST"])
@@ -98,23 +138,21 @@ async def pets_sync(data: PetsSyncRequest):
             return jsonify({"error": "Failed to fetch pets from external API"}), 502
 
     pets_transformed = [transform_petstore_pet(p) for p in pets_raw]
-    # Store each pet individually via entity_service
     count = 0
     for pet in pets_transformed:
         pet_data = pet.copy()
-        pet_data.pop("id", None)  # id will be assigned by entity_service
+        pet_data.pop("id", None)  # id is assigned by entity_service
         try:
             await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model=PET_ENTITY_NAME,
                 entity_version=ENTITY_VERSION,
                 entity=pet_data,
-                workflow=process_pet  # Pass workflow function here
+                workflow=process_pet  # workflow handles enrichment, async tasks
             )
             count += 1
         except Exception as e:
             logger.exception(e)
-            # skip failed additions
             continue
 
     return jsonify({"syncedCount": count, "message": "Pets data synced successfully."})
@@ -126,7 +164,6 @@ async def pets_search(data: PetsSearchRequest):
     status_list = data.status.split(",") if data.status else None
     category = data.category
 
-    # Build condition filters
     conditions = {"cyoda": {"type": "group", "operator": "AND", "conditions": []}}
     if status_list:
         conditions["cyoda"]["conditions"].append({
@@ -150,7 +187,6 @@ async def pets_search(data: PetsSearchRequest):
             "type": "simple"
         })
 
-    # If no conditions, get all items
     try:
         if conditions["cyoda"]["conditions"]:
             results = await entity_service.get_items_by_condition(
@@ -169,7 +205,6 @@ async def pets_search(data: PetsSearchRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to search pets"}), 500
 
-    # Convert ids to string if needed
     for r in results:
         if "id" in r:
             r["id"] = str(r["id"])
@@ -233,9 +268,7 @@ async def pets_adopt(data: PetsAdoptRequest):
         logger.exception(e)
         return jsonify({"success": False, "message": "Failed to update pet status."}), 500
 
-    # Store adoption info in-memory as original, since no entity_service method for that
-    # Could be replaced with another entity_service call if adoption becomes an entity
-    # Keeping in-memory structure for adoptions
+    # Keep adoption info in-memory (could be moved to a new entity with workflow later)
     if not hasattr(pets_adopt, "_adoptions"):
         pets_adopt._adoptions = {}
     pets_adopt._adoptions.setdefault(adopter.email, [])
@@ -274,9 +307,16 @@ if __name__ == '__main__':
 
 ---
 
-### Explanation of the changes:
-- Added the asynchronous workflow function `process_pet(entity: Dict) -> Dict` which modifies the entity before persistence.
-- Passed the `workflow=process_pet` argument to `entity_service.add_item` in the `/pets/sync` route, so that each pet entity is processed by this function asynchronously before being stored.
-- The workflow function can be extended to add any business logic or state changes as needed.
+### Summary of the refactor:
 
-Let me know if you want me to add workflow support to other entity operations or routes!
+- The enrichment of tags and adding timestamp is now fully inside `process_pet`.
+- The controller `/pets/sync` just fetches, transforms minimally, and calls `add_item` with `workflow=process_pet`.
+- Adoption flow still updates the pet entity status directly in the controller because it is an update of existing entity state.
+- All async tasks related to pet entity enrichment before persistence are moved into the workflow function.
+- This makes your endpoints simpler, and you can extend workflows later with more logic and async calls without touching controllers.
+
+---
+
+If you want me to move adoption management (additions of adoptions) into a new entity model and create `process_adoption` workflow, I can help with that too.
+
+Let me know!

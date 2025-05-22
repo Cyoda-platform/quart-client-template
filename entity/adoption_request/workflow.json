@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to process adoption requests by validating pet existence and setting submission status",
+    "name": "adoption_request_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Validate that the pet exists before proceeding",
+            "end_state": "validated",
+            "end_state_description": "Pet existence validated",
+            "name": "validate_pet_existence",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_pet_exists"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Set adoption request status to submitted after validation",
+            "end_state": "submitted",
+            "end_state_description": "Adoption request submitted",
+            "name": "submit_adoption_request",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_submission_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "validated",
+            "start_state_description": "Pet existence validated"
+        }
+    ]
+}

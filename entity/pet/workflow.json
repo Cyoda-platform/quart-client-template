@@ -1,0 +1,32 @@
+{
+    "description": "Workflow for processing pet entities with description enrichment and message template application",
+    "name": "purrfect_pets_pet_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Process pet entity including description enrichment and message template application",
+            "end_state": "Pet_processed",
+            "end_state_description": "Pet entity has been processed",
+            "name": "process_pet_transition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates enrichment and message template application",
+                        "name": "process_pet"
+                    },
+                    {
+                        "description": "Enriches pet description if missing",
+                        "name": "process_enrich_description"
+                    },
+                    {
+                        "description": "Applies custom message template to pet description",
+                        "name": "process_apply_message_template"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

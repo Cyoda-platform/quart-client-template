@@ -1,8 +1,58 @@
-Certainly! I'll update the calls to `entity_service.add_item` to include the new `workflow` parameter, and implement the required workflow function `process_pet` (following the naming convention: `process_{entity_name}` where entity name is underscore lowercase).
+Absolutely! Moving logic from the endpoints into the `process_{entity_name}` workflow functions is a good architectural approach that keeps controllers slim and moves domain-related async tasks close to the entity lifecycle, improving maintainability and robustness.
 
-The workflow function will take the entity data as input, can modify the entity state, and must be async.
+---
 
-Here is the full updated `entity/prototype_cyoda.py` with the necessary changes:
+### What to move?
+
+You have the following async tasks inside your existing code:
+
+- Fetching pets from external API (`fetch_pets_from_petstore`)
+- Calculating match scores and filtering pets (`calculate_match_score`)
+- Adding supplementary entities (currently pets are added directly in the async job functions)
+- Adding timestamps or enriching entities before persistence
+
+---
+
+### Constraints & considerations
+
+- The workflow function is invoked **before** persisting the entity.
+- It takes the entity data as input, can modify it directly.
+- It can get/add entities of **different** entity models (but **not** the same entity model, to avoid recursion).
+- It supports async code.
+- Fire-and-forget tasks are allowed inside the workflow.
+- We cannot move job queue handling or HTTP request handling inside workflow (workflow is about entity processing, not endpoints/jobs).
+
+---
+
+### Plan
+
+1. **For the "pet" entity**:
+   - Move the enrichment of pet data (adding timestamp, description, etc.) inside `process_pet`.
+   - Move the fetching of pets and adding them to entity store inside a new workflow function for a new "pets_fetch_job" or "pet_fetch" entity.
+   - Similarly move the matchmaking logic into a workflow function for a "pet_matchmake" entity or similar.
+
+2. **Create new entities to represent jobs**:
+   - The endpoint creates a "job" entity with job parameters.
+   - The workflow on that job entity triggers fetching/matchmaking and adds pet entities accordingly.
+
+3. **This way, the endpoints just create jobs, and the workflows handle business logic asynchronously.**
+
+---
+
+### What I will do in the code
+
+- Introduce two new entity models: `pet_fetch_job` and `pet_matchmake_job`.
+- Their workflows `process_pet_fetch_job` and `process_pet_matchmake_job` run the async logic:
+  - Fetch pets from external API.
+  - For each pet, add a `pet` entity with workflow `process_pet`.
+- The endpoints just create these job entities and return immediately.
+- The `process_pet` workflow enriches pet entities before persistence.
+  
+This approach fully leverages the workflow functions.
+
+---
+
+### Updated complete code:
 
 ```python
 import asyncio
@@ -38,8 +88,6 @@ class MatchmakeRequest:
     preferredType: Optional[str] = None
     preferredStatus: Optional[str] = None
 
-entity_jobs: dict = {}
-
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
 async def fetch_pets_from_petstore(pet_type: Optional[str], status: Optional[str]) -> list:
@@ -65,47 +113,64 @@ async def calculate_match_score(pet: dict, preferred_type: Optional[str], prefer
         score += 0.4
     return score
 
-# Workflow function for 'pet' entity
+# Workflow for 'pet' entity
 async def process_pet(entity: dict) -> None:
     """
-    Workflow function applied to 'pet' entity before persistence.
-    You can modify the entity data here.
+    Enrich pet entity before persistence.
     """
-    # Example: Add/update a 'processedAt' timestamp
     entity['processedAt'] = datetime.utcnow().isoformat()
-    # Add any other processing logic as needed
+    # Add a description field if missing
+    if "description" not in entity or not entity["description"]:
+        name = entity.get("name", "this pet")
+        category = entity.get("category", {}).get("name", "pet")
+        entity["description"] = f"Meet {name}! A lovely {category} waiting for a new home."
 
-async def process_fetch_pets_job(job_id: str, pet_type: Optional[str], status: Optional[str]):
-    entity_jobs[job_id]["status"] = "processing"
+# Workflow for 'pet_fetch_job' entity
+async def process_pet_fetch_job(entity: dict) -> None:
+    """
+    Workflow triggered when a pet_fetch_job entity is added.
+    Fetches pets from external API and adds pet entities.
+    """
+    pet_type = entity.get("type")
+    status = entity.get("status")
+    job_id = entity.get("jobId")
+    # Mark job as started and add timestamp
+    entity["status"] = "processing"
+    entity["startedAt"] = datetime.utcnow().isoformat()
+
     try:
         pets = await fetch_pets_from_petstore(pet_type, status)
-        for pet in pets:
-            try:
-                # Add pet to entity_service with workflow
-                pet_data = pet.copy()
-                pet_id = await entity_service.add_item(
-                    token=cyoda_auth_service,
-                    entity_model="pet",
-                    entity_version=ENTITY_VERSION,
-                    entity=pet_data,
-                    workflow=process_pet
-                )
-                # Store the pet id in cache keyed by string id
-                # Using string keys as per requirement
-                # pets_cache replaced by retrieval from entity_service, so no local cache here
-                # But still storing job results
-            except Exception as e:
-                logger.exception(f"Failed to add pet id={pet.get('id')} to entity_service")
-        entity_jobs[job_id]["status"] = "completed"
-        entity_jobs[job_id]["result"] = {"count": len(pets)}
-        logger.info(f"Fetched and cached {len(pets)} pets for job {job_id}")
+        # Add all fetched pets as pet entities
+        for pet_data in pets:
+            # Add pet entity asynchronously with workflow
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="pet",
+                entity_version=ENTITY_VERSION,
+                entity=pet_data,
+                workflow=process_pet
+            )
+        # Mark job completed and add results
+        entity["status"] = "completed"
+        entity["completedAt"] = datetime.utcnow().isoformat()
+        entity["result"] = {"count": len(pets)}
     except Exception as e:
-        entity_jobs[job_id]["status"] = "failed"
-        entity_jobs[job_id]["error"] = str(e)
-        logger.exception("Failed to process fetch pets job")
+        logger.exception("Failed processing pet_fetch_job")
+        entity["status"] = "failed"
+        entity["error"] = str(e)
 
-async def process_matchmake_job(job_id: str, preferred_type: Optional[str], preferred_status: Optional[str]):
-    entity_jobs[job_id]["status"] = "processing"
+# Workflow for 'pet_matchmake_job' entity
+async def process_pet_matchmake_job(entity: dict) -> None:
+    """
+    Workflow triggered when a pet_matchmake_job entity is added.
+    Fetches pets and filters by match score, adds pet entities.
+    """
+    preferred_type = entity.get("preferredType")
+    preferred_status = entity.get("preferredStatus")
+    job_id = entity.get("jobId")
+    entity["status"] = "processing"
+    entity["startedAt"] = datetime.utcnow().isoformat()
+
     try:
         pets = await fetch_pets_from_petstore(preferred_type, preferred_status)
         matched_pets = []
@@ -115,44 +180,70 @@ async def process_matchmake_job(job_id: str, preferred_type: Optional[str], pref
                 p = pet.copy()
                 p["matchScore"] = round(score, 2)
                 matched_pets.append(p)
-            try:
-                # Add pet to entity_service with workflow
-                pet_data = pet.copy()
-                pet_id = await entity_service.add_item(
-                    token=cyoda_auth_service,
-                    entity_model="pet",
-                    entity_version=ENTITY_VERSION,
-                    entity=pet_data,
-                    workflow=process_pet
-                )
-            except Exception as e:
-                logger.exception(f"Failed to add pet id={pet.get('id')} to entity_service")
-        entity_jobs[job_id]["status"] = "completed"
-        entity_jobs[job_id]["result"] = {"matchedPets": matched_pets}
-        logger.info(f"Matchmaking completed with {len(matched_pets)} matches for job {job_id}")
+            # Add pet anyway, so it is stored for reference
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="pet",
+                entity_version=ENTITY_VERSION,
+                entity=pet,
+                workflow=process_pet
+            )
+        entity["status"] = "completed"
+        entity["completedAt"] = datetime.utcnow().isoformat()
+        entity["result"] = {"matchedPets": matched_pets}
     except Exception as e:
-        entity_jobs[job_id]["status"] = "failed"
-        entity_jobs[job_id]["error"] = str(e)
-        logger.exception("Failed to process matchmaking job")
+        logger.exception("Failed processing pet_matchmake_job")
+        entity["status"] = "failed"
+        entity["error"] = str(e)
 
 @app.route("/pets/fetch", methods=["POST"])
-@validate_request(FetchPetsRequest)  # Workaround: place validation last for POST due to validate_request defect
+@validate_request(FetchPetsRequest)
 async def pets_fetch(data: FetchPetsRequest):
-    pet_type = data.type
-    status = data.status
+    """
+    Endpoint creates a pet_fetch_job entity to trigger processing asynchronously.
+    """
     job_id = f"fetch-{datetime.utcnow().isoformat()}"
-    entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-    asyncio.create_task(process_fetch_pets_job(job_id, pet_type, status))
+    job_entity = {
+        "entity_model": "pet_fetch_job",
+        "jobId": job_id,
+        "type": data.type,
+        "status": "queued",
+        "statusRequestedAt": datetime.utcnow().isoformat(),
+        "statusRequestedBy": "api"
+    }
+    # Add job entity with workflow
+    await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="pet_fetch_job",
+        entity_version=ENTITY_VERSION,
+        entity=job_entity,
+        workflow=process_pet_fetch_job
+    )
     return jsonify({"jobId": job_id, "status": "started"}), 202
 
 @app.route("/pets/matchmake", methods=["POST"])
-@validate_request(MatchmakeRequest)  # Workaround: place validation last for POST due to validate_request defect
+@validate_request(MatchmakeRequest)
 async def pets_matchmake(data: MatchmakeRequest):
-    preferred_type = data.preferredType
-    preferred_status = data.preferredStatus
+    """
+    Endpoint creates a pet_matchmake_job entity to trigger matchmaking asynchronously.
+    """
     job_id = f"matchmake-{datetime.utcnow().isoformat()}"
-    entity_jobs[job_id] = {"status": "queued", "requestedAt": datetime.utcnow().isoformat()}
-    asyncio.create_task(process_matchmake_job(job_id, preferred_type, preferred_status))
+    job_entity = {
+        "entity_model": "pet_matchmake_job",
+        "jobId": job_id,
+        "preferredType": data.preferredType,
+        "preferredStatus": data.preferredStatus,
+        "status": "queued",
+        "statusRequestedAt": datetime.utcnow().isoformat(),
+        "statusRequestedBy": "api"
+    }
+    await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="pet_matchmake_job",
+        entity_version=ENTITY_VERSION,
+        entity=job_entity,
+        workflow=process_pet_matchmake_job
+    )
     return jsonify({"jobId": job_id, "status": "started"}), 202
 
 @app.route("/pets", methods=["GET"])
@@ -179,16 +270,28 @@ async def get_pet(pet_id: str):
         )
         if not pet:
             return jsonify({"error": "Pet not found"}), 404
-        pet_detail = pet.copy()
-        pet_detail["description"] = f"Meet {pet_detail.get('name', 'this pet')}! A lovely {pet_detail.get('category', {}).get('name', 'pet')} waiting for a new home."
-        return jsonify(pet_detail)
+        return jsonify(pet)
     except Exception as e:
         logger.exception(f"Failed to retrieve pet id={pet_id}")
         return jsonify({"error": "Pet not found"}), 404
 
 @app.route("/jobs/<string:job_id>", methods=["GET"])
 async def get_job_status(job_id: str):
-    job = entity_jobs.get(job_id)
+    # Retrieve job entity by job_id across job entities pet_fetch_job and pet_matchmake_job
+    # For simplicity, try pet_fetch_job first, then pet_matchmake_job
+    job = await entity_service.get_item(
+        token=cyoda_auth_service,
+        entity_model="pet_fetch_job",
+        entity_version=ENTITY_VERSION,
+        technical_id=job_id
+    )
+    if not job:
+        job = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="pet_matchmake_job",
+            entity_version=ENTITY_VERSION,
+            technical_id=job_id
+        )
     if not job:
         return jsonify({"error": "Job not found"}), 404
     return jsonify(job)
@@ -197,9 +300,33 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added async function `process_pet(entity: dict)` as the workflow for the "pet" entity.
-- Passed `workflow=process_pet` as an argument to all calls to `entity_service.add_item` for the pet entity.
-- The workflow function adds a `processedAt` timestamp to the entity before persistence (example logic, you can expand this as needed).
+---
 
-Let me know if you want the workflow function to do something specific!
+### Explanation:
+
+- **Endpoints /pets/fetch and /pets/matchmake** now just create a job entity (`pet_fetch_job` or `pet_matchmake_job`).
+- The `entity_service.add_item` call includes the respective workflow function (`process_pet_fetch_job` or `process_pet_matchmake_job`).
+- These workflows run asynchronously, execute the logic previously in background tasks:
+  - Fetch pets
+  - Add pet entities with `process_pet` workflow for enrichment
+  - Update the job entity's status and results directly (modifying the same entity passed as argument)
+- The `process_pet` workflow enriches the pet entity before persistence.
+- The `/jobs/<job_id>` endpoint fetches the job entity by ID and returns the status and results.
+- Removed usage of `entity_jobs` dictionary in favor of job entities stored in the entity service.
+- No infinite recursion risk because:
+  - `pet_fetch_job` and `pet_matchmake_job` workflows add `pet` entities but do not add/update/delete other `pet_fetch_job` or `pet_matchmake_job` entities.
+  - The `process_pet` workflow only modifies the pet entity itself.
+
+---
+
+### Benefits:
+
+- All async/background logic moved into workflows.
+- Controllers only create job entities and return job IDs.
+- Entity service handles persistence and workflows handle business logic.
+- No need for explicit `asyncio.create_task` or external job management.
+- Clear separation of concerns and better maintainability.
+
+---
+
+Please let me know if you'd like me to further optimize or add comments!

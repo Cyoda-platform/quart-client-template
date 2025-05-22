@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for fetching, processing and storing pet data using Petstore API",
+    "name": "pet_fetch_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pet data from external API",
+            "end_state": "fetching",
+            "end_state_description": "Fetching pet data from external API",
+            "name": "start_fetch",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pets_from_external_api"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Filter and sort fetched pet data",
+            "end_state": "processing",
+            "end_state_description": "Filtering and sorting pet data",
+            "name": "filter_and_sort",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_filter_and_sort_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "fetching",
+            "start_state_description": "Fetching pet data from external API"
+        },
+        {
+            "automated": true,
+            "description": "Add or update pet data in database",
+            "end_state": "completed",
+            "end_state_description": "Pet data upsert completed",
+            "name": "upsert_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_upsert_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "processing",
+            "start_state_description": "Filtering and sorting pet data"
+        }
+    ]
+}

@@ -1,0 +1,50 @@
+{
+    "description": "Workflow managing pet matchmaking job with fetching and calculation processes",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the pet matchmaking job processing",
+            "end_state": "Pet_matchmake_job_processing",
+            "end_state_description": "Pet matchmaking job is processing",
+            "name": "start_pet_matchmake_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_matchmake_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before job processing"
+        },
+        {
+            "automated": true,
+            "description": "Complete the pet matchmaking job processing",
+            "end_state": "Pet_matchmake_job_completed",
+            "end_state_description": "Pet matchmaking job has completed successfully",
+            "name": "finish_pet_matchmake_job",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_matchmake_job_processing",
+            "start_state_description": "Pet matchmaking job is processing"
+        },
+        {
+            "automated": true,
+            "description": "Fail the pet matchmaking job processing",
+            "end_state": "Pet_matchmake_job_failed",
+            "end_state_description": "Pet matchmaking job has failed",
+            "name": "fail_pet_matchmake_job",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_matchmake_job_processing",
+            "start_state_description": "Pet matchmaking job is processing"
+        }
+    ]
+}

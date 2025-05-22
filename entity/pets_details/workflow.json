@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to fetch and update pet details",
+    "name": "pets_details_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pet details",
+            "end_state": "Pet_details_fetched",
+            "end_state_description": "Pet details have been fetched",
+            "name": "start_fetch_pet_details",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pet_details"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Update status to done",
+            "end_state": "Details_processing_done",
+            "end_state_description": "Details processing completed",
+            "name": "update_status_to_done",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_status_done"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_details_fetched",
+            "start_state_description": "Pet details have been fetched"
+        }
+    ]
+}

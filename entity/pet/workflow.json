@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for processing pet entity through normalization and timestamp addition",
+    "name": "pet_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Normalize the pet status to lowercase",
+            "end_state": "Status_normalized",
+            "end_state_description": "Pet status normalized",
+            "name": "normalize_status",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add last processed timestamp to pet entity",
+            "end_state": "Last_processed_added",
+            "end_state_description": "Last processed timestamp added",
+            "name": "add_last_processed",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_last_processed"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Status_normalized",
+            "start_state_description": "Pet status normalized"
+        }
+    ]
+}

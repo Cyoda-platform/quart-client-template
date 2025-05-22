@@ -1,0 +1,60 @@
+{
+    "description": "Workflow managing pet data synchronization, search, and adoption process.",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch pets from external API and synchronize data",
+            "end_state": "Pets_synced",
+            "end_state_description": "Pets data fetched and synchronized",
+            "name": "fetch_and_sync_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_and_sync"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Search cached pets based on filters",
+            "end_state": "Pets_searched",
+            "end_state_description": "Pets search completed",
+            "name": "search_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_search"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_synced",
+            "start_state_description": "Pets data fetched and synchronized"
+        },
+        {
+            "automated": true,
+            "description": "Orchestrate and process pet adoption workflow",
+            "end_state": "Adoption_processed",
+            "end_state_description": "Adoption workflow completed",
+            "name": "process_adoption_workflow",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_adoption"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_searched",
+            "start_state_description": "Pets search completed"
+        }
+    ]
+}

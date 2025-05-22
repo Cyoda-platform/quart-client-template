@@ -1,0 +1,45 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": "string",
+                "isFavorite": false,
+                "name": "string",
+                "photoUrls": [
+                    "string"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "actions": {
+                    "markFavorite": [
+                        "petId1",
+                        "petId2"
+                    ],
+                    "updateAdoptionStatus": {
+                        "petId": "newStatus"
+                    }
+                },
+                "filter": {
+                    "status": "available",
+                    "type": "cat"
+                }
+            },
+            "entity_name": "fetch_request"
+        },
+        {
+            "entity_data_example": {
+                "adopter": {
+                    "contact": "string",
+                    "name": "string"
+                },
+                "petId": "string"
+            },
+            "entity_name": "adopt_request"
+        }
+    ]
+}

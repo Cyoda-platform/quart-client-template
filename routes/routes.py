@@ -1,25 +1,23 @@
-import asyncio
+from datetime import datetime
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 # Data classes for request validation
 @dataclass
@@ -65,7 +63,7 @@ async def process_pet_adoption(entity: Dict) -> None:
 pets_cache_ids: List[str] = []
 filtered_cache_ids: List[str] = []
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)
 async def fetch_pets(data: FetchPetsRequest):
     status = data.status
@@ -106,7 +104,7 @@ async def fetch_pets(data: FetchPetsRequest):
 
     return jsonify({"message": "Pets data fetched and stored", "count": len(mapped_pets)})
 
-@app.route("/pets/filter", methods=["POST"])
+@routes_bp.route("/pets/filter", methods=["POST"])
 @validate_request(FilterPetsRequest)
 async def filter_pets(data: FilterPetsRequest):
     pet_type = data.type
@@ -142,7 +140,7 @@ async def filter_pets(data: FilterPetsRequest):
 
     return jsonify({"pets": filtered})
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def get_pets():
     global filtered_cache_ids
     pets = []
@@ -160,7 +158,7 @@ async def get_pets():
             logger.exception(e)
     return jsonify({"pets": pets})
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptPetRequest)
 async def adopt_pet(data: AdoptPetRequest):
     pet_id = str(data.pet_id)
@@ -200,6 +198,3 @@ async def adopt_pet(data: AdoptPetRequest):
 
     logger.info(f"Adoption processed for pet_id={pet_id} by {adopter_name}")
     return jsonify({"message": "Adoption processed", "pet_id": pet_id, "status": "adopted"})
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

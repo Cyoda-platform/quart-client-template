@@ -5,20 +5,20 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 
 import httpx
-from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, request, jsonify, abort
+from quart_schema import validate_request, validate_querystring
+
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class FetchPets:
@@ -97,7 +97,7 @@ async def process_pets_fetch_job(entity: Dict[str, Any]) -> Dict[str, Any]:
         logger.exception(f"Fetch job {job_id} failed: {e}")
     return entity
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPets)
 async def pets_fetch(data: FetchPets):
     job_entity = {
@@ -118,8 +118,8 @@ async def pets_fetch(data: FetchPets):
         "job_id": job_id,
     })
 
+@routes_bp.route("/pets", methods=["GET"])
 @validate_querystring(QueryPets)
-@app.route("/pets", methods=["GET"])
 async def pets_list():
     type_filter = request.args.get("type")
     status_filter = request.args.get("status")
@@ -154,7 +154,7 @@ async def pets_list():
         })
     return jsonify(response)
 
-@app.route("/pets/recommend", methods=["POST"])
+@routes_bp.route("/pets/recommend", methods=["POST"])
 @validate_request(RecommendPets)
 async def pets_recommend(data: RecommendPets):
     preferred_type = data.preferredType
@@ -184,12 +184,11 @@ async def pets_recommend(data: RecommendPets):
             "name": pet.get("name"),
             "type": pet.get("category", {}).get("name"),
             "status": pet.get("status"),
-            "funFact": f"{pet.get('name')} loves to play and cuddle! 
-");
+            "funFact": f"{pet.get('name')} loves to play and cuddle!",
         })
     return jsonify(response)
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pet_detail(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -212,6 +211,3 @@ async def pet_detail(pet_id: str):
         "photoUrls": pet.get("photoUrls", []),
         "description": pet.get("description"),
     })
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

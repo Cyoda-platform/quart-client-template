@@ -1,37 +1,3 @@
-Absolutely, moving business logic into the workflow functions is a clean architectural approach that helps keep controllers (endpoints) slim, easier to maintain, and robust. Async tasks like data enrichment, additional entity fetches, or setting derived attributes are perfect candidates for the workflow functions.
-
----
-
-### What to move into `process_pet` workflow:
-
-1. **In `/pets/sync`:**
-   - The logic to enrich tags based on category (`purrfect`, `woof-tastic`, `pet-tastic`) can be moved to `process_pet`.
-   - Adding timestamps or additional metadata.
-2. **Search/filter logic** is about querying, so it stays in the controller.
-3. **In `/pets/adopt`:**
-   - Status update to `"adopted"` can stay in controller because it is an update to the existing entity.
-   - But any enrichment or side entities could potentially be moved if applicable.
-4. Any other enrichment or async calls related to pet entities can move to `process_pet`.
-
----
-
-### What *cannot* be moved:
-- You cannot use `entity_service.add/update/delete` on the **same** entity inside its workflow (infinite recursion).
-- But you can get/add entities of a different model.
-- The workflow function **modifies the entity in place** before persistence.
-
----
-
-### Below is the updated code with the following changes:
-
-- The tag enrichment logic and timestamp addition moved from `/pets/sync` to `process_pet`.
-- The `transform_petstore_pet` function simplified to just basic mapping.
-- The adoption entity update logic remains in the controller (because it updates the same entity).
-- Any other pet entity enrichment logic that was inline moved to `process_pet`.
-
----
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -80,14 +46,14 @@ class PetsAdoptRequest:
     petId: int
     adopter: AdopterInfo
 
+# Adoption entity for storing adoption info persistently
+ADOPTION_ENTITY_NAME = "adoption"
 PET_ENTITY_NAME = "pet"
-
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
 def transform_petstore_pet(pet: Dict) -> Dict:
-    # Minimal transformation: keep only what's needed
+    # Minimal transformation: keep only what's needed, exclude id because entity_service manages it
     return {
-        "id": str(pet.get("id")),
         "name": pet.get("name", ""),
         "category": pet.get("category") or {},
         "status": pet.get("status", "available"),
@@ -100,7 +66,6 @@ async def process_pet(entity: Dict) -> Dict:
     Workflow function applied to pet entity asynchronously before persistence.
     Moves enrichment and additional logic here.
     """
-    # Enrich tags based on category
     category_name = entity.get("category", {}).get("name", "").lower()
     tags = entity.get("tags", [])
     # Avoid duplicate tags
@@ -115,9 +80,16 @@ async def process_pet(entity: Dict) -> Dict:
     # Add a processed timestamp
     entity['processed_at'] = datetime.utcnow().isoformat() + 'Z'
 
-    # Example: could fetch or add supplementary entities of other models here if needed
-    # e.g. await entity_service.add_item(...) with different entity_model
+    return entity
 
+# Workflow function for 'adoption' entity
+async def process_adoption(entity: Dict) -> Dict:
+    """
+    Workflow function applied to adoption entity asynchronously before persistence.
+    Ensures adoption timestamp and validity.
+    """
+    entity['adopted_at'] = datetime.utcnow().isoformat() + 'Z'
+    # Additional validations or enrichment can be added here
     return entity
 
 @app.route("/pets/sync", methods=["POST"])
@@ -141,7 +113,7 @@ async def pets_sync(data: PetsSyncRequest):
     count = 0
     for pet in pets_transformed:
         pet_data = pet.copy()
-        pet_data.pop("id", None)  # id is assigned by entity_service
+        # entity_service.add_item assigns id so exclude id here
         try:
             await entity_service.add_item(
                 token=cyoda_auth_service,
@@ -268,55 +240,73 @@ async def pets_adopt(data: PetsAdoptRequest):
         logger.exception(e)
         return jsonify({"success": False, "message": "Failed to update pet status."}), 500
 
-    # Keep adoption info in-memory (could be moved to a new entity with workflow later)
-    if not hasattr(pets_adopt, "_adoptions"):
-        pets_adopt._adoptions = {}
-    pets_adopt._adoptions.setdefault(adopter.email, [])
-    if pet_id not in pets_adopt._adoptions[adopter.email]:
-        pets_adopt._adoptions[adopter.email].append(pet_id)
+    # Create adoption entity to persist adoption info
+    adoption_data = {
+        "petId": pet_id,
+        "adopterName": adopter.name,
+        "adopterEmail": adopter.email,
+        "petName": pet.get("name"),
+    }
+    try:
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model=ADOPTION_ENTITY_NAME,
+            entity_version=ENTITY_VERSION,
+            entity=adoption_data,
+            workflow=process_adoption
+        )
+    except Exception as e:
+        logger.exception(e)
+        # Adoption info persistence failure is non-critical for user experience
+        pass
 
     return jsonify({"success": True, "message": f"Congrats {adopter.name}! You adopted {pet.get('name')}."})
 
 @app.route("/adoptions/<string:adopter_email>", methods=["GET"])
 async def get_adoptions(adopter_email: str):
-    if not hasattr(pets_adopt, "_adoptions"):
-        pets_adopt._adoptions = {}
+    # Query adoption entities filtered by adopterEmail
+    conditions = {
+        "cyoda": {
+            "type": "group",
+            "operator": "AND",
+            "conditions": [{
+                "jsonPath": "$.adopterEmail",
+                "operatorType": "IEQUALS",
+                "value": adopter_email,
+                "type": "simple"
+            }]
+        }
+    }
+    try:
+        adoptions = await entity_service.get_items_by_condition(
+            token=cyoda_auth_service,
+            entity_model=ADOPTION_ENTITY_NAME,
+            entity_version=ENTITY_VERSION,
+            condition=conditions
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to fetch adoptions"}), 500
 
-    pet_ids = pets_adopt._adoptions.get(adopter_email, [])
     pets = []
-    for pid in pet_ids:
+    for adoption in adoptions:
+        pet_id = adoption.get("petId")
+        if not pet_id:
+            continue
         try:
             pet = await entity_service.get_item(
                 token=cyoda_auth_service,
                 entity_model=PET_ENTITY_NAME,
                 entity_version=ENTITY_VERSION,
-                technical_id=pid
+                technical_id=pet_id
             )
             if pet:
                 pet["id"] = str(pet["id"])
                 pets.append({"id": pet["id"], "name": pet.get("name"), "category": pet.get("category", {})})
-        except Exception as e:
-            logger.exception(e)
+        except Exception:
             continue
 
     return jsonify({"adopter": adopter_email, "adoptedPets": pets})
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Summary of the refactor:
-
-- The enrichment of tags and adding timestamp is now fully inside `process_pet`.
-- The controller `/pets/sync` just fetches, transforms minimally, and calls `add_item` with `workflow=process_pet`.
-- Adoption flow still updates the pet entity status directly in the controller because it is an update of existing entity state.
-- All async tasks related to pet entity enrichment before persistence are moved into the workflow function.
-- This makes your endpoints simpler, and you can extend workflows later with more logic and async calls without touching controllers.
-
----
-
-If you want me to move adoption management (additions of adoptions) into a new entity model and create `process_adoption` workflow, I can help with that too.
-
-Let me know!

@@ -1,0 +1,24 @@
+{
+    "description": "Workflow for processing pet entity normalization and default value setting",
+    "name": "pet_entity_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initial processing of pet entity",
+            "end_state": "Pet_normalized",
+            "end_state_description": "Pet entity has been normalized and defaults set",
+            "name": "start_pet_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

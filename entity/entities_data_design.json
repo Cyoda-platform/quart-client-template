@@ -1,0 +1,41 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": {
+                    "name": "cat"
+                },
+                "id": "123",
+                "name": "Fluffy",
+                "status": "available",
+                "tags": [
+                    "cute",
+                    "playful"
+                ]
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "email": "alice@example.com",
+                "name": "Alice"
+            },
+            "entity_name": "adopter_info"
+        },
+        {
+            "entity_data_example": {
+                "adoptedPets": [
+                    {
+                        "category": {
+                            "name": "cat"
+                        },
+                        "id": "123",
+                        "name": "Fluffy"
+                    }
+                ],
+                "adopter": "alice@example.com"
+            },
+            "entity_name": "adoption_record"
+        }
+    ]
+}

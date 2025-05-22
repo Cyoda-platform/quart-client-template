@@ -1,0 +1,14 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "description": "Fluffy is a lovely cat currently available. Loves naps and chasing yarn balls! \ud83d\ude38",
+                "id": "1",
+                "name": "fluffy",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

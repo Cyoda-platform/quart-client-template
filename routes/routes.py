@@ -4,21 +4,20 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 @dataclass
 class PetFetchFilter:
@@ -119,7 +118,7 @@ async def process_pet_fetch_job(entity: Dict[str, Any]) -> Dict[str, Any]:
         entity["pets"] = []
     return entity
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(PetsFetchRequest)
 async def pets_fetch(data: PetsFetchRequest):
     entity_data = {
@@ -140,7 +139,7 @@ async def pets_fetch(data: PetsFetchRequest):
         logger.exception(f"Failed to create pet_fetch_job entity: {e}")
         return jsonify({"error": "Failed to start pet fetch job"}), 500
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 @validate_querystring(PetsGetQuery)
 async def pets_get():
     job_id = request.args.get("job_id")
@@ -162,7 +161,7 @@ async def pets_get():
         logger.exception(f"Error fetching pet_fetch_job: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/pets/filter", methods=["POST"])
+@routes_bp.route("/pets/filter", methods=["POST"])
 @validate_request(PetsFilterRequest)
 async def pets_filter(data: PetsFilterRequest):
     job_id = data.job_id
@@ -195,7 +194,7 @@ async def pets_filter(data: PetsFilterRequest):
         logger.exception(f"Error filtering pets for job_id {job_id}: {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/pets/add", methods=["POST"])
+@routes_bp.route("/pets/add", methods=["POST"])
 @validate_request(PetAddRequest)
 async def pets_add(data: PetAddRequest):
     pet_entity = data.pet
@@ -210,12 +209,3 @@ async def pets_add(data: PetAddRequest):
     except Exception as e:
         logger.exception(f"Error adding petstore_pet entity: {e}")
         return jsonify({"error": "Failed to add pet entity"}), 500
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s"
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

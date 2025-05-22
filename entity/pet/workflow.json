@@ -1,42 +1,78 @@
 {
-    "description": "Workflow for processing pet entity through normalization and timestamp addition",
-    "name": "pet_processing_workflow",
+    "description": "Workflow for managing pets lifecycle in Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
     "transitions": [
         {
             "automated": true,
-            "description": "Normalize the pet status to lowercase",
-            "end_state": "Status_normalized",
-            "end_state_description": "Pet status normalized",
-            "name": "normalize_status",
+            "description": "Fetch pets from external API and cache them",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets data has been fetched and cached",
+            "name": "fetch_pets_transition",
             "processes": {
                 "externalized_processors": [
                     {
                         "description": "",
-                        "name": "process_normalize_status"
+                        "name": "process_fetch_pets"
                     }
                 ],
                 "schedule_transition_processors": []
             },
             "start_state": "None",
-            "start_state_description": "Initial state"
+            "start_state_description": "Initial state before pets are fetched"
         },
         {
             "automated": true,
-            "description": "Add last processed timestamp to pet entity",
-            "end_state": "Last_processed_added",
-            "end_state_description": "Last processed timestamp added",
-            "name": "add_last_processed",
+            "description": "Filter cached pets based on criteria",
+            "end_state": "Pets_filtered",
+            "end_state_description": "Pets data has been filtered",
+            "name": "filter_pets_transition",
             "processes": {
                 "externalized_processors": [
                     {
                         "description": "",
-                        "name": "process_add_last_processed"
+                        "name": "process_filter_pets"
                     }
                 ],
                 "schedule_transition_processors": []
             },
-            "start_state": "Status_normalized",
-            "start_state_description": "Pet status normalized"
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets data has been fetched and cached"
+        },
+        {
+            "automated": true,
+            "description": "Start pet adoption process",
+            "end_state": "Adoption_pending",
+            "end_state_description": "Adoption process started and pending",
+            "name": "start_adoption_transition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_adopt_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_filtered",
+            "start_state_description": "Pets data has been filtered"
+        },
+        {
+            "automated": true,
+            "description": "Complete pet adoption",
+            "end_state": "Adopted",
+            "end_state_description": "Pet has been adopted",
+            "name": "complete_adoption_transition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_complete_adoption"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Adoption_pending",
+            "start_state_description": "Adoption process started and pending"
         }
     ]
 }

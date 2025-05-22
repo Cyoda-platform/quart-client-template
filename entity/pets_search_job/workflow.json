@@ -1,0 +1,33 @@
+{
+    "description": "Workflow to process pet search requests and update pet entities",
+    "name": "purrfect_pets_search_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet search request",
+            "end_state": "search_in_progress",
+            "end_state_description": "Pet search is in progress",
+            "name": "start_search",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Process the pet search job including fetching and updating pets",
+                        "name": "process_pets_search_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Complete the pet search processing",
+            "end_state": "search_completed",
+            "end_state_description": "Pet search has been completed",
+            "name": "complete_search",
+            "start_state": "search_in_progress",
+            "start_state_description": "Pet search is in progress"
+        }
+    ]
+}

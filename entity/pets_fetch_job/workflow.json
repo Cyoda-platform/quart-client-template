@@ -1,0 +1,50 @@
+{
+    "description": "Workflow for fetching and processing pets data from external Petstore API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pets data from Petstore",
+            "end_state": "Pets_fetch_processing",
+            "end_state_description": "Pets data fetch job is processing",
+            "name": "start_fetch_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrate the pets fetch job",
+                        "name": "process_pets_fetch_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Pets data fetch completed successfully",
+            "end_state": "Pets_fetch_completed",
+            "end_state_description": "Pets data fetch job completed successfully",
+            "name": "complete_fetch_success",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetch_processing",
+            "start_state_description": "Pets data fetch job is processing"
+        },
+        {
+            "automated": true,
+            "description": "Pets data fetch failed",
+            "end_state": "Pets_fetch_failed",
+            "end_state_description": "Pets data fetch job failed",
+            "name": "complete_fetch_failure",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetch_processing",
+            "start_state_description": "Pets data fetch job is processing"
+        }
+    ]
+}

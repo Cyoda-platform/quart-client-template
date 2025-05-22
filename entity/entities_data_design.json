@@ -1,0 +1,23 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "trigger": "hello_world"
+            },
+            "entity_name": "hello_request"
+        },
+        {
+            "entity_data_example": {
+                "message": "Hello World!",
+                "status": "success"
+            },
+            "entity_name": "hello_response_post"
+        },
+        {
+            "entity_data_example": {
+                "message": "Hello World!"
+            },
+            "entity_name": "hello_response_get"
+        }
+    ]
+}

@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for fetching, enriching, and recommending pets in Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pets",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets have been fetched",
+            "name": "start_fetch",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Enrich fetched pets with descriptions",
+            "end_state": "Pets_enriched",
+            "end_state_description": "Pets have been enriched with descriptions",
+            "name": "enrich_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrich"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Recommend pets based on preferences",
+            "end_state": "Pets_recommended",
+            "end_state_description": "Pets have been recommended",
+            "name": "recommend_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_recommend"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_enriched",
+            "start_state_description": "Pets have been enriched with descriptions"
+        }
+    ]
+}

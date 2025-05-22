@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for managing pet data fetching, caching, and adoption requests in Purrfect Pets API app",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pets data from external API",
+            "end_state": "fetching",
+            "end_state_description": "Pets data fetching in progress",
+            "name": "start_fetch_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch and process external pets data",
+                        "name": "process_fetch"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Cache the fetched pets data",
+            "end_state": "caching",
+            "end_state_description": "Pets data caching in progress",
+            "name": "fetch_to_cache",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Cache processed pets data",
+                        "name": "process_cache"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "fetching",
+            "start_state_description": "Pets data fetching in progress"
+        },
+        {
+            "automated": true,
+            "description": "Handle pet adoption request",
+            "end_state": "adoption",
+            "end_state_description": "Adoption request processing in progress",
+            "name": "cache_to_adoption",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Process adoption request",
+                        "name": "process_adoption_request"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "caching",
+            "start_state_description": "Pets data caching in progress"
+        }
+    ]
+}

@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for processing pet entities with tagging and timestamping",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet entity",
+            "end_state": "Tags_added",
+            "end_state_description": "Tags have been added to pet entity",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_tags"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add processed timestamp to pet entity",
+            "end_state": "Processed_timestamp_added",
+            "end_state_description": "Processed timestamp added to pet entity",
+            "name": "add_processed_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_processed_timestamp"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Tags_added",
+            "start_state_description": "Tags have been added to pet entity"
+        }
+    ]
+}

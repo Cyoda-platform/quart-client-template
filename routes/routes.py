@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class FetchRequest:
@@ -141,7 +140,7 @@ async def process_pet_fetch_job(entity: Dict) -> Dict:
     return entity
 
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchRequest)
 async def fetch_pets(data: FetchRequest):
     job_entity = {
@@ -164,7 +163,7 @@ async def fetch_pets(data: FetchRequest):
     return jsonify({"message": "Pets data fetch job created", "job_id": job_id}), 202
 
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def get_pets():
     try:
         pets = await entity_service.get_items(
@@ -178,7 +177,7 @@ async def get_pets():
     return jsonify(pets)
 
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def get_pet(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -195,7 +194,7 @@ async def get_pet(pet_id: str):
     return jsonify(pet)
 
 
-@app.route("/pets/customize-message", methods=["POST"])
+@routes_bp.route("/pets/customize-message", methods=["POST"])
 @validate_request(CustomizeMessage)
 async def customize_message(data: CustomizeMessage):
     try:
@@ -225,7 +224,3 @@ async def customize_message(data: CustomizeMessage):
         logger.exception(f"Failed to update pet id {data.pet_id}")
         return jsonify({"error": "Failed to update pet description"}), 500
     return jsonify({"pet_id": data.pet_id, "message_template": data.message_template})
-
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

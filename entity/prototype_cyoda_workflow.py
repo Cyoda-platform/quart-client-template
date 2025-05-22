@@ -1,52 +1,11 @@
-Absolutely! Moving the async logic and heavy lifting out of the controller (endpoint) and into the workflow function (`process_prototype`) is indeed the right approach. This will:
-
-- Make endpoints slimmer and easier to maintain.
-- Delegate async tasks and entity state changes to the workflow handler.
-- Leverage the new `workflow` argument to run asynchronous processing before persistence.
-- Avoid manual background task management (`asyncio.create_task` in the controller) which may have pitfalls.
-
----
-
-### Plan for refactoring:
-
-1. **Endpoint `/api/fetch-and-analyze`:**
-   - Instead of creating the job with status `"processing"` and then launching a background task, we will:
-     - Create a job with status `"created"` or `"processing"`.
-     - Pass it to `entity_service.add_item` with the workflow function `process_prototype`.
-     - Inside `process_prototype`, do all asynchronous steps (login, parse, analyze).
-     - Update the same entity's state directly (i.e. `entity["status"] = "completed"` etc).
-     - **Do not call `add_item` or `update_item` on the same entity inside workflow** (can get/update other entities but not this one).
-     - Because the workflow runs asynchronously before persistence, the updated `entity` will be saved with the new state.
-
-2. **Remove `asyncio.create_task` call from endpoint — no manual background tasks.**
-
-3. **Inside `process_prototype`:**
-   - Do everything:
-     - Login.
-     - Fetch the data.
-     - Analyze.
-     - Update the `entity` dictionary with status, timestamps, summary, errors.
-   - **Do not update the entity via `entity_service.update_item`** (this will cause recursion or errors).
-   - If other entities need to be added/updated, can do so here.
-
-4. **In the `/api/report` endpoint and `/` index page:**
-   - No changes needed.
-   - They just read the processed completed entities.
-
----
-
-### Updated complete code with refactoring applied:
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, Any
 
 import httpx
-from quart import Quart, jsonify, render_template_string, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Quart, jsonify, render_template_string
+from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -61,14 +20,9 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 app = Quart(__name__)
 QuartSchema(app)
 
-# Workaround for quart-schema defect:
-# - For GET requests, put validation decorator first
-# - For POST requests, put validation decorator last
-
 @dataclass
 class FetchAnalyzeRequest:
-    # No fields required currently; placeholder for future request params
-    pass
+    pass  # no fields required currently
 
 entity_name = "prototype"
 
@@ -76,7 +30,6 @@ SAUCEDEMO_LOGIN_URL = "https://www.saucedemo.com/"
 SAUCEDEMO_INVENTORY_URL = "https://www.saucedemo.com/inventory.html"
 USERNAME = "standard_user"
 PASSWORD = "secret_sauce"
-
 
 async def login_and_get_inventory(client: httpx.AsyncClient) -> str:
     try:
@@ -96,7 +49,6 @@ async def login_and_get_inventory(client: httpx.AsyncClient) -> str:
     except Exception as e:
         logger.exception("Failed to login and retrieve inventory page")
         raise e
-
 
 def parse_inventory(html: str) -> list:
     from bs4 import BeautifulSoup
@@ -120,7 +72,6 @@ def parse_inventory(html: str) -> list:
         inventory_items.append({"name": name, "description": description, "price": price, "inventory": inventory})
     return inventory_items
 
-
 def analyze_products(products: list) -> dict:
     if not products:
         return {}
@@ -138,14 +89,10 @@ def analyze_products(products: list) -> dict:
         "total_inventory_value": round(total_inventory_value, 2),
     }
 
-
 async def process_prototype(entity: dict):
     """
-    Workflow function applied to the entity asynchronously before persistence.
-    This function takes the entity data as the only argument.
-    You can change entity state inside this function e.g. entity['attribute'] = new_value.
-    You can get and add entities of a different entity_model.
-    You cannot add/update/delete the same entity_model to avoid recursion.
+    Workflow function applied asynchronously before persisting the entity.
+    Modifies entity in-place. No add/update/delete on same entity_model.
     """
     job_id = entity.get("technical_id") or entity.get("id") or entity.get("job_id")
     if not job_id:
@@ -161,7 +108,6 @@ async def process_prototype(entity: dict):
         products = parse_inventory(html)
         summary = analyze_products(products)
 
-        # Update entity state directly (no update_item calls here!)
         entity["status"] = "completed"
         entity["completedAt"] = datetime.utcnow().isoformat()
         entity["summary"] = summary
@@ -171,18 +117,15 @@ async def process_prototype(entity: dict):
         entity["status"] = "failed"
         entity["error"] = str(e)
 
-
 @app.route("/api/fetch-and-analyze", methods=["POST"])
-@validate_request(FetchAnalyzeRequest)  # validation last for POST (workaround)
+@validate_request(FetchAnalyzeRequest)  # validation last for POST
 async def fetch_and_analyze(data: FetchAnalyzeRequest):
     requested_at = datetime.utcnow().isoformat()
     job_obj = {
         "status": "processing",
         "requestedAt": requested_at,
-        # Additional fields can be added here
     }
     try:
-        # Add job to entity_service with workflow function
         new_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
@@ -190,12 +133,10 @@ async def fetch_and_analyze(data: FetchAnalyzeRequest):
             entity=job_obj,
             workflow=process_prototype
         )
-        # No manual background task needed here - workflow handles async processing
         return jsonify({"job_id": new_id, "status": "processing", "message": "Data fetch and analysis started"})
     except Exception as e:
         logger.exception("Failed to create new job")
         return jsonify({"error": "Failed to start job"}), 500
-
 
 @app.route("/api/report", methods=["GET"])
 async def get_report():
@@ -235,7 +176,6 @@ async def get_report():
     except Exception as e:
         logger.exception("Failed to get report")
         return jsonify({"error": "Failed to get report"}), 500
-
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -285,7 +225,6 @@ HTML_TEMPLATE = """
 </html>
 """
 
-
 @app.route("/", methods=["GET"])
 async def index():
     try:
@@ -318,24 +257,7 @@ async def index():
         logger.exception("Failed to render index page")
         return await render_template_string(HTML_TEMPLATE, summary=None)
 
-
 if __name__ == "__main__":
     import sys
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Key points in this refactor:
-
-- The controller `/api/fetch-and-analyze` **only creates an entity with initial `status: "processing"`** and passes the workflow function.
-- The workflow function `process_prototype` runs **asynchronously before persistence**, performs the whole fetching/analysis, and **modifies the entity in-place** (status, timestamps, summary, error).
-- No manual background tasks (`asyncio.create_task`) needed.
-- No direct calls to `entity_service.update_item` for the same entity inside workflow (to avoid recursion).
-- If you want to create/update other entities while processing, you can do so inside `process_prototype` by calling `entity_service.add_item` or `update_item` with different `entity_model`.
-- This approach fully complies with your requirement, freeing the controllers from heavy logic.
-
----
-
-If you want me to help move any other async code or logic into workflow functions for other entities, just let me know!

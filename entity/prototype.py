@@ -1,12 +1,12 @@
-```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,12 +14,37 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory async-safe "cache" (simple dict wrapped with asyncio.Lock)
+# Request models
+@dataclass
+class PetFilter:
+    status: Optional[str] = None
+
+@dataclass
+class PetsSyncRequest:
+    filter: PetFilter
+
+@dataclass
+class PetsSearchRequest:
+    name: Optional[str] = None
+    status: Optional[str] = None  # comma-separated statuses
+    category: Optional[str] = None
+
+@dataclass
+class AdopterInfo:
+    name: str
+    email: str
+
+@dataclass
+class PetsAdoptRequest:
+    petId: int
+    adopter: AdopterInfo
+
+# In-memory async-safe cache
 class AsyncCache:
     def __init__(self):
         self._lock = asyncio.Lock()
-        self._pets: Dict[int, Dict] = {}       # petId -> pet data
-        self._adoptions: Dict[str, List[int]] = {}  # adopter email -> list of petIds
+        self._pets: Dict[int, Dict] = {}
+        self._adoptions: Dict[str, List[int]] = {}
 
     async def set_pets(self, pets: List[Dict]):
         async with self._lock:
@@ -30,12 +55,7 @@ class AsyncCache:
         async with self._lock:
             return self._pets.get(pet_id)
 
-    async def search_pets(
-        self,
-        name: Optional[str] = None,
-        status: Optional[List[str]] = None,
-        category: Optional[str] = None,
-    ) -> List[Dict]:
+    async def search_pets(self, name: Optional[str], status: Optional[List[str]], category: Optional[str]) -> List[Dict]:
         async with self._lock:
             results = list(self._pets.values())
         if name:
@@ -57,50 +77,29 @@ class AsyncCache:
             return self._adoptions.get(adopter_email, [])
 
 cache = AsyncCache()
-
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
-# Helper to convert Petstore pet data to app pet data with fun tags
 def transform_petstore_pet(pet: Dict) -> Dict:
     pet_id = pet.get("id")
     name = pet.get("name", "")
     category = pet.get("category") or {}
     status = pet.get("status", "available")
-    tags = [tag.get("name") for tag in pet.get("tags", []) if "name" in tag]
-
-    # Add playful tag based on category
+    tags = [t.get("name") for t in pet.get("tags", []) if "name" in t]
     if category.get("name", "").lower() == "cat":
         tags.append("purrfect")
     elif category.get("name", "").lower() == "dog":
         tags.append("woof-tastic")
     else:
         tags.append("pet-tastic")
-
-    return {
-        "id": pet_id,
-        "name": name,
-        "category": category,
-        "status": status,
-        "tags": tags,
-    }
+    return {"id": pet_id, "name": name, "category": category, "status": status, "tags": tags}
 
 @app.route("/pets/sync", methods=["POST"])
-async def pets_sync():
-    """
-    POST /pets/sync
-    Body: {"filter": {"status": "available"}}
-    Fetch pets from Petstore API and cache them.
-    """
-    data = await request.get_json(force=True)
-    status_filter = None
-    try:
-        status_filter = data.get("filter", {}).get("status")
-    except Exception:
-        pass
-
+@validate_request(PetsSyncRequest)  # workaround: validate last for POST due to quartz-schema defect
+async def pets_sync(data: PetsSyncRequest):
+    filter_status = data.filter.status
     params = {}
-    if status_filter:
-        params["status"] = status_filter
+    if filter_status:
+        params["status"] = filter_status
 
     async with httpx.AsyncClient() as client:
         try:
@@ -113,98 +112,50 @@ async def pets_sync():
 
     pets_transformed = [transform_petstore_pet(p) for p in pets_raw]
     await cache.set_pets(pets_transformed)
-
-    return jsonify({
-        "syncedCount": len(pets_transformed),
-        "message": "Pets data synced successfully."
-    })
+    return jsonify({"syncedCount": len(pets_transformed), "message": "Pets data synced successfully."})
 
 @app.route("/pets/search", methods=["POST"])
-async def pets_search():
-    """
-    POST /pets/search
-    Body: {name?, status?, category?}
-    Search cached pets.
-    """
-    data = await request.get_json(force=True)
-    name = data.get("name")
-    status = data.get("status")  # Expected list or None
-    if isinstance(status, str):
-        status = [status]
-    category = data.get("category")
-
-    results = await cache.search_pets(name=name, status=status, category=category)
+@validate_request(PetsSearchRequest)  # workaround: validate last for POST due to quartz-schema defect
+async def pets_search(data: PetsSearchRequest):
+    name = data.name
+    status_list = data.status.split(",") if data.status else None
+    category = data.category
+    results = await cache.search_pets(name=name, status=status_list, category=category)
     return jsonify({"results": results})
 
 @app.route("/pets/<int:pet_id>", methods=["GET"])
+# no validation needed for GET requests without query params
 async def pets_get(pet_id: int):
-    """
-    GET /pets/{petId}
-    Return cached pet details.
-    """
     pet = await cache.get_pet(pet_id)
-    if pet is None:
+    if not pet:
         return jsonify({"error": "Pet not found"}), 404
     return jsonify(pet)
 
 @app.route("/pets/adopt", methods=["POST"])
-async def pets_adopt():
-    """
-    POST /pets/adopt
-    Body: {petId, adopter: {name, email}}
-    Process adoption request.
-    """
-    data = await request.get_json(force=True)
-    pet_id = data.get("petId")
-    adopter = data.get("adopter", {})
-    adopter_name = adopter.get("name")
-    adopter_email = adopter.get("email")
-
-    if not pet_id or not adopter_name or not adopter_email:
-        return jsonify({"error": "Missing petId or adopter information"}), 400
-
+@validate_request(PetsAdoptRequest)  # workaround: validate last for POST due to quartz-schema defect
+async def pets_adopt(data: PetsAdoptRequest):
+    pet_id = data.petId
+    adopter = data.adopter
     pet = await cache.get_pet(pet_id)
     if not pet:
         return jsonify({"error": "Pet not found"}), 404
-
-    # TODO: Add business logic validations (e.g. check pet availability)
     if pet.get("status") != "available":
         return jsonify({"success": False, "message": f"Sorry, {pet['name']} is not available for adoption."}), 400
-
-    # Mark pet as adopted (update cached status)
     pet["status"] = "adopted"
     await cache.set_pets([pet])
-
-    # Record adoption
-    await cache.add_adoption(adopter_email, pet_id)
-
-    return jsonify({
-        "success": True,
-        "message": f"Congrats {adopter_name}! You adopted {pet['name']}."
-    })
+    await cache.add_adoption(adopter.email, pet_id)
+    return jsonify({"success": True, "message": f"Congrats {adopter.name}! You adopted {pet['name']}."})
 
 @app.route("/adoptions/<string:adopter_email>", methods=["GET"])
+# no validation needed for GET requests without query params
 async def get_adoptions(adopter_email: str):
-    """
-    GET /adoptions/{adopterEmail}
-    Return list of adopted pets for the adopter.
-    """
     pet_ids = await cache.get_adoptions(adopter_email)
     pets = []
     for pid in pet_ids:
         pet = await cache.get_pet(pid)
         if pet:
-            pets.append({
-                "id": pet["id"],
-                "name": pet["name"],
-                "category": pet.get("category", {})
-            })
-
-    return jsonify({
-        "adopter": adopter_email,
-        "adoptedPets": pets
-    })
+            pets.append({"id": pet["id"], "name": pet["name"], "category": pet.get("category", {})})
+    return jsonify({"adopter": adopter_email, "adoptedPets": pets})
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

@@ -1,73 +1,114 @@
-Understood. The goal is to shift as much async logic as possible into the workflow functions (`process_{entity_name}`) that run before persistence, so controllers become thin and the codebase more robust.
+from dataclasses import dataclass, asdict
+import asyncio
+import logging
+from datetime import datetime
+from typing import Dict, List, Optional
 
----
+import httpx
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request
 
-### Analysis & Plan
+from app_init.app_init import entity_service
+from common.config.config import ENTITY_VERSION
 
-The workflow functions:
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-- Are async functions called with the entity data just before persistence.
-- Can modify the entity data directly (e.g. `entity['status'] = 'sold'`).
-- Can invoke other entity_service methods on *other* entity models, but **cannot** add/update/delete the same entity model (to avoid recursion).
-- Can perform async tasks including fire-and-forget logic.
-- Allow us to move business logic from the controllers into these workflow functions.
+app = Quart(__name__)
+QuartSchema(app)
 
----
+# Initialize auth services and entity_service
+from app_init.app_init import BeanFactory
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-### Candidates for moving logic into `process_pet` workflow:
+# Dataclasses for request validation
+@dataclass
+class PetFetchFilter:
+    type: str
+    status: str
 
-1. **`process_pet` workflow** (called when creating a pet)
-   - Normalize pet type lowercase (already done).
-   - Initialize default fields (status, timestamps).
-   - Additional possible logic:
-     - Mark favorite status? No, that is a separate concern.
-     - Could validate or enrich data here.
+@dataclass
+class PetFetchActions:
+    markFavorite: Optional[List[str]] = None
+    updateAdoptionStatus: Optional[Dict[str, str]] = None
 
-2. **Updating pet status or marking favorites during fetch**:
-   - Currently, the `/pets/fetch` endpoint applies actions like `markFavorite` and `updateAdoptionStatus`.
-   - These change state of pets, but we cannot update/delete the same entity inside workflow on pets.
-   - Marking favorite affects an in-memory cache (favorites_cache), not entity persistence, so doesn't fit workflow.
-   - Updating adoption status should be done via entity update endpoints.
-   - So `markFavorite` remains controller logic using cache.
-   - `updateAdoptionStatus` could be moved to a dedicated endpoint or workflow if it leads to entity update, but since it updates pets, we cannot call add/update on pets inside `process_pet`.
+@dataclass
+class FetchRequest:
+    filter: PetFetchFilter
+    actions: PetFetchActions
 
-3. **Adoption requests**:
-   - Currently handled by `/pets/adopt` endpoint.
-   - Adoption requests are stored in memory as a list.
-   - We can move the adoption request validation/logic into a `process_adoptionrequest` workflow function if we model adoption request as an entity.
-   - But since adoption requests are not persisted entities here, and no add/update/delete of pet entity involved, it's better to create a separate `adoptionrequest` entity and add workflow there.
-   - Alternatively, move logic into a workflow function that does not persist the pet entity but adds adoption request entities.
+@dataclass
+class Adopter:
+    name: str
+    contact: str
 
-4. **Create pet endpoint**:
-   - The new `process_pet` workflow can handle normalization and enrichment.
+@dataclass
+class AdoptRequest:
+    petId: str
+    adopter: Adopter
 
-5. **Update pet endpoint**:
-   - We can create a workflow function `process_pet_update`? But the framework only supports one workflow function for add_item.
-   - For update, no workflow is mentioned; so logic remains in controller.
+# In-memory cache for favorites only (stateful, not persisted)
+favorites_cache: set = set()
 
----
+PET_ENTITY_NAME = "pet"  # entity name underscore lowercase
+ADOPTIONREQUEST_ENTITY_NAME = "adoptionrequest"
 
-### What can be moved concretely?
+PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
-- **Normalization and enrichment on pet creation → process_pet**
-- **Adoption request logic → create a new entity model `adoptionrequest` with workflow `process_adoptionrequest`**
-- **Marking favorites** is an in-memory cache, likely remains in controller.
+async def fetch_pets_from_petstore(pet_type: Optional[str], status: Optional[str]) -> List[Dict]:
+    valid_statuses = {"available", "pending", "sold"}
+    statuses = [status] if status in valid_statuses else list(valid_statuses)
+    pets = []
+    async with httpx.AsyncClient() as client:
+        for stat in statuses:
+            try:
+                resp = await client.get(f"{PETSTORE_API_BASE}/pet/findByStatus", params={"status": stat})
+                resp.raise_for_status()
+                data = resp.json()
+                if isinstance(data, list):
+                    pets.extend(data)
+            except Exception as e:
+                logger.exception(f"Error fetching pets status={stat}: {e}")
+    if pet_type and pet_type.lower() != "all":
+        pets = [p for p in pets if p.get("category", {}).get("name", "").lower() == pet_type.lower()]
+    normalized = []
+    for pet in pets:
+        normalized.append({
+            "id": str(pet.get("id", "")),
+            "name": pet.get("name", ""),
+            "type": pet.get("category", {}).get("name", "other").lower(),
+            "status": pet.get("status", "available"),
+            "photoUrls": pet.get("photoUrls", []),
+            "isFavorite": False,
+        })
+    return normalized
 
----
+async def process_fetch_request(data: Dict) -> Dict:
+    filter_ = data.get("filter", {})
+    actions = data.get("actions", {})
+    pet_type = filter_.get("type", "all")
+    status = filter_.get("status", "all")
 
-### Implementation plan:
+    pets = await fetch_pets_from_petstore(pet_type, status)
 
-- Keep `process_pet` for pet creation normalization.
-- Create a new entity model `adoptionrequest` with workflow `process_adoptionrequest` to handle adoption requests asynchronously before persistence.
-- Change `/pets/adopt` to call entity_service.add_item with `workflow=process_adoptionrequest` and move all adoption logic into `process_adoptionrequest`.
-- Remove adoption request logic from controller.
-- For marking favorites and update adoption status during fetch, keep as is (since updating pet entities inside `process_pet` workflow is forbidden to avoid recursion).
+    # Mark favorites from favorites_cache
+    for pet in pets:
+        pet["isFavorite"] = pet["id"] in favorites_cache
 
----
+    # Apply actions
+    # markFavorite affects only in-memory cache, safe to do here
+    for pet_id in actions.get("markFavorite", []):
+        favorites_cache.add(pet_id)
+    # updateAdoptionStatus updates pet status in the response only, no persistence here
+    for pid, new_status in (actions.get("updateAdoptionStatus") or {}).items():
+        for pet in pets:
+            if pet["id"] == pid:
+                pet["status"] = new_status
 
-### Updated code snippet with these changes:
+    return {"pets": pets, "message": "Pets fetched and processed successfully."}
 
-```python
 # Workflow for pet entity, called before pet is persisted (create_pet)
 async def process_pet(entity_data: Dict) -> Dict:
     # Normalize 'type' to lowercase
@@ -83,20 +124,10 @@ async def process_pet(entity_data: Dict) -> Dict:
     if "createdAt" not in entity_data:
         entity_data["createdAt"] = datetime.utcnow().isoformat()
 
-    # Potential place for additional enrichment or validation
-
     return entity_data
 
-
-# New entity model: adoptionrequest
-ADOPTIONREQUEST_ENTITY_NAME = "adoptionrequest"
-
+# Workflow for adoptionrequest entity, called before adoptionrequest is persisted
 async def process_adoptionrequest(entity_data: Dict) -> Dict:
-    """
-    Workflow function for adoptionrequest entity.
-    Validates and enriches adoption request data.
-    Possibly interacts with pet entity to check existence.
-    """
     pet_id = entity_data.get("petId")
     adopter = entity_data.get("adopter", {})
     name = adopter.get("name")
@@ -115,23 +146,111 @@ async def process_adoptionrequest(entity_data: Dict) -> Dict:
     if not pet:
         raise ValueError(f"Pet with id {pet_id} not found")
 
-    # Add request timestamp
+    # Add request timestamp and status
     entity_data["requestedAt"] = datetime.utcnow().isoformat()
     entity_data["status"] = "pending"
 
-    # Could perform additional logic like notifications here (fire and forget)
+    # Additional async tasks, notifications, etc. can be added here if needed
 
     return entity_data
 
+@app.route("/pets/fetch", methods=["POST"])
+@validate_request(FetchRequest)  # workaround: validate_request must be last for POST due to quart-schema issue
+async def pets_fetch(data: FetchRequest):
+    try:
+        result = await process_fetch_request(asdict(data))
+        return jsonify(result)
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"message": "Internal Server Error"}), 500
 
-# Modified /pets/adopt endpoint to add adoptionrequest entity with workflow
+@app.route("/pets", methods=["GET"])
+async def pets_get():
+    try:
+        pets = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model=PET_ENTITY_NAME,
+            entity_version=ENTITY_VERSION,
+        )
+        # Mark favorites
+        for pet in pets:
+            pet["isFavorite"] = pet["id"] in favorites_cache
+        return jsonify({"pets": pets})
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"pets": []})
+
+@app.route("/pets/<string:pet_id>", methods=["GET"])
+async def get_pet(pet_id: str):
+    try:
+        pet = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model=PET_ENTITY_NAME,
+            entity_version=ENTITY_VERSION,
+            technical_id=pet_id
+        )
+        if not pet:
+            return jsonify({"message": "Pet not found"}), 404
+        pet["isFavorite"] = pet["id"] in favorites_cache
+        return jsonify(pet)
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route("/pets", methods=["POST"])
+@validate_request(dict)  # generic dict since no dataclass for pet creation
+async def create_pet(data):
+    try:
+        # data is dict with pet data
+        pet_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model=PET_ENTITY_NAME,
+            entity_version=ENTITY_VERSION,
+            entity=data,
+            workflow=process_pet  # workflow function applied before persistence
+        )
+        return jsonify({"id": pet_id})
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route("/pets/<string:pet_id>", methods=["PUT"])
+@validate_request(dict)  # generic dict for pet update
+async def update_pet(pet_id: str, data):
+    try:
+        await entity_service.update_item(
+            token=cyoda_auth_service,
+            entity_model=PET_ENTITY_NAME,
+            entity_version=ENTITY_VERSION,
+            entity=data,
+            technical_id=pet_id,
+            meta={}
+        )
+        return jsonify({"message": "Pet updated successfully."})
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"message": "Internal Server Error"}), 500
+
+@app.route("/pets/<string:pet_id>", methods=["DELETE"])
+async def delete_pet(pet_id: str):
+    try:
+        await entity_service.delete_item(
+            token=cyoda_auth_service,
+            entity_model=PET_ENTITY_NAME,
+            entity_version=ENTITY_VERSION,
+            technical_id=pet_id,
+            meta={}
+        )
+        return jsonify({"message": "Pet deleted successfully."})
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"message": "Internal Server Error"}), 500
+
 @app.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptRequest)
 async def pets_adopt(data: AdoptRequest):
     try:
-        # Convert dataclass to dict
         adoption_request_data = asdict(data)
-        # Add entity with process_adoptionrequest workflow
         adoption_request_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=ADOPTIONREQUEST_ENTITY_NAME,
@@ -144,18 +263,5 @@ async def pets_adopt(data: AdoptRequest):
         logger.exception(e)
         return jsonify({"success": False, "message": str(e)}), 400
 
-```
-
----
-
-### Summary
-
-- All pet creation logic moved to `process_pet`.
-- Adoption request logic moved to new entity `adoptionrequest` and workflow `process_adoptionrequest`.
-- `/pets/adopt` endpoint now just calls add_item with adoptionrequest data and workflow.
-- Controllers remain thin, just calling add_item/get_item with minimal logic.
-- Mark favorite and update adoption status on fetch remain in controller because they involve in-memory cache and direct pet updates (which cannot be done inside workflow on pet entity).
-
----
-
-If you want, I can provide the **full updated code** with these changes applied and the old logic removed from endpoints accordingly. Would you like me to?
+if __name__ == "__main__":
+    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

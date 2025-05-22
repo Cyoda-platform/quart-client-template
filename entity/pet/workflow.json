@@ -1,0 +1,78 @@
+{
+    "description": "Workflow to process pet entity data through various processing steps",
+    "name": "pet_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet entity by adding metadata",
+            "end_state": "Metadata_processed",
+            "end_state_description": "Metadata has been added or updated",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_metadata"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Normalize the pet name to title case",
+            "end_state": "Name_normalized",
+            "end_state_description": "Pet name normalized to title case",
+            "name": "name_normalization",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_name_normalization"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Metadata_processed",
+            "start_state_description": "Metadata has been added or updated"
+        },
+        {
+            "automated": true,
+            "description": "Ensure tags list and add default tag if none",
+            "end_state": "Tags_processed",
+            "end_state_description": "Tags list ensured and default tag added if empty",
+            "name": "tags_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_tags"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Name_normalized",
+            "start_state_description": "Pet name normalized to title case"
+        },
+        {
+            "automated": true,
+            "description": "Perform async side effects or enrichment",
+            "end_state": "Async_side_effects_completed",
+            "end_state_description": "Async side effects or enrichment completed",
+            "name": "async_side_effects",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_async_side_effects"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Tags_processed",
+            "start_state_description": "Tags list ensured and default tag added if empty"
+        }
+    ]
+}

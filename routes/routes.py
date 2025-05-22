@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class FetchPetsRequest:
@@ -101,7 +100,7 @@ async def fetch_pets_from_petstore(
             return []
 
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)
 async def pets_fetch(data: FetchPetsRequest):
     try:
@@ -181,7 +180,7 @@ async def find_pet_matches(
         return []
 
 
-@app.route("/pets/match", methods=["POST"])
+@routes_bp.route("/pets/match", methods=["POST"])
 @validate_request(MatchPetsRequest)
 async def pets_match(data: MatchPetsRequest):
     try:
@@ -194,7 +193,7 @@ async def pets_match(data: MatchPetsRequest):
         return jsonify({"error": "Failed to find pet matches"}), 500
 
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def pets_list():
     try:
         pets = await entity_service.get_items(
@@ -208,7 +207,7 @@ async def pets_list():
         return jsonify({"error": "Failed to retrieve pets"}), 500
 
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pet_details(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -224,13 +223,3 @@ async def pet_details(pet_id: str):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pet details"}), 500
-
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

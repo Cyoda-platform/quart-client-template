@@ -2,14 +2,16 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +19,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 # Request models
 @dataclass
@@ -92,7 +91,7 @@ async def process_adoption(entity: Dict) -> Dict:
     # Additional validations or enrichment can be added here
     return entity
 
-@app.route("/pets/sync", methods=["POST"])
+@routes_bp.route("/pets/sync", methods=["POST"])
 @validate_request(PetsSyncRequest)
 async def pets_sync(data: PetsSyncRequest):
     filter_status = data.filter.status
@@ -128,7 +127,7 @@ async def pets_sync(data: PetsSyncRequest):
 
     return jsonify({"syncedCount": count, "message": "Pets data synced successfully."})
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetsSearchRequest)
 async def pets_search(data: PetsSearchRequest):
     name = data.name
@@ -182,7 +181,7 @@ async def pets_search(data: PetsSearchRequest):
 
     return jsonify({"results": results})
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pets_get(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -203,7 +202,7 @@ async def pets_get(pet_id: str):
 
     return jsonify(pet)
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 @validate_request(PetsAdoptRequest)
 async def pets_adopt(data: PetsAdoptRequest):
     pet_id = str(data.petId)
@@ -260,7 +259,7 @@ async def pets_adopt(data: PetsAdoptRequest):
 
     return jsonify({"success": True, "message": f"Congrats {adopter.name}! You adopted {pet.get('name')}."})
 
-@app.route("/adoptions/<string:adopter_email>", methods=["GET"])
+@routes_bp.route("/adoptions/<string:adopter_email>", methods=["GET"])
 async def get_adoptions(adopter_email: str):
     # Query adoption entities filtered by adopterEmail
     conditions = {
@@ -305,6 +304,3 @@ async def get_adoptions(adopter_email: str):
             continue
 
     return jsonify({"adopter": adopter_email, "adoptedPets": pets})
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

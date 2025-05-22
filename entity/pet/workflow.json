@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for Purrfect Pets API entity processing",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pets from external API",
+            "end_state": "Fetched",
+            "end_state_description": "Pets have been fetched",
+            "name": "start_fetch",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Start pet matchmaking process",
+            "end_state": "Matched",
+            "end_state_description": "Pets have been matched",
+            "name": "start_matchmake",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_matchmake"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Fetched",
+            "start_state_description": "Pets have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Add description and timestamp to pet",
+            "end_state": "Described",
+            "end_state_description": "Pet description added",
+            "name": "start_description",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_description"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Matched",
+            "start_state_description": "Pets have been matched"
+        }
+    ]
+}

@@ -1,0 +1,54 @@
+{
+    "description": "Workflow to login, scrape product data, analyze, and generate summary report",
+    "name": "SauceDemo_product_data_analysis_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "end_state": "login_done",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_login"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None"
+        },
+        {
+            "automated": true,
+            "end_state": "inventory_parsed",
+            "name": "parse_inventory",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_parse_inventory"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "login_done"
+        },
+        {
+            "automated": true,
+            "end_state": "analysis_completed",
+            "name": "analyze_products",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_analyze"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "inventory_parsed"
+        },
+        {
+            "automated": true,
+            "end_state": "completed",
+            "name": "complete_workflow",
+            "start_state": "analysis_completed"
+        }
+    ]
+}

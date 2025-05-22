@@ -1,0 +1,83 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet_search"
+        },
+        {
+            "entity_data_example": {
+                "name": "Whiskers",
+                "status": "available",
+                "tags": [
+                    "fluffy",
+                    "playful"
+                ],
+                "type": "cat"
+            },
+            "entity_name": "pet_add"
+        },
+        {
+            "entity_data_example": {
+                "name": "Whiskers",
+                "status": "adopted",
+                "tags": [
+                    "happy",
+                    "energetic"
+                ]
+            },
+            "entity_name": "pet_update"
+        },
+        {
+            "entity_data_example": {
+                "id": 123,
+                "name": "Whiskers",
+                "status": "available",
+                "tags": [
+                    "fluffy",
+                    "playful"
+                ],
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "searchId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+            },
+            "entity_name": "pets_search_response"
+        },
+        {
+            "entity_data_example": {
+                "pets": [
+                    {
+                        "id": 123,
+                        "name": "Whiskers",
+                        "status": "available",
+                        "tags": [
+                            "fluffy",
+                            "playful"
+                        ],
+                        "type": "cat"
+                    }
+                ]
+            },
+            "entity_name": "pets_search_results"
+        },
+        {
+            "entity_data_example": {
+                "message": "\ud83d\udc3e Purrfect! Pet 'Whiskers' with ID 123 has been added to your collection! \ud83d\udc31",
+                "petId": 123
+            },
+            "entity_name": "pet_add_response"
+        },
+        {
+            "entity_data_example": {
+                "message": "\ud83d\udc3e Pet ID 123 updated with love and care! \ud83d\udc96"
+            },
+            "entity_name": "pet_update_response"
+        }
+    ]
+}

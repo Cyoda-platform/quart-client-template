@@ -1,6 +1,41 @@
-Certainly! I updated the code to pass the workflow function `process_prototype` (underscore lowercase entity name is `"prototype"`) as the `workflow` parameter to `entity_service.add_item`, and renamed the existing `process_entity` function to `process_prototype` to match the naming convention.
+Absolutely! Moving the async logic and heavy lifting out of the controller (endpoint) and into the workflow function (`process_prototype`) is indeed the right approach. This will:
 
-Here is the complete updated code with the necessary changes:
+- Make endpoints slimmer and easier to maintain.
+- Delegate async tasks and entity state changes to the workflow handler.
+- Leverage the new `workflow` argument to run asynchronous processing before persistence.
+- Avoid manual background task management (`asyncio.create_task` in the controller) which may have pitfalls.
+
+---
+
+### Plan for refactoring:
+
+1. **Endpoint `/api/fetch-and-analyze`:**
+   - Instead of creating the job with status `"processing"` and then launching a background task, we will:
+     - Create a job with status `"created"` or `"processing"`.
+     - Pass it to `entity_service.add_item` with the workflow function `process_prototype`.
+     - Inside `process_prototype`, do all asynchronous steps (login, parse, analyze).
+     - Update the same entity's state directly (i.e. `entity["status"] = "completed"` etc).
+     - **Do not call `add_item` or `update_item` on the same entity inside workflow** (can get/update other entities but not this one).
+     - Because the workflow runs asynchronously before persistence, the updated `entity` will be saved with the new state.
+
+2. **Remove `asyncio.create_task` call from endpoint — no manual background tasks.**
+
+3. **Inside `process_prototype`:**
+   - Do everything:
+     - Login.
+     - Fetch the data.
+     - Analyze.
+     - Update the `entity` dictionary with status, timestamps, summary, errors.
+   - **Do not update the entity via `entity_service.update_item`** (this will cause recursion or errors).
+   - If other entities need to be added/updated, can do so here.
+
+4. **In the `/api/report` endpoint and `/` index page:**
+   - No changes needed.
+   - They just read the processed completed entities.
+
+---
+
+### Updated complete code with refactoring applied:
 
 ```python
 import asyncio
@@ -35,8 +70,6 @@ class FetchAnalyzeRequest:
     # No fields required currently; placeholder for future request params
     pass
 
-# Instead of local cache for prototype jobs, store jobs in entity_service
-# We'll use entity name "prototype" (underscore lowercase)
 entity_name = "prototype"
 
 SAUCEDEMO_LOGIN_URL = "https://www.saucedemo.com/"
@@ -50,8 +83,6 @@ async def login_and_get_inventory(client: httpx.AsyncClient) -> str:
         r1 = await client.get(SAUCEDEMO_LOGIN_URL)
         r1.raise_for_status()
 
-        # Correct form field names for SauceDemo login: "user-name", "password"
-        # Also set headers for form submission
         login_data = {"user-name": USERNAME, "password": PASSWORD}
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
@@ -112,12 +143,15 @@ async def process_prototype(entity: dict):
     """
     Workflow function applied to the entity asynchronously before persistence.
     This function takes the entity data as the only argument.
-    You can change entity state inside this function, get and add entities with a different entity_model
-    (but cannot add/update/delete entity of the same entity_model to avoid infinite recursion).
+    You can change entity state inside this function e.g. entity['attribute'] = new_value.
+    You can get and add entities of a different entity_model.
+    You cannot add/update/delete the same entity_model to avoid recursion.
     """
     job_id = entity.get("technical_id") or entity.get("id") or entity.get("job_id")
     if not job_id:
         logger.error("process_prototype: No job id found in entity")
+        entity["status"] = "failed"
+        entity["error"] = "Missing job id"
         return
 
     try:
@@ -127,63 +161,28 @@ async def process_prototype(entity: dict):
         products = parse_inventory(html)
         summary = analyze_products(products)
 
-        # update the job item in entity_service
-        # get current job data
-        job_data = await entity_service.get_item(
-            token=cyoda_auth_service,
-            entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
-            technical_id=job_id
-        )
-        if job_data is None:
-            logger.error(f"Job {job_id}: Not found during process_prototype update")
-            return
-
-        job_data["status"] = "completed"
-        job_data["completedAt"] = datetime.utcnow().isoformat()
-        job_data["summary"] = summary
-
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
-            entity=job_data,
-            technical_id=job_id,
-            meta={}
-        )
+        # Update entity state directly (no update_item calls here!)
+        entity["status"] = "completed"
+        entity["completedAt"] = datetime.utcnow().isoformat()
+        entity["summary"] = summary
         logger.info(f"Job {job_id}: Completed successfully")
     except Exception as e:
         logger.exception(f"Job {job_id}: Failed with error")
-        try:
-            job_data = await entity_service.get_item(
-                token=cyoda_auth_service,
-                entity_model=entity_name,
-                entity_version=ENTITY_VERSION,
-                technical_id=job_id
-            )
-            if job_data is not None:
-                job_data["status"] = "failed"
-                job_data["error"] = str(e)
-                await entity_service.update_item(
-                    token=cyoda_auth_service,
-                    entity_model=entity_name,
-                    entity_version=ENTITY_VERSION,
-                    entity=job_data,
-                    technical_id=job_id,
-                    meta={}
-                )
-        except Exception as e2:
-            logger.exception(f"Job {job_id}: Failed to update failure status: {e2}")
+        entity["status"] = "failed"
+        entity["error"] = str(e)
 
 
 @app.route("/api/fetch-and-analyze", methods=["POST"])
 @validate_request(FetchAnalyzeRequest)  # validation last for POST (workaround)
 async def fetch_and_analyze(data: FetchAnalyzeRequest):
     requested_at = datetime.utcnow().isoformat()
-    job_id = requested_at.replace(":", "-").replace(".", "-")
-    job_obj = {"status": "processing", "requestedAt": requested_at}
+    job_obj = {
+        "status": "processing",
+        "requestedAt": requested_at,
+        # Additional fields can be added here
+    }
     try:
-        # add job to entity_service with workflow function
+        # Add job to entity_service with workflow function
         new_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
@@ -191,9 +190,7 @@ async def fetch_and_analyze(data: FetchAnalyzeRequest):
             entity=job_obj,
             workflow=process_prototype
         )
-        # new_id is string, use it as job_id
-        # start processing asynchronously in background
-        asyncio.create_task(process_prototype({"technical_id": new_id}))
+        # No manual background task needed here - workflow handles async processing
         return jsonify({"job_id": new_id, "status": "processing", "message": "Data fetch and analysis started"})
     except Exception as e:
         logger.exception("Failed to create new job")
@@ -203,7 +200,6 @@ async def fetch_and_analyze(data: FetchAnalyzeRequest):
 @app.route("/api/report", methods=["GET"])
 async def get_report():
     try:
-        # Retrieve latest completed job's summary by condition
         condition = {
             "cyoda": {
                 "type": "group",
@@ -225,7 +221,6 @@ async def get_report():
             condition=condition
         )
         if not completed_jobs:
-            # Return empty summary instead of 404 to avoid client error
             empty_summary = {
                 "total_products": 0,
                 "average_price": 0.0,
@@ -234,11 +229,7 @@ async def get_report():
                 "total_inventory_value": 0.0
             }
             return jsonify(empty_summary)
-        # Pick the latest completed job by completedAt datetime
-        latest_job = max(
-            completed_jobs,
-            key=lambda j: j.get("completedAt", "")
-        )
+        latest_job = max(completed_jobs, key=lambda j: j.get("completedAt", ""))
         summary = latest_job.get("summary", {})
         return jsonify(summary)
     except Exception as e:
@@ -298,7 +289,6 @@ HTML_TEMPLATE = """
 @app.route("/", methods=["GET"])
 async def index():
     try:
-        # get latest completed summary
         condition = {
             "cyoda": {
                 "type": "group",
@@ -321,10 +311,7 @@ async def index():
         )
         summary = None
         if completed_jobs:
-            latest_job = max(
-                completed_jobs,
-                key=lambda j: j.get("completedAt", "")
-            )
+            latest_job = max(completed_jobs, key=lambda j: j.get("completedAt", ""))
             summary = latest_job.get("summary", None)
         return await render_template_string(HTML_TEMPLATE, summary=summary)
     except Exception as e:
@@ -340,11 +327,15 @@ if __name__ == "__main__":
 
 ---
 
-### Summary of changes:
-- Renamed `process_entity` → `process_prototype` to follow the `process_{entity_name}` naming convention (`entity_name = "prototype"`).
-- Added the `workflow=process_prototype` argument in the call to `entity_service.add_item` inside the `/api/fetch-and-analyze` endpoint.
-- Adjusted the call to `asyncio.create_task` to pass an entity dict with the job id as `technical_id` to `process_prototype` (to match the new signature).
-- Added a docstring to `process_prototype` explaining the workflow function contract.
-- Minor fix to get the job ID inside `process_prototype` from the passed entity.
+### Key points in this refactor:
 
-Let me know if you want me to explain or modify anything else!
+- The controller `/api/fetch-and-analyze` **only creates an entity with initial `status: "processing"`** and passes the workflow function.
+- The workflow function `process_prototype` runs **asynchronously before persistence**, performs the whole fetching/analysis, and **modifies the entity in-place** (status, timestamps, summary, error).
+- No manual background tasks (`asyncio.create_task`) needed.
+- No direct calls to `entity_service.update_item` for the same entity inside workflow (to avoid recursion).
+- If you want to create/update other entities while processing, you can do so inside `process_prototype` by calling `entity_service.add_item` or `update_item` with different `entity_model`.
+- This approach fully complies with your requirement, freeing the controllers from heavy logic.
+
+---
+
+If you want me to help move any other async code or logic into workflow functions for other entities, just let me know!

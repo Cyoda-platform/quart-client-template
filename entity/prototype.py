@@ -1,12 +1,12 @@
-```python
+from dataclasses import dataclass
+from datetime import datetime
+from typing import List, Optional, Dict
 import asyncio
 import logging
-from datetime import datetime
-from typing import Dict, List, Optional
 
 import httpx
 from quart import Quart, jsonify, request, abort
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,7 +14,18 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory async-safe cache for pets and jobs
+# Data transfer objects
+@dataclass
+class FetchPetsDto:
+    petType: str
+    limit: int = 0
+
+@dataclass
+class FunFactDto:
+    petId: int
+    funFact: str
+
+# In-memory async-safe cache
 class AsyncCache:
     def __init__(self):
         self._pets: Dict[int, Dict] = {}
@@ -51,15 +62,13 @@ class AsyncCache:
 
 pets_cache = AsyncCache()
 
-# Job tracking for fetch tasks
+# Job tracking
 entity_jobs: Dict[str, Dict] = {}
 entity_jobs_lock = asyncio.Lock()
 
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
-# Utility to add a simple fun fact per pet type
 def generate_fun_fact(pet: Dict) -> str:
-    # Simple static fun facts per type - extend as needed
     facts = {
         "dog": "Dogs have an incredible sense of smell!",
         "cat": "Cats sleep for 70% of their lives.",
@@ -71,8 +80,6 @@ def generate_fun_fact(pet: Dict) -> str:
 
 async def fetch_petstore_pets(pet_type: str, limit: Optional[int]) -> List[Dict]:
     async with httpx.AsyncClient() as client:
-        # Petstore API: /pet/findByStatus?status=available
-        # The Petstore does not have a direct "type" filter; we'll fetch by status and filter manually.
         try:
             resp = await client.get(f"{PETSTORE_BASE_URL}/pet/findByStatus", params={"status": "available"})
             resp.raise_for_status()
@@ -80,32 +87,19 @@ async def fetch_petstore_pets(pet_type: str, limit: Optional[int]) -> List[Dict]
         except Exception as e:
             logger.exception(e)
             raise
-
-    # Filter by petType if not "all"
     if pet_type.lower() != "all":
-        filtered = []
-        for pet in pets:
-            # Petstore API pet "category" field contains the type under "name"
-            category = pet.get("category")
-            if category and category.get("name", "").lower() == pet_type.lower():
-                filtered.append(pet)
-        pets = filtered
-
-    if limit:
+        pets = [p for p in pets if p.get("category", {}).get("name", "").lower() == pet_type.lower()]
+    if limit and limit > 0:
         pets = pets[:limit]
-
-    # Transform pets to simplified model + add funFact
     transformed = []
     for p in pets:
         pet_obj = {
             "name": p.get("name", "Unnamed"),
             "type": p.get("category", {}).get("name", "unknown"),
             "status": p.get("status", "unknown"),
-            # funFact will be added below
         }
         pet_obj["funFact"] = generate_fun_fact(pet_obj)
         transformed.append(pet_obj)
-
     return transformed
 
 async def process_fetch_pet_job(job_id: str, pet_type: str, limit: Optional[int]):
@@ -123,18 +117,11 @@ async def process_fetch_pet_job(job_id: str, pet_type: str, limit: Optional[int]
             entity_jobs[job_id]["error"] = str(e)
 
 @app.route("/pets/fetch", methods=["POST"])
-async def pets_fetch():
-    data = await request.get_json(force=True)
-    pet_type = data.get("petType", "all")
-    limit = data.get("limit")
-    if limit is not None:
-        try:
-            limit = int(limit)
-            if limit <= 0:
-                limit = None
-        except Exception:
-            limit = None
-
+# Workaround: validate_request must be placed after @app.route for POST due to quart-schema issue
+@validate_request(FetchPetsDto)
+async def pets_fetch(data: FetchPetsDto):
+    pet_type = data.petType or "all"
+    limit = data.limit if data.limit > 0 else None
     job_id = f"job_{datetime.utcnow().timestamp()}"
     async with entity_jobs_lock:
         entity_jobs[job_id] = {
@@ -143,37 +130,26 @@ async def pets_fetch():
             "petType": pet_type,
             "limit": limit,
         }
-
-    # Fire and forget the processing task
     asyncio.create_task(process_fetch_pet_job(job_id, pet_type, limit))
-
     return jsonify({
         "status": "success",
         "jobId": job_id,
         "message": f"Fetching pets of type '{pet_type}' started."
     })
 
-
 @app.route("/pets", methods=["GET"])
 async def pets_list():
     pets = await pets_cache.list_pets()
     return jsonify(pets)
 
-
 @app.route("/pets/funfact", methods=["POST"])
-async def pets_funfact():
-    data = await request.get_json(force=True)
-    pet_id = data.get("petId")
-    fun_fact = data.get("funFact")
-    if not isinstance(pet_id, int) or not isinstance(fun_fact, str) or not fun_fact.strip():
-        abort(400, "Invalid petId or funFact")
-
-    updated = await pets_cache.update_funfact(pet_id, fun_fact.strip())
+# Workaround: validate_request must be placed after @app.route for POST due to quart-schema issue
+@validate_request(FunFactDto)
+async def pets_funfact(data: FunFactDto):
+    updated = await pets_cache.update_funfact(data.petId, data.funFact.strip())
     if not updated:
-        abort(404, f"Pet with id {pet_id} not found")
-
+        abort(404, f"Pet with id {data.petId} not found")
     return jsonify({"status": "success", "message": "Fun fact updated"})
-
 
 @app.route("/pets/<int:pet_id>", methods=["GET"])
 async def pet_detail(pet_id):
@@ -182,16 +158,11 @@ async def pet_detail(pet_id):
         abort(404, f"Pet with id {pet_id} not found")
     return jsonify(pet)
 
-
 if __name__ == '__main__':
     import sys
-    import logging
-
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
         stream=sys.stdout,
     )
-
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

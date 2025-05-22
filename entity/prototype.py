@@ -39,11 +39,18 @@ async def login_and_get_inventory(client: httpx.AsyncClient) -> str:
     try:
         r1 = await client.get(SAUCEDEMO_LOGIN_URL)
         r1.raise_for_status()
+
+        # Correct form field names for SauceDemo login: "user-name", "password"
+        # Also set headers for form submission
         login_data = {"user-name": USERNAME, "password": PASSWORD}
-        r2 = await client.post(SAUCEDEMO_LOGIN_URL, data=login_data, follow_redirects=True)
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        r2 = await client.post(SAUCEDEMO_LOGIN_URL, data=login_data, headers=headers, follow_redirects=True)
         r2.raise_for_status()
+
         r3 = await client.get(SAUCEDEMO_INVENTORY_URL)
         r3.raise_for_status()
+
         return r3.text
     except Exception as e:
         logger.exception("Failed to login and retrieve inventory page")

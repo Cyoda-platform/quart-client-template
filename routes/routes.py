@@ -5,8 +5,8 @@ from typing import Optional
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class FetchPetsRequest:
@@ -57,16 +56,13 @@ async def calculate_match_score(pet: dict, preferred_type: Optional[str], prefer
     return score
 
 async def process_pet(entity: dict) -> None:
-    # Add a processedAt timestamp
     entity['processedAt'] = datetime.utcnow().isoformat()
-    # Add a description if missing or empty
     if "description" not in entity or not entity["description"]:
         name = entity.get("name", "this pet")
         category = entity.get("category", {}).get("name", "pet")
         entity["description"] = f"Meet {name}! A lovely {category} waiting for a new home."
 
 async def process_pet_fetch_job(entity: dict) -> None:
-    # This workflow runs when a pet_fetch_job entity is created
     pet_type = entity.get("type")
     status = entity.get("status")
     entity["status"] = "processing"
@@ -74,7 +70,6 @@ async def process_pet_fetch_job(entity: dict) -> None:
     try:
         pets = await fetch_pets_from_petstore(pet_type, status)
         for pet_data in pets:
-            # Add pet entities with process_pet workflow
             try:
                 await entity_service.add_item(
                     token=cyoda_auth_service,
@@ -106,7 +101,6 @@ async def process_pet_matchmake_job(entity: dict) -> None:
                 p = pet.copy()
                 p["matchScore"] = round(score, 2)
                 matched_pets.append(p)
-            # Add pet entities anyway with process_pet workflow
             try:
                 await entity_service.add_item(
                     token=cyoda_auth_service,
@@ -124,7 +118,7 @@ async def process_pet_matchmake_job(entity: dict) -> None:
         entity["status"] = "failed"
         entity["error"] = str(e)
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)
 async def pets_fetch(data: FetchPetsRequest):
     job_id = f"fetch-{datetime.utcnow().isoformat()}"
@@ -143,7 +137,7 @@ async def pets_fetch(data: FetchPetsRequest):
     )
     return jsonify({"jobId": job_id, "status": "started"}), 202
 
-@app.route("/pets/matchmake", methods=["POST"])
+@routes_bp.route("/pets/matchmake", methods=["POST"])
 @validate_request(MatchmakeRequest)
 async def pets_matchmake(data: MatchmakeRequest):
     job_id = f"matchmake-{datetime.utcnow().isoformat()}"
@@ -163,7 +157,7 @@ async def pets_matchmake(data: MatchmakeRequest):
     )
     return jsonify({"jobId": job_id, "status": "started"}), 202
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def get_pets():
     try:
         pets = await entity_service.get_items(
@@ -176,7 +170,7 @@ async def get_pets():
         logger.exception("Failed to retrieve pets list")
         return jsonify({"error": "Failed to retrieve pets"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def get_pet(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -192,7 +186,7 @@ async def get_pet(pet_id: str):
         logger.exception(f"Failed to retrieve pet id={pet_id}")
         return jsonify({"error": "Pet not found"}), 404
 
-@app.route("/jobs/<string:job_id>", methods=["GET"])
+@routes_bp.route("/jobs/<string:job_id>", methods=["GET"])
 async def get_job_status(job_id: str):
     job = await entity_service.get_item(
         token=cyoda_auth_service,
@@ -210,6 +204,3 @@ async def get_job_status(job_id: str):
     if not job:
         return jsonify({"error": "Job not found"}), 404
     return jsonify(job)
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

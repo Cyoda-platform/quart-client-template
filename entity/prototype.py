@@ -123,7 +123,16 @@ async def fetch_and_analyze(data: FetchAnalyzeRequest):
 @app.route("/api/report", methods=["GET"])
 async def get_report():
     if not latest_summary:
-        return jsonify({"message": "No summary available yet"}), 404
+        # Return empty summary instead of 404 to avoid client error
+        # Provide empty results structure
+        empty_summary = {
+            "total_products": 0,
+            "average_price": 0.0,
+            "highest_priced_item": {"name": "", "price": 0.0},
+            "lowest_priced_item": {"name": "", "price": 0.0},
+            "total_inventory_value": 0.0
+        }
+        return jsonify(empty_summary)
     return jsonify(latest_summary)
 
 

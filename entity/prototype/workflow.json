@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to process prototype entity with enrichment and delay steps",
+    "name": "prototype_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the prototype entity",
+            "end_state": "Enriched",
+            "end_state_description": "Entity has been enriched",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrich"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Apply processing delay",
+            "end_state": "Processed",
+            "end_state_description": "Entity processing completed",
+            "name": "apply_delay",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_delay"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Enriched",
+            "start_state_description": "Entity has been enriched"
+        }
+    ]
+}

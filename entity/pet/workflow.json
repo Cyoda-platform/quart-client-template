@@ -1,0 +1,96 @@
+{
+    "description": "Workflow for processing pet entity attributes before persistence",
+    "name": "pet_entity_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initial processing of pet entity",
+            "end_state": "processed_at_added",
+            "end_state_description": "Processing timestamp added",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_processed_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Normalize pet status for availability",
+            "end_state": "status_normalized",
+            "end_state_description": "Pet status normalized",
+            "name": "normalize_status",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "processed_at_added",
+            "start_state_description": "Processing timestamp added"
+        },
+        {
+            "automated": true,
+            "description": "Set default age if missing or invalid",
+            "end_state": "age_set",
+            "end_state_description": "Mock age set if applicable",
+            "name": "set_mock_age",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_mock_age"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "status_normalized",
+            "start_state_description": "Pet status normalized"
+        },
+        {
+            "automated": true,
+            "description": "Add default description if missing",
+            "end_state": "description_added",
+            "end_state_description": "Default description added",
+            "name": "add_default_description",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_default_description"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "age_set",
+            "start_state_description": "Mock age set if applicable"
+        },
+        {
+            "automated": true,
+            "description": "Normalize pet ID to string",
+            "end_state": "id_normalized",
+            "end_state_description": "Pet ID normalized",
+            "name": "normalize_id",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_id"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "description_added",
+            "start_state_description": "Default description added"
+        }
+    ]
+}

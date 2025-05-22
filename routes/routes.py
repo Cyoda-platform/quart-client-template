@@ -5,11 +5,13 @@ from dataclasses import dataclass
 from typing import Optional, List
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +19,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 # Async-safe in-memory cache for search results only
 class AsyncCache:
@@ -93,7 +92,7 @@ async def process_pet(entity):
 
     return entity
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearch)
 async def pets_search(data: PetSearch):
     pet_type = data.type
@@ -136,14 +135,14 @@ async def pets_search(data: PetSearch):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pets from Petstore API"}), 502
 
-@app.route("/pets/search/<search_id>", methods=["GET"])
+@routes_bp.route("/pets/search/<search_id>", methods=["GET"])
 async def get_search_results(search_id):
     pets = await search_cache.get(search_id)
     if pets is None:
         return jsonify({"error": "searchId not found"}), 404
     return jsonify({"pets": pets})
 
-@app.route("/pets/add", methods=["POST"])
+@routes_bp.route("/pets/add", methods=["POST"])
 @validate_request(PetAdd)
 async def add_pet(data: PetAdd):
     # Minimal validation already handled by dataclass and validate_request
@@ -169,7 +168,7 @@ async def add_pet(data: PetAdd):
         logger.exception(e)
         return jsonify({"error": "Failed to add pet"}), 500
 
-@app.route("/pets/<pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<pet_id>", methods=["GET"])
 async def get_pet(pet_id):
     try:
         pet = await entity_service.get_item(
@@ -186,7 +185,7 @@ async def get_pet(pet_id):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pet"}), 500
 
-@app.route("/pets/update/<pet_id>", methods=["POST"])
+@routes_bp.route("/pets/update/<pet_id>", methods=["POST"])
 @validate_request(PetUpdate)
 async def update_pet(data: PetUpdate, pet_id):
     update_data = {}
@@ -216,12 +215,3 @@ async def update_pet(data: PetUpdate, pet_id):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to update pet"}), 500
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s %(levelname)s %(name)s - %(message)s',
-        stream=sys.stdout,
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

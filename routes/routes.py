@@ -4,8 +4,8 @@ import uuid
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -17,8 +17,7 @@ factory = BeanFactory(config={"CHAT_REPOSITORY": "cyoda"})
 entity_service = factory.get_services()["entity_service"]
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class SearchRequest:
@@ -125,7 +124,7 @@ async def process_pets_details(entity: dict) -> dict:
     entity["completedAt"] = datetime.utcnow().isoformat()
     return entity
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def pets_search(data: SearchRequest):
     search_id = generate_id()
@@ -149,7 +148,7 @@ async def pets_search(data: SearchRequest):
         return jsonify({"error": "Failed to create search job"}), 500
     return jsonify({"searchId": search_id})
 
-@app.route("/pets/search/<search_id>", methods=["GET"])
+@routes_bp.route("/pets/search/<search_id>", methods=["GET"])
 async def pets_search_results(search_id):
     try:
         job = await entity_service.get_item(
@@ -167,7 +166,7 @@ async def pets_search_results(search_id):
         return jsonify({"status": job.get("status")} ), 202
     return jsonify({"pets": job.get("pets", [])})
 
-@app.route("/pets/details", methods=["POST"])
+@routes_bp.route("/pets/details", methods=["POST"])
 @validate_request(DetailsRequest)
 async def pets_details(data: DetailsRequest):
     pet_id = str(data.petId)
@@ -204,7 +203,7 @@ async def pets_details(data: DetailsRequest):
         return jsonify({"error": "Failed to create pet details job"}), 500
     return jsonify({"status": "processing"}), 202
 
-@app.route("/pets/details/<pet_id>", methods=["GET"])
+@routes_bp.route("/pets/details/<pet_id>", methods=["GET"])
 async def pets_details_get(pet_id):
     pet_id = str(pet_id)
     try:
@@ -222,12 +221,3 @@ async def pets_details_get(pet_id):
     if job.get("status") != "done":
         return jsonify({"status": job.get("status")} ), 202
     return jsonify(job.get("details"))
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

@@ -1,0 +1,51 @@
+{
+    "description": "Workflow for pet fetching and order creation in Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pets from external API",
+            "end_state": "Pet_fetching_started",
+            "end_state_description": "Pet fetching job started",
+            "name": "start_pet_fetch",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_fetch_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Start creating an order after validating pet availability",
+            "end_state": "Order_creation_started",
+            "end_state_description": "Order creation job started",
+            "name": "start_order_create",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_order_create_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_fetching_started",
+            "start_state_description": "Pet fetching job started"
+        },
+        {
+            "automated": true,
+            "description": "Order has been placed successfully",
+            "end_state": "Order_placed",
+            "end_state_description": "Order has been placed",
+            "name": "order_placed",
+            "start_state": "Order_creation_started",
+            "start_state_description": "Order creation job started"
+        }
+    ]
+}

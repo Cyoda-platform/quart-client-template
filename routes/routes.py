@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, render_template_string
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, render_template_string, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,12 +13,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class FetchAnalyzeRequest:
@@ -117,7 +116,7 @@ async def process_prototype(entity: dict):
         entity["status"] = "failed"
         entity["error"] = str(e)
 
-@app.route("/api/fetch-and-analyze", methods=["POST"])
+@routes_bp.route("/api/fetch-and-analyze", methods=["POST"])
 @validate_request(FetchAnalyzeRequest)  # validation last for POST
 async def fetch_and_analyze(data: FetchAnalyzeRequest):
     requested_at = datetime.utcnow().isoformat()
@@ -137,7 +136,7 @@ async def fetch_and_analyze(data: FetchAnalyzeRequest):
         logger.exception("Failed to create new job")
         return jsonify({"error": "Failed to start job"}), 500
 
-@app.route("/api/report", methods=["GET"])
+@routes_bp.route("/api/report", methods=["GET"])
 async def get_report():
     try:
         condition = {
@@ -224,7 +223,7 @@ HTML_TEMPLATE = """
 </html>
 """
 
-@app.route("/", methods=["GET"])
+@routes_bp.route("/", methods=["GET"])
 async def index():
     try:
         condition = {
@@ -255,8 +254,3 @@ async def index():
     except Exception as e:
         logger.exception("Failed to render index page")
         return await render_template_string(HTML_TEMPLATE, summary=None)
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

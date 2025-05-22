@@ -1,4 +1,46 @@
-Sure! Below is the updated complete code of `entity/prototype_cyoda.py` with the new `workflow` parameter added to `entity_service.add_item` calls, and the implementation of the required workflow function `process_pet` (following your naming and behavior requirements).
+Understood. The key goal is to move all async logic that modifies or supplements the entity data from the endpoints into the workflow functions `process_{entity_name}`. This keeps controllers thin and delegates entity-specific processing before persistence to the workflow functions.
+
+---
+
+### What async logic can be moved to workflow functions?
+
+1. In `/pets/fetch` endpoint, we call external Petstore API and then add each pet entity individually:
+   - External API call must remain in the endpoint (it's related to request handling).
+   - But **any logic that modifies or enriches the pet entity before storing** should be moved to `process_pet`.
+   - The actual call to `entity_service.add_item` remains in the endpoint, but the workflow function enriches the pet entity before persistence.
+
+2. In `/pets/match` endpoint, the logic filters and matches pets from the entity service:
+   - This is a query operation, not persistence, so no workflow function applies here.
+
+3. The `find_pet_matches` function does some filtering and mocking age (hardcoded).
+   - Age mocking should be done in the workflow, so pet entities have an `age` attribute persisted.
+   - This way, the endpoint can just filter on stored attributes.
+
+4. The `pet_details` endpoint adds a mock description if missing.
+   - This is read-time enrichment, so it cannot be moved to the workflow.
+   - But we can consider adding a `description` in the workflow, so pets have it persisted.
+
+---
+
+### Plan:
+
+- Move pet enrichment logic (timestamp, availability, age, description) into `process_pet`.
+- Replace hardcoded age in `/pets/match` filtering by stored `age` attribute.
+- Remove enrichment logic from endpoints and utility functions.
+- Keep external API calls and entity_service calls in endpoints.
+
+---
+
+### Updated `process_pet` workflow function:
+
+- Add `processed_at` timestamp.
+- Add `is_available` flag.
+- Add `age` (mocked as 3 years).
+- Add `description` if missing.
+
+---
+
+### Updated code with these changes:
 
 ```python
 import asyncio
@@ -47,19 +89,26 @@ PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 async def process_pet(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
     Workflow function applied to pet entity before persistence.
-    You can modify entity state here, add/get other entities (except pet entities),
-    but do NOT add/update/delete pet entities here to avoid infinite recursion.
+    You can modify entity state here asynchronously.
     """
-    # Example: Add/update a timestamp
+    # Add processing timestamp
     entity['processed_at'] = datetime.utcnow().isoformat() + "Z"
-    
-    # Example: Add a flag if pet is available
-    if entity.get("status") == "available":
-        entity["is_available"] = True
-    else:
-        entity["is_available"] = False
 
-    # You can add other processing logic here
+    # Add availability flag based on status
+    status = entity.get("status", "").lower()
+    entity["is_available"] = (status == "available")
+
+    # Add mocked age if not present
+    if "age" not in entity:
+        # Here we mock age as 3 (since Petstore API has no age)
+        entity["age"] = 3
+
+    # Add a default description if missing
+    if not entity.get("description"):
+        entity["description"] = "Playful pet who loves attention."
+
+    # You can add logic to get/add supplementary entities of different model here if needed
+    # e.g., fetch breed info, or enrich with other data...
 
     return entity
 
@@ -98,7 +147,6 @@ async def pets_fetch(data: FetchPetsRequest):
         # Add pets to entity service asynchronously - add_item returns id, no bulk add, so add one by one
         for pet in pets:
             try:
-                # Convert id to string as technical_id is string everywhere
                 pet_id = str(pet.get("id")) if pet.get("id") is not None else None
                 if pet_id is None:
                     continue  # skip if no id
@@ -108,7 +156,7 @@ async def pets_fetch(data: FetchPetsRequest):
                     entity_model=PET_ENTITY_NAME,
                     entity_version=ENTITY_VERSION,
                     entity=pet,
-                    workflow=process_pet  # <- added workflow function here
+                    workflow=process_pet  # workflow enriches entity before persistence
                 )
             except Exception as e:
                 logger.exception(f"Failed to add pet {pet_id} to entity_service: {e}")
@@ -152,8 +200,9 @@ async def find_pet_matches(
             pet_type = category.get("name", "").lower() or "other"
             if preferred_type.lower() != pet_type and preferred_type.lower() != "other":
                 continue
-            # Mock age as before
-            age = 3  # TODO: mock age, Petstore API has no age field
+
+            # Use stored age (added by workflow), fallback to 3 if missing
+            age = pet.get("age", 3)
             if age_min <= age <= age_max:
                 results.append({
                     "id": pet.get("id"),
@@ -203,11 +252,8 @@ async def pet_details(pet_id: str):
         )
         if not pet:
             return jsonify({"error": "Pet not found"}), 404
-        pet_detail = pet.copy()
-        pet_detail["description"] = pet_detail.get(
-            "description", "Playful pet who loves attention."
-        )  # TODO: mock description, Petstore API has no description field
-        return jsonify(pet_detail)
+        # description is guaranteed to exist due to workflow enrichment
+        return jsonify(pet)
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pet details"}), 500
@@ -222,9 +268,17 @@ if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added async function `process_pet(entity: Dict[str, Any])` as the workflow function for the entity `pet`.
-- Updated all calls to `entity_service.add_item` to pass the `workflow=process_pet` parameter.
-- The workflow function modifies the entity by adding a `processed_at` timestamp and a boolean `is_available` flag based on the pet's status. You can extend this logic as needed.
+---
 
-Let me know if you need any additional updates!
+### Explanation:
+
+- **`process_pet`**: Enriches the pet entity with `processed_at`, `is_available`, mocked `age` (default 3), and default `description`.
+- The fetch endpoint only fetches and adds pets, no enrichment logic remains there.
+- The match endpoint filters pets based on persisted `age` and `status`.
+- The detail endpoint simply returns the stored entity which already has `description`.
+- This keeps endpoints focused on I/O, and workflows handle entity state enrichment just before persistence.
+- This approach is more robust, testable, and clearly separates concerns.
+
+---
+
+If you want me to do the same for other entities or more complex workflows, or if you want me to extract other logic similarly, just ask!

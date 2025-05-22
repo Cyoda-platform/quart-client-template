@@ -1,0 +1,56 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "completedAt": "2024-06-01T12:00:00Z",
+                "pets": [
+                    {
+                        "id": "1",
+                        "name": "Fluffy",
+                        "photoUrls": [
+                            "url1",
+                            "url2"
+                        ],
+                        "status": "available",
+                        "type": "cat"
+                    },
+                    {
+                        "id": "2",
+                        "name": "Buddy",
+                        "photoUrls": [
+                            "url3"
+                        ],
+                        "status": "sold",
+                        "type": "dog"
+                    }
+                ],
+                "searchId": "123e4567-e89b-12d3-a456-426614174000",
+                "status": "done"
+            },
+            "entity_name": "pets_search_job"
+        },
+        {
+            "entity_data_example": {
+                "completedAt": "2024-06-01T12:05:00Z",
+                "details": {
+                    "description": "A friendly cat",
+                    "id": 1,
+                    "name": "Fluffy",
+                    "photoUrls": [
+                        "url1",
+                        "url2"
+                    ],
+                    "status": "available",
+                    "tags": [
+                        "cute",
+                        "playful"
+                    ],
+                    "type": "cat"
+                },
+                "petId": "1",
+                "status": "done"
+            },
+            "entity_name": "pets_details"
+        }
+    ]
+}

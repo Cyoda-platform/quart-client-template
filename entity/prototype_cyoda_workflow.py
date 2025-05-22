@@ -1,6 +1,105 @@
-Certainly! I've updated the code to add the required `workflow` parameter to `entity_service.add_item` calls and implemented the corresponding workflow function `process_pet` as per your instructions. The workflow function is asynchronous, takes the entity data as the only argument, and can modify its state before persistence.
+Understood! Moving as much logic as possible into the workflow functions is indeed a better design — it keeps endpoints clean, centralizes entity state mutations, and leverages the new `workflow` feature properly.
 
-Here is the complete updated code with the workflow function added and integrated:
+---
+
+### What can be moved into `process_pet` workflow:
+1. Normalizing and enriching data on fetch (already done).
+2. Converting status to lowercase and adding timestamps on fetch (already done).
+3. For adoption:
+   - The async adoption processing that updates the pet status to "adopted" can be moved into a separate workflow function triggered during update or add.
+   - Since the adoption endpoint currently fetches, modifies, and updates the pet entity outside workflow, we can adjust the adoption process to trigger the update with a workflow instead.
+4. Filtering is a read/query operation, so it should remain in the endpoint.
+
+---
+
+### Key point:
+- The workflow function is called **before persisting** an entity.
+- We **cannot call `add_item`/`update_item` for the same entity_model inside its workflow** (causes infinite recursion).
+- But we can update the entity's fields directly inside the workflow (this will be persisted automatically).
+- For supplementary entities of other models, we can call add/update/delete as needed.
+
+---
+
+### Proposed changes:
+- Keep `process_pet` for fetch (already done).
+- Create `process_pet_adoption` workflow for adoption updates.
+- In adoption endpoint, instead of manually updating the pet, call `entity_service.update_item` with `workflow=process_pet_adoption` — the workflow will update the pet's status to "adopted".
+- The adoption endpoint then becomes mainly a trigger to update pet status with the workflow handling the actual state change.
+
+---
+
+### Implementations:
+
+**1. Update existing `process_pet` workflow:**
+
+```python
+async def process_pet(entity: Dict) -> None:
+    # Normalize status and add last processed timestamp
+    if "status" in entity and isinstance(entity["status"], str):
+        entity["status"] = entity["status"].lower()
+    entity["last_processed_at"] = datetime.utcnow().isoformat() + "Z"
+```
+
+**2. Add new adoption workflow for pet:**
+
+```python
+async def process_pet_adoption(entity: Dict) -> None:
+    # This workflow function runs before the pet update is persisted during adoption
+    # Set status to adopted and update timestamp
+    entity["status"] = "adopted"
+    entity["adopted_at"] = datetime.utcnow().isoformat() + "Z"
+```
+
+**3. Refactor `/pets/adopt` endpoint:**
+
+```python
+@app.route("/pets/adopt", methods=["POST"])
+@validate_request(AdoptPetRequest)
+async def adopt_pet(data: AdoptPetRequest):
+    pet_id = str(data.pet_id)
+    adopter_name = data.adopter_name
+    adopter_contact = data.adopter_contact
+
+    try:
+        pet = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="pet",
+            entity_version=ENTITY_VERSION,
+            technical_id=pet_id,
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to retrieve pet"}), 502
+
+    if not pet:
+        return jsonify({"error": "Pet not found"}), 404
+
+    # Attach adopter info to pet entity before update
+    pet["adopter_name"] = adopter_name
+    pet["adopter_contact"] = adopter_contact
+
+    try:
+        # Instead of manually updating status here, use the workflow to set status and timestamps
+        await entity_service.update_item(
+            token=cyoda_auth_service,
+            entity_model="pet",
+            entity_version=ENTITY_VERSION,
+            entity=pet,
+            technical_id=pet_id,
+            workflow=process_pet_adoption,
+            meta={}
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to update pet adoption status"}), 502
+
+    logger.info(f"Adoption processed for pet_id={pet_id} by {adopter_name}")
+    return jsonify({"message": "Adoption processed", "pet_id": pet_id, "status": "adopted"})
+```
+
+---
+
+### Full updated code with changes:
 
 ```python
 import asyncio
@@ -55,14 +154,17 @@ def map_petstore_pet(pet: Dict) -> Dict:
         "age": random.randint(1, 10),  # TODO: Replace with real age if available
     }
 
-# Workflow function applied to pet entity before persistence
+# Workflow function applied to pet entity before persistence on fetch/add
 async def process_pet(entity: Dict) -> None:
-    # For example, ensure status is lowercase, or add timestamps, etc.
+    # Normalize status and add last processed timestamp
     if "status" in entity and isinstance(entity["status"], str):
         entity["status"] = entity["status"].lower()
-    # Add or update timestamp of last processed
     entity["last_processed_at"] = datetime.utcnow().isoformat() + "Z"
-    # Additional processing logic can be added here
+
+# Workflow function applied to pet entity before persistence on adoption update
+async def process_pet_adoption(entity: Dict) -> None:
+    entity["status"] = "adopted"
+    entity["adopted_at"] = datetime.utcnow().isoformat() + "Z"
 
 @app.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)
@@ -84,11 +186,6 @@ async def fetch_pets(data: FetchPetsRequest):
         pets_data = [p for p in pets_data if (p.get("category", {}).get("name") or "").lower() == pet_type.lower()]
     mapped_pets = [map_petstore_pet(p) for p in pets_data]
 
-    # Save all pets to entity service, one by one
-    # This is a replacement of local cache
-    # We do not retrieve items immediately after add_item, just add and keep ids
-    # We keep a local cache of ids for filtered and pets to speed filter and get requests
-    # But per instruction, if you can't replace local cache fully, skip. Here we keep local ids for filtered and pets, but data is in entity_service
     global pets_cache_ids, filtered_cache_ids
     pets_cache_ids = []
     filtered_cache_ids = []
@@ -101,7 +198,7 @@ async def fetch_pets(data: FetchPetsRequest):
                 entity_model="pet",
                 entity_version=ENTITY_VERSION,
                 entity=pet_copy,
-                workflow=process_pet  # Added workflow function here
+                workflow=process_pet  # workflow function applied here
             )
             pets_cache_ids.append(str(pet_id))
         except Exception as e:
@@ -119,7 +216,6 @@ async def filter_pets(data: FilterPetsRequest):
     min_age = data.min_age
     max_age = data.max_age
 
-    # Retrieve all pets from entity_service
     try:
         all_pets = await entity_service.get_items(
             token=cyoda_auth_service,
@@ -150,7 +246,6 @@ async def filter_pets(data: FilterPetsRequest):
 
 @app.route("/pets", methods=["GET"])
 async def get_pets():
-    # Return filtered pets by retrieving them from entity_service by filtered_cache_ids
     global filtered_cache_ids
     pets = []
     for pet_id in filtered_cache_ids:
@@ -170,7 +265,7 @@ async def get_pets():
 @app.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptPetRequest)
 async def adopt_pet(data: AdoptPetRequest):
-    pet_id = str(data.pet_id)  # ensure string id
+    pet_id = str(data.pet_id)
     adopter_name = data.adopter_name
     adopter_contact = data.adopter_contact
 
@@ -188,24 +283,26 @@ async def adopt_pet(data: AdoptPetRequest):
     if not pet:
         return jsonify({"error": "Pet not found"}), 404
 
-    async def process_adoption():
-        await asyncio.sleep(1)
-        pet["status"] = "adopted"
-        try:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="pet",
-                entity_version=ENTITY_VERSION,
-                entity=pet,
-                technical_id=pet_id,
-                meta={}
-            )
-        except Exception as e:
-            logger.exception(e)
+    # Add adopter info to entity before update
+    pet["adopter_name"] = adopter_name
+    pet["adopter_contact"] = adopter_contact
 
-    asyncio.create_task(process_adoption())
-    logger.info(f"Adoption requested for pet_id={pet_id} by {adopter_name}")
-    return jsonify({"message": "Adoption request processed", "pet_id": pet_id, "status": "pending"})
+    try:
+        await entity_service.update_item(
+            token=cyoda_auth_service,
+            entity_model="pet",
+            entity_version=ENTITY_VERSION,
+            entity=pet,
+            technical_id=pet_id,
+            workflow=process_pet_adoption,  # workflow handles status update
+            meta={}
+        )
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to update pet adoption status"}), 502
+
+    logger.info(f"Adoption processed for pet_id={pet_id} by {adopter_name}")
+    return jsonify({"message": "Adoption processed", "pet_id": pet_id, "status": "adopted"})
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
@@ -213,10 +310,12 @@ if __name__ == "__main__":
 
 ---
 
-### Summary of changes:
-- Added an async workflow function `process_pet(entity: Dict) -> None` that modifies the pet entity before persistence.
-- Passed `workflow=process_pet` as an argument to `entity_service.add_item` in the `/pets/fetch` endpoint.
-- The workflow function normalizes the `status` field to lowercase and adds a `last_processed_at` timestamp.
-- No other changes were made to existing logic, preserving all original behavior.
+### Notes:
+- The adoption endpoint no longer launches a fire-and-forget task.
+- Instead, the adoption status update is done synchronously but with the workflow doing the entity mutation.
+- You can add more workflows for other entity models similarly.
+- Filtering remains untouched because it is a read-only operation.
 
-Let me know if you need me to update any other parts or add workflows for other entity models!
+---
+
+If you want, I can help further refactor or add workflows for other models too.

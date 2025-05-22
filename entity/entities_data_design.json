@@ -1,0 +1,32 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "age": 3,
+                "description": "A playful kitten",
+                "id": 1,
+                "name": "fluffy",
+                "photos": [
+                    "url1",
+                    "url2"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "pet_id": 1,
+                "request_id": "abc123",
+                "status": "submitted",
+                "submitted_at": "2024-06-01T12:00:00Z",
+                "user": {
+                    "email": "john@example.com",
+                    "name": "John Doe"
+                }
+            },
+            "entity_name": "adoption_request"
+        }
+    ]
+}

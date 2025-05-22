@@ -5,8 +5,8 @@ from typing import Dict
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class HelloRequest:
@@ -47,7 +46,7 @@ async def process_entity(job_id: str, data: dict):
             entity_job[job_id]["completedAt"] = datetime.utcnow().isoformat()
         logger.exception(e)
 
-@app.route("/hello", methods=["POST"])
+@routes_bp.route("/hello", methods=["POST"])
 @validate_request(HelloRequest)
 async def trigger_hello(data: HelloRequest):
     if data.trigger != "hello_world":
@@ -63,7 +62,7 @@ async def trigger_hello(data: HelloRequest):
     asyncio.create_task(process_entity(job_id, data.__dict__))
     return jsonify({"status": "success", "job_id": job_id, "message": "Workflow started"}), 202
 
-@app.route("/hello", methods=["GET"])
+@routes_bp.route("/hello", methods=["GET"])
 async def get_hello():
     async with cache_lock:
         completed_jobs = [job for job in entity_job.values() if job.get("status") == "completed"]
@@ -88,7 +87,7 @@ async def process_prototype(entity: dict) -> dict:
     await asyncio.sleep(0.1)
     return entity
 
-@app.route("/prototype", methods=["POST"])
+@routes_bp.route("/prototype", methods=["POST"])
 async def create_prototype():
     data = await request.get_json()
     if not isinstance(data, dict):
@@ -105,7 +104,7 @@ async def create_prototype():
         logger.exception(e)
         return jsonify({"error": "Failed to create prototype"}), 500
 
-@app.route("/prototype/<string:technical_id>", methods=["GET"])
+@routes_bp.route("/prototype/<string:technical_id>", methods=["GET"])
 async def get_prototype(technical_id: str):
     if not technical_id:
         return jsonify({"error": "Technical ID required"}), 400
@@ -123,7 +122,7 @@ async def get_prototype(technical_id: str):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve prototype"}), 500
 
-@app.route("/prototype", methods=["GET"])
+@routes_bp.route("/prototype", methods=["GET"])
 async def list_prototypes():
     try:
         items = await entity_service.get_items(
@@ -136,7 +135,7 @@ async def list_prototypes():
         logger.exception(e)
         return jsonify({"error": "Failed to list prototypes"}), 500
 
-@app.route("/prototype/<string:technical_id>", methods=["PUT"])
+@routes_bp.route("/prototype/<string:technical_id>", methods=["PUT"])
 async def update_prototype(technical_id: str):
     if not technical_id:
         return jsonify({"error": "Technical ID required"}), 400
@@ -157,7 +156,7 @@ async def update_prototype(technical_id: str):
         logger.exception(e)
         return jsonify({"error": "Failed to update prototype"}), 500
 
-@app.route("/prototype/<string:technical_id>", methods=["DELETE"])
+@routes_bp.route("/prototype/<string:technical_id>", methods=["DELETE"])
 async def delete_prototype(technical_id: str):
     if not technical_id:
         return jsonify({"error": "Technical ID required"}), 400
@@ -173,6 +172,3 @@ async def delete_prototype(technical_id: str):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to delete prototype"}), 500
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

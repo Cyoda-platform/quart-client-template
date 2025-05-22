@@ -1,0 +1,225 @@
+Certainly! I've updated the code to include the new `workflow` parameter in `entity_service.add_item` calls and implemented a workflow function named `process_pets` (following the prefix `process_` plus entity name in underscore lowercase).
+
+The workflow function `process_pets` asynchronously receives the entity data, you can modify the entity state inside it before it is persisted.
+
+Here's the complete updated code with the required changes:
+
+```python
+import asyncio
+import logging
+from dataclasses import dataclass
+from datetime import datetime
+from typing import List, Optional, Dict, Any
+
+import httpx
+from quart import Quart, request, jsonify, abort
+from quart_schema import QuartSchema, validate_request, validate_querystring
+from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
+
+app = Quart(__name__)
+QuartSchema(app)
+
+# Request/Query dataclasses
+@dataclass
+class FetchPets:
+    type: Optional[str] = None
+    status: Optional[str] = None
+
+@dataclass
+class RecommendPets:
+    preferredType: Optional[str] = None
+    maxResults: int = 3
+
+@dataclass
+class QueryPets:
+    type: Optional[str] = None
+    status: Optional[str] = None
+
+entity_job: Dict[str, Dict[str, Any]] = {}
+PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
+entity_name = "pets"
+
+def gen_job_id() -> str:
+    return datetime.utcnow().isoformat(timespec='milliseconds').replace(":", "-")
+
+async def fetch_pets_from_petstore(type_: Optional[str], status: Optional[str]) -> List[Dict[str, Any]]:
+    url = f"{PETSTORE_BASE_URL}/pet/findByStatus"
+    status_query = status if status else "available"
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(url, params={"status": status_query})
+            r.raise_for_status()
+            pets = r.json()
+    except Exception as e:
+        logger.exception("Failed to fetch pets from Petstore API")
+        raise
+    if type_:
+        pets = [p for p in pets if p.get("category", {}).get("name", "").lower() == type_.lower()]
+    return pets
+
+# New workflow function according to instructions
+async def process_pets(entity: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Workflow function to process 'pets' entity before persistence.
+    Modify entity state as needed.
+    """
+    # Example modification: ensure description is set or update it
+    entity.setdefault("description", f"A lovely {entity.get('category', {}).get('name', 'pet')}.")
+    # You can add more processing logic here if needed
+    return entity
+
+async def process_entity(job_id: str, type_: Optional[str], status: Optional[str]) -> None:
+    try:
+        pets = await fetch_pets_from_petstore(type_, status)
+        for pet in pets:
+            pet_id = pet.get("id")
+            if pet_id is not None:
+                # Add pet to entity_service with workflow function
+                try:
+                    # entity_service.add_item returns id as string
+                    await entity_service.add_item(
+                        token=cyoda_auth_service,
+                        entity_model=entity_name,
+                        entity_version=ENTITY_VERSION,
+                        entity=pet,
+                        workflow=process_pets,
+                    )
+                except Exception as e:
+                    logger.exception(f"Failed to add pet with id {pet_id} to entity_service")
+        entity_job[job_id]["status"] = "completed"
+        entity_job[job_id]["count"] = len(pets)
+        entity_job[job_id]["completedAt"] = datetime.utcnow().isoformat()
+        logger.info(f"Job {job_id} completed: {len(pets)} pets cached.")
+    except Exception as e:
+        entity_job[job_id]["status"] = "failed"
+        entity_job[job_id]["error"] = str(e)
+        logger.exception(f"Job {job_id} failed.")
+
+@app.route("/pets/fetch", methods=["POST"])
+@validate_request(FetchPets)  # workaround: validation last for POST due to quart-schema defect
+async def pets_fetch(data: FetchPets):
+    job_id = gen_job_id()
+    entity_job[job_id] = {
+        "status": "processing",
+        "requestedAt": datetime.utcnow().isoformat(),
+        "type": data.type,
+        "status_filter": data.status,
+    }
+    asyncio.create_task(process_entity(job_id, data.type, data.status))
+    return jsonify({
+        "message": "Pets data fetch started.",
+        "job_id": job_id,
+    })
+
+@validate_querystring(QueryPets)  # workaround: validation first for GET due to quart-schema defect
+@app.route("/pets", methods=["GET"])
+async def pets_list():
+    type_filter = request.args.get("type")
+    status_filter = request.args.get("status")
+    try:
+        pets = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model=entity_name,
+            entity_version=ENTITY_VERSION,
+        )
+    except Exception as e:
+        logger.exception("Failed to retrieve pets from entity_service")
+        abort(500, description="Failed to retrieve pets")
+    def pet_matches(pet: Dict[str, Any]) -> bool:
+        if type_filter:
+            if pet.get("category", {}).get("name", "").lower() != type_filter.lower():
+                return False
+        if status_filter:
+            if pet.get("status", "").lower() != status_filter.lower():
+                return False
+        return True
+    filtered_pets = [pet for pet in pets if pet_matches(pet)]
+    response = []
+    for pet in filtered_pets:
+        response.append({
+            "id": pet.get("id"),
+            "name": pet.get("name"),
+            "type": pet.get("category", {}).get("name"),
+            "status": pet.get("status"),
+            "tags": [tag.get("name") for tag in pet.get("tags", []) if "name" in tag] if pet.get("tags") else [],
+            "photoUrls": pet.get("photoUrls", []),
+        })
+    return jsonify(response)
+
+@app.route("/pets/recommend", methods=["POST"])
+@validate_request(RecommendPets)  # workaround: validation last for POST due to quart-schema defect
+async def pets_recommend(data: RecommendPets):
+    preferred_type = data.preferredType
+    max_results = data.maxResults
+    try:
+        pets = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model=entity_name,
+            entity_version=ENTITY_VERSION,
+        )
+    except Exception as e:
+        logger.exception("Failed to retrieve pets from entity_service")
+        abort(500, description="Failed to retrieve pets")
+    candidates = []
+    for pet in pets:
+        if preferred_type:
+            if pet.get("category", {}).get("name", "").lower() != preferred_type.lower():
+                continue
+        candidates.append(pet)
+    if preferred_type and not candidates:
+        candidates = pets
+    recommended = candidates[:max_results]
+    response = []
+    for pet in recommended:
+        response.append({
+            "id": pet.get("id"),
+            "name": pet.get("name"),
+            "type": pet.get("category", {}).get("name"),
+            "status": pet.get("status"),
+            "funFact": f"{pet.get('name')} loves to play and cuddle! 😸",  # TODO: Replace with real fun facts
+        })
+    return jsonify(response)
+
+@app.route("/pets/<string:pet_id>", methods=["GET"])
+async def pet_detail(pet_id: str):
+    try:
+        pet = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model=entity_name,
+            entity_version=ENTITY_VERSION,
+            technical_id=pet_id,
+        )
+    except Exception as e:
+        logger.exception(f"Failed to retrieve pet with id {pet_id} from entity_service")
+        abort(404, description=f"Pet with id {pet_id} not found.")
+    if not pet:
+        abort(404, description=f"Pet with id {pet_id} not found.")
+    return jsonify({
+        "id": pet.get("id"),
+        "name": pet.get("name"),
+        "type": pet.get("category", {}).get("name"),
+        "status": pet.get("status"),
+        "tags": [tag.get("name") for tag in pet.get("tags", []) if "name" in tag] if pet.get("tags") else [],
+        "photoUrls": pet.get("photoUrls", []),
+        "description": pet.get("description"),
+    })
+
+if __name__ == '__main__':
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+```
+
+---
+
+### Key changes:
+- Added the async function `process_pets(entity: Dict[str, Any])` that updates the entity description before persistence.
+- Updated all calls to `entity_service.add_item` inside `process_entity` to pass the `workflow=process_pets` parameter.
+
+This satisfies the requirement to add a workflow function parameter and implement it with the naming convention `process_<entity_name>` in underscore lowercase (`process_pets`).

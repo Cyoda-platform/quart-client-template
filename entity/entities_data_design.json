@@ -1,0 +1,41 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "description": "Meet Fluffy! A lovely cat waiting for a new home.",
+                "id": 123,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "https://example.com/photos/fluffy1.jpg"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "id": 123,
+                "matchScore": 0.85,
+                "name": "Fluffy",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "matched_pet"
+        },
+        {
+            "entity_data_example": {
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "fetch_pets_request"
+        },
+        {
+            "entity_data_example": {
+                "preferredStatus": "available",
+                "preferredType": "cat"
+            },
+            "entity_name": "matchmake_request"
+        }
+    ]
+}

@@ -1,0 +1,25 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "completedAt": "2024-06-01T10:05:00Z",
+                "requestedAt": "2024-06-01T10:00:00Z",
+                "status": "completed",
+                "summary": {
+                    "average_price": 29.99,
+                    "highest_priced_item": {
+                        "name": "Sauce Labs Fleece Jacket",
+                        "price": 49.99
+                    },
+                    "lowest_priced_item": {
+                        "name": "Sauce Labs Onesie",
+                        "price": 7.99
+                    },
+                    "total_inventory_value": 450.75,
+                    "total_products": 6
+                }
+            },
+            "entity_name": "prototype"
+        }
+    ]
+}

@@ -5,8 +5,8 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class PetFetchRequest:
@@ -83,7 +82,7 @@ async def fetch_pets_from_petstore(status: Optional[str], tags: Optional[List[st
     pets = [enrich_pet(pet) for pet in pets]
     return pets
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(PetFetchRequest)
 async def pets_fetch(data: PetFetchRequest):
     job_id = await generate_job_id()
@@ -105,7 +104,7 @@ async def pets_fetch(data: PetFetchRequest):
         return jsonify({"error": "Failed to start pet fetch job"}), 500
     return jsonify({"message": "Pets fetch started", "jobId": job_id})
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def pets_get():
     if not pets_cache:
         return jsonify([])
@@ -113,7 +112,7 @@ async def pets_get():
     pets = pets_cache.get(last_job_id, [])
     return jsonify(pets)
 
-@app.route("/orders/create", methods=["POST"])
+@routes_bp.route("/orders/create", methods=["POST"])
 @validate_request(OrderCreateRequest)
 async def orders_create(data: OrderCreateRequest):
     order = {
@@ -136,7 +135,7 @@ async def orders_create(data: OrderCreateRequest):
     orders_cache[str(order_id)] = {**order, "orderId": order_id}
     return jsonify({"orderId": str(order_id), "status": orders_cache[str(order_id)].get("status", "placed")})
 
-@app.route("/orders/<string:order_id>", methods=["GET"])
+@routes_bp.route("/orders/<string:order_id>", methods=["GET"])
 async def orders_get(order_id: str):
     order = orders_cache.get(order_id)
     if order:
@@ -155,12 +154,3 @@ async def orders_get(order_id: str):
     except Exception as e:
         logger.exception(f"Failed to get order with id {order_id}: {e}")
         return jsonify({"error": "Order retrieval failed"}), 500
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

@@ -1,0 +1,78 @@
+{
+    "description": "Workflow for fetching and enhancing pets data in Purrfect Pets API",
+    "name": "purrfect_pets_pet_fetch_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start pet fetch job and fetch pets from external API",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets have been fetched from Petstore API",
+            "name": "start_pet_fetch_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Enhance fetched pets with personality traits if requested",
+            "end_state": "Pets_enhanced",
+            "end_state_description": "Pets have been enhanced with personality traits",
+            "name": "enhance_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enhance_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Set status to done after successful processing",
+            "end_state": "Done",
+            "end_state_description": "Processing is done",
+            "name": "set_status_done",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_status_done"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_enhanced",
+            "start_state_description": "Pets have been enhanced"
+        },
+        {
+            "automated": true,
+            "description": "Handle error during processing and set status to error",
+            "end_state": "Error",
+            "end_state_description": "Error occurred during processing",
+            "name": "handle_error",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_status_error"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

@@ -1,62 +1,3 @@
-Understood. Moving as much logic as possible into the workflow functions (`process_{entity_name}`) is the right approach.
-
-### What we can do:
-- For `pet` entities, move all enrichment, filtering, and any processing into `process_pet`.
-- For the async fetch job, instead of running the whole `process_entity` coroutine inside the controller, we can trigger it by adding a *dummy* job entity with a workflow that does the fetching, enrichment, and persistence of pets.
-- For the customize message endpoint, move the message formatting logic into a new workflow function, e.g. `process_pet_custom_message` applied before updating the pet entity.
-- This means the controller just triggers an add/update with the workflow function, which does all the processing.
-
----
-
-### Plan:
-
-1. **Fetch pets job:**
-
-   Currently, `/pets/fetch` endpoint triggers `process_entity` that:
-   - Fetches pets from petstore API.
-   - Deletes existing pets.
-   - Adds new pets with enrichment.
-
-   We cannot run `entity_service.add/update/delete` on the same entity inside its own workflow (infinite recursion).
-
-   Solution:
-
-   - Create a new entity model `pet_fetch_job` for the job itself, which stores job status.
-   - Add a workflow `process_pet_fetch_job` that:
-     - Fetches pets.
-     - Deletes and adds pets (`pet` entity model).
-     - Updates job status in `pet_fetch_job`.
-   - The endpoint just adds a `pet_fetch_job` entity with workflow `process_pet_fetch_job`.
-   - This moves all logic out of the controller.
-
-2. **Add `process_pet` workflow:**
-
-   - Enrich pet description, etc. (already done).
-
-3. **Customize message endpoint:**
-
-   - When updating pet description, instead of formatting message in endpoint, set `message_template` in the entity.
-   - Create workflow `process_pet_customize_message` which:
-     - Reads `message_template`.
-     - Formats `description`.
-     - Clears `message_template` to avoid reprocessing.
-   - Endpoint just updates pet entity with new field `message_template` and workflow.
-
----
-
-### Implementation details:
-
-- New entity models:
-  - `pet_fetch_job` (for fetch job entities)
-- New workflows:
-  - `process_pet_fetch_job`
-  - `process_pet_customize_message`
-
----
-
-### Complete updated code snippet with these changes:
-
-```python
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -111,7 +52,7 @@ async def fetch_pets_from_petstore(status: Optional[str], pet_type: Optional[str
 
 def enrich_pet_description(pet: Dict) -> str:
     name = pet.get("name", "Unnamed")
-    pet_type = pet.get("category", {}).get("name", "pet").lower()
+    pet_type = pet.get("category", {}).get("name", "pet").lower() if "category" in pet else pet.get("type", "pet").lower()
     status = pet.get("status", "unknown")
     description = f"{name} is a lovely {pet_type} currently {status}."
     if pet_type == "cat":
@@ -123,27 +64,21 @@ def enrich_pet_description(pet: Dict) -> str:
     return description
 
 
-# Workflow for pet entity - enrich description
+# Workflow for pet entity - enrich description and apply message template
 async def process_pet(entity: Dict) -> Dict:
     if not entity.get("description"):
         entity["description"] = enrich_pet_description(entity)
-    # Process custom message template if set
     if "message_template" in entity and entity["message_template"]:
         try:
             entity["description"] = entity["message_template"].format(name=entity.get("name", ""))
         except Exception:
-            # If formatting fails, keep existing description
             logger.warning(f"Failed to format message_template for pet id {entity.get('id')}")
-        entity["message_template"] = ""  # clear after processing
+        entity["message_template"] = ""  # clear after processing to prevent re-processing
     return entity
 
 
-# Workflow for pet fetch job entity - performs pet fetching, deleting old pets and adding new ones
+# Workflow for pet_fetch_job entity - fetches pets from API, deletes old pets, adds new pets
 async def process_pet_fetch_job(entity: Dict) -> Dict:
-    """
-    Expects entity to have optional keys: status, type, limit for fetching pets
-    Updates the job entity status fields
-    """
     entity["status"] = "processing"
     entity["requestedAt"] = datetime.utcnow().isoformat()
     try:
@@ -152,40 +87,51 @@ async def process_pet_fetch_job(entity: Dict) -> Dict:
             entity.get("type_filter"),
             entity.get("limit_filter", 10),
         )
-        # Delete existing pets
-        existing_pets = await entity_service.get_items(
-            token=cyoda_auth_service,
-            entity_model="pet",
-            entity_version=ENTITY_VERSION,
-        )
+        # Delete existing pets safely
+        existing_pets = []
+        try:
+            existing_pets = await entity_service.get_items(
+                token=cyoda_auth_service,
+                entity_model="pet",
+                entity_version=ENTITY_VERSION,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to retrieve existing pets for deletion: {e}")
+
         for existing_pet in existing_pets:
+            pet_id = existing_pet.get("id")
+            if not pet_id:
+                continue
             try:
                 await entity_service.delete_item(
                     token=cyoda_auth_service,
                     entity_model="pet",
                     entity_version=ENTITY_VERSION,
-                    technical_id=existing_pet.get("id"),
+                    technical_id=pet_id,
                     meta={},
                 )
             except Exception as e:
-                logger.warning(f"Failed to delete existing pet id {existing_pet.get('id')}: {e}")
-        # Add new pets with workflow process_pet applied (entity_service.add_item will call it)
+                logger.warning(f"Failed to delete existing pet id {pet_id}: {e}")
+
+        # Add new pets, process_pet workflow enriches description
         for pet in pets:
             pet_entity = {
                 "id": str(pet.get("id")),
                 "name": pet.get("name"),
-                "type": pet.get("category", {}).get("name", "").lower(),
+                "type": pet.get("category", {}).get("name", "").lower() if "category" in pet else pet.get("type", "").lower(),
                 "status": pet.get("status"),
-                # description will be enriched by process_pet workflow
             }
-            # Add pet entity, workflow=process_pet ensures enrichment
-            await entity_service.add_item(
-                token=cyoda_auth_service,
-                entity_model="pet",
-                entity_version=ENTITY_VERSION,
-                entity=pet_entity,
-                workflow=process_pet,
-            )
+            try:
+                await entity_service.add_item(
+                    token=cyoda_auth_service,
+                    entity_model="pet",
+                    entity_version=ENTITY_VERSION,
+                    entity=pet_entity,
+                    workflow=process_pet,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to add pet id {pet_entity.get('id')}: {e}")
+
         entity["status"] = "completed"
         entity["completedAt"] = datetime.utcnow().isoformat()
         entity["count"] = len(pets)
@@ -199,10 +145,6 @@ async def process_pet_fetch_job(entity: Dict) -> Dict:
 @app.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchRequest)
 async def fetch_pets(data: FetchRequest):
-    """
-    Now just creates a pet_fetch_job entity with workflow=process_pet_fetch_job.
-    The job entity stores filters and limit.
-    """
     job_entity = {
         "status_filter": data.status,
         "type_filter": data.type,
@@ -210,13 +152,17 @@ async def fetch_pets(data: FetchRequest):
         "status": "pending",
         "requestedAt": datetime.utcnow().isoformat(),
     }
-    job_id = await entity_service.add_item(
-        token=cyoda_auth_service,
-        entity_model="pet_fetch_job",
-        entity_version=ENTITY_VERSION,
-        entity=job_entity,
-        workflow=process_pet_fetch_job,
-    )
+    try:
+        job_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="pet_fetch_job",
+            entity_version=ENTITY_VERSION,
+            entity=job_entity,
+            workflow=process_pet_fetch_job,
+        )
+    except Exception as e:
+        logger.exception("Failed to create pet fetch job")
+        return jsonify({"error": "Failed to create pet fetch job"}), 500
     return jsonify({"message": "Pets data fetch job created", "job_id": job_id}), 202
 
 
@@ -254,10 +200,6 @@ async def get_pet(pet_id: str):
 @app.route("/pets/customize-message", methods=["POST"])
 @validate_request(CustomizeMessage)
 async def customize_message(data: CustomizeMessage):
-    """
-    Instead of formatting message here, just update pet entity with message_template field.
-    The workflow process_pet will format description before persistence.
-    """
     try:
         pet = await entity_service.get_item(
             token=cyoda_auth_service,
@@ -280,7 +222,7 @@ async def customize_message(data: CustomizeMessage):
             entity=pet,
             technical_id=data.pet_id,
             meta={},
-            workflow=process_pet,  # re-use process_pet to apply formatting
+            workflow=process_pet,
         )
     except Exception as e:
         logger.exception(f"Failed to update pet id {data.pet_id}")
@@ -290,35 +232,3 @@ async def customize_message(data: CustomizeMessage):
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- **`process_pet_fetch_job`**:
-  - Runs on creation of a `pet_fetch_job` entity.
-  - Does the entire fetch, delete old pets, add new pets cycle.
-  - Updates job entity status.
-- **`fetch_pets` endpoint**:
-  - Just adds a `pet_fetch_job` entity with the filters.
-- **`process_pet`**:
-  - Enriches description if absent.
-  - Processes `message_template` if present.
-- **`customize_message` endpoint**:
-  - Fetches pet entity.
-  - Sets `message_template`.
-  - Updates pet with workflow `process_pet` to apply message formatting.
-
----
-
-### Benefits:
-
-- All async or complex logic moved into workflows.
-- Controllers are "thin" and only responsible for triggering actions.
-- Workflow functions can safely get/add other entity models but never modify their own entity model via `entity_service` methods.
-- Code is more robust and maintainable.
-
----
-
-If you want, I can provide the entire updated file or split into respective parts — just let me know!

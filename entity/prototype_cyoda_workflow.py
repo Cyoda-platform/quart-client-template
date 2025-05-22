@@ -1,27 +1,3 @@
-Absolutely! Moving as much business and async logic as possible into the workflow functions is a great way to clean up endpoint handlers, improve separation of concerns, and make your codebase more maintainable and robust.
-
-### What can be moved to workflow functions?
-
-- **Entity state enrichment/modification** (e.g. adding timestamps, status updates)
-- **Validation and transformations directly related to entity data**
-- **Async side-effects or supplementary entity adds** (e.g. logs, related entities)
-- **External async calls that provide additional info or verification, if they do not block the request**
-
----
-
-## Plan for refactoring
-
-- Move **order availability validation** into `process_order`.
-- Move **enriching order entity** (e.g. adding processedAt timestamp) into `process_order`.
-- Fire-and-forget async tasks like pet fetch jobs can be wrapped in workflows for their respective entities (if we had an entity for pet-fetch job).
-- For pets fetch endpoint, since it just triggers an async job, consider creating a workflow function for a **pet_fetch_job** entity that encapsulates the async fetching logic.
-- Simplify endpoints to only validate input and call `entity_service.add_item` with the workflow function.
-
----
-
-## Updated code showing these changes
-
-```python
 import asyncio
 import logging
 from datetime import datetime
@@ -29,7 +5,7 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -107,31 +83,18 @@ async def fetch_pets_from_petstore(status: Optional[str], tags: Optional[List[st
     pets = [enrich_pet(pet) for pet in pets]
     return pets
 
-# Workflow function for pet_fetch_job entity
 async def process_pet_fetch_job(entity: Dict) -> Dict:
-    """
-    Workflow function to perform the pet fetching logic asynchronously before persisting pet_fetch_job entity.
-    """
     job_id = entity.get("jobId")
     status = entity.get("status")
     tags = entity.get("tags")
     logger.info(f"Starting pet fetch job {job_id} with status={status}, tags={tags}")
     pets = await fetch_pets_from_petstore(status, tags)
-    # store result in cache keyed by job_id
     pets_cache[job_id] = pets
     logger.info(f"Completed pet fetch job {job_id}, fetched {len(pets)} pets")
-    # You may add supplementary entities if needed here
-    return entity  # no changes to job entity itself
+    return entity
 
-# Workflow function for order entity
 async def process_order(order: Dict) -> Dict:
-    """
-    Workflow function applied asynchronously to the order entity before persistence.
-    Validates pet availability, modifies order state, and can add supplementary entities.
-    """
     pet_id = order.get("petId")
-
-    # Validate pet availability
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(f"{PETSTORE_BASE}/pet/{pet_id}", timeout=10)
@@ -141,17 +104,11 @@ async def process_order(order: Dict) -> Dict:
                 raise ValueError("Pet is not available")
         except Exception as e:
             logger.warning(f"Pet validation failed for petId={pet_id}: {e}")
-            # Instead of raising, we can mark order as invalid or failed
             order["status"] = "invalid"
             order["validationError"] = "Pet is not available"
             return order
-
-    # Modify order: add processedAt timestamp, set status if not already set
     order.setdefault("status", "placed")
     order["processedAt"] = datetime.utcnow().isoformat() + "Z"
-
-    # You can add supplementary entities here as well, e.g. logs
-    # For example, add an order_log entity (assuming this entity_model exists)
     try:
         await entity_service.add_item(
             token=cyoda_auth_service,
@@ -162,18 +119,15 @@ async def process_order(order: Dict) -> Dict:
                 "action": "processed",
                 "timestamp": order["processedAt"]
             },
-            workflow=None  # no workflow to avoid recursion
+            workflow=None
         )
     except Exception as e:
         logger.warning(f"Failed to add order_log entity: {e}")
-
     return order
 
 @app.route("/pets/fetch", methods=["POST"])
 @validate_request(PetFetchRequest)
 async def pets_fetch(data: PetFetchRequest):
-    # Instead of generating job_id and triggering tasks here,
-    # create a pet_fetch_job entity and add it with workflow
     job_id = await generate_job_id()
     job_entity = {
         "jobId": job_id,
@@ -192,7 +146,6 @@ async def pets_fetch(data: PetFetchRequest):
     except Exception as e:
         logger.exception(f"Failed to create pet_fetch_job entity: {e}")
         return jsonify({"error": "Failed to start pet fetch job"}), 500
-
     return jsonify({"message": "Pets fetch started", "jobId": job_id})
 
 @app.route("/pets", methods=["GET"])
@@ -224,8 +177,6 @@ async def orders_create(data: OrderCreateRequest):
     except Exception as e:
         logger.exception(f"Failed to add order: {e}")
         return jsonify({"error": "Failed to create order"}), 500
-
-    # Cache minimal order info locally for faster GET
     orders_cache[str(order_id)] = {**order, "orderId": order_id}
     return jsonify({"orderId": str(order_id), "status": orders_cache[str(order_id)].get("status", "placed")})
 
@@ -257,26 +208,3 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(name)s - %(message)s",
     )
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-## Explanation
-
-- **`process_order`**:
-  - Validates pet availability inside the workflow — if pet is not available, marks order status `invalid` and adds an error attribute.
-  - Adds timestamp and status.
-  - Adds an `order_log` supplementary entity asynchronously.
-- **`process_pet_fetch_job`**:
-  - Encapsulates the pet fetching async logic.
-  - Stores results in the `pets_cache`.
-- **Endpoints**:
-  - Bare minimum: validate input, construct entity dict, call `entity_service.add_item` with workflow.
-  - No direct async tasks or external HTTP calls in endpoints.
-  - Caching and simple reads remain in GET endpoints.
-  
----
-
-This approach fully leverages the workflow functions to handle async operations and business logic before persistence, cleaning up your controllers and making your app easier to maintain and extend.
-
-Let me know if you want me to help with further modularization or testing!

@@ -1,12 +1,12 @@
-```python
+from dataclasses import dataclass, asdict
 import asyncio
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,40 +14,41 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory "cache" for pets and adoption requests per run
-# Structure:
-# pets_cache = {
-#   "pets": [...],
-#   "favorites": set(petIds),
-#   "last_updated": datetime
-# }
-pets_cache: Dict = {"pets": [], "favorites": set(), "last_updated": None}
+# Dataclasses for request validation
+@dataclass
+class PetFetchFilter:
+    type: str
+    status: str
 
-# Adoption requests just stored locally for prototype
+@dataclass
+class PetFetchActions:
+    markFavorite: Optional[List[str]] = None
+    updateAdoptionStatus: Optional[Dict[str, str]] = None
+
+@dataclass
+class FetchRequest:
+    filter: PetFetchFilter
+    actions: PetFetchActions
+
+@dataclass
+class Adopter:
+    name: str
+    contact: str
+
+@dataclass
+class AdoptRequest:
+    petId: str
+    adopter: Adopter
+
+# In-memory cache for prototype
+pets_cache: Dict = {"pets": [], "favorites": set(), "last_updated": None}
 adoption_requests: List[Dict] = []
 
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
-##########
-# Helpers
-##########
-
-
-async def fetch_pets_from_petstore(
-    pet_type: Optional[str],
-    status: Optional[str],
-) -> List[Dict]:
-    """
-    Fetch pets from Petstore API filtered by status.
-    Petstore API does not support filtering by type directly,
-    so filtering by type will happen locally.
-
-    Petstore API endpoint: /pet/findByStatus?status={status}
-    """
-    # Validate status param for Petstore API: available, pending, sold
+async def fetch_pets_from_petstore(pet_type: Optional[str], status: Optional[str]) -> List[Dict]:
     valid_statuses = {"available", "pending", "sold"}
     statuses = [status] if status in valid_statuses else list(valid_statuses)
-
     pets = []
     async with httpx.AsyncClient() as client:
         for stat in statuses:
@@ -57,144 +58,80 @@ async def fetch_pets_from_petstore(
                 data = resp.json()
                 if isinstance(data, list):
                     pets.extend(data)
-                else:
-                    logger.warning(f"Unexpected Petstore response format for status={stat}: {data}")
             except Exception as e:
-                logger.exception(f"Error fetching pets from Petstore for status={stat}: {e}")
-
-    # Filter by type locally if pet_type specified and not 'all'
+                logger.exception(f"Error fetching pets status={stat}: {e}")
     if pet_type and pet_type.lower() != "all":
-        filtered = [p for p in pets if p.get("category", {}).get("name", "").lower() == pet_type.lower()]
-    else:
-        filtered = pets
-
-    # Normalize pets to expected schema
-    normalized_pets = []
-    for pet in filtered:
-        normalized_pets.append(
-            {
-                "id": str(pet.get("id", "")),
-                "name": pet.get("name", ""),
-                "type": pet.get("category", {}).get("name", "other").lower(),
-                "status": pet.get("status", "available"),
-                "photoUrls": pet.get("photoUrls", []),
-                "isFavorite": False,  # will update below
-            }
-        )
-    return normalized_pets
-
+        pets = [p for p in pets if p.get("category", {}).get("name", "").lower() == pet_type.lower()]
+    normalized = []
+    for pet in pets:
+        normalized.append({
+            "id": str(pet.get("id", "")),
+            "name": pet.get("name", ""),
+            "type": pet.get("category", {}).get("name", "other").lower(),
+            "status": pet.get("status", "available"),
+            "photoUrls": pet.get("photoUrls", []),
+            "isFavorite": False,
+        })
+    return normalized
 
 async def process_fetch_request(data: Dict) -> Dict:
-    """
-    Process POST /pets/fetch business logic:
-    - fetch from Petstore API with filters
-    - apply actions (markFavorite, updateAdoptionStatus)
-    - cache results locally
-    """
     filter_ = data.get("filter", {})
     actions = data.get("actions", {})
-
     pet_type = filter_.get("type", "all")
     status = filter_.get("status", "all")
-
     pets = await fetch_pets_from_petstore(pet_type, status)
-
-    # Update favorites from cache first
     favorites = pets_cache.get("favorites", set())
-
-    # Apply markFavorite action
-    mark_fav_list = actions.get("markFavorite", [])
-    for pet_id in mark_fav_list:
+    for pet_id in actions.get("markFavorite", []):
         favorites.add(pet_id)
-
-    # Apply updateAdoptionStatus action
-    # TODO: For prototype, we just update status locally in pets list
-    update_status_dict = actions.get("updateAdoptionStatus", {})
-    for pet in pets:
-        if pet["id"] in update_status_dict:
-            pet["status"] = update_status_dict[pet["id"]]
-
-    # Update isFavorite flag per pet
+    for pid, new_status in (actions.get("updateAdoptionStatus") or {}).items():
+        for pet in pets:
+            if pet["id"] == pid:
+                pet["status"] = new_status
     for pet in pets:
         pet["isFavorite"] = pet["id"] in favorites
-
-    # Update cache - replace all pets and favorites
-    pets_cache["pets"] = pets
-    pets_cache["favorites"] = favorites
-    pets_cache["last_updated"] = datetime.utcnow()
-
+    pets_cache["pets"], pets_cache["favorites"], pets_cache["last_updated"] = pets, favorites, datetime.utcnow()
     return {"pets": pets, "message": "Pets fetched and processed successfully."}
 
-
 async def process_adoption_request(data: Dict) -> Dict:
-    """
-    Process POST /pets/adopt:
-    - Store adoption request in local cache
-    - TODO: Add notifications or external system integration
-    """
     pet_id = data.get("petId")
     adopter = data.get("adopter", {})
-    name = adopter.get("name")
-    contact = adopter.get("contact")
-
+    name, contact = adopter.get("name"), adopter.get("contact")
     if not pet_id or not name or not contact:
         return {"success": False, "message": "Missing petId or adopter info."}
-
-    # Check pet exists in cache
     pet_ids = {p["id"] for p in pets_cache.get("pets", [])}
     if pet_id not in pet_ids:
         return {"success": False, "message": "Pet not found in current data."}
-
-    # Save adoption request locally
-    adoption_requests.append(
-        {
-            "petId": pet_id,
-            "adopter": {"name": name, "contact": contact},
-            "requestedAt": datetime.utcnow().isoformat(),
-        }
-    )
-    logger.info(f"New adoption request: petId={pet_id}, adopter={name}")
-
-    # TODO: Trigger notifications or update pet status in real system
-
+    adoption_requests.append({
+        "petId": pet_id,
+        "adopter": {"name": name, "contact": contact},
+        "requestedAt": datetime.utcnow().isoformat(),
+    })
+    logger.info(f"Adoption requested petId={pet_id}, adopter={name}")
     return {"success": True, "message": f"Adoption request for pet {pet_id} received."}
 
-
-##########
-# Routes
-##########
-
-
 @app.route("/pets/fetch", methods=["POST"])
-async def pets_fetch():
+@validate_request(FetchRequest)  # workaround: validate_request must be last for POST due to quart-schema issue
+async def pets_fetch(data: FetchRequest):
     try:
-        data = await request.get_json(force=True)
-        # Fire and forget processing task - but here we await it to return results immediately for prototype
-        result = await process_fetch_request(data)
+        result = await process_fetch_request(asdict(data))
         return jsonify(result)
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Internal Server Error"}), 500
 
-
 @app.route("/pets", methods=["GET"])
 async def pets_get():
-    pets = pets_cache.get("pets", [])
-    return jsonify({"pets": pets})
-
+    return jsonify({"pets": pets_cache.get("pets", [])})
 
 @app.route("/pets/adopt", methods=["POST"])
-async def pets_adopt():
+@validate_request(AdoptRequest)  # workaround: validate_request must be last for POST due to quart-schema issue
+async def pets_adopt(data: AdoptRequest):
     try:
-        data = await request.get_json(force=True)
-        result = await process_adoption_request(data)
+        result = await process_adoption_request(asdict(data))
         return jsonify(result)
     except Exception as e:
         logger.exception(e)
         return jsonify({"success": False, "message": "Internal Server Error"}), 500
 
-
 if __name__ == "__main__":
-    # Run Quart app with specified parameters
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

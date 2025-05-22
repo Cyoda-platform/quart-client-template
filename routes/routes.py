@@ -4,18 +4,16 @@ from datetime import datetime
 from typing import Optional
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
-from app_init.app_init import entity_service
-from common.config.config import ENTITY_VERSION
 from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -153,7 +151,7 @@ async def process_adoption_request(entity: dict) -> dict:
 
     return entity
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)
 async def fetch_pets(data: FetchPetsRequest):
     job_entity = {
@@ -181,7 +179,7 @@ async def fetch_pets(data: FetchPetsRequest):
         "status": "pending"
     })
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def get_pets():
     try:
         items = await entity_service.get_items(
@@ -203,7 +201,7 @@ async def get_pets():
         logger.exception("Failed to retrieve pets")
         return jsonify({"error": "Failed to retrieve pets"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def get_pet_details(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -219,7 +217,7 @@ async def get_pet_details(pet_id: str):
         logger.exception(f"Failed to retrieve pet with id {pet_id}")
         return jsonify({"error": "Pet not found"}), 404
 
-@app.route("/adoptions", methods=["POST"])
+@routes_bp.route("/adoptions", methods=["POST"])
 @validate_request(AdoptionRequest)
 async def create_adoption(data: AdoptionRequest):
     adoption_entity = {
@@ -248,6 +246,3 @@ async def create_adoption(data: AdoptionRequest):
         "requestId": request_id,
         "status": "pending"
     })
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

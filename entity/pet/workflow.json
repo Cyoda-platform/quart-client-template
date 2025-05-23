@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for processing pet entities in Purrfect Pets app",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Normalize pet status to lowercase",
+            "end_state": "Status_normalized",
+            "end_state_description": "Pet status normalized",
+            "name": "start_normalize_status",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add processed timestamp to pet entity",
+            "end_state": "Timestamp_added",
+            "end_state_description": "Processed timestamp added",
+            "name": "add_processed_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_timestamp"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Status_normalized",
+            "start_state_description": "Pet status normalized"
+        },
+        {
+            "automated": true,
+            "description": "Enrich pet entity with Petstore API data",
+            "end_state": "Pet_data_enriched",
+            "end_state_description": "Pet entity enriched with Petstore data",
+            "name": "enrich_petstore_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrich_petstore_data"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Timestamp_added",
+            "start_state_description": "Processed timestamp added"
+        }
+    ]
+}

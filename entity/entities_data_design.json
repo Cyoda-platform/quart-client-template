@@ -1,0 +1,16 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": "string",
+                "name": "string",
+                "photoUrls": [
+                    "string"
+                ],
+                "status": "string",
+                "type": "string"
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

@@ -1,4 +1,4 @@
- from dataclasses import dataclass
+from dataclasses import dataclass
 from typing import Dict, Any, List
 import asyncio
 import logging
@@ -6,8 +6,8 @@ import uuid
 from datetime import datetime
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -15,12 +15,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 AI_MODEL_API = "https://api.mockforecast.ai/forecast"  # TODO: replace with real AI forecasting API
 
@@ -98,10 +97,8 @@ async def process_workflow(entity: Dict[str, Any]) -> Dict[str, Any]:
     entity.setdefault("history", [])
     entity.setdefault("startedAt", now_iso())
 
-    # We need the persisted entity's technicalId to run background tasks
     workflow_id = entity.get("technicalId") or entity.get("workflowId")
     if not workflow_id:
-        # Sometimes the ID might not be present yet; in that case, do not schedule tasks
         return entity
 
     async def workflow_task(workflow_id: str):
@@ -328,7 +325,7 @@ async def process_report(entity: Dict[str, Any]) -> Dict[str, Any]:
     return entity
 
 
-@app.route('/api/users/create', methods=['POST'])
+@routes_bp.route('/api/users/create', methods=['POST'])
 @validate_request(CreateUserRequest)
 async def create_user(data: CreateUserRequest):
     data_dict = {
@@ -352,7 +349,7 @@ async def create_user(data: CreateUserRequest):
         return jsonify({"error": "Failed to create user"}), 500
 
 
-@app.route('/api/users/<user_id>', methods=['GET'])
+@routes_bp.route('/api/users/<user_id>', methods=['GET'])
 async def get_user(user_id):
     try:
         user = await entity_service.get_item(
@@ -369,7 +366,7 @@ async def get_user(user_id):
         return jsonify({"error": "Failed to retrieve user"}), 500
 
 
-@app.route('/api/users/<user_id>/updateRoles', methods=['POST'])
+@routes_bp.route('/api/users/<user_id>/updateRoles', methods=['POST'])
 @validate_request(UpdateUserRolesRequest)
 async def update_user_roles(user_id: str, data: UpdateUserRolesRequest):
     try:
@@ -398,7 +395,7 @@ async def update_user_roles(user_id: str, data: UpdateUserRolesRequest):
         return jsonify({"error": "Failed to update user roles"}), 500
 
 
-@app.route('/api/workflows/trigger', methods=['POST'])
+@routes_bp.route('/api/workflows/trigger', methods=['POST'])
 @validate_request(TriggerWorkflowRequest)
 async def trigger_workflow(data: TriggerWorkflowRequest):
     workflow_data = {
@@ -425,7 +422,7 @@ async def trigger_workflow(data: TriggerWorkflowRequest):
         return jsonify({"error": "Failed to trigger workflow"}), 500
 
 
-@app.route('/api/workflows/<workflow_id>/status', methods=['GET'])
+@routes_bp.route('/api/workflows/<workflow_id>/status', methods=['GET'])
 async def get_workflow_status(workflow_id):
     try:
         wf = await entity_service.get_item(
@@ -447,7 +444,7 @@ async def get_workflow_status(workflow_id):
         return jsonify({"error": "Failed to retrieve workflow status"}), 500
 
 
-@app.route('/api/budgeting/forecast', methods=['POST'])
+@routes_bp.route('/api/budgeting/forecast', methods=['POST'])
 @validate_request(BudgetForecastRequest)
 async def budget_forecast(data: BudgetForecastRequest):
     forecast_data = {
@@ -474,7 +471,7 @@ async def budget_forecast(data: BudgetForecastRequest):
         return jsonify({"error": "Failed to request budget forecast"}), 500
 
 
-@app.route('/api/budgeting/<entity_id>/versions', methods=['GET'])
+@routes_bp.route('/api/budgeting/<entity_id>/versions', methods=['GET'])
 async def get_budget_versions(entity_id):
     versions = [
         {"version": "v1", "createdDate": "2023-01-01T00:00:00Z", "status": "approved"},
@@ -483,7 +480,7 @@ async def get_budget_versions(entity_id):
     return jsonify(versions)
 
 
-@app.route('/api/procurement/requisition', methods=['POST'])
+@routes_bp.route('/api/procurement/requisition', methods=['POST'])
 @validate_request(SubmitRequisitionRequest)
 async def submit_requisition(data: SubmitRequisitionRequest):
     requisition_data = {
@@ -508,7 +505,7 @@ async def submit_requisition(data: SubmitRequisitionRequest):
         return jsonify({"error": "Failed to submit requisition"}), 500
 
 
-@app.route('/api/procurement/requisition/<req_id>', methods=['GET'])
+@routes_bp.route('/api/procurement/requisition/<req_id>', methods=['GET'])
 async def get_requisition_status(req_id):
     try:
         req = await entity_service.get_item(
@@ -529,7 +526,7 @@ async def get_requisition_status(req_id):
         return jsonify({"error": "Failed to retrieve requisition"}), 500
 
 
-@app.route('/api/payments/request', methods=['POST'])
+@routes_bp.route('/api/payments/request', methods=['POST'])
 @validate_request(SubmitPaymentRequest)
 async def submit_payment_request(data: SubmitPaymentRequest):
     payment_data = {
@@ -555,7 +552,7 @@ async def submit_payment_request(data: SubmitPaymentRequest):
         return jsonify({"error": "Failed to queue payment request"}), 500
 
 
-@app.route('/api/payments/<payment_id>', methods=['GET'])
+@routes_bp.route('/api/payments/<payment_id>', methods=['GET'])
 async def get_payment_status(payment_id):
     try:
         payment = await entity_service.get_item(
@@ -572,7 +569,7 @@ async def get_payment_status(payment_id):
         return jsonify({"error": "Failed to retrieve payment status"}), 500
 
 
-@app.route('/api/reports/generate', methods=['POST'])
+@routes_bp.route('/api/reports/generate', methods=['POST'])
 @validate_request(GenerateReportRequest)
 async def generate_report(data: GenerateReportRequest):
     report_data = {
@@ -597,7 +594,7 @@ async def generate_report(data: GenerateReportRequest):
         return jsonify({"error": "Failed to start report generation"}), 500
 
 
-@app.route('/api/reports/<report_id>', methods=['GET'])
+@routes_bp.route('/api/reports/<report_id>', methods=['GET'])
 async def get_report_metadata(report_id):
     try:
         report = await entity_service.get_item(
@@ -612,10 +609,3 @@ async def get_report_metadata(report_id):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve report metadata"}), 500
-
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

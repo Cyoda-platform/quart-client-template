@@ -1,0 +1,60 @@
+{
+    "description": "Finite State Machine for Requisition Processing",
+    "name": "requisition_workflow",
+    "transitions": [
+        {
+            "automated": false,
+            "description": "Submit the requisition and move to submitted state",
+            "end_state": "submitted",
+            "end_state_description": "Requisition has been submitted",
+            "name": "submit_requisition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_submit"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": false,
+            "description": "Approve the requisition and move to approved state",
+            "end_state": "approved",
+            "end_state_description": "Requisition has been approved",
+            "name": "approve_requisition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_approve"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "submitted",
+            "start_state_description": "Requisition has been submitted"
+        },
+        {
+            "automated": false,
+            "description": "Reject the requisition and move to rejected state",
+            "end_state": "rejected",
+            "end_state_description": "Requisition has been rejected",
+            "name": "reject_requisition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_reject"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "submitted",
+            "start_state_description": "Requisition has been submitted"
+        }
+    ]
+}

@@ -1,6 +1,44 @@
-Certainly! I have updated the code to add the `workflow` parameter to all calls to `entity_service.add_item` and implemented the corresponding `process_{entity_name}` async workflow functions. Each workflow function takes the entity data as input, modifies state if needed, and returns the possibly changed entity before it is persisted.
+Absolutely! Moving as much as possible of the async processing logic into the workflow functions (`process_{entity_name}`) is indeed the right approach. This makes the endpoints simpler, more declarative, and more robust by encapsulating business logic close to the data persistence layer.
 
-Here is the complete updated code with these changes applied:
+---
+
+### What can be moved:
+
+- Initialization of entity state fields (timestamps, status, etc.) — already done in workflows.
+- Any "fire and forget" async tasks that update the entity state or related entities.
+- Long-running or background tasks that modify the entity after creation can be moved inside the workflow, as it supports async code.
+- Calls to other entities (get/add) of different models for supplementary data enrichment.
+
+---
+
+### What cannot be done in workflow:
+
+- You **cannot** call `entity_service.add_item` / update / delete on the **same** entity model inside its own workflow (to avoid infinite recursion).
+- So the workflow should only modify the entity dictionary directly for the main entity.
+- But it can call add/update/delete on **other** entity_models if needed.
+
+---
+
+### Strategy for refactoring:
+
+- Move the async background tasks that update entity status after a delay into the workflows.
+- To support this, the workflow function can spawn background tasks internally (e.g., `asyncio.create_task`) **inside** the workflow itself.
+- The initial entity modifications (like setting status, timestamps) stay in the workflow.
+- The endpoint simply calls `add_item` with the workflow and returns immediately, no need to launch background tasks inside the endpoint.
+
+---
+
+### Updated implementation summary:
+
+- **Endpoints:** only validate and call `add_item` with workflow.
+- **workflows:** 
+  - initialize entity attributes
+  - spawn background async tasks inside workflow
+  - background tasks modify the entity directly via `entity_service.update_item` (allowed because it’s a different async task, no recursion)
+  
+---
+
+## Below is the updated complete code with these changes applied:
 
 ```python
 from dataclasses import dataclass
@@ -99,41 +137,223 @@ async def process_user(entity: Dict[str, Any]) -> Dict[str, Any]:
 
 
 async def process_workflow(entity: Dict[str, Any]) -> Dict[str, Any]:
-    # Initialize workflow state if not present
     entity.setdefault("state", "initialized")
     entity.setdefault("currentTask", None)
     entity.setdefault("history", [])
     entity.setdefault("startedAt", now_iso())
+
+    async def workflow_task(workflow_id: str):
+        try:
+            await asyncio.sleep(1)
+            wf = await entity_service.get_item(
+                token=cyoda_auth_service,
+                entity_model="workflow",
+                entity_version=ENTITY_VERSION,
+                technical_id=workflow_id
+            )
+            if not wf:
+                return
+            wf["state"] = "completed"
+            wf["currentTask"] = None
+            wf.setdefault("history", []).append({
+                "task": "initial",
+                "user": "system",
+                "timestamp": now_iso(),
+                "action": "completed"
+            })
+            await entity_service.update_item(
+                token=cyoda_auth_service,
+                entity_model="workflow",
+                entity_version=ENTITY_VERSION,
+                entity=wf,
+                technical_id=workflow_id,
+                meta={}
+            )
+            logger.info(f"Workflow {workflow_id} completed")
+        except Exception as e:
+            logger.exception(e)
+
+    # Schedule background task after persistence
+    asyncio.create_task(workflow_task(entity['technicalId'] if 'technicalId' in entity else entity.get('workflowId')))
     return entity
 
 
 async def process_budget(entity: Dict[str, Any]) -> Dict[str, Any]:
-    # Set initial status and requestedAt timestamp
     entity.setdefault("status", "queued")
     entity.setdefault("requestedAt", now_iso())
+
+    async def forecast_task(forecast_id: str):
+        try:
+            # Simulate forecasting or call AI model
+            results = {}
+            forecast_options = entity.get("forecastOptions", {})
+            budget_data = entity.get("budgetData", {})
+
+            if forecast_options.get("useAIModel"):
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.post(AI_MODEL_API, json={"budget": budget_data})
+                    if resp.status_code == 200:
+                        results = resp.json().get("forecastResults", {})
+                    else:
+                        logger.warning(f"AI model responded with {resp.status_code}")
+            else:
+                results = {dep: {"forecasted": val, "variance": 0} for dep, val in budget_data.items()}
+
+            forecast = await entity_service.get_item(
+                token=cyoda_auth_service,
+                entity_model="budget",
+                entity_version=ENTITY_VERSION,
+                technical_id=forecast_id
+            )
+            if not forecast:
+                return
+            forecast["status"] = "completed"
+            forecast["results"] = results
+            await entity_service.update_item(
+                token=cyoda_auth_service,
+                entity_model="budget",
+                entity_version=ENTITY_VERSION,
+                entity=forecast,
+                technical_id=forecast_id,
+                meta={}
+            )
+            logger.info(f"Forecast completed: {forecast_id}")
+        except Exception as e:
+            try:
+                forecast = await entity_service.get_item(
+                    token=cyoda_auth_service,
+                    entity_model="budget",
+                    entity_version=ENTITY_VERSION,
+                    technical_id=forecast_id
+                )
+                if forecast:
+                    forecast["status"] = "error"
+                    await entity_service.update_item(
+                        token=cyoda_auth_service,
+                        entity_model="budget",
+                        entity_version=ENTITY_VERSION,
+                        entity=forecast,
+                        technical_id=forecast_id,
+                        meta={}
+                    )
+            except Exception:
+                pass
+            logger.exception(e)
+
+    asyncio.create_task(forecast_task(entity['technicalId'] if 'technicalId' in entity else entity.get('forecastId')))
     return entity
 
 
 async def process_requisition(entity: Dict[str, Any]) -> Dict[str, Any]:
-    # Initialize requisition status and history
     entity.setdefault("status", "pending")
     entity.setdefault("approvalHistory", [])
     entity.setdefault("submittedAt", now_iso())
+    # No background task needed here for now
     return entity
 
 
 async def process_payment(entity: Dict[str, Any]) -> Dict[str, Any]:
-    # Initialize payment status and requestedAt timestamp
-    entity.setdefault("status", "pending")
+    entity.setdefault("status", "queued")
     entity.setdefault("requestedAt", now_iso())
+
+    async def payment_task(payment_id: str):
+        try:
+            await asyncio.sleep(2)  # simulate processing delay
+            payment = await entity_service.get_item(
+                token=cyoda_auth_service,
+                entity_model="payment",
+                entity_version=ENTITY_VERSION,
+                technical_id=payment_id
+            )
+            if not payment:
+                return
+            payment["status"] = "processed"
+            payment["processedDate"] = now_iso()
+            await entity_service.update_item(
+                token=cyoda_auth_service,
+                entity_model="payment",
+                entity_version=ENTITY_VERSION,
+                entity=payment,
+                technical_id=payment_id,
+                meta={}
+            )
+            logger.info(f"Payment processed: {payment_id}")
+        except Exception as e:
+            try:
+                payment = await entity_service.get_item(
+                    token=cyoda_auth_service,
+                    entity_model="payment",
+                    entity_version=ENTITY_VERSION,
+                    technical_id=payment_id
+                )
+                if payment:
+                    payment["status"] = "error"
+                    await entity_service.update_item(
+                        token=cyoda_auth_service,
+                        entity_model="payment",
+                        entity_version=ENTITY_VERSION,
+                        entity=payment,
+                        technical_id=payment_id,
+                        meta={}
+                    )
+            except Exception:
+                pass
+            logger.exception(e)
+
+    asyncio.create_task(payment_task(entity['technicalId'] if 'technicalId' in entity else entity.get('paymentId')))
     return entity
 
 
 async def process_report(entity: Dict[str, Any]) -> Dict[str, Any]:
-    # Initialize report status and creation date
     entity.setdefault("status", "queued")
     entity.setdefault("createdDate", now_iso())
     entity.setdefault("downloadUrl", None)
+
+    async def report_task(report_id: str):
+        try:
+            await asyncio.sleep(1)  # Simulate report generation delay
+            report = await entity_service.get_item(
+                token=cyoda_auth_service,
+                entity_model="report",
+                entity_version=ENTITY_VERSION,
+                technical_id=report_id
+            )
+            if not report:
+                return
+            report["status"] = "ready"
+            report["downloadUrl"] = f"https://mockreports.example.com/download/{report_id}"
+            await entity_service.update_item(
+                token=cyoda_auth_service,
+                entity_model="report",
+                entity_version=ENTITY_VERSION,
+                entity=report,
+                technical_id=report_id,
+                meta={}
+            )
+            logger.info(f"Report ready: {report_id}")
+        except Exception as e:
+            try:
+                report = await entity_service.get_item(
+                    token=cyoda_auth_service,
+                    entity_model="report",
+                    entity_version=ENTITY_VERSION,
+                    technical_id=report_id
+                )
+                if report:
+                    report["status"] = "error"
+                    await entity_service.update_item(
+                        token=cyoda_auth_service,
+                        entity_model="report",
+                        entity_version=ENTITY_VERSION,
+                        entity=report,
+                        technical_id=report_id,
+                        meta={}
+                    )
+            except Exception:
+                pass
+            logger.exception(e)
+
+    asyncio.create_task(report_task(entity['technicalId'] if 'technicalId' in entity else entity.get('reportId')))
     return entity
 
 
@@ -230,43 +450,10 @@ async def trigger_workflow(data: TriggerWorkflowRequest):
             workflow=process_workflow
         )
         logger.info(f"Workflow triggered: {workflow_id}")
+        return jsonify({"workflowId": workflow_id, "status": "started"}), 202
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to trigger workflow"}), 500
-
-    async def process_workflow_task(wf_id: str):
-        try:
-            await asyncio.sleep(1)
-            wf = await entity_service.get_item(
-                token=cyoda_auth_service,
-                entity_model="workflow",
-                entity_version=ENTITY_VERSION,
-                technical_id=wf_id
-            )
-            if not wf:
-                return
-            wf["state"] = "completed"
-            wf["currentTask"] = None
-            wf["history"].append({
-                "task": "initial",
-                "user": "system",
-                "timestamp": now_iso(),
-                "action": "completed"
-            })
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="workflow",
-                entity_version=ENTITY_VERSION,
-                entity=wf,
-                technical_id=wf_id,
-                meta={}
-            )
-            logger.info(f"Workflow {wf_id} completed")
-        except Exception as e:
-            logger.exception(e)
-
-    asyncio.create_task(process_workflow_task(workflow_id))
-    return jsonify({"workflowId": workflow_id, "status": "started"}), 202
 
 
 @app.route('/api/workflows/<workflow_id>/status', methods=['GET'])
@@ -281,7 +468,7 @@ async def get_workflow_status(workflow_id):
         if not wf:
             return jsonify({"error": "Workflow not found"}), 404
         return jsonify({
-            "workflowId": wf["workflowId"],
+            "workflowId": wf.get("workflowId", workflow_id),
             "state": wf["state"],
             "currentTask": wf["currentTask"],
             "history": wf["history"],
@@ -301,6 +488,8 @@ async def budget_forecast(data: BudgetForecastRequest):
         "status": "processing",
         "results": None,
         "requestedAt": now_iso(),
+        "budgetData": data.budgetData,
+        "forecastOptions": data.forecastOptions,
     }
     try:
         forecast_id = await entity_service.add_item(
@@ -311,66 +500,10 @@ async def budget_forecast(data: BudgetForecastRequest):
             workflow=process_budget
         )
         logger.info(f"Budget forecast requested: {forecast_id}")
+        return jsonify({"forecastId": forecast_id, "status": "processing"}), 202
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to request budget forecast"}), 500
-
-    async def process_forecast(fid: str):
-        try:
-            results = {}
-            if data.forecastOptions.get("useAIModel"):
-                async with httpx.AsyncClient(timeout=10) as client:
-                    resp = await client.post(AI_MODEL_API, json={"budget": data.budgetData})
-                    if resp.status_code == 200:
-                        results = resp.json().get("forecastResults", {})
-                    else:
-                        logger.warning(f"AI model responded with {resp.status_code}")
-            else:
-                results = {dep: {"forecasted": val, "variance": 0} for dep, val in data.budgetData.items()}
-
-            forecast = await entity_service.get_item(
-                token=cyoda_auth_service,
-                entity_model="budget",
-                entity_version=ENTITY_VERSION,
-                technical_id=fid
-            )
-            if not forecast:
-                return
-            forecast["status"] = "completed"
-            forecast["results"] = results
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="budget",
-                entity_version=ENTITY_VERSION,
-                entity=forecast,
-                technical_id=fid,
-                meta={}
-            )
-            logger.info(f"Forecast completed: {fid}")
-        except Exception as e:
-            try:
-                forecast = await entity_service.get_item(
-                    token=cyoda_auth_service,
-                    entity_model="budget",
-                    entity_version=ENTITY_VERSION,
-                    technical_id=fid
-                )
-                if forecast:
-                    forecast["status"] = "error"
-                    await entity_service.update_item(
-                        token=cyoda_auth_service,
-                        entity_model="budget",
-                        entity_version=ENTITY_VERSION,
-                        entity=forecast,
-                        technical_id=fid,
-                        meta={}
-                    )
-            except Exception:
-                pass
-            logger.exception(e)
-
-    asyncio.create_task(process_forecast(forecast_id))
-    return jsonify({"forecastId": forecast_id, "status": "processing"}), 202
 
 
 @app.route('/api/budgeting/<entity_id>/versions', methods=['GET'])
@@ -450,56 +583,10 @@ async def submit_payment_request(data: SubmitPaymentRequest):
             workflow=process_payment
         )
         logger.info(f"Payment request queued: {payment_id}")
+        return jsonify({"paymentId": payment_id, "status": "queued"}), 202
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to queue payment request"}), 500
-
-    async def process_payment_task(pid: str):
-        try:
-            await asyncio.sleep(2)
-            payment = await entity_service.get_item(
-                token=cyoda_auth_service,
-                entity_model="payment",
-                entity_version=ENTITY_VERSION,
-                technical_id=pid
-            )
-            if not payment:
-                return
-            payment["status"] = "processed"
-            payment["processedDate"] = now_iso()
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="payment",
-                entity_version=ENTITY_VERSION,
-                entity=payment,
-                technical_id=pid,
-                meta={}
-            )
-            logger.info(f"Payment processed: {pid}")
-        except Exception as e:
-            try:
-                payment = await entity_service.get_item(
-                    token=cyoda_auth_service,
-                    entity_model="payment",
-                    entity_version=ENTITY_VERSION,
-                    technical_id=pid
-                )
-                if payment:
-                    payment["status"] = "error"
-                    await entity_service.update_item(
-                        token=cyoda_auth_service,
-                        entity_model="payment",
-                        entity_version=ENTITY_VERSION,
-                        entity=payment,
-                        technical_id=pid,
-                        meta={}
-                    )
-            except Exception:
-                pass
-            logger.exception(e)
-
-    asyncio.create_task(process_payment_task(payment_id))
-    return jsonify({"paymentId": payment_id, "status": "queued"}), 202
 
 
 @app.route('/api/payments/<payment_id>', methods=['GET'])
@@ -539,56 +626,10 @@ async def generate_report(data: GenerateReportRequest):
             workflow=process_report
         )
         logger.info(f"Report generation started: {report_id}")
+        return jsonify({"reportId": report_id, "status": "processing"}), 202
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to start report generation"}), 500
-
-    async def process_report_task(rid: str):
-        try:
-            await asyncio.sleep(1)
-            report = await entity_service.get_item(
-                token=cyoda_auth_service,
-                entity_model="report",
-                entity_version=ENTITY_VERSION,
-                technical_id=rid
-            )
-            if not report:
-                return
-            report["status"] = "ready"
-            report["downloadUrl"] = f"https://mockreports.example.com/download/{rid}"
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="report",
-                entity_version=ENTITY_VERSION,
-                entity=report,
-                technical_id=rid,
-                meta={}
-            )
-            logger.info(f"Report ready: {rid}")
-        except Exception as e:
-            try:
-                report = await entity_service.get_item(
-                    token=cyoda_auth_service,
-                    entity_model="report",
-                    entity_version=ENTITY_VERSION,
-                    technical_id=rid
-                )
-                if report:
-                    report["status"] = "error"
-                    await entity_service.update_item(
-                        token=cyoda_auth_service,
-                        entity_model="report",
-                        entity_version=ENTITY_VERSION,
-                        entity=report,
-                        technical_id=rid,
-                        meta={}
-                    )
-            except Exception:
-                pass
-            logger.exception(e)
-
-    asyncio.create_task(process_report_task(report_id))
-    return jsonify({"reportId": report_id, "status": "processing"}), 202
 
 
 @app.route('/api/reports/<report_id>', methods=['GET'])
@@ -617,12 +658,16 @@ if __name__ == '__main__':
 
 ---
 
-**Summary of changes:**
+### Key changes:
 
-- Added async workflow functions named `process_{entity_name}` where `{entity_name}` corresponds to the `entity_model` (always underscore lowercase).
-- Each workflow function accepts the entity dictionary, sets initial fields or modifies state as appropriate, and returns the updated entity.
-- Passed the appropriate workflow function as the `workflow` parameter to the `entity_service.add_item` calls.
-- Left the existing logic intact.
-- Workflow functions are async as required and compatible with the updated `add_item` signature.
+- All background async processing tasks launched inside the respective `process_{entity_name}` workflow functions via `asyncio.create_task()`.
+- Workflow functions receive the entity dict, set up initial state, and start any needed async background tasks.
+- Endpoint handlers only validate input and call `add_item` with workflow, then immediately return a response.
+- The workflow functions use `entity['technicalId']` or fallback keys to get the persisted entity ID to use in background tasks.
+- Background tasks fetch and update the entity asynchronously after delays or external calls.
 
-Let me know if you want me to help with anything else!
+---
+
+This approach keeps the controllers clean and delegates all entity lifecycle and async processing logic to the workflow functions, improving maintainability and robustness.
+
+If you want, I can also help implement unit tests or further improvements. Let me know!

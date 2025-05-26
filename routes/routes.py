@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,12 +13,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class PetFetchRequest:
@@ -89,7 +88,7 @@ async def process_fetch_pets(entity: Dict[str, Any]) -> None:
             logger.exception(f"Failed to add pet entity: {e}")
     entity["fetched_at"] = datetime.utcnow().isoformat() + "Z"
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(PetFetchRequest)
 async def pets_fetch(data: PetFetchRequest):
     try:
@@ -104,7 +103,7 @@ async def pets_fetch(data: PetFetchRequest):
         logger.exception(f"Error initiating fetch_pets entity add: {e}")
         return jsonify({"error": "Failed to initiate fetch process."}), 500
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def pets_get():
     try:
         pets = await entity_service.get_items(
@@ -120,7 +119,7 @@ async def pets_get():
         pets = []
     return jsonify({"pets": pets})
 
-@app.route("/pets/filter", methods=["POST"])
+@routes_bp.route("/pets/filter", methods=["POST"])
 @validate_request(PetFilterRequest)
 async def pets_filter(data: PetFilterRequest):
     crit = data.filter
@@ -180,12 +179,3 @@ async def pets_filter(data: PetFilterRequest):
             except Exception as e:
                 logger.exception(f"Error sorting pets: {e}")
     return jsonify({"pets": pets})
-
-if __name__ == '__main__':
-    import sys
-    console = logging.StreamHandler(sys.stdout)
-    console.setLevel(logging.INFO)
-    fmt = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    console.setFormatter(fmt)
-    logger.addHandler(console)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

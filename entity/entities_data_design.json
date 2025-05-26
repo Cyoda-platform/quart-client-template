@@ -1,0 +1,33 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "age": 3,
+                "color": "white",
+                "description": "A friendly white cat.",
+                "id": "123",
+                "name": "Fluffy",
+                "species": "cat",
+                "status": "available"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "petId": "123",
+                "user": {
+                    "email": "jane.doe@example.com",
+                    "name": "Jane Doe"
+                }
+            },
+            "entity_name": "adoption_request"
+        },
+        {
+            "entity_data_example": {
+                "email": "jane.doe@example.com",
+                "name": "Jane Doe"
+            },
+            "entity_name": "user_info"
+        }
+    ]
+}

@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for processing payments in FinanceX Suite",
+    "name": "financex_payment_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Submit payment request and enqueue for processing",
+            "end_state": "Payment_queued",
+            "end_state_description": "Payment entity queued for processing",
+            "name": "submit_payment",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Enqueue payment for processing",
+                        "name": "process_payment"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before payment submission"
+        },
+        {
+            "automated": true,
+            "description": "Complete payment processing and update status",
+            "end_state": "Payment_processed",
+            "end_state_description": "Payment has been processed",
+            "name": "complete_payment",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Process payment task and update status",
+                        "name": "process_payment_task"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Payment_queued",
+            "start_state_description": "Payment entity queued for processing"
+        }
+    ]
+}

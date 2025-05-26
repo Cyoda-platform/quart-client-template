@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for fetching, enriching, and filtering pet data in Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch pet data and mark as fetched",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pet data has been fetched",
+            "name": "fetch_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Enrich pet data with fun facts and timestamp",
+            "end_state": "Pets_enriched",
+            "end_state_description": "Pet data has been enriched with fun facts",
+            "name": "enrich_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrich"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pet data has been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Apply filtering logic to pet data",
+            "end_state": "Pets_filtered",
+            "end_state_description": "Pet data has been filtered",
+            "name": "filter_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_filter"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_enriched",
+            "start_state_description": "Pet data has been enriched with fun facts"
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": "cats",
+                "fun_fact": "Cats sleep 70% of their lives.",
+                "id": 123,
+                "name": "fluffy",
+                "status": "available"
+            },
+            "entity_name": "pet"
+        }
+    ]
+}

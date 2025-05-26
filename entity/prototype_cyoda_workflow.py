@@ -53,16 +53,24 @@ async def fetch_pets_from_petstore(category: Optional[str], status: Optional[str
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             pets = resp.json()
+            if not isinstance(pets, list):
+                logger.error("Petstore API returned non-list response")
+                return []
         except Exception as e:
             logger.exception(f"Error fetching from Petstore API: {e}")
             return []
     if category:
-        return [pet for pet in pets if pet.get("category", {}).get("name", "").lower() == category.lower()]
+        filtered = [pet for pet in pets if isinstance(pet.get("category"), dict) and pet["category"].get("name", "").lower() == category.lower()]
+        return filtered
     return pets
 
 async def process_pet(entity: Dict[str, Any]) -> None:
     import random
-    entity["fun_fact"] = random.choice(FUN_FACTS)
+    try:
+        entity["fun_fact"] = random.choice(FUN_FACTS)
+    except Exception as e:
+        logger.exception(f"Failed to add fun_fact: {e}")
+        entity["fun_fact"] = "No fun fact available."
     entity["processed_timestamp"] = datetime.utcnow().isoformat() + "Z"
 
 async def process_fetch_pets(entity: Dict[str, Any]) -> None:
@@ -71,7 +79,6 @@ async def process_fetch_pets(entity: Dict[str, Any]) -> None:
     pets = await fetch_pets_from_petstore(category, status)
     for pet in pets:
         try:
-            # Add pet entities with pet workflow; cannot modify current 'fetch_pets' entity here
             await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model="pet",
@@ -96,7 +103,7 @@ async def pets_fetch(data: PetFetchRequest):
         )
         return jsonify({"message": "Pets fetch request accepted and processing started."}), 202
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error initiating fetch_pets entity add: {e}")
         return jsonify({"error": "Failed to initiate fetch process."}), 500
 
 @app.route("/pets", methods=["GET"])
@@ -107,8 +114,11 @@ async def pets_get():
             entity_model="pet",
             entity_version=ENTITY_VERSION,
         )
+        if not isinstance(pets, list):
+            logger.error("get_items returned non-list data")
+            pets = []
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error fetching pets: {e}")
         pets = []
     return jsonify({"pets": pets})
 
@@ -145,21 +155,27 @@ async def pets_filter(data: PetFilterRequest):
                 entity_version=ENTITY_VERSION,
                 condition=condition
             )
+            if not isinstance(pets, list):
+                logger.error("get_items_by_condition returned non-list data")
+                pets = []
         else:
             pets = await entity_service.get_items(
                 token=cyoda_auth_service,
                 entity_model="pet",
                 entity_version=ENTITY_VERSION,
             )
+            if not isinstance(pets, list):
+                logger.error("get_items returned non-list data")
+                pets = []
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Error fetching pets with filter: {e}")
         pets = []
     if data.sort_by:
         key = None
         if data.sort_by == "name":
-            key = lambda p: p.get("name", "").lower()
+            key = lambda p: (p.get("name") or "").lower()
         elif data.sort_by == "category":
-            key = lambda p: p.get("category", {}).get("name", "").lower()
+            key = lambda p: (p.get("category", {}).get("name") or "").lower()
         if key:
             try:
                 pets = sorted(pets, key=key)

@@ -1,0 +1,78 @@
+{
+    "description": "Workflow for processing entity jobs including validation, external API call, and result update with error handling.",
+    "name": "entity_jobs_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start validation of input data",
+            "end_state": "Input_validated",
+            "end_state_description": "Input data has been validated",
+            "name": "start_validation",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Validate input data from entity",
+                        "name": "process_validate_input"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state with no processing started"
+        },
+        {
+            "automated": true,
+            "description": "Call external API based on validated input",
+            "end_state": "External_api_called",
+            "end_state_description": "External API has been called and results obtained",
+            "name": "call_external_api",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Call external API and store result in entity",
+                        "name": "process_call_external_api"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Input_validated",
+            "start_state_description": "Input data has been validated"
+        },
+        {
+            "automated": true,
+            "description": "Update entity with processing results",
+            "end_state": "Result_updated",
+            "end_state_description": "Entity updated with processing results and marked completed",
+            "name": "update_result",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Update entity fields with processed results",
+                        "name": "process_update_result"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "External_api_called",
+            "start_state_description": "External API has been called and results obtained"
+        },
+        {
+            "automated": true,
+            "description": "Handle any errors during processing",
+            "end_state": "Failed",
+            "end_state_description": "Entity marked as failed due to error",
+            "name": "handle_error",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Update entity with failure status and message",
+                        "name": "process_handle_error"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

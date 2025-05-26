@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to fetch, filter, and provide pet search results from Petstore API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the pet search process",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets have been fetched from Petstore API",
+            "name": "start_pet_search",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before search"
+        },
+        {
+            "automated": true,
+            "description": "Filter fetched pets by type",
+            "end_state": "Pets_filtered",
+            "end_state_description": "Pets filtered according to type",
+            "name": "filter_fetched_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_filter_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets fetched from Petstore API"
+        },
+        {
+            "automated": true,
+            "description": "Complete the pet search and prepare results",
+            "end_state": "Search_completed",
+            "end_state_description": "Pet search completed with results ready",
+            "name": "finalize_pet_search",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_search"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_filtered",
+            "start_state_description": "Pets filtered and ready"
+        }
+    ]
+}

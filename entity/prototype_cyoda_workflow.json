@@ -1,0 +1,15 @@
+{
+    "entity_models": [
+        {
+            "entity_model_name": "example",
+            "workflow_function": {
+                "code_with_necessary_imports_and_constants": "import requests",
+                "content": "def my_workflow(data):\n    # Sample processing\n    return {'processed': True}",
+                "name": "my_workflow"
+            }
+        }
+    ],
+    "file_without_workflow": {
+        "code": "import requests\n\ndef my_workflow(data):\n    # Sample processing\n    return {'processed': True}\n\nservice = entity_service(entity_model='example')"
+    }
+}

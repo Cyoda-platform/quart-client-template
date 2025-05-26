@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for fetching pets, adding pet entities, and marking completion",
+    "name": "purrfect_pets_fetch_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pets from external API",
+            "end_state": "Pets_retrieved",
+            "end_state_description": "Pets have been retrieved from external API",
+            "name": "start_fetch_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_retrieve_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add each retrieved pet as a separate entity",
+            "end_state": "Pet_entities_added",
+            "end_state_description": "Pet entities have been added",
+            "name": "add_pet_entities",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_pet_entities"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_retrieved",
+            "start_state_description": "Pets have been retrieved from external API"
+        },
+        {
+            "automated": true,
+            "description": "Mark fetch operation as complete with timestamp",
+            "end_state": "Fetch_completed",
+            "end_state_description": "Fetch operation has been completed with timestamp",
+            "name": "mark_fetch_complete",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_fetched_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_entities_added",
+            "start_state_description": "Pet entities have been added"
+        }
+    ]
+}

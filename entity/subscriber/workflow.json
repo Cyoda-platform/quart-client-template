@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for subscribing users, fetching NBA scores, and sending notifications",
+    "name": "nba_scores_notification_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Process user subscription",
+            "end_state": "subscribed",
+            "end_state_description": "User has subscribed",
+            "name": "subscribe_user",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Handle user subscription processing",
+                        "name": "process_subscribe"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch NBA scores from external API",
+            "end_state": "scores_fetched",
+            "end_state_description": "NBA scores have been fetched",
+            "name": "fetch_nba_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch and store NBA scores",
+                        "name": "process_fetch_scores"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "subscribed",
+            "start_state_description": "User has subscribed"
+        },
+        {
+            "automated": true,
+            "description": "Send daily notifications to subscribers",
+            "end_state": "notified",
+            "end_state_description": "Notifications have been sent",
+            "name": "send_notifications",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Send notifications to subscribers",
+                        "name": "process_notify"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "scores_fetched",
+            "start_state_description": "NBA scores have been fetched"
+        }
+    ]
+}

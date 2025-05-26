@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for processing budgeting and forecasting entities in FinanceX Suite",
+    "name": "financex_budget_forecasting_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Submit budget entity and enqueue for processing",
+            "end_state": "Budget_queued",
+            "end_state_description": "Budget entity has been queued for processing",
+            "name": "submit_budget",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Enqueue budget for forecast processing",
+                        "name": "process_budget"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before budget submission"
+        },
+        {
+            "automated": true,
+            "description": "Complete forecast processing and set results",
+            "end_state": "Forecast_completed",
+            "end_state_description": "Forecast processing has completed with results or error",
+            "name": "complete_forecast",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Perform forecasting with AI model or defaults",
+                        "name": "process_forecast"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Budget_queued",
+            "start_state_description": "Budget entity queued for processing"
+        }
+    ]
+}

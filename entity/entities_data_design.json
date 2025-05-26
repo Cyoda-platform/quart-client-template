@@ -1,0 +1,23 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "completedAt": "2024-06-01T12:05:00Z",
+                "id": "123e4567-e89b-12d3-a456-426614174000",
+                "inputData": {
+                    "name": "michael"
+                },
+                "message": "",
+                "requestedAt": "2024-06-01T12:00:00Z",
+                "result": {
+                    "count": 12345,
+                    "inputName": "michael",
+                    "predictedAge": 35,
+                    "processedAt": "2024-06-01T12:05:00Z"
+                },
+                "status": "processing"
+            },
+            "entity_name": "entity_jobs"
+        }
+    ]
+}

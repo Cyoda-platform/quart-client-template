@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to handle pet search, favorite marking, and listing favorites",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch and filter pets from external Petstore API",
+            "end_state": "Pets_searched",
+            "end_state_description": "Pets have been searched and results stored",
+            "name": "search_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Mark a pet as favorite",
+            "end_state": "Favorite_marked",
+            "end_state_description": "A pet has been marked as favorite",
+            "name": "mark_favorite",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_mark_favorite"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_searched",
+            "start_state_description": "Pets have been searched and results stored"
+        },
+        {
+            "automated": true,
+            "description": "List all favorite pets",
+            "end_state": "Favorites_listed",
+            "end_state_description": "Favorites list has been retrieved",
+            "name": "list_favorites",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_list_favorites"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Favorite_marked",
+            "start_state_description": "A pet has been marked as favorite"
+        }
+    ]
+}

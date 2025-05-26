@@ -6,8 +6,8 @@ from datetime import datetime
 from typing import Dict, List
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -19,8 +19,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class PetSearch:
@@ -39,15 +38,12 @@ PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 # --- Workflow functions ---
 
 async def process_pet(entity: dict) -> dict:
-    # Add timestamp if missing
     if 'created_at' not in entity:
         entity['created_at'] = datetime.utcnow().isoformat() + "Z"
 
-    # Normalize 'type' field to lowercase
     if 'type' in entity and isinstance(entity['type'], str):
         entity['type'] = entity['type'].lower()
 
-    # Example async enrichment: fetch supplementary data about pet's category from entity_service
     category_name = entity.get('category', {}).get('name')
     if category_name:
         try:
@@ -61,7 +57,6 @@ async def process_pet(entity: dict) -> dict:
         except Exception as e:
             logger.warning(f"Failed to fetch category details for '{category_name}': {e}")
 
-    # Fire-and-forget: add a related pet_log entity asynchronously
     async def add_pet_log():
         try:
             await entity_service.add_item(
@@ -180,7 +175,7 @@ async def process_pet_of_the_day(entity: dict) -> dict:
 
 # --- Endpoints ---
 
-@app.route("/pets", methods=["POST"])
+@routes_bp.route("/pets", methods=["POST"])
 async def create_pet():
     data = await request.get_json()
     pet_id = await entity_service.add_item(
@@ -191,7 +186,7 @@ async def create_pet():
     )
     return jsonify({"id": pet_id}), 202
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def get_pet(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -207,7 +202,7 @@ async def get_pet(pet_id: str):
         logger.exception(e)
         return jsonify({"error": "Failed to get pet"}), 500
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def list_pets():
     try:
         pets = await entity_service.get_items(
@@ -220,7 +215,7 @@ async def list_pets():
         logger.exception(e)
         return jsonify({"error": "Failed to list pets"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["PUT"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["PUT"])
 async def update_pet(pet_id: str):
     try:
         data = await request.get_json()
@@ -237,7 +232,7 @@ async def update_pet(pet_id: str):
         logger.exception(e)
         return jsonify({"error": "Failed to update pet"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["DELETE"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["DELETE"])
 async def delete_pet(pet_id: str):
     try:
         await entity_service.delete_item(
@@ -252,7 +247,7 @@ async def delete_pet(pet_id: str):
         logger.exception(e)
         return jsonify({"error": "Failed to delete pet"}), 500
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 async def pets_search():
     data = await request.get_json()
     entity = {
@@ -268,7 +263,7 @@ async def pets_search():
     )
     return jsonify({"searchId": search_id, "count": 0}), 202
 
-@app.route("/pets/search/<search_id>", methods=["GET"])
+@routes_bp.route("/pets/search/<search_id>", methods=["GET"])
 async def get_search_results(search_id: str):
     entity = await entity_service.get_item(
         token=cyoda_auth_service,
@@ -290,7 +285,7 @@ async def get_search_results(search_id: str):
     normalized = [normalize_pet(p) for p in pets]
     return jsonify({"searchId": search_id, "pets": normalized})
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 async def adopt_pet():
     data = await request.get_json()
     entity = {
@@ -304,11 +299,11 @@ async def adopt_pet():
     )
     return jsonify({"adoptId": adopt_id}), 202
 
-@app.route("/pets/adopted", methods=["GET"])
+@routes_bp.route("/pets/adopted", methods=["GET"])
 async def get_adopted_pets():
     return jsonify({"adoptedPets": list(adopted_pets_cache.values())})
 
-@app.route("/pets/pet-of-the-day", methods=["POST"])
+@routes_bp.route("/pets/pet-of-the-day", methods=["POST"])
 async def update_pet_of_the_day():
     entity = {}
     pet_of_the_day_id = await entity_service.add_item(
@@ -319,7 +314,7 @@ async def update_pet_of_the_day():
     )
     return jsonify({"id": pet_of_the_day_id}), 202
 
-@app.route("/pets/pet-of-the-day", methods=["GET"])
+@routes_bp.route("/pets/pet-of-the-day", methods=["GET"])
 async def get_pet_of_the_day():
     pet_of_the_day = await entity_service.get_items(
         token=cyoda_auth_service,
@@ -329,31 +324,3 @@ async def get_pet_of_the_day():
     if not pet_of_the_day:
         return jsonify({"error": "Pet of the day not available"}), 503
     return jsonify(pet_of_the_day[0])
-
-@app.before_serving
-async def startup():
-    # Initialize pet_of_the_day entity on startup
-    try:
-        entities = await entity_service.get_items(
-            token=cyoda_auth_service,
-            entity_model="pet_of_the_day",
-            entity_version=ENTITY_VERSION
-        )
-        if not entities:
-            await entity_service.add_item(
-                token=cyoda_auth_service,
-                entity_model="pet_of_the_day",
-                entity_version=ENTITY_VERSION,
-                entity={}
-            )
-    except Exception as e:
-        logger.warning(f"Failed during startup pet_of_the_day init: {e}")
-
-@app.after_serving
-async def shutdown():
-    pass  # No persistent HTTP client in this refactor; handled per request
-
-if __name__ == '__main__':
-    import logging.config
-    logging.basicConfig(level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to compute game status and add game summary for NBA games",
+    "name": "nba_game_score_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the game entity",
+            "end_state": "Status_computed",
+            "end_state_description": "Game status has been computed",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_compute_game_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add game summary entity after status computation",
+            "end_state": "Summary_added",
+            "end_state_description": "Game summary entity has been added",
+            "name": "add_summary",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_game_summary"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Status_computed",
+            "start_state_description": "Game status has been computed"
+        }
+    ]
+}

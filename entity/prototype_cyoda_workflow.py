@@ -1,28 +1,3 @@
-Absolutely, moving asynchronous processing and business logic out of the endpoint and into the workflow function is the right architectural choice here. This approach simplifies endpoints, makes code more maintainable, and ensures that entity state changes and related side effects happen in a consistent place just before persistence.
-
----
-
-### What can be moved to `process_entity_jobs` workflow function?
-
-- All async calls such as external API calls (`call_external_api`).
-- All logic that updates the entity state (`entity['status']`, `entity['result']`, timestamps, error handling).
-- Any supplementary data fetching or adding related entities (of different `entity_model`), if needed.
-- Removing any async fire-and-forget tasks from controllers.
-
----
-
-### What stays in the endpoint?
-
-- Validation / parsing of request.
-- Creating the initial entity dictionary with minimal state.
-- Calling `entity_service.add_item` with the workflow function.
-- Returning the initial response (e.g. `202 Accepted` with process ID).
-
----
-
-### Updated code:
-
-```python
 from dataclasses import dataclass
 import logging
 import uuid
@@ -110,7 +85,7 @@ async def post_process(data: ProcessRequest):
         "inputData": input_data,
     }
 
-    # Add entity with workflow
+    # Add entity with workflow; workflow will execute asynchronously before persistence
     await entity_service.add_item(
         token=cyoda_auth_service,
         entity_model="entity_jobs",
@@ -150,28 +125,3 @@ async def get_result(process_id):
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation of the changes
-
-- Removed all async processing from `post_process` endpoint except for adding the entity.
-- `process_entity_jobs` handles the entire async flow: calls external API, updates entity state, timestamps, error handling.
-- The workflow function modifies the entity in place; the updated state will be persisted automatically by `entity_service`.
-- The endpoint becomes a simple request validator + entity creator + immediate response.
-- Result retrieval remains unchanged.
-
----
-
-### Benefits:
-
-- Separation of concerns: endpoint handles request/response only.
-- Robust asynchronous processing encapsulated in workflow.
-- No risk of infinite recursion because workflow only modifies current entity, does not call `add_item` for the same entity model.
-- All async tasks consolidated in workflow.
-- Cleaner, more maintainable, and scalable code.
-
----
-
-If you want, I can help with extending this pattern to other entity models or adding supplementary entities in the workflow.

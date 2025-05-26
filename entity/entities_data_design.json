@@ -1,0 +1,32 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com"
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "away_score": 99,
+                "away_team": "Warriors",
+                "date": "2024-04-27",
+                "home_score": 102,
+                "home_team": "Lakers"
+            },
+            "entity_name": "game"
+        },
+        {
+            "entity_data_example": {
+                "email": "user@example.com"
+            },
+            "entity_name": "subscription_request"
+        },
+        {
+            "entity_data_example": {
+                "date": "2024-04-27"
+            },
+            "entity_name": "date_request"
+        }
+    ]
+}

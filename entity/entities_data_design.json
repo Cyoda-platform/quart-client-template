@@ -1,0 +1,54 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "status": "string",
+                "type": "string"
+            },
+            "entity_name": "pet_search"
+        },
+        {
+            "entity_data_example": {
+                "petId": 123
+            },
+            "entity_name": "pet_adopt"
+        },
+        {
+            "entity_data_example": {
+                "id": 123,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "https://example.com/photo1.jpg",
+                    "https://example.com/photo2.jpg"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "id": 123,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "https://example.com/photo1.jpg"
+                ],
+                "type": "cat"
+            },
+            "entity_name": "adopted_pet"
+        },
+        {
+            "entity_data_example": {
+                "funFact": "Whiskers loves sunny naps! \ud83d\ude38",
+                "id": 123,
+                "name": "Whiskers",
+                "photoUrls": [
+                    "https://example.com/photo1.jpg"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet_of_the_day"
+        }
+    ]
+}

@@ -52,9 +52,11 @@ async def send_email_batch(emails: List[str], date: str, games: List[Dict]):
             f"{game.get('home_team','?')} {game.get('home_score','?')} - "
             f"{game.get('away_team','?')} {game.get('away_score','?')}"
         )
-    summary = "\n".join(summary_lines) or "No games found."
+    summary = "
+".join(summary_lines) or "No games found."
     for email in emails:
-        logger.info(f"Sending email to {email} for {date}:\n{summary}")
+        logger.info(f"Sending email to {email} for {date}:
+{summary}")
     await asyncio.sleep(0.1)
 
 async def process_scores_and_notify(date: str):
@@ -149,7 +151,10 @@ async def daily_scheduler():
         today = target.strftime("%Y-%m-%d")
         await process_scores_and_notify(today)
 
+# Start scheduler task before serving
+@app.before_serving
+async def startup():
+    app.add_background_task(daily_scheduler)
+
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.create_task(daily_scheduler())
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

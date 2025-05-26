@@ -1,46 +1,3 @@
-Absolutely! Moving as much as possible of the async processing logic into the workflow functions (`process_{entity_name}`) is indeed the right approach. This makes the endpoints simpler, more declarative, and more robust by encapsulating business logic close to the data persistence layer.
-
----
-
-### What can be moved:
-
-- Initialization of entity state fields (timestamps, status, etc.) — already done in workflows.
-- Any "fire and forget" async tasks that update the entity state or related entities.
-- Long-running or background tasks that modify the entity after creation can be moved inside the workflow, as it supports async code.
-- Calls to other entities (get/add) of different models for supplementary data enrichment.
-
----
-
-### What cannot be done in workflow:
-
-- You **cannot** call `entity_service.add_item` / update / delete on the **same** entity model inside its own workflow (to avoid infinite recursion).
-- So the workflow should only modify the entity dictionary directly for the main entity.
-- But it can call add/update/delete on **other** entity_models if needed.
-
----
-
-### Strategy for refactoring:
-
-- Move the async background tasks that update entity status after a delay into the workflows.
-- To support this, the workflow function can spawn background tasks internally (e.g., `asyncio.create_task`) **inside** the workflow itself.
-- The initial entity modifications (like setting status, timestamps) stay in the workflow.
-- The endpoint simply calls `add_item` with the workflow and returns immediately, no need to launch background tasks inside the endpoint.
-
----
-
-### Updated implementation summary:
-
-- **Endpoints:** only validate and call `add_item` with workflow.
-- **workflows:** 
-  - initialize entity attributes
-  - spawn background async tasks inside workflow
-  - background tasks modify the entity directly via `entity_service.update_item` (allowed because it’s a different async task, no recursion)
-  
----
-
-## Below is the updated complete code with these changes applied:
-
-```python
 from dataclasses import dataclass
 from typing import Dict, Any, List
 import asyncio
@@ -130,7 +87,6 @@ class GenerateReportRequest:
 # Workflow functions for each entity_model
 
 async def process_user(entity: Dict[str, Any]) -> Dict[str, Any]:
-    # Example: Add creation timestamp or modify state if needed
     if "createdAt" not in entity:
         entity["createdAt"] = now_iso()
     return entity
@@ -141,6 +97,12 @@ async def process_workflow(entity: Dict[str, Any]) -> Dict[str, Any]:
     entity.setdefault("currentTask", None)
     entity.setdefault("history", [])
     entity.setdefault("startedAt", now_iso())
+
+    # We need the persisted entity's technicalId to run background tasks
+    workflow_id = entity.get("technicalId") or entity.get("workflowId")
+    if not workflow_id:
+        # Sometimes the ID might not be present yet; in that case, do not schedule tasks
+        return entity
 
     async def workflow_task(workflow_id: str):
         try:
@@ -173,8 +135,7 @@ async def process_workflow(entity: Dict[str, Any]) -> Dict[str, Any]:
         except Exception as e:
             logger.exception(e)
 
-    # Schedule background task after persistence
-    asyncio.create_task(workflow_task(entity['technicalId'] if 'technicalId' in entity else entity.get('workflowId')))
+    asyncio.create_task(workflow_task(workflow_id))
     return entity
 
 
@@ -182,9 +143,12 @@ async def process_budget(entity: Dict[str, Any]) -> Dict[str, Any]:
     entity.setdefault("status", "queued")
     entity.setdefault("requestedAt", now_iso())
 
+    forecast_id = entity.get("technicalId") or entity.get("forecastId")
+    if not forecast_id:
+        return entity
+
     async def forecast_task(forecast_id: str):
         try:
-            # Simulate forecasting or call AI model
             results = {}
             forecast_options = entity.get("forecastOptions", {})
             budget_data = entity.get("budgetData", {})
@@ -195,7 +159,7 @@ async def process_budget(entity: Dict[str, Any]) -> Dict[str, Any]:
                     if resp.status_code == 200:
                         results = resp.json().get("forecastResults", {})
                     else:
-                        logger.warning(f"AI model responded with {resp.status_code}")
+                        logger.warning(f"AI model responded with status {resp.status_code}")
             else:
                 results = {dep: {"forecasted": val, "variance": 0} for dep, val in budget_data.items()}
 
@@ -240,7 +204,7 @@ async def process_budget(entity: Dict[str, Any]) -> Dict[str, Any]:
                 pass
             logger.exception(e)
 
-    asyncio.create_task(forecast_task(entity['technicalId'] if 'technicalId' in entity else entity.get('forecastId')))
+    asyncio.create_task(forecast_task(forecast_id))
     return entity
 
 
@@ -248,7 +212,6 @@ async def process_requisition(entity: Dict[str, Any]) -> Dict[str, Any]:
     entity.setdefault("status", "pending")
     entity.setdefault("approvalHistory", [])
     entity.setdefault("submittedAt", now_iso())
-    # No background task needed here for now
     return entity
 
 
@@ -256,9 +219,13 @@ async def process_payment(entity: Dict[str, Any]) -> Dict[str, Any]:
     entity.setdefault("status", "queued")
     entity.setdefault("requestedAt", now_iso())
 
+    payment_id = entity.get("technicalId") or entity.get("paymentId")
+    if not payment_id:
+        return entity
+
     async def payment_task(payment_id: str):
         try:
-            await asyncio.sleep(2)  # simulate processing delay
+            await asyncio.sleep(2)
             payment = await entity_service.get_item(
                 token=cyoda_auth_service,
                 entity_model="payment",
@@ -300,7 +267,7 @@ async def process_payment(entity: Dict[str, Any]) -> Dict[str, Any]:
                 pass
             logger.exception(e)
 
-    asyncio.create_task(payment_task(entity['technicalId'] if 'technicalId' in entity else entity.get('paymentId')))
+    asyncio.create_task(payment_task(payment_id))
     return entity
 
 
@@ -309,9 +276,13 @@ async def process_report(entity: Dict[str, Any]) -> Dict[str, Any]:
     entity.setdefault("createdDate", now_iso())
     entity.setdefault("downloadUrl", None)
 
+    report_id = entity.get("technicalId") or entity.get("reportId")
+    if not report_id:
+        return entity
+
     async def report_task(report_id: str):
         try:
-            await asyncio.sleep(1)  # Simulate report generation delay
+            await asyncio.sleep(1)
             report = await entity_service.get_item(
                 token=cyoda_auth_service,
                 entity_model="report",
@@ -353,7 +324,7 @@ async def process_report(entity: Dict[str, Any]) -> Dict[str, Any]:
                 pass
             logger.exception(e)
 
-    asyncio.create_task(report_task(entity['technicalId'] if 'technicalId' in entity else entity.get('reportId')))
+    asyncio.create_task(report_task(report_id))
     return entity
 
 
@@ -654,20 +625,3 @@ if __name__ == '__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Key changes:
-
-- All background async processing tasks launched inside the respective `process_{entity_name}` workflow functions via `asyncio.create_task()`.
-- Workflow functions receive the entity dict, set up initial state, and start any needed async background tasks.
-- Endpoint handlers only validate input and call `add_item` with workflow, then immediately return a response.
-- The workflow functions use `entity['technicalId']` or fallback keys to get the persisted entity ID to use in background tasks.
-- Background tasks fetch and update the entity asynchronously after delays or external calls.
-
----
-
-This approach keeps the controllers clean and delegates all entity lifecycle and async processing logic to the workflow functions, improving maintainability and robustness.
-
-If you want, I can also help implement unit tests or further improvements. Let me know!

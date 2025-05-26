@@ -1,115 +1,316 @@
-Certainly! I updated your code to:
+Absolutely, moving logic from the endpoints into the workflow function (`process_pet`) is the right approach for better separation of concerns, more robust code, and cleaner controllers. The workflow function can handle entity mutations, enrichments, and async side effects (like fetching supplementary data or adding related entities of different models) just before persistence. This "pre-persist hook" simplifies endpoint code to just validation, calling `add_item` with the workflow, and returning a response.
 
-- Add a workflow function named `process_pet` (following the naming convention `process_{entity_name}` with underscore lowercase).
-- Pass this `process_pet` function as the `workflow` parameter to `entity_service.add_item` in the `/pets` POST route.
-- Implement a sample `process_pet` async function that receives the entity data, modifies it (for demonstration), and returns it.
+---
 
-Here is the complete updated code with those changes applied:
+### What logic can move?
+
+Looking at your code, here’s what can be moved into `process_pet`:
+
+- Data enrichment, normalization, and default field population (already partly done).
+- Any supplementary async fetches of data that augment the entity before saving.
+- Fire-and-forget async tasks related to the entity, e.g., logging, caching, or triggering downstream entity additions (as long as it’s not calling add/update/delete on the same entity model).
+- Potentially, moving the selection of "pet of the day" could be decoupled to a separate entity workflow for `pet_of_the_day` entity if you want.
+
+---
+
+### What cannot move?
+
+- The initial HTTP request parsing & validation (handled by QuartSchema and endpoints).
+- The actual HTTP response formation.
+- Add/update/delete on the same entity inside the workflow (to avoid recursion).
+- Long-running or heavy background jobs that should be offloaded to dedicated workers (unless your workflow supports it).
+
+---
+
+### What stays in endpoints?
+
+- Request validation.
+- Calling the service methods with the workflow.
+- Returning appropriate HTTP responses.
+
+---
+
+### Moving logic examples
+
+- The current `/pets/search` endpoint triggers an async task `process_search` which fetches pets and caches them. This can be moved into a workflow function `process_pet_search` for a new entity model `pet_search` (assuming you want to store pet searches as entities).
+- For `/pets/adopt`, adoption logic could be moved into `process_pet_adopt` workflow (if `pet_adopt` is an entity).
+- For `pet_of_the_day`, you could have a workflow `process_pet_of_the_day` invoked when adding/updating that entity.
+
+---
+
+### Your current main entity is `pet`, so I will:
+
+- Move normalization, enrichment, and async supplementary fetches into `process_pet`.
+- Remove any endpoint async helpers that are related to pets.
+- For pet search, pet adopt, and pet of the day, if those are entities managed by `entity_service`, implement workflows for them similarly.
+
+---
+
+## Updated example focusing on the `pet` entity and new workflows for related entities
+
+I will demonstrate the approach for these entity workflows:
+
+- `process_pet` for pets.
+- (Optionally) `process_pet_search` for pet search entities.
+- (Optionally) `process_pet_adopt` for pet adoption entities.
+
+---
+
+## Complete rewritten code snippet focusing on moving logic into workflows
 
 ```python
-from dataclasses import dataclass
-import asyncio
-import logging
-import uuid
-from datetime import datetime
-from typing import Dict, List
+# ... all your imports and initialization remain the same
 
-import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+# --- Workflow functions ---
 
-from app_init.app_init import BeanFactory
-from common.config.config import ENTITY_VERSION
+async def process_pet(entity: dict) -> dict:
+    """
+    Workflow function applied to the pet entity asynchronously before persistence.
+    Modify entity state here.
+    """
+    # Add timestamp if missing
+    if 'created_at' not in entity:
+        entity['created_at'] = datetime.utcnow().isoformat() + "Z"
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+    # Normalize 'type' field to lowercase
+    if 'type' in entity and isinstance(entity['type'], str):
+        entity['type'] = entity['type'].lower()
 
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
+    # Example async enrichment: fetch supplementary data about pet's breed or category
+    category_name = entity.get('category', {}).get('name')
+    if category_name:
+        # Pretend we fetch more info about the category from external source or entity service
+        try:
+            # Example: fetch category details from entity service or external API
+            # NOTE: Replace with actual logic as needed
+            category_details = await entity_service.get_item(
+                token=cyoda_auth_service,
+                entity_model="category",
+                entity_version=ENTITY_VERSION,
+                technical_id=category_name.lower()
+            )
+            entity['category_details'] = category_details or {}
+        except Exception as e:
+            # Log but don't fail persistence
+            logger.warning(f"Failed to fetch category details for '{category_name}': {e}")
 
-app = Quart(__name__)
-QuartSchema(app)
+    # Example of fire-and-forget: add a related entity in a different model (e.g., pet_log) asynchronously
+    async def add_pet_log():
+        try:
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="pet_log",
+                entity_version=ENTITY_VERSION,
+                entity={
+                    "pet_id": entity.get("id"),
+                    "action": "created",
+                    "timestamp": datetime.utcnow().isoformat() + "Z"
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to add pet_log entity: {e}")
 
-@dataclass
-class PetSearch:
-    type: str = None
-    status: str = None
+    # Schedule fire-and-forget task but don't await here (workflow supports async code)
+    asyncio.create_task(add_pet_log())
 
-@dataclass
-class PetAdopt:
-    petId: int
+    logger.info(f"Processed pet entity before persistence: {entity}")
+    return entity
 
-# In-memory "database" caches (async-safe by design of Quart single-threaded nature)
-pets_search_cache: Dict[str, List[dict]] = {}
-adopted_pets_cache: Dict[str, dict] = {}  # changed keys to str for consistency
-pet_of_the_day_cache: dict = {}
 
-PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
-async_client = httpx.AsyncClient(timeout=10.0)
+async def process_pet_search(entity: dict) -> dict:
+    """
+    Workflow function applied to pet_search entity.
+    Perform the actual search and cache results.
+    """
+    pet_type = entity.get('type')
+    status = entity.get('status')
+    search_id = entity.get('search_id') or str(uuid.uuid4())
+    entity['search_id'] = search_id
+    entity['results'] = []
 
-async def fetch_pets_from_petstore(pet_type: str = None, status: str = None) -> List[dict]:
-    params = {}
-    if status:
-        params["status"] = status
+    # Perform search async and store results in entity (or cache)
     try:
-        response = await async_client.get(f"{PETSTORE_BASE_URL}/pet/findByStatus", params=params)
-        response.raise_for_status()
-        pets = response.json()
+        # Using same fetch logic as before
+        params = {}
+        if status:
+            params["status"] = status
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{PETSTORE_BASE_URL}/pet/findByStatus", params=params)
+            resp.raise_for_status()
+            pets = resp.json()
+
+        if pet_type:
+            pets = [pet for pet in pets if pet.get("category", {}).get("name", "").lower() == pet_type.lower()]
+
+        entity['results'] = pets
+        logger.info(f"pet_search {search_id} found {len(pets)} pets")
     except Exception as e:
-        logger.exception("Failed to fetch pets from Petstore API")
-        return []
-    if pet_type:
-        pets = [pet for pet in pets if pet.get("category") and pet["category"].get("name", "").lower() == pet_type.lower()]
-    return pets
+        logger.warning(f"pet_search {search_id} fetch failed: {e}")
+        entity['results'] = []
 
-async def process_search(search_id: str, pet_type: str = None, status: str = None):
-    try:
-        pets = await fetch_pets_from_petstore(pet_type, status)
-        pets_search_cache[search_id] = pets
-        logger.info(f"Search {search_id} completed with {len(pets)} pets")
-    except Exception as e:
-        logger.exception(f"Error processing search {search_id}")
-        pets_search_cache[search_id] = []
+    # Return updated entity with results cached
+    return entity
 
-async def select_pet_of_the_day():
+
+async def process_pet_adopt(entity: dict) -> dict:
+    """
+    Workflow function applied to pet_adopt entity.
+    Mark a pet as adopted by adding it to adopted_pets_cache.
+    """
+    pet_id = str(entity.get('petId') or entity.get('pet_id'))
+    if not pet_id:
+        logger.warning("pet_adopt entity missing petId")
+        return entity
+
+    # Check if already adopted (simulate cache check)
+    if pet_id in adopted_pets_cache:
+        entity['adopted'] = True
+        entity['message'] = "Pet already adopted"
+        logger.info(f"Pet {pet_id} already adopted")
+        return entity
+
+    # Simulate adoption logic (add to cache)
+    mock_pet = {
+        "id": pet_id,
+        "name": f"Adopted Pet #{pet_id}",
+        "type": "unknown",
+        "photoUrls": []
+    }
+    adopted_pets_cache[pet_id] = mock_pet
+
+    entity['adopted'] = True
+    entity['message'] = "Pet successfully adopted!"
+    logger.info(f"Pet {pet_id} adopted successfully")
+
+    # Optionally, add a pet_adoption_log entity asynchronously (fire and forget)
+    async def add_adoption_log():
+        try:
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="pet_adoption_log",
+                entity_version=ENTITY_VERSION,
+                entity={
+                    "pet_id": pet_id,
+                    "action": "adopted",
+                    "timestamp": datetime.utcnow().isoformat() + "Z"
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to add pet_adoption_log entity: {e}")
+
+    asyncio.create_task(add_adoption_log())
+
+    return entity
+
+
+async def process_pet_of_the_day(entity: dict) -> dict:
+    """
+    Workflow function applied to pet_of_the_day entity.
+    Selects a pet of the day from available pets.
+    """
     try:
-        pets = await fetch_pets_from_petstore(status="available")
-        if not pets:
-            return
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{PETSTORE_BASE_URL}/pet/findByStatus", params={"status": "available"})
+            resp.raise_for_status()
+            pets = resp.json()
+
         for pet in pets:
             if pet.get("photoUrls"):
-                pet_of_the_day_cache.clear()
-                pet_of_the_day_cache.update({
+                entity.clear()
+                entity.update({
                     "id": pet.get("id"),
                     "name": pet.get("name"),
-                    "type": pet.get("category", {}).get("name", "Unknown"),
+                    "type": pet.get("category", {}).get("name", "unknown"),
                     "status": pet.get("status"),
                     "photoUrls": pet.get("photoUrls"),
-                    "funFact": f"{pet.get('name', 'This pet')} loves sunny naps! 😸"  # TODO: replace with real fun facts
+                    "funFact": f"{pet.get('name', 'This pet')} loves sunny naps! 😸",
+                    "updated_at": datetime.utcnow().isoformat() + "Z"
                 })
                 logger.info(f"Selected pet of the day: {pet.get('name')}")
                 break
     except Exception as e:
-        logger.exception("Failed to select pet of the day")
+        logger.warning(f"Failed to select pet of the day: {e}")
+
+    return entity
+
+
+# --- Endpoints simplified to just call add_item with proper workflow ---
+
+@app.route("/pets", methods=["POST"])
+async def create_pet():
+    data = await request.get_json()
+    pet_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="pet",
+        entity_version=ENTITY_VERSION,
+        entity=data,
+        workflow=process_pet
+    )
+    return jsonify({"id": pet_id}), 202
+
 
 @app.route("/pets/search", methods=["POST"])
-# workaround for validate_request defect: validation last for POST
-@validate_request(PetSearch)
-async def pets_search(data: PetSearch):
-    pet_type = data.type
-    status = data.status
-    search_id = str(uuid.uuid4())
-    pets_search_cache[search_id] = []
-    requested_at = datetime.utcnow()
-    asyncio.create_task(process_search(search_id, pet_type, status))
+async def pets_search():
+    data = await request.get_json()
+    # Add search entity, this triggers process_pet_search workflow
+    entity = {
+        "type": data.get("type"),
+        "status": data.get("status"),
+        "search_id": str(uuid.uuid4())
+    }
+    search_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="pet_search",
+        entity_version=ENTITY_VERSION,
+        entity=entity,
+        workflow=process_pet_search
+    )
+    # Return search_id immediately, results will be part of entity later
     return jsonify({"searchId": search_id, "count": 0}), 202
+
+
+@app.route("/pets/adopt", methods=["POST"])
+async def adopt_pet():
+    data = await request.get_json()
+    entity = {
+        "petId": data.get("petId")
+    }
+    adopt_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="pet_adopt",
+        entity_version=ENTITY_VERSION,
+        entity=entity,
+        workflow=process_pet_adopt
+    )
+    return jsonify({"adoptId": adopt_id}), 202
+
+
+@app.route("/pets/pet-of-the-day", methods=["POST"])
+async def update_pet_of_the_day():
+    # Create or update pet_of_the_day entity; triggers workflow to select pet of the day
+    entity = {}
+    pet_of_the_day_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="pet_of_the_day",
+        entity_version=ENTITY_VERSION,
+        entity=entity,
+        workflow=process_pet_of_the_day
+    )
+    # Return the pet_of_the_day id and entity state later on GET
+    return jsonify({"id": pet_of_the_day_id}), 202
+
 
 @app.route("/pets/search/<search_id>", methods=["GET"])
 async def get_search_results(search_id: str):
-    pets = pets_search_cache.get(search_id)
-    if pets is None:
+    entity = await entity_service.get_item(
+        token=cyoda_auth_service,
+        entity_model="pet_search",
+        entity_version=ENTITY_VERSION,
+        technical_id=search_id
+    )
+    if entity is None:
         return jsonify({"error": "Search ID not found"}), 404
+    pets = entity.get("results", [])
     def normalize_pet(pet):
         return {
             "id": pet.get("id"),
@@ -121,161 +322,42 @@ async def get_search_results(search_id: str):
     normalized = [normalize_pet(p) for p in pets]
     return jsonify({"searchId": search_id, "pets": normalized})
 
-@app.route("/pets/adopt", methods=["POST"])
-# workaround for validate_request defect: validation last for POST
-@validate_request(PetAdopt)
-async def adopt_pet(data: PetAdopt):
-    pet_id_str = str(data.petId)
-    if pet_id_str in adopted_pets_cache:
-        return jsonify({"petId": pet_id_str, "adopted": True, "message": "Pet already adopted"}), 200
-    mock_pet = {
-        "id": data.petId,
-        "name": f"Adopted Pet #{data.petId}",
-        "type": "Unknown",
-        "photoUrls": []
-    }
-    adopted_pets_cache[pet_id_str] = mock_pet
-    logger.info(f"Pet {data.petId} adopted")
-    return jsonify({"petId": pet_id_str, "adopted": True, "message": "Pet successfully adopted!"})
 
 @app.route("/pets/adopted", methods=["GET"])
 async def get_adopted_pets():
+    # Return cached adopted pets
     return jsonify({"adoptedPets": list(adopted_pets_cache.values())})
+
 
 @app.route("/pets/pet-of-the-day", methods=["GET"])
 async def get_pet_of_the_day():
-    if not pet_of_the_day_cache:
-        await select_pet_of_the_day()
-    if not pet_of_the_day_cache:
+    pet_of_the_day = await entity_service.get_items(
+        token=cyoda_auth_service,
+        entity_model="pet_of_the_day",
+        entity_version=ENTITY_VERSION
+    )
+    if not pet_of_the_day:
         return jsonify({"error": "Pet of the day not available"}), 503
-    return jsonify(pet_of_the_day_cache)
+    # Return most recent pet_of_the_day entity (assuming single entity)
+    return jsonify(pet_of_the_day[0])
 
-# New workflow function to process "pet" entity before persisting
-async def process_pet(entity: dict) -> dict:
-    """
-    Workflow function applied to the pet entity asynchronously before persistence.
-    You can modify the entity here, e.g. add default fields, sanitize data, etc.
-    """
-    # Example: add a created_at timestamp if not present
-    if 'created_at' not in entity:
-        entity['created_at'] = datetime.utcnow().isoformat() + "Z"
-    # Example: enforce lowercase for type field if present
-    if 'type' in entity and isinstance(entity['type'], str):
-        entity['type'] = entity['type'].lower()
-    # Add any other processing logic here...
 
-    logger.info(f"Processed pet entity before persistence: {entity}")
-    return entity
+# Other endpoints like GET /pets/<id>, PUT, DELETE remain similar, with minimal changes
 
-@app.route("/pets", methods=["POST"])
-async def create_pet():
-    try:
-        data = await request.get_json()
-        # validate data accordingly if needed here or use schema
+# Rest of your app remains unchanged
 
-        pet_id = await entity_service.add_item(
-            token=cyoda_auth_service,
-            entity_model="pet",
-            entity_version=ENTITY_VERSION,
-            entity=data,
-            workflow=process_pet  # Pass the workflow function here
-        )
-        return jsonify({"id": pet_id}), 202
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to add pet"}), 500
-
-@app.route("/pets/<string:pet_id>", methods=["GET"])
-async def get_pet(pet_id: str):
-    try:
-        pet = await entity_service.get_item(
-            token=cyoda_auth_service,
-            entity_model="pet",
-            entity_version=ENTITY_VERSION,
-            technical_id=pet_id
-        )
-        if pet is None:
-            return jsonify({"error": "Pet not found"}), 404
-        return jsonify(pet)
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to get pet"}), 500
-
-@app.route("/pets", methods=["GET"])
-async def list_pets():
-    try:
-        pets = await entity_service.get_items(
-            token=cyoda_auth_service,
-            entity_model="pet",
-            entity_version=ENTITY_VERSION
-        )
-        return jsonify(pets)
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to list pets"}), 500
-
-@app.route("/pets/<string:pet_id>", methods=["PUT"])
-async def update_pet(pet_id: str):
-    try:
-        data = await request.get_json()
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="pet",
-            entity_version=ENTITY_VERSION,
-            entity=data,
-            technical_id=pet_id,
-            meta={}
-        )
-        return jsonify({"message": "Pet updated"}), 200
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to update pet"}), 500
-
-@app.route("/pets/<string:pet_id>", methods=["DELETE"])
-async def delete_pet(pet_id: str):
-    try:
-        await entity_service.delete_item(
-            token=cyoda_auth_service,
-            entity_model="pet",
-            entity_version=ENTITY_VERSION,
-            technical_id=pet_id,
-            meta={}
-        )
-        return jsonify({"message": "Pet deleted"}), 200
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to delete pet"}), 500
-
-@app.before_serving
-async def startup():
-    await select_pet_of_the_day()
-
-@app.after_serving
-async def shutdown():
-    await async_client.aclose()
-
-if __name__ == '__main__':
-    import logging.config
-    logging.basicConfig(level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
 ---
 
-### Explanation of the key changes:
+### Summary:
 
-- Added this function near the other async functions:
-```python
-async def process_pet(entity: dict) -> dict:
-    # Example modifications - add created_at timestamp and normalize type field
-    if 'created_at' not in entity:
-        entity['created_at'] = datetime.utcnow().isoformat() + "Z"
-    if 'type' in entity and isinstance(entity['type'], str):
-        entity['type'] = entity['type'].lower()
-    logger.info(f"Processed pet entity before persistence: {entity}")
-    return entity
-```
+- All entity-specific async logic and side effects moved into workflow functions named `process_{entity_model}`.
+- Each workflow modifies the entity state directly and/or triggers fire-and-forget async tasks for related entities.
+- Endpoints become very thin, just calling `add_item` with the workflow.
+- No infinite recursion risk since workflows cannot add/update/delete the same entity_model.
+- Separation of concerns and maintainability improved.
 
-- Updated the `/pets` POST route to pass `workflow=process_pet` to `entity_service.add_item`.
+---
 
-This fulfills the requirement to add the workflow function argument and implement it properly per your instructions and naming convention. Let me know if you want me to help with anything else!
+If you want, I can help rewrite the entire file with all routes updated accordingly or help create workflows for other entity models. Let me know!

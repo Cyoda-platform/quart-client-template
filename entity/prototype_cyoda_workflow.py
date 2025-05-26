@@ -1,82 +1,3 @@
-Understood. We want to move as much async logic as possible from the route handlers into workflow functions (named `process_{entity_name}`), which will be executed asynchronously right before persistence of that entity. The workflow function receives the entity dict, can modify it in-place, and can also add other entities of different types, but cannot modify the same entity model to avoid recursion.
-
----
-
-**Plan**
-
-1. Currently, the main place where `entity_service.add_item` is called is in `process_scores_and_notify` where we add `game` entities.
-
-2. The `process_game` workflow right now just returns the entity as is.
-
-3. We are told that any async work including fire-and-forget can be moved to the workflow.
-
-4. Since the workflow function is called before persistence, and is async, we can move logic that enriches or processes the entity before saving there.
-
-5. Also, the "notify" logic - sending emails to subscribers depends on having the stored games. But it's not triggered by entity persistence. We cannot directly move the email sending there because the workflow only runs per-entity before persistence, and sending an email batch is a batch operation on multiple entities.
-
-6. However, we can move the per-entity enrichment and any fetching/processing of data for the entity into workflow.
-
-7. The "fetch scores" endpoint triggers an async task which fetches games, stores them, then sends notifications. We can break this down:
-
-   - The fetch and transform logic can be moved out.
-
-   - The "send_email_batch" is a batch operation; moving it to workflow may not be suitable.
-
-8. We can create additional entities (e.g. "notification") via workflow, or mark entities for notification.
-
-9. Since workflow can add entities of other models, we can create a separate entity model, e.g. "notification", and trigger notifications from them.
-
-10. Alternatively, we can move "processing" of the entity (e.g. adding calculated fields) to the workflow.
-
----
-
-**Concrete steps**
-
-- For `game` entity:
-
-  - Move any enrichment logic to `process_game`.
-
-  - For example, if we want to add a "status" field to the game entity before saving, do it in workflow.
-
-- For `subscription` or `subscriber` entity:
-
-  - If we had an entity model for subscriber, we could add logic in workflow.
-
-- For the async task `process_scores_and_notify`:
-
-  - We can move the "fetching external API and creating entities" into a new workflow function or helper, but since this is a batch operation creating multiple entities, workflow does not directly apply here.
-
-- For sending emails:
-
-  - Possibly move to a dedicated background task outside entity workflow.
-
----
-
-**Updated code approach**
-
-- Keep the `process_game` workflow function enriched.
-
-- Move the processing logic of the individual game entity into `process_game`.
-
-- The batch fetching and email sending remains in background tasks, but the heavy lifting of entity enrichment goes into workflow.
-
-- For example, `process_game` can fetch supplementary data asynchronously, enrich the entity, and even add secondary entities related to that game.
-
----
-
-**Code update**
-
-- Move all per-entity async logic into `process_game`.
-
-- The `process_scores_and_notify` will focus only on fetching the raw data and adding entities.
-
-- The notification sending remains in the endpoint or a background task.
-
----
-
-Here is the full updated code with the above approach applied:
-
-```python
 import asyncio
 import datetime
 import logging
@@ -84,7 +5,7 @@ from typing import Dict, List
 
 import httpx
 from dataclasses import dataclass
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -100,7 +21,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-# In-memory storage mocks
+# In-memory storage mocks for subscribers and jobs
 subscribers: List[str] = []
 entity_jobs: Dict[str, Dict] = {}
 
@@ -122,15 +43,9 @@ def validate_date(date_str: str) -> bool:
     except Exception:
         return False
 
-# Workflow function for 'game' entity
+# Workflow function for 'game' entity, called before persistence
 async def process_game(entity: dict) -> dict:
-    """
-    Workflow function called before persisting a 'game' entity.
-    Can modify entity in-place, add secondary entities of other models asynchronously.
-    """
-    # Example: add a computed field "game_status" based on scores asynchronously
-
-    # Simulate async enrichment (e.g. fetch extra metadata or validate)
+    # Add computed field "game_status"
     home_score = entity.get("home_score")
     away_score = entity.get("away_score")
 
@@ -144,14 +59,12 @@ async def process_game(entity: dict) -> dict:
     else:
         entity["game_status"] = "pending"
 
-    # Optionally, add a secondary entity, e.g. 'game_summary' entity with summary info
-    summary = f"{entity.get('home_team','?')} {home_score or '?'} - {entity.get('away_team','?')} {away_score or '?'}"
+    # Add supplementary 'game_summary' entity asynchronously
+    summary = f"{entity.get('home_team','?')} {home_score if home_score is not None else '?'} - {entity.get('away_team','?')} {away_score if away_score is not None else '?'}"
     summary_entity = {
         "game_date": entity.get("date"),
         "summary": summary,
-        "related_game_date": entity.get("date"),
     }
-    # Add a 'game_summary' entity asynchronously (different entity_model)
     try:
         await entity_service.add_item(
             token=cyoda_auth_service,
@@ -163,7 +76,14 @@ async def process_game(entity: dict) -> dict:
     except Exception as e:
         logger.warning(f"Failed to add game_summary entity: {e}")
 
-    # Return modified entity to be persisted
+    return entity
+
+# Workflow function for 'subscriber' entity - to demonstrate extensibility (optional)
+async def process_subscriber(entity: dict) -> dict:
+    # Could implement verification, normalization, etc.
+    email = entity.get("email")
+    if email:
+        entity["email"] = email.strip().lower()
     return entity
 
 async def fetch_nba_scores(date: str) -> List[Dict]:
@@ -208,7 +128,7 @@ async def process_scores_and_notify(date: str):
                     entity_model="game",
                     entity_version=ENTITY_VERSION,
                     entity=data,
-                    workflow=process_game  # Workflow function enriches entity before saving
+                    workflow=process_game
                 )
                 stored_game_ids.append(game_id)
             except Exception as e:
@@ -248,11 +168,23 @@ async def subscribe(data: SubscribeRequest):
     email = data.email
     if not email:
         return jsonify({"error": "Invalid email"}), 400
-    if email in subscribers:
+    normalized_email = email.strip().lower()
+    if normalized_email in subscribers:
         return jsonify({"error": "Email already subscribed"}), 400
-    subscribers.append(email)
-    logger.info(f"New subscription: {email}")
-    return jsonify({"message": f"Subscribed {email} successfully"}), 201
+    subscribers.append(normalized_email)
+    logger.info(f"New subscription: {normalized_email}")
+    # Optionally store subscriber entity with workflow
+    try:
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="subscriber",
+            entity_version=ENTITY_VERSION,
+            entity={"email": normalized_email},
+            workflow=process_subscriber
+        )
+    except Exception as e:
+        logger.warning(f"Failed to persist subscriber entity: {e}")
+    return jsonify({"message": f"Subscribed {normalized_email} successfully"}), 201
 
 @app.route("/fetch-scores", methods=["POST"])
 @validate_request(DateRequest)
@@ -352,7 +284,7 @@ async def daily_scheduler():
     while True:
         now = datetime.datetime.utcnow()
         target = now.replace(hour=18, minute=0, second=0, microsecond=0)
-        if now > target:
+        if now >= target:
             target += datetime.timedelta(days=1)
         await asyncio.sleep((target - now).total_seconds())
         today = target.strftime("%Y-%m-%d")
@@ -364,22 +296,3 @@ async def startup():
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation
-
-- The new `process_game` workflow function is async, modifies the game entity before persistence, and adds a supplementary `game_summary` entity.
-
-- The logic of enriching the game entity is moved from the controller/task into the workflow.
-
-- The batch operations like fetching external data, sending emails, and triggering jobs remain as background tasks or endpoint logic since they operate on multiple entities.
-
-- This respects the rule that the workflow cannot add/update/delete the same entity model (to avoid recursion), but it can add entities of other models.
-
----
-
-This approach "frees" controllers from entity enrichment logic and moves it to workflow functions as required.
-
-Let me know if you want me to also move parts of the notification logic into a workflow function for another entity model.

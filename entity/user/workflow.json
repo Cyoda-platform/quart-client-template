@@ -1,0 +1,60 @@
+{
+    "description": "Workflow handling user creation and role-based processing",
+    "name": "user_management_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Set creation timestamp for new user",
+            "end_state": "Created",
+            "end_state_description": "User creation timestamp set",
+            "name": "set_creation",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_creation"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process user with Finance Manager role",
+            "end_state": "FinanceManagerProcessed",
+            "end_state_description": "Finance Manager role processed",
+            "name": "finance_manager_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_finance_manager"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Created",
+            "start_state_description": "User creation timestamp set"
+        },
+        {
+            "automated": true,
+            "description": "Process user workflow event trigger",
+            "end_state": "WorkflowCompleted",
+            "end_state_description": "Workflow event processed and completed",
+            "name": "workflow_trigger_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_workflow"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "FinanceManagerProcessed",
+            "start_state_description": "Finance Manager role processed"
+        }
+    ]
+}

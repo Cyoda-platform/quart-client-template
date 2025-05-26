@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to fetch, select, and update the pet of the day",
+    "name": "pet_of_the_day_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch available pets from Petstore API",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Available pets have been fetched",
+            "name": "fetch_available_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_available_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Select a pet with photo from fetched pets",
+            "end_state": "Pet_selected",
+            "end_state_description": "A pet with a photo has been selected",
+            "name": "select_pet_with_photo",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_select_pet_with_photo"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Available pets have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Update entity with selected pet of the day details",
+            "end_state": "Pet_of_the_day_updated",
+            "end_state_description": "Entity updated with pet of the day information",
+            "name": "update_pet_of_the_day",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_pet_of_the_day"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_selected",
+            "start_state_description": "A pet with a photo has been selected"
+        }
+    ]
+}

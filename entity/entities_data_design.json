@@ -1,0 +1,83 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "delegation": "asmith",
+                "department": "finance",
+                "email": "jdoe@example.com",
+                "role": "manager",
+                "userId": "123e4567-e89b-12d3-a456-426614174000",
+                "username": "jdoe"
+            },
+            "entity_name": "user"
+        },
+        {
+            "entity_data_example": {
+                "currentTask": null,
+                "history": [
+                    {
+                        "action": "completed",
+                        "task": "initial",
+                        "timestamp": "2024-06-01T12:00:00Z",
+                        "user": "system"
+                    }
+                ],
+                "state": "completed",
+                "workflowId": "789e0123-e89b-45d3-b456-426614174999"
+            },
+            "entity_name": "workflow"
+        },
+        {
+            "entity_data_example": {
+                "forecastId": "456e7890-e89b-12d3-c456-426614174111",
+                "results": {
+                    "finance": {
+                        "forecasted": 100000.0,
+                        "variance": 5000.0
+                    }
+                },
+                "status": "completed"
+            },
+            "entity_name": "budget_forecast"
+        },
+        {
+            "entity_data_example": {
+                "createdDate": "2023-06-01T00:00:00Z",
+                "status": "draft",
+                "version": "v2"
+            },
+            "entity_name": "budget_version"
+        },
+        {
+            "entity_data_example": {
+                "approvalHistory": [
+                    {
+                        "action": "approved",
+                        "approver": "manager1",
+                        "timestamp": "2024-05-20T10:00:00Z"
+                    }
+                ],
+                "requisitionId": "321e6547-e89b-99d3-a456-426614174222",
+                "status": "submitted"
+            },
+            "entity_name": "requisition"
+        },
+        {
+            "entity_data_example": {
+                "paymentId": "654e3210-e89b-12d3-b456-426614174333",
+                "processedDate": "2024-06-01T15:30:00Z",
+                "status": "processed"
+            },
+            "entity_name": "payment"
+        },
+        {
+            "entity_data_example": {
+                "createdDate": "2024-06-01T14:00:00Z",
+                "downloadUrl": "https://mockreports.example.com/download/987e6543-e89b-12d3-c456-426614174444",
+                "reportId": "987e6543-e89b-12d3-c456-426614174444",
+                "status": "ready"
+            },
+            "entity_name": "report"
+        }
+    ]
+}

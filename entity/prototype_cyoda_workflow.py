@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-import asyncio
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -70,9 +69,9 @@ async def process_fetch_pets(entity: Dict[str, Any]) -> None:
     category = entity.get("category")
     status = entity.get("status")
     pets = await fetch_pets_from_petstore(category, status)
-    # Add each pet entity which triggers process_pet workflow
     for pet in pets:
         try:
+            # Add pet entities with pet workflow; cannot modify current 'fetch_pets' entity here
             await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model="pet",

@@ -1,0 +1,78 @@
+{
+    "description": "Workflow for processing pet entity including enrichment, normalization, and logging",
+    "name": "pet_entity_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet entity by adding timestamp",
+            "end_state": "Timestamp_added",
+            "end_state_description": "Timestamp has been added to pet entity",
+            "name": "start_pet_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_timestamp"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Normalize the pet type string to lowercase",
+            "end_state": "Type_normalized",
+            "end_state_description": "Pet type has been normalized to lowercase",
+            "name": "normalize_pet_type",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_type"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Timestamp_added",
+            "start_state_description": "Timestamp has been added to pet entity"
+        },
+        {
+            "automated": true,
+            "description": "Enrich pet entity with category details from external service",
+            "end_state": "Category_details_enriched",
+            "end_state_description": "Category details have been added to pet entity",
+            "name": "enrich_category_details",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrich_category_details"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Type_normalized",
+            "start_state_description": "Pet type has been normalized to lowercase"
+        },
+        {
+            "automated": true,
+            "description": "Fire and forget task to log pet creation asynchronously",
+            "end_state": "Pet_logged",
+            "end_state_description": "Pet creation logged asynchronously",
+            "name": "fire_and_forget_pet_log",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fire_and_forget_pet_log"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Category_details_enriched",
+            "start_state_description": "Category details have been added to pet entity"
+        }
+    ]
+}

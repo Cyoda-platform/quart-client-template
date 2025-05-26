@@ -4,12 +4,11 @@ import uuid
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
-from app_init.app_init import entity_service
-from common.config.config import ENTITY_VERSION
 from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -18,8 +17,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class ProcessRequest:
@@ -70,7 +68,7 @@ async def process_entity_jobs(entity: dict):
 
     return entity
 
-@app.route("/process", methods=["POST"])
+@routes_bp.route("/process", methods=["POST"])
 @validate_request(ProcessRequest)
 async def post_process(data: ProcessRequest):
     input_data = data.inputData
@@ -96,7 +94,7 @@ async def post_process(data: ProcessRequest):
     # Return immediately, processing happens in workflow before persistence
     return jsonify({"processId": job_id, "status": "processing", "message": "Processing started"}), 202
 
-@app.route("/result/<process_id>", methods=["GET"])
+@routes_bp.route("/result/<process_id>", methods=["GET"])
 async def get_result(process_id):
     try:
         job = await entity_service.get_item(
@@ -121,6 +119,3 @@ async def get_result(process_id):
     except Exception as e:
         logger.exception(f"Error retrieving result for process ID {process_id}: {e}")
         return jsonify({"message": "Internal server error"}), 500
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

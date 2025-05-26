@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for processing report generation",
+    "name": "report_generation_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the report",
+            "end_state": "Report_processing_queued",
+            "end_state_description": "Report processing has been queued",
+            "name": "start_report_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_report"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Complete the report processing task",
+            "end_state": "Report_ready",
+            "end_state_description": "Report is ready",
+            "name": "complete_report_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_report_task"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Report_processing_queued",
+            "start_state_description": "Report processing has been queued"
+        }
+    ]
+}

@@ -1,0 +1,28 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com",
+                "preferences": {
+                    "favoriteTeams": [
+                        "Lakers",
+                        "Celtics"
+                    ]
+                }
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "awayScore": 99,
+                "awayTeam": "Celtics",
+                "date": "2024-04-27",
+                "gameId": "game123",
+                "homeScore": 102,
+                "homeTeam": "Lakers",
+                "status": "finished"
+            },
+            "entity_name": "game"
+        }
+    ]
+}

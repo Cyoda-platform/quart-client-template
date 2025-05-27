@@ -1,0 +1,40 @@
+{
+    "description": "Workflow for fetching NBA scores and notifying subscribers",
+    "name": "NBA_Score_Update_Workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch NBA scores for a date range",
+            "end_state": "Scores_fetched",
+            "end_state_description": "NBA scores fetched and saved",
+            "name": "fetch_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_fetch_request"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Notify subscribers with NBA scores",
+            "end_state": "Subscribers_notified",
+            "end_state_description": "Subscribers notified via email",
+            "name": "notify_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_notify_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Scores_fetched",
+            "start_state_description": "NBA scores fetched and saved"
+        }
+    ]
+}

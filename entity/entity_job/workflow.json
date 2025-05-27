@@ -1,0 +1,60 @@
+{
+    "description": "A workflow to process Hello World message generation with success and failure handling.",
+    "name": "hello_world_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the entity job",
+            "end_state": "Processing",
+            "end_state_description": "Entity job is being processed",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates the workflow processing for the entity job.",
+                        "name": "process_entity_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Entity job processed successfully",
+            "end_state": "Completed",
+            "end_state_description": "Entity job processing completed successfully",
+            "name": "processing_success",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Handles successful completion of the entity job.",
+                        "name": "process_success"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Entity job is being processed"
+        },
+        {
+            "automated": true,
+            "description": "Entity job processing failed",
+            "end_state": "Failed",
+            "end_state_description": "Entity job processing failed",
+            "name": "processing_failure",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Handles failure in processing the entity job.",
+                        "name": "process_failure"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Entity job is being processed"
+        }
+    ]
+}

@@ -1,0 +1,69 @@
+{
+    "description": "Workflow to fetch, store, and notify NBA daily scores",
+    "name": "nba_daily_scores_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch NBA scores from external API",
+            "end_state": "Scores_fetched",
+            "end_state_description": "NBA scores have been fetched",
+            "name": "fetch_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_scores"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Store fetched NBA games data",
+            "end_state": "Games_stored",
+            "end_state_description": "NBA games data has been stored",
+            "name": "store_games",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_store_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Scores_fetched",
+            "start_state_description": "NBA scores have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Send notifications to subscribers",
+            "end_state": "Notifications_sent",
+            "end_state_description": "Notifications have been sent to subscribers",
+            "name": "send_notifications",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_notifications"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Games_stored",
+            "start_state_description": "NBA games data has been stored"
+        },
+        {
+            "automated": true,
+            "description": "Mark workflow as completed",
+            "end_state": "Workflow_completed",
+            "end_state_description": "Workflow processing is completed",
+            "name": "complete_workflow",
+            "start_state": "Notifications_sent",
+            "start_state_description": "Notifications have been sent to subscribers"
+        }
+    ]
+}

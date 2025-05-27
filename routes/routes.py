@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Dict, List
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class SubscribeRequest:
@@ -190,7 +189,7 @@ async def notify_subscribers(date: str):
     await send_email(emails, subject, body)
     logger.info(f"Notifications sent to {len(emails)} subscribers for {date}")
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     email = data.email.strip().lower()
@@ -236,7 +235,7 @@ async def subscribe(data: SubscribeRequest):
         logger.exception(f"Failed to add subscriber: {e}")
         return jsonify({"error": "Failed to subscribe"}), 500
 
-@app.route("/games/fetch", methods=["POST"])
+@routes_bp.route("/games/fetch", methods=["POST"])
 @validate_request(FetchRequest)
 async def fetch_scores(data: FetchRequest):
     date_str = data.date.strip()
@@ -256,7 +255,7 @@ async def fetch_scores(data: FetchRequest):
     asyncio.create_task(process_fetch())
     return jsonify({"message": f"Fetch and notification started for {date_str}"}), 200
 
-@app.route("/subscribers", methods=["GET"])
+@routes_bp.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     try:
         subscribers = await entity_service.get_items(
@@ -264,12 +263,12 @@ async def get_subscribers():
             entity_model=ENTITY_NAME,
             entity_version=ENTITY_VERSION,
         )
-        return jsonify({"subscribers": [sub.get("email") for sub in subscribers if sub.get("email")]}, 200)
+        return jsonify({"subscribers": [sub.get("email") for sub in subscribers if sub.get("email")]}), 200
     except Exception as e:
         logger.exception(f"Failed to get subscribers: {e}")
         return jsonify({"error": "Failed to retrieve subscribers"}), 500
 
-@app.route("/games/all", methods=["GET"])
+@routes_bp.route("/games/all", methods=["GET"])
 async def get_all_games():
     try:
         games = await entity_service.get_items(
@@ -282,7 +281,7 @@ async def get_all_games():
         logger.exception(f"Failed to get all games: {e}")
         return jsonify({"error": "Failed to retrieve games"}), 500
 
-@app.route("/games/<date>", methods=["GET"])
+@routes_bp.route("/games/<date>", methods=["GET"])
 async def get_games_by_date(date: str):
     try:
         datetime.strptime(date, "%Y-%m-%d")
@@ -313,33 +312,3 @@ async def get_games_by_date(date: str):
     except Exception as e:
         logger.exception(f"Failed to get games by date: {e}")
         return jsonify({"error": "Failed to retrieve games"}), 500
-
-async def daily_fetch_scheduler():
-    while True:
-        now = datetime.utcnow()
-        if now.hour == 18 and now.minute == 0:
-            date_str = now.strftime("%Y-%m-%d")
-            logger.info(f"Scheduler triggered fetch for {date_str}")
-            try:
-                await fetch_and_store_scores(date_str)
-                await notify_subscribers(date_str)
-                logger.info(f"Scheduled fetch and notify completed for {date_str}")
-            except Exception as e:
-                logger.exception(f"Scheduled fetch/notify failed: {e}")
-            await asyncio.sleep(61)
-        else:
-            await asyncio.sleep(10)
-
-@app.before_serving
-async def startup_tasks():
-    asyncio.create_task(daily_fetch_scheduler())
-    logger.info("Background scheduler started")
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s"
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

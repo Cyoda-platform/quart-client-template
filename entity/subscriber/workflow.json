@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for NBA score update system including subscriber and game processing",
+    "name": "nba_score_update_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Process subscriber entity data",
+            "end_state": "Subscriber_processed",
+            "end_state_description": "Subscriber entity processed",
+            "name": "process_subscriber_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Workflow orchestration for subscriber entity",
+                        "name": "process_subscriber"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Process game entity data",
+            "end_state": "Game_processed",
+            "end_state_description": "Game entity processed",
+            "name": "process_game_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Workflow orchestration for game entity",
+                        "name": "process_game"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Subscriber_processed",
+            "start_state_description": "Subscriber entity processed"
+        }
+    ]
+}

@@ -1,0 +1,42 @@
+{
+    "description": "Workflow managing subscriber onboarding and processing",
+    "name": "subscriber_onboarding_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initialize subscription process",
+            "end_state": "subscription_initialized",
+            "end_state_description": "Subscription has been initialized",
+            "name": "start_subscription",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Set subscription date/time if not present",
+                        "name": "process_set_subscribed_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Complete subscription processing",
+            "end_state": "subscription_completed",
+            "end_state_description": "Subscription process completed",
+            "name": "finalize_subscription",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Execute additional subscriber business logic",
+                        "name": "process_other_subscriber_logic"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "subscription_initialized",
+            "start_state_description": "Subscription has been initialized"
+        }
+    ]
+}

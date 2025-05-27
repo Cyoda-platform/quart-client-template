@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for managing pet detail fetching and favoriting with validation and timestamping.",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch detailed data for a pet from external API",
+            "end_state": "Pet_detail_fetched",
+            "end_state_description": "Pet detail has been fetched",
+            "name": "fetch_pet_detail",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pet_detail"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Update timestamp after fetching pet detail",
+            "end_state": "Pet_detail_processed",
+            "end_state_description": "Pet detail timestamp updated",
+            "name": "update_detail_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_timestamps"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_detail_fetched",
+            "start_state_description": "Pet detail has been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Mark pet as favorite with validation and timestamp",
+            "end_state": "Pet_favorited",
+            "end_state_description": "Pet has been favorited",
+            "name": "favorite_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_favorite_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_detail_processed",
+            "start_state_description": "Pet detail timestamp updated"
+        }
+    ]
+}

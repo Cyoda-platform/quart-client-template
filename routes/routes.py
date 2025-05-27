@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import List, Dict, Optional
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class EmailBody:
@@ -50,9 +49,9 @@ class Storage:
         async with self._lock:
             all_games = []
             for date_str, games in self._games_by_date.items():
-                if start_date and date_str < start_date: 
+                if start_date and date_str < start_date:
                     continue
-                if end_date and date_str > end_date: 
+                if end_date and date_str > end_date:
                     continue
                 all_games.extend(games)
             return all_games
@@ -91,10 +90,8 @@ async def get_subscribers_list() -> List[str]:
 
 # Workflow function applied to subscriber entity before persistence
 async def process_subscriber(entity: Dict) -> Dict:
-    # Add created_at timestamp if missing
     if "created_at" not in entity:
         entity["created_at"] = datetime.utcnow().isoformat() + "Z"
-    # Normalize email: strip whitespace and lowercase
     email = entity.get("email")
     if isinstance(email, str):
         entity["email"] = email.strip().lower()
@@ -111,7 +108,6 @@ async def process_score_request(entity: Dict) -> Dict:
         logger.error("Score request entity missing valid date")
         return entity
 
-    # Validate date format strictly
     try:
         datetime.strptime(date, "%Y-%m-%d")
     except Exception:
@@ -137,7 +133,6 @@ async def process_score_request(entity: Dict) -> Dict:
         entity["error"] = str(e)
         return entity
 
-    # Store games locally
     try:
         await storage.store_games(date, games)
     except Exception as e:
@@ -146,14 +141,11 @@ async def process_score_request(entity: Dict) -> Dict:
         entity["error"] = f"Storage error: {e}"
         return entity
 
-    # Fetch subscribers list
     subscribers = await get_subscribers_list()
     num_subscribers = len(subscribers)
 
-    # Build HTML summary once
     summary_html = build_html_summary(date, games) if num_subscribers > 0 else ""
 
-    # Send emails concurrently, but handle exceptions individually to avoid cancellation
     async def safe_send(email):
         try:
             await send_email(email, f"NBA Scores for {date}", summary_html)
@@ -169,11 +161,10 @@ async def process_score_request(entity: Dict) -> Dict:
     entity["processed_at"] = datetime.utcnow().isoformat() + "Z"
     return entity
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(EmailBody)
 async def subscribe(data: EmailBody):
     try:
-        # Check if email already subscribed
         email_lower = data.email.strip().lower()
         condition = {
             "cyoda": {
@@ -198,7 +189,6 @@ async def subscribe(data: EmailBody):
         if existing_items:
             return jsonify({"message": "Email already subscribed", "email": email_lower}), 200
 
-        # Add subscriber entity without workflow
         entity = {"email": email_lower}
         subscriber_id = await entity_service.add_item(
             token=cyoda_auth_service,
@@ -211,7 +201,7 @@ async def subscribe(data: EmailBody):
         logger.exception(f"Subscription failed: {e}")
         return jsonify({"message": "Subscription failed", "email": data.email}), 500
 
-@app.route("/unsubscribe", methods=["POST"])
+@routes_bp.route("/unsubscribe", methods=["POST"])
 @validate_request(EmailBody)
 async def unsubscribe(data: EmailBody):
     try:
@@ -239,7 +229,6 @@ async def unsubscribe(data: EmailBody):
         if not items:
             return jsonify({"message": "Email not found in subscribers", "email": email_lower}), 404
 
-        # Delete all matching items
         for item in items:
             tech_id = item.get("id") or item.get("technical_id") or item.get("technicalId")
             if tech_id is None:
@@ -257,7 +246,7 @@ async def unsubscribe(data: EmailBody):
         logger.exception(f"Unsubscribe failed: {e}")
         return jsonify({"message": "Unsubscribe failed", "email": data.email}), 500
 
-@app.route("/subscribers", methods=["GET"])
+@routes_bp.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     try:
         items = await entity_service.get_items(
@@ -271,17 +260,15 @@ async def get_subscribers():
         logger.exception(f"Failed to fetch subscribers: {e}")
         return jsonify({"subscribers": []}), 500
 
-@app.route("/scores/fetch", methods=["POST"])
+@routes_bp.route("/scores/fetch", methods=["POST"])
 @validate_request(DateBody)
 async def fetch_scores(data: DateBody):
     try:
-        # Validate date format; if invalid, reject early
         datetime.strptime(data.date, "%Y-%m-%d")
     except ValueError:
         return jsonify({"message": "Invalid date format, expected YYYY-MM-DD"}), 400
 
     try:
-        # Add a score_request entity to trigger workflow asynchronously
         entity = {"date": data.date}
         score_request_id = await entity_service.add_item(
             token=cyoda_auth_service,
@@ -294,7 +281,7 @@ async def fetch_scores(data: DateBody):
         logger.exception(f"Failed to initiate score fetch: {e}")
         return jsonify({"message": "Failed to initiate score fetch", "date": data.date}), 500
 
-@app.route("/games/all", methods=["GET"])
+@routes_bp.route("/games/all", methods=["GET"])
 async def get_all_games():
     try:
         page = int(request.args.get("page", 1))
@@ -311,7 +298,7 @@ async def get_all_games():
         logger.exception(f"Failed to fetch all games: {e}")
         return jsonify({"games": [], "message": "Error fetching games"}), 500
 
-@app.route("/games/<string:date>", methods=["GET"])
+@routes_bp.route("/games/<string:date>", methods=["GET"])
 async def get_games_by_date(date):
     try:
         datetime.strptime(date, "%Y-%m-%d")
@@ -323,8 +310,3 @@ async def get_games_by_date(date):
     except Exception as e:
         logger.exception(f"Failed to fetch games for date {date}: {e}")
         return jsonify({"date": date, "games": [], "message": "Error fetching games"}), 500
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

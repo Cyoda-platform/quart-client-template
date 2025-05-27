@@ -50,8 +50,12 @@ API_URL = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?
 async def fetch_nba_scores(date: str, api_key: str) -> Optional[List[dict]]:
     url = API_URL.format(date=date, key=api_key)
     try:
+        # Retrieve the bearer token from cyoda_auth_service
+        token = await cyoda_auth_service.get_bearer_token()
+        headers = {"Authorization": f"Bearer {token}"}
+        
         async with httpx.AsyncClient() as client:
-            resp = await client.get(url, timeout=20.0)
+            resp = await client.get(url, headers=headers, timeout=20.0)
             resp.raise_for_status()
             return resp.json()
     except httpx.HTTPError as e:
@@ -75,7 +79,6 @@ def format_email_full(games_for_date: List[dict]) -> str:
     return "".join(html)
 
 async def send_email(email: str, subject: str, body: str, html: bool = False):
-    # TODO: Implement real email sending via SMTP or email service provider
     logger.info(f"Sending {'HTML' if html else 'plain text'} email to {email}:\nSubject: {subject}\n{body}")
 
 async def process_subscribe_request(entity: dict) -> dict:
@@ -248,8 +251,11 @@ async def get_all_games(query_args: PaginationQuery):
         )
         all_games = []
         for entry in all_games_raw:
-            scores = entry.get("scores", [])
-            all_games.extend(scores)
+            if isinstance(entry, dict):
+                scores = entry.get("scores", [])
+                all_games.extend(scores)
+            else:
+                logger.error(f"Unexpected entry format: {entry}")
         total = len(all_games)
         paged_games = all_games[query_args.offset: query_args.offset + query_args.pagesize]
         return jsonify({

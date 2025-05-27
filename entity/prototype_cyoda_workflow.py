@@ -1,6 +1,69 @@
-Certainly! I've updated the code to include the new `workflow` parameter in the `entity_service.add_item` calls. Also, I've implemented the required workflow function `process_subscriber` as an async function with the proper naming convention and signature.
+Understood! The goal is to offload as much async and side-effect logic from the endpoint handlers into the workflow functions (`process_{entity_name}`), which are invoked asynchronously just before persisting the entity.
 
-Here is the complete updated code for `entity/prototype_cyoda.py` with the requested changes:
+**Key points:**
+- Workflow functions are async and get the entity dict as input.
+- They can modify the entity in-place.
+- They can call `entity_service.get_items` or add entities of other models, but cannot modify the same entity model (to avoid recursion).
+- They are the right place for async tasks (e.g. sending emails, fetching external data).
+- Endpoints should become very thin, mainly validating input and calling `add_item` with the appropriate workflow.
+
+---
+
+### What async logic do we have and can move?
+
+1. In `/subscribe` endpoint:
+   - Currently mostly just checks for existing email and adds the subscriber.
+   - The normalization and timestamp are already moved into `process_subscriber`.
+   - Sending confirmation emails could be added to workflow but sending email is not currently done in subscribe endpoint, so no action here.
+
+2. In `/scores/fetch` endpoint:
+   - It fetches scores from external API.
+   - Stores games in local storage.
+   - Retrieves subscribers list.
+   - Sends notification emails to subscribers.
+
+This is a perfect candidate to move into a workflow function, e.g. a new entity `score_fetch` or `score_request` entity, with workflow `process_score_request`.
+
+3. In `/unsubscribe` endpoint:
+   - Deletes subscriber entities by email.
+   - This is already a delete operation, no add_item call, so no workflow possible here.
+
+4. Other endpoints:
+   - Mostly get/read operations, no add_item calls.
+
+---
+
+### Proposed changes:
+
+- Introduce a new entity model, e.g. `score_request` (lowercase underscore).
+- When `/scores/fetch` is called, we add a new `score_request` entity with the date.
+- The workflow `process_score_request` will:
+  - Fetch NBA scores from external API.
+  - Store the games in local storage or, if preferred, create a new entity for games (would require more extensive changes, so let's keep storage as-is).
+  - Get subscribers.
+  - Send notification emails.
+
+This moves the async heavy lifting to the workflow.
+
+---
+
+### Changes to endpoints:
+
+- `/subscribe` stays mostly as-is, except uses workflow for normalization, timestamp (already done).
+- `/scores/fetch` no longer runs fetch in endpoint; instead, it adds a `score_request` entity with `date` and workflow `process_score_request`. The endpoint just acknowledges the request.
+- We should keep a way to check status of score fetches or games stored via other GET endpoints.
+
+---
+
+### Implementation plan:
+
+- Add `process_score_request` async workflow function.
+- Modify `/scores/fetch` to just add the entity with workflow.
+- Keep `process_subscriber` as is.
+
+---
+
+### Updated complete code with changes:
 
 ```python
 import asyncio
@@ -36,18 +99,60 @@ class DateBody:
     date: str
 
 ENTITY_NAME = "subscriber"  # entity name underscore lowercase
+SCORE_REQUEST_ENTITY = "score_request"
 
-# Workflow function applied to the entity asynchronously before persistence.
-# This function takes this entity data as the only argument.
-# You can change entity state inside this function, get and add entities with a different entity_model 
-# (but cannot add/update/delete entity of the same entity_model - it will cause infinite recursion)
+# Workflow function for subscriber entity
 async def process_subscriber(entity: Dict) -> Dict:
-    # Example workflow logic:
-    # Here you can modify the entity before it is persisted.
-    # For example, you can add a timestamp or normalize email.
+    # Add creation timestamp and normalize email
     entity.setdefault("created_at", datetime.utcnow().isoformat() + "Z")
     entity["email"] = entity.get("email", "").strip().lower()
-    # Return the potentially modified entity
+    return entity
+
+# Workflow function for score_request entity
+async def process_score_request(entity: Dict) -> Dict:
+    """
+    Workflow that runs before persisting a score_request entity.
+    Fetches NBA scores for the date in the entity,
+    stores them in local storage,
+    sends notification emails to subscribers.
+    """
+    date = entity.get("date")
+    if not date:
+        logger.error("No date provided in score_request entity")
+        return entity
+
+    API_KEY = "test"
+    NBA_API_URL_TEMPLATE = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key=" + API_KEY
+
+    try:
+        url = NBA_API_URL_TEMPLATE.format(date=date)
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, timeout=20)
+            resp.raise_for_status()
+            games = resp.json()
+    except Exception as e:
+        logger.exception(f"Failed to fetch scores for {date}: {e}")
+        entity["fetch_status"] = "failed"
+        entity["error"] = str(e)
+        return entity
+
+    # Store games in local storage (as before)
+    await storage.store_games(date, games)
+
+    # Get subscribers
+    subscribers = await get_subscribers_list()
+    if subscribers:
+        summary_html = build_html_summary(date, games)
+        # Send notification emails concurrently
+        await asyncio.gather(*(send_email(email, f"NBA Scores for {date}", summary_html) for email in subscribers))
+        entity["notifications_sent"] = len(subscribers)
+    else:
+        entity["notifications_sent"] = 0
+
+    entity["games_stored"] = len(games)
+    entity["fetch_status"] = "success"
+    entity["processed_at"] = datetime.utcnow().isoformat() + "Z"
+
     return entity
 
 # In-memory mock persistence for games still used as no replacement instructions for games
@@ -76,9 +181,6 @@ class Storage:
 
 storage = Storage()
 
-API_KEY = "test"
-NBA_API_URL_TEMPLATE = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key=" + API_KEY
-
 async def send_email(to_email: str, subject: str, html_content: str):
     logger.info(f"Sending email to {to_email} with subject '{subject}'")
     # TODO: Implement real email sending
@@ -96,23 +198,6 @@ def build_html_summary(date: str, games: List[Dict]) -> str:
     html += "</ul>"
     return html
 
-async def process_scores_fetch(date: str):
-    try:
-        url = NBA_API_URL_TEMPLATE.format(date=date)
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(url, timeout=20)
-            resp.raise_for_status()
-            games = resp.json()
-        await storage.store_games(date, games)
-        subscribers = await get_subscribers_list()
-        if subscribers:
-            summary_html = build_html_summary(date, games)
-            await asyncio.gather(*(send_email(email, f"NBA Scores for {date}", summary_html) for email in subscribers))
-        return {"gamesStored": len(games), "notificationsSent": len(subscribers)}
-    except Exception as e:
-        logger.exception(e)
-        raise
-
 async def get_subscribers_list() -> List[str]:
     try:
         items = await entity_service.get_items(
@@ -129,9 +214,7 @@ async def get_subscribers_list() -> List[str]:
 @app.route("/subscribe", methods=["POST"])
 @validate_request(EmailBody)
 async def subscribe(data: EmailBody):
-    # Instead of local storage, add subscriber via entity_service
     try:
-        # Check if email already exists
         condition = {
             "cyoda": {
                 "type": "group",
@@ -171,7 +254,6 @@ async def subscribe(data: EmailBody):
 @validate_request(EmailBody)
 async def unsubscribe(data: EmailBody):
     try:
-        # Find subscriber by email
         condition = {
             "cyoda": {
                 "type": "group",
@@ -194,7 +276,6 @@ async def unsubscribe(data: EmailBody):
         )
         if not items:
             return jsonify({"message": "Email not found in subscribers", "email": data.email}), 404
-        # Delete all matching subscribers (usually one)
         for item in items:
             tech_id = item.get("id") or item.get("technical_id") or item.get("technicalId")
             if tech_id is None:
@@ -232,11 +313,20 @@ async def fetch_scores(data: DateBody):
         datetime.strptime(data.date, "%Y-%m-%d")
     except ValueError:
         return jsonify({"message": "Invalid date format, expected YYYY-MM-DD"}), 400
+
     try:
-        result = await process_scores_fetch(data.date)
-        return jsonify({"message": "Scores fetched and notifications sent", "date": data.date, **result}), 200
-    except Exception:
-        return jsonify({"message": "Failed to fetch or process scores"}), 500
+        # Instead of fetching here, just add a score_request entity with workflow
+        id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model=SCORE_REQUEST_ENTITY,
+            entity_version=ENTITY_VERSION,
+            entity={"date": data.date},
+            workflow=process_score_request
+        )
+        return jsonify({"message": "Score fetch request accepted", "id": id, "date": data.date}), 202
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"message": "Failed to initiate score fetch", "date": data.date}), 500
 
 @app.route("/games/all", methods=["GET"])
 async def get_all_games():
@@ -265,10 +355,23 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added the async function `process_subscriber(entity: Dict) -> Dict` which:
-  - Adds a `created_at` timestamp if missing.
-  - Normalizes the email to lowercase and trims whitespace.
-- Updated the `entity_service.add_item` call in `/subscribe` route to include `workflow=process_subscriber` as an argument.
+---
 
-If you want me to add workflow to other `add_item` calls (if any), or extend the workflow logic, please let me know!
+### Explanation:
+
+- **`process_subscriber`**: normalizes and timestamps subscriber entity before persist.
+- **`process_score_request`**: does all async work related to fetching scores and sending emails right before persisting the `score_request` entity.
+- `/scores/fetch` endpoint now only adds a `score_request` entity with the date and workflow. The caller gets an immediate 202 Accepted response.
+- Storage for games and email sending remain unchanged.
+- Other endpoints remain thin.
+
+---
+
+If you want, we can also:
+
+- Add a GET endpoint to check `score_request` entities and their status.
+- Move game storage into entities rather than local in-memory storage.
+
+But per your instructions, this is the robust approach to move async logic to workflow functions and keep controllers lean.
+
+Let me know if you want me to proceed with those additional improvements!

@@ -1,0 +1,24 @@
+{
+    "description": "Workflow for processing subscriber entity states and transitions",
+    "name": "subscriber_entity_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Normalize subscriber email to lowercase",
+            "end_state": "processed",
+            "end_state_description": "Subscriber email normalized and processed",
+            "name": "normalize_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

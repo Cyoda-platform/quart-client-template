@@ -3,8 +3,9 @@ import asyncio
 import logging
 from datetime import datetime
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request, validate_querystring
+
 import httpx
 
 from app_init.app_init import BeanFactory
@@ -17,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class Subscriber:
@@ -178,7 +178,7 @@ async def process_game(entity: dict) -> dict:
     return entity
 
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(Subscriber)
 async def subscribe(data: Subscriber):
     exists = await check_subscriber_exists(data.email)
@@ -199,13 +199,13 @@ async def subscribe(data: Subscriber):
     return jsonify({"message": "Subscription successful", "email": data.email}), 201
 
 
-@app.route("/subscribers", methods=["GET"])
+@routes_bp.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     emails = await list_subscribers_emails()
     return jsonify({"subscribers": emails})
 
 
-@app.route("/fetch-scores", methods=["POST"])
+@routes_bp.route("/fetch-scores", methods=["POST"])
 @validate_request(FetchScores)
 async def fetch_scores(data: FetchScores):
     try:
@@ -227,8 +227,8 @@ async def fetch_scores(data: FetchScores):
     return jsonify({"message": f"Scores fetch started for {data.date}"}), 202
 
 
+@routes_bp.route("/games/all", methods=["GET"])
 @validate_querystring(GamesQuery)
-@app.route("/games/all", methods=["GET"])
 async def get_all_games():
     page = request.args.get("page", default=1, type=int)
     limit = request.args.get("limit", default=50, type=int)
@@ -261,7 +261,7 @@ async def get_all_games():
     })
 
 
-@app.route("/games/<date>", methods=["GET"])
+@routes_bp.route("/games/<date>", methods=["GET"])
 async def get_games_by_date(date):
     try:
         datetime.strptime(date, "%Y-%m-%d")
@@ -297,10 +297,3 @@ async def get_games_by_date(date):
         return jsonify({"message": "Failed to retrieve games"}), 500
 
     return jsonify({"date": date, "games": games})
-
-
-if __name__ == '__main__':
-    import logging
-
-    logging.basicConfig(level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

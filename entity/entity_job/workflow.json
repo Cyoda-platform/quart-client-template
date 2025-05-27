@@ -1,0 +1,91 @@
+{
+    "description": "Workflow to fetch NBA scores, store them, and notify subscribers",
+    "name": "nba_scores_fetch_and_notify_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the job",
+            "end_state": "fetch_games",
+            "end_state_description": "Fetching NBA games from external API",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_fetch_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Delete existing games for the date",
+            "end_state": "store_games",
+            "end_state_description": "Storing fetched games",
+            "name": "delete_existing_games",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_delete_existing_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "fetch_games",
+            "start_state_description": "Fetched NBA games"
+        },
+        {
+            "automated": true,
+            "description": "Store the fetched games locally",
+            "end_state": "fetch_subscribers",
+            "end_state_description": "Fetching subscribers for notification",
+            "name": "store_fetched_games",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_store_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "store_games",
+            "start_state_description": "Deleted existing games"
+        },
+        {
+            "automated": true,
+            "description": "Fetch subscribers to notify",
+            "end_state": "send_notifications",
+            "end_state_description": "Sending notifications to subscribers",
+            "name": "fetch_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_fetch_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "fetch_subscribers",
+            "start_state_description": "Stored games"
+        },
+        {
+            "automated": true,
+            "description": "Send email notifications to subscribers",
+            "end_state": "completed",
+            "end_state_description": "Notifications sent and job completed",
+            "name": "send_notifications",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_send_notifications"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "send_notifications",
+            "start_state_description": "Subscribers fetched"
+        }
+    ]
+}

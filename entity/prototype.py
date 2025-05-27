@@ -48,9 +48,12 @@ async def fetch_scores_from_external_api(date: str) -> List[Dict]:
 
 async def send_email_to_subscribers(date: str, games: List[Dict]):
     summary_lines = [f"{g.get('HomeTeam','N/A')} {g.get('HomeTeamScore','?')} - {g.get('AwayTeam','N/A')} {g.get('AwayTeamScore','?')}" for g in games]
-    summary = f"NBA Scores for {date}:\n" + "\n".join(summary_lines)
+    summary = f"NBA Scores for {date}:
+" + "
+".join(summary_lines)
     for email in _subscribers:
-        logger.info(f"Sending email to {email}:\n{summary}")  # TODO: Implement real email sending
+        logger.info(f"Sending email to {email}:
+{summary}")  # TODO: Implement real email sending
 
 async def process_fetch_store_notify(job_id: str, date: str):
     logger.info(f"Job {job_id}: Starting fetch-store-notify for date {date}")
@@ -94,8 +97,8 @@ async def subscribe(data: SubscribeParams):
 async def get_subscribers():
     return jsonify({"subscribers":_subscribers})
 
-@validate_querystring(GamesAllQuery)  # workaround: validation first for GET
 @app.route("/games/all", methods=["GET"])
+@validate_querystring(GamesAllQuery)  # workaround: validation first for GET
 async def get_all_games(query: GamesAllQuery):
     page = query.page
     limit = query.limit

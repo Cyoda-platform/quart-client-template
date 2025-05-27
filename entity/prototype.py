@@ -25,7 +25,9 @@ class UnsubscribeRequest:
 
 @dataclass
 class FetchRequest:
-    date: str
+    api_key: str
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
 
 @dataclass
 class PaginationQuery:
@@ -36,11 +38,10 @@ class PaginationQuery:
 subscribers: Dict[str, str] = {}
 games: Dict[str, List[Dict]] = {}
 
-API_KEY = "test"
 API_URL = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key={key}"
 
-async def fetch_nba_scores(date: str) -> Optional[List[Dict]]:
-    url = API_URL.format(date=date, key=API_KEY)
+async def fetch_nba_scores(date: str, api_key: str) -> Optional[List[Dict]]:
+    url = API_URL.format(date=date, key=api_key)
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.get(url, timeout=20.0)
@@ -51,10 +52,13 @@ async def fetch_nba_scores(date: str) -> Optional[List[Dict]]:
         return None
 
 def format_email_summary(games_for_date: List[Dict]) -> str:
-    lines = [f"NBA Scores Summary for {games_for_date[0]['Day']}:\n"] if games_for_date else ["NBA Scores Summary:\n"]
+    lines = [f"NBA Scores Summary for {games_for_date[0]['Day']}:
+"] if games_for_date else ["NBA Scores Summary:
+"]
     for g in games_for_date:
         lines.append(f"{g['AwayTeam']} @ {g['HomeTeam']} - {g['AwayTeamScore']} : {g['HomeTeamScore']}")
-    return "\n".join(lines)
+    return "
+".join(lines)
 
 def format_email_full(games_for_date: List[Dict]) -> str:
     html = [f"<h1>NBA Scores for {games_for_date[0]['Day']}</h1><ul>"] if games_for_date else ["<h1>NBA Scores</h1><ul>"]
@@ -68,11 +72,13 @@ def format_email_full(games_for_date: List[Dict]) -> str:
 
 async def send_email(email: str, subject: str, body: str, html: bool = False):
     # TODO: Implement real email sending using SMTP or email service provider
-    logger.info(f"Sending {'HTML' if html else 'plain text'} email to {email}:\nSubject: {subject}\n{body}")
+    logger.info(f"Sending {'HTML' if html else 'plain text'} email to {email}:
+Subject: {subject}
+{body}")
 
-async def process_fetch_and_notify(date: str):
+async def process_fetch_and_notify_for_date(date: str, api_key: str):
     logger.info(f"Starting fetch and notify for date {date}")
-    scores = await fetch_nba_scores(date)
+    scores = await fetch_nba_scores(date, api_key)
     if scores is None:
         logger.error(f"Failed to fetch data for {date}, aborting notification.")
         return
@@ -85,6 +91,37 @@ async def process_fetch_and_notify(date: str):
             body = format_email_full(scores)
             await send_email(email, f"NBA Scores Full Listing for {date}", body, html=True)
     logger.info(f"Completed fetch and notify for date {date}")
+
+async def process_fetch_and_notify(data: FetchRequest):
+    try:
+        if data.start_date:
+            start_dt = datetime.datetime.strptime(data.start_date, "%Y-%m-%d")
+        else:
+            start_dt = datetime.datetime.strptime(data.end_date, "%Y-%m-%d") if data.end_date else None
+
+        if data.end_date:
+            end_dt = datetime.datetime.strptime(data.end_date, "%Y-%m-%d")
+        else:
+            end_dt = start_dt
+
+        if start_dt is None and end_dt is None:
+            logger.error("No valid date provided for fetching.")
+            return
+
+        if start_dt > end_dt:
+            logger.error("start_date must be before or equal to end_date.")
+            return
+
+        current_date = start_dt
+        tasks = []
+        while current_date <= end_dt:
+            date_str = current_date.strftime("%Y-%m-%d")
+            tasks.append(process_fetch_and_notify_for_date(date_str, data.api_key))
+            current_date += datetime.timedelta(days=1)
+
+        await asyncio.gather(*tasks)
+    except Exception as e:
+        logger.exception(f"Exception during fetch and notify: {e}")
 
 @app.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)  # validation last for POST (workaround for quart-schema issue)
@@ -135,11 +172,21 @@ async def get_games_by_date(date):
 @app.route("/games/fetch", methods=["POST"])
 @validate_request(FetchRequest)  # validation last for POST
 async def fetch_scores(data: FetchRequest):
-    try:
-        datetime.datetime.strptime(data.date, "%Y-%m-%d")
-    except ValueError:
-        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
-    asyncio.create_task(process_fetch_and_notify(data.date))
+    # Validate date formats and range
+    if data.start_date:
+        try:
+            datetime.datetime.strptime(data.start_date, "%Y-%m-%d")
+        except ValueError:
+            return jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}), 400
+    if data.end_date:
+        try:
+            datetime.datetime.strptime(data.end_date, "%Y-%m-%d")
+        except ValueError:
+            return jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}), 400
+    if not data.start_date and not data.end_date:
+        return jsonify({"error": "At least one of start_date or end_date must be provided"}), 400
+
+    asyncio.create_task(process_fetch_and_notify(data))
     return jsonify({"message": "Scores fetch started, notifications will be sent"}), 202
 
 if __name__ == "__main__":

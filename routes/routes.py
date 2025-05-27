@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class SubscribeRequest:
@@ -161,7 +160,7 @@ async def process_fetch_request(entity: dict) -> dict:
     entity["status"] = "completed"
     return entity
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     if data.notificationType.lower() not in ("summary", "full"):
@@ -182,7 +181,7 @@ async def subscribe(data: SubscribeRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to add subscription"}), 500
 
-@app.route("/subscribe", methods=["DELETE"])
+@routes_bp.route("/subscribe", methods=["DELETE"])
 @validate_request(UnsubscribeRequest)
 async def unsubscribe(data: UnsubscribeRequest):
     try:
@@ -218,7 +217,7 @@ async def unsubscribe(data: UnsubscribeRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to remove subscription"}), 500
 
-@app.route("/subscribers", methods=["GET"])
+@routes_bp.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     try:
         subscribers_list = await entity_service.get_items(
@@ -237,8 +236,8 @@ async def get_subscribers():
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve subscribers"}), 500
 
+@routes_bp.route("/games/all", methods=["GET"])
 @validate_querystring(PaginationQuery)
-@app.route("/games/all", methods=["GET"])
 async def get_all_games(query_args: PaginationQuery):
     try:
         all_games_raw = await entity_service.get_items(
@@ -262,7 +261,7 @@ async def get_all_games(query_args: PaginationQuery):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve games"}), 500
 
-@app.route("/games/<date>", methods=["GET"])
+@routes_bp.route("/games/<date>", methods=["GET"])
 async def get_games_by_date(date):
     try:
         datetime.datetime.strptime(date, "%Y-%m-%d")
@@ -298,7 +297,7 @@ async def get_games_by_date(date):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve games for date"}), 500
 
-@app.route("/games/fetch", methods=["POST"])
+@routes_bp.route("/games/fetch", methods=["POST"])
 @validate_request(FetchRequest)
 async def fetch_scores(data: FetchRequest):
     entity_data = {
@@ -317,8 +316,3 @@ async def fetch_scores(data: FetchRequest):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to start fetch process"}), 500
-
-if __name__ == "__main__":
-    import logging
-    logging.basicConfig(level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

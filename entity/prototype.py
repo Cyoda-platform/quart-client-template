@@ -99,9 +99,9 @@ async def get_subscribers():
 
 @app.route("/games/all", methods=["GET"])
 @validate_querystring(GamesAllQuery)  # workaround: validation first for GET
-async def get_all_games(query: GamesAllQuery):
-    page = query.page
-    limit = query.limit
+async def get_all_games(query_args: GamesAllQuery):
+    page = query_args.page
+    limit = query_args.limit
     all_games = [g for games in _games_by_date.values() for g in games]
     total = len(all_games)
     start = (page-1)*limit

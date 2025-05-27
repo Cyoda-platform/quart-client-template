@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to process subscriber email normalization and send welcome email",
+    "name": "subscriber_welcome_email_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Normalize subscriber email address",
+            "end_state": "Email_normalized",
+            "end_state_description": "Subscriber email has been normalized",
+            "name": "normalize_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_subscriber"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Send welcome email to subscriber",
+            "end_state": "Welcome_email_sent",
+            "end_state_description": "Welcome email has been sent to subscriber",
+            "name": "send_welcome_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_welcome_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Email_normalized",
+            "start_state_description": "Subscriber email has been normalized"
+        }
+    ]
+}

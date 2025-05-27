@@ -4,9 +4,8 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
-import httpx
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +17,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class SubscribeRequest:
@@ -153,7 +151,7 @@ async def process_subscribers(entity: Dict) -> Dict:
         asyncio.create_task(send_welcome())
     return entity
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     email = data.email
@@ -174,7 +172,7 @@ async def subscribe(data: SubscribeRequest):
         logger.exception(e)
         return jsonify({"message": "Failed to subscribe"}), 500
 
-@app.route("/unsubscribe", methods=["POST"])
+@routes_bp.route("/unsubscribe", methods=["POST"])
 @validate_request(UnsubscribeRequest)
 async def unsubscribe(data: UnsubscribeRequest):
     email = data.email
@@ -216,7 +214,7 @@ async def unsubscribe(data: UnsubscribeRequest):
         logger.exception(e)
         return jsonify({"message": "Failed to unsubscribe"}), 500
 
-@app.route("/subscribers", methods=["GET"])
+@routes_bp.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     try:
         items = await entity_service.get_items(
@@ -229,7 +227,7 @@ async def get_subscribers():
         logger.exception(e)
         return jsonify({"message": "Failed to fetch subscribers"}), 500
 
-@app.route("/fetch-games", methods=["POST"])
+@routes_bp.route("/fetch-games", methods=["POST"])
 async def fetch_games():
     # Add a new games_fetch_job entity to trigger the workflow
     job_entity = {
@@ -247,8 +245,8 @@ async def fetch_games():
         logger.exception(e)
         return jsonify({"message": "Failed to start games fetch job"}), 500
 
+@routes_bp.route("/games", methods=["GET"])
 @validate_querystring(GamesQuery)
-@app.route("/games", methods=["GET"])
 async def get_games():
     date_filter = request.args.get("date")
     team_filter = request.args.get("team")
@@ -267,7 +265,3 @@ async def get_games():
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Failed to fetch games"}), 500
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

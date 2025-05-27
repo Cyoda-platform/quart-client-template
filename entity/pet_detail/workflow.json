@@ -1,0 +1,24 @@
+{
+    "description": "Workflow to fetch and update pet details from Petstore API",
+    "name": "pet_detail_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch pet details from external Petstore API and update entity",
+            "end_state": "PetDetailFetched",
+            "end_state_description": "Pet detail fetched and updated in entity",
+            "name": "fetch_pet_detail",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_detail"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

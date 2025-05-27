@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to process NBA game scores, validate data, fetch subscribers, and notify them",
+    "name": "nba_scores_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing of NBA game scores entity",
+            "end_state": "validated",
+            "end_state_description": "Entity data validated",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch subscribers emails for notification",
+            "end_state": "subscribers_fetched",
+            "end_state_description": "Subscribers fetched",
+            "name": "fetch_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "validated",
+            "start_state_description": "Entity data validated"
+        },
+        {
+            "automated": true,
+            "description": "Notify subscribers with NBA scores",
+            "end_state": "notified",
+            "end_state_description": "Subscribers notified",
+            "name": "notify_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_notify_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "subscribers_fetched",
+            "start_state_description": "Subscribers fetched"
+        }
+    ]
+}

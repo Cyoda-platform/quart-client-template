@@ -1,20 +1,18 @@
- from dataclasses import dataclass
+from dataclasses import dataclass
 import logging
 from datetime import datetime
 
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 import httpx
 
-from app_init.app_init import entity_service
-from common.config.config import ENTITY_VERSION
 from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -49,7 +47,7 @@ async def process_entity_job(entity: dict):
 
     return entity
 
-@app.route("/hello", methods=["POST"])
+@routes_bp.route("/hello", methods=["POST"])
 @validate_request(HelloRequest)
 async def post_hello(data: HelloRequest):
     # Validate action explicitly
@@ -79,7 +77,7 @@ async def post_hello(data: HelloRequest):
 
     return jsonify({"job_id": job_id, "status": "processing"}), 202
 
-@app.route("/hello", methods=["GET"])
+@routes_bp.route("/hello", methods=["GET"])
 async def get_hello():
     try:
         all_jobs = await entity_service.get_items(
@@ -100,6 +98,3 @@ async def get_hello():
     completed_jobs.sort(key=lambda x: x.get("requestedAt", ""), reverse=True)
     latest = completed_jobs[0]
     return jsonify({"message": latest["message"]})
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

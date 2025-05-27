@@ -1,0 +1,24 @@
+{
+    "description": "Workflow for fetching and processing pet data from Petstore API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pets from Petstore API",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets data fetched and stored in entity",
+            "name": "start_fetch_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates fetching pets and storing in entity",
+                        "name": "process_pet_fetch"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

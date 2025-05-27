@@ -1,0 +1,96 @@
+{
+    "description": "Workflow for managing pet fetching, storing, detailed fetching, storing and marking favorite.",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch pets from external API",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets have been fetched",
+            "name": "fetch_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Store fetched pets in entity state",
+            "end_state": "Pets_stored",
+            "end_state_description": "Pets have been stored",
+            "name": "store_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_store_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Fetch details for a specific pet",
+            "end_state": "Pet_details_fetched",
+            "end_state_description": "Pet details have been fetched",
+            "name": "fetch_pet_details",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pet_details"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_stored",
+            "start_state_description": "Pets have been stored"
+        },
+        {
+            "automated": true,
+            "description": "Store pet details in entity state",
+            "end_state": "Pet_details_stored",
+            "end_state_description": "Pet details have been stored",
+            "name": "store_pet_details",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_store_pet_details"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_details_fetched",
+            "start_state_description": "Pet details have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Mark pet as favorite",
+            "end_state": "Favorite_marked",
+            "end_state_description": "Pet marked as favorite",
+            "name": "mark_favorite",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_mark_favorite"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pet_details_stored",
+            "start_state_description": "Pet details have been stored"
+        }
+    ]
+}

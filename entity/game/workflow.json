@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to fetch NBA scores, persist details, and notify subscribers",
+    "name": "nba_scores_daily_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching NBA scores for a given date",
+            "end_state": "Scores_fetched",
+            "end_state_description": "NBA scores have been fetched",
+            "name": "start_fetch_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch NBA scores asynchronously from external API",
+                        "name": "process_fetch_scores"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Persist detailed game data after fetching scores",
+            "end_state": "Game_details_persisted",
+            "end_state_description": "Game details have been persisted",
+            "name": "persist_game_details",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Persist game details to storage",
+                        "name": "process_persist_game_details"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Scores_fetched",
+            "start_state_description": "NBA scores have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Send daily NBA score notifications to subscribers",
+            "end_state": "Subscribers_notified",
+            "end_state_description": "Subscribers have been notified via email",
+            "name": "notify_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Compose and send email notifications to subscribers",
+                        "name": "process_notify_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Game_details_persisted",
+            "start_state_description": "Game details have been persisted"
+        }
+    ]
+}

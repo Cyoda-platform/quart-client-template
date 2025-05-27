@@ -1,0 +1,21 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com"
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "away_score": 102,
+                "away_team": "Team B",
+                "date": "2024-06-01",
+                "home_score": 110,
+                "home_team": "Team A",
+                "status": "Final"
+            },
+            "entity_name": "game"
+        }
+    ]
+}

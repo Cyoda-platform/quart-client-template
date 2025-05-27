@@ -1,0 +1,47 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com",
+                "notificationtype": "summary"
+            },
+            "entity_name": "subscribe_request"
+        },
+        {
+            "entity_data_example": {
+                "email": "user@example.com"
+            },
+            "entity_name": "unsubscribe_request"
+        },
+        {
+            "entity_data_example": {
+                "api_key": "your_api_key_here",
+                "end_date": "2024-01-01",
+                "start_date": "2024-01-01"
+            },
+            "entity_name": "fetch_request"
+        },
+        {
+            "entity_data_example": {
+                "offset": 0,
+                "pagesize": 20
+            },
+            "entity_name": "pagination_query"
+        },
+        {
+            "entity_data_example": {
+                "awayScore": 105,
+                "awayTeam": "Team B",
+                "date": "2024-01-01",
+                "details": {
+                    "quarter": 4,
+                    "status": "Final",
+                    "timeRemaining": "0:00"
+                },
+                "homeScore": 110,
+                "homeTeam": "Team A"
+            },
+            "entity_name": "game"
+        }
+    ]
+}

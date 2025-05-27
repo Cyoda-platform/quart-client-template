@@ -1,0 +1,78 @@
+{
+    "description": "Workflow to fetch NBA scores, store games, get subscribers, and send notifications",
+    "name": "nba_scores_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch NBA game scores from external API",
+            "end_state": "Scores_fetched",
+            "end_state_description": "NBA scores have been fetched",
+            "name": "fetch_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_scores"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Store fetched NBA games locally",
+            "end_state": "Games_stored",
+            "end_state_description": "Fetched NBA games have been stored",
+            "name": "store_games",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_store_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Scores_fetched",
+            "start_state_description": "NBA scores have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Retrieve list of subscribers",
+            "end_state": "Subscribers_retrieved",
+            "end_state_description": "Subscriber list has been retrieved",
+            "name": "get_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_get_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Games_stored",
+            "start_state_description": "Fetched NBA games have been stored"
+        },
+        {
+            "automated": true,
+            "description": "Send email notifications to subscribers",
+            "end_state": "Notifications_sent",
+            "end_state_description": "Email notifications sent to subscribers",
+            "name": "send_notifications",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_notifications"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Subscribers_retrieved",
+            "start_state_description": "Subscriber list has been retrieved"
+        }
+    ]
+}

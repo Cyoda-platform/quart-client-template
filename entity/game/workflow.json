@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to fetch, store, and notify NBA game scores",
+    "name": "nba_scores_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch NBA scores from external API",
+            "end_state": "Scores_fetched",
+            "end_state_description": "NBA scores have been fetched",
+            "name": "fetch_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch NBA scores and update entity",
+                        "name": "process_fetch"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Store fetched NBA scores locally",
+            "end_state": "Scores_stored",
+            "end_state_description": "NBA scores have been stored",
+            "name": "store_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Store fetched scores in entity",
+                        "name": "process_store"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Scores_fetched",
+            "start_state_description": "NBA scores have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Send email notifications to subscribers",
+            "end_state": "Subscribers_notified",
+            "end_state_description": "Subscribers have been notified",
+            "name": "notify_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Send notification emails based on stored scores",
+                        "name": "process_notify"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Scores_stored",
+            "start_state_description": "NBA scores have been stored"
+        }
+    ]
+}

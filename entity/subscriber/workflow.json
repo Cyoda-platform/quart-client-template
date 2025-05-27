@@ -13,6 +13,10 @@
                     {
                         "description": "Handle user subscription processing",
                         "name": "process_subscribe"
+                    },
+                    {
+                        "description": "Process subscriber entity",
+                        "name": "process_subscriber"
                     }
                 ],
                 "schedule_transition_processors": []

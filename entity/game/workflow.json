@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to fetch NBA scores, add raw data as supplementary entities, and notify subscribers",
+    "name": "NBA_Scores_Fetch_Notify_Workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch NBA scores for the game date",
+            "end_state": "Scores_fetched",
+            "end_state_description": "NBA scores have been fetched and added to the entity",
+            "name": "fetch_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch NBA scores asynchronously and update entity",
+                        "name": "process_fetch_scores"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before fetching scores"
+        },
+        {
+            "automated": true,
+            "description": "Add raw NBA scores as supplementary entities",
+            "end_state": "Raw_scores_added",
+            "end_state_description": "Raw NBA scores added as supplementary entities",
+            "name": "add_raw_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Add raw scores entity externally",
+                        "name": "process_add_raw_scores"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Scores_fetched",
+            "start_state_description": "NBA scores have been fetched and added to the entity"
+        },
+        {
+            "automated": true,
+            "description": "Notify subscribers with the NBA scores summary",
+            "end_state": "Subscribers_notified",
+            "end_state_description": "Subscribers have been notified with the daily NBA scores",
+            "name": "notify_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Send email notifications to subscribers asynchronously",
+                        "name": "process_notify_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Raw_scores_added",
+            "start_state_description": "Raw NBA scores added as supplementary entities"
+        }
+    ]
+}

@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to fetch NBA game scores, store them, and notify subscribers",
+    "name": "nba_game_scores_fetch_and_notify_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the games fetch job workflow",
+            "end_state": "games_fetched",
+            "end_state_description": "NBA games have been fetched",
+            "name": "start_games_fetch_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add fetched games to storage",
+            "end_state": "games_added",
+            "end_state_description": "Fetched games have been added",
+            "name": "add_fetched_games",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "games_fetched",
+            "start_state_description": "NBA games have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Notify subscribers with relevant game scores",
+            "end_state": "notifications_sent",
+            "end_state_description": "Notifications sent to subscribers",
+            "name": "notify_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_notify_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "games_added",
+            "start_state_description": "Fetched games have been added"
+        }
+    ]
+}

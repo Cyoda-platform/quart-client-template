@@ -1,0 +1,35 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "date": "2024-04-26",
+                "games": [
+                    {
+                        "AwayTeam": "LAL",
+                        "AwayTeamScore": 102,
+                        "Channel": "ESPN",
+                        "DateTime": "2024-04-26T19:00:00",
+                        "Day": "2024-04-26T00:00:00",
+                        "GameID": 12345,
+                        "HomeTeam": "BOS",
+                        "HomeTeamScore": 110,
+                        "OverUnder": 215.0,
+                        "PointSpread": -5.5,
+                        "Quarter": 4,
+                        "Season": 2024,
+                        "SeasonType": 2,
+                        "Status": "Final",
+                        "TimeRemaining": "0.0"
+                    }
+                ]
+            },
+            "entity_name": "games_by_date"
+        },
+        {
+            "entity_data_example": {
+                "email": "user@example.com"
+            },
+            "entity_name": "subscriber_email"
+        }
+    ]
+}

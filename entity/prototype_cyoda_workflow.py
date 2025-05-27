@@ -1,85 +1,158 @@
-Certainly! I've updated your code so that all calls to `entity_service.add_item` include the new `workflow` parameter, and implemented the corresponding workflow function `process_subscriber` for the `subscriber` entity and `process_game` for the `game` entity.
+Understood. The goal is to move as much logic as possible from the endpoints into the corresponding workflow functions (`process_subscriber`, `process_game`), which are called asynchronously just before persisting the entity. This will clean up the controller code and ensure that related async background tasks or entity modifications are encapsulated in workflow functions.
 
-The workflow functions follow your specification: they accept the entity data as the only argument, can modify the entity state, and are async.
+---
 
-Here is the complete updated `entity/prototype_cyoda.py` file with the requested changes:
+### Key points & constraints:
+
+- Workflow function receives the entity data dict as the only argument.
+- Workflow can modify the entity state **directly** (e.g. `entity['attribute'] = value`).
+- Workflow can also **add/get** entities of **different** entity_model via `entity_service` async methods.
+- Workflow **cannot** add/update/delete entities of the **same** entity_model (would cause recursion).
+- Workflow can run async code, including fire-and-forget tasks.
+- All logic related to entity processing, enrichment, side-effects (like notifications) should be moved to workflow functions.
+- Controllers should only handle request validation and minimal orchestration like triggering the add_item with workflow.
+
+---
+
+### What to move?
+
+- For `subscriber` entity:
+  - Normalizing the email to lowercase (already done).
+  - Fire-and-forget sending notification emails? But email sending is currently done in `_send_notifications` after fetching games, so maybe not here.
+  - The subscription endpoint currently just saves the subscriber — no extra async work needed.
+
+- For `game` entity:
+  - Currently, after fetching games, the app deletes old games and adds new games with workflow.
+  - The `_fetch_process_and_notify` function:
+    - deletes old games for the date
+    - add new games (with workflow)
+    - calls `_send_notifications` to notify subscribers asynchronously.
+  - The notification sending is logically tied to the arrival of new games.
+  - We **cannot** delete games inside `process_game` workflow because that would be the same entity_model (game).
+  - But we **can** move the notification sending into the workflow for games because it relates to new games being persisted.
+  - However, the workflow runs per game entity, so sending notifications per game is inefficient and repetitive.
+  - Alternative: create a new entity to represent the "fetch job" or "game batch" to trigger notification sending once.
+  - Since we currently do not have such a batch entity, and the workflow runs per entity, best to move notification sending out of endpoint and into the workflow of `game` entity but only for the first game of the batch or when a special flag exists.
+
+**Given the constraints and the current code, the best approach is:**
+
+- Move **email normalization** and any subscriber-specific preprocessing into `process_subscriber`.
+- Move **status normalization** etc. into `process_game`.
+- Move the **notification sending** logic into `process_game` workflow but ensure it is only triggered once per batch, to avoid repeated sends per game entity.
+- The deletion of old games must remain in the endpoint (or helper before adding new games), since deleting the same entity_model in workflow is forbidden.
+- The fetch endpoint just triggers fetching and adding games (with workflows).
+- The notification sending is moved **inside** the `process_game` workflow but guarded so it runs once per batch.
+
+---
+
+### Implementation Notes
+
+To run notification sending once per batch in `process_game`, we can:
+
+- Use a shared in-memory flag or cache keyed by date to ensure notifications are only sent once per batch.
+- Or, better: inside workflow, check if notification for the date has been sent; if not, send and mark as sent.
+
+This is safe since workflows are async and can call entity_service to get subscribers.
+
+---
+
+### Updated code with these changes
 
 ```python
-from dataclasses import dataclass
+# ... [imports and other unchanged code above]
+
 import asyncio
-import datetime
-import json
-import logging
-from typing import Dict, List, Optional
 
-import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
-
-from app_init.app_init import BeanFactory
-from common.config.config import ENTITY_VERSION
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
-
-# Request/Query models
-@dataclass
-class SubscribeRequest:
-    email: str
-    notificationType: str
-
-@dataclass
-class FetchRequest:
-    date: str
-
-@dataclass
-class GamesQuery:
-    date: Optional[str] = None
-    team: Optional[str] = None
-    offset: int = 0
-    limit: int = 10
-
-entity_name = "subscriber"
-game_entity_name = "game"
-
-API_KEY = "test"
-NBA_API_URL = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key={key}"
-SCHEDULER_TIME_UTC = "18:00"
+# In-memory cache to track notification sending per date (in production replace with persistent cache)
+_notification_sent_for_date = set()
 
 # Workflow function for subscriber entity
 async def process_subscriber(entity: Dict) -> None:
     """
     Workflow function applied to subscriber entity before persistence.
-    Example: normalize email to lowercase.
+    Normalize email to lowercase.
     """
     email = entity.get("email")
     if email:
         entity["email"] = email.strip().lower()
-    # You can add more workflow logic here if needed
 
 
 # Workflow function for game entity
 async def process_game(entity: Dict) -> None:
     """
     Workflow function applied to game entity before persistence.
-    Example: ensure status is uppercase.
+    Normalize status field and send notifications once per date.
     """
     status = entity.get("Status")
     if status:
         entity["Status"] = status.upper()
-    # You can add more workflow logic here if needed
+
+    # Send notifications once per date after first game entity processed
+    date_str = entity.get("Day")
+    if not date_str:
+        return
+
+    # Avoid duplicate notifications sending
+    if date_str in _notification_sent_for_date:
+        return
+
+    _notification_sent_for_date.add(date_str)
+
+    # Fire-and-forget notification sending
+    asyncio.create_task(_send_notifications_for_date(date_str))
 
 
-# POST subscription endpoint
+async def _send_notifications_for_date(date_str: str):
+    try:
+        # Load all games for date
+        condition = {
+            "cyoda": {
+                "type": "group",
+                "operator": "AND",
+                "conditions": [
+                    {
+                        "jsonPath": "$.Day",
+                        "operatorType": "EQUALS",
+                        "value": date_str,
+                        "type": "simple"
+                    }
+                ]
+            }
+        }
+        games = await entity_service.get_items_by_condition(
+            token=cyoda_auth_service,
+            entity_model="game",
+            entity_version=ENTITY_VERSION,
+            condition=condition
+        )
+        if not games:
+            return
+
+        subs = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model="subscriber",
+            entity_version=ENTITY_VERSION
+        )
+        if not subs:
+            logger.info("No subscribers to notify.")
+            return
+
+        for sub in subs:
+            email = sub.get("email")
+            nt = sub.get("notificationType", "summary")
+            if not email:
+                continue
+            content = _build_email_content(date_str, games, nt)
+            # TODO: Implement real email sending
+            logger.info(f"Sending {nt} email to {email} for {date_str}")
+            await asyncio.sleep(0.1)  # simulate sending
+    except Exception:
+        logger.exception("Failed to send notifications")
+
+# -- Controller / endpoint functions --
+
 @app.route("/subscribe", methods=["POST"])
-@validate_request(SubscribeRequest)  # Workaround: validation last on POST due to quart-schema defect
+@validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     try:
         email = data.email
@@ -87,10 +160,8 @@ async def subscribe(data: SubscribeRequest):
         if notification_type not in ("summary", "full"):
             return jsonify({"error": "Invalid notificationType"}), 400
 
-        # Store subscriber using entity_service
         subscriber_data = {"email": email, "notificationType": notification_type}
-        # We do not have technical_id here, assume unique email as id (string)
-        # Check if subscriber exists by condition
+
         condition = {
             "cyoda": {
                 "type": "group",
@@ -107,64 +178,41 @@ async def subscribe(data: SubscribeRequest):
         }
         existing_subs = await entity_service.get_items_by_condition(
             token=cyoda_auth_service,
-            entity_model=entity_name,
+            entity_model="subscriber",
             entity_version=ENTITY_VERSION,
             condition=condition
         )
         if existing_subs:
-            # Update existing subscriber
             existing_id = existing_subs[0].get("technical_id") or existing_subs[0].get("id") or existing_subs[0].get("email")
             await entity_service.update_item(
                 token=cyoda_auth_service,
-                entity_model=entity_name,
+                entity_model="subscriber",
                 entity_version=ENTITY_VERSION,
                 entity=subscriber_data,
                 technical_id=str(existing_id),
                 meta={}
             )
         else:
-            # Add new subscriber with workflow
             await entity_service.add_item(
                 token=cyoda_auth_service,
-                entity_model=entity_name,
+                entity_model="subscriber",
                 entity_version=ENTITY_VERSION,
                 entity=subscriber_data,
                 workflow=process_subscriber
             )
+
         logger.info(f"New subscription: {email} with preference {notification_type}")
         return jsonify({
             "message": "Subscription successful",
             "email": email,
             "notificationType": notification_type
         })
-    except Exception as e:
-        logger.exception(e)
+    except Exception:
+        logger.exception("Failed to subscribe")
         return jsonify({"error": "Failed to subscribe"}), 500
 
-# GET subscribers (no validation needed)
-@app.route("/subscribers", methods=["GET"])
-async def get_subscribers():
-    try:
-        subs = await entity_service.get_items(
-            token=cyoda_auth_service,
-            entity_model=entity_name,
-            entity_version=ENTITY_VERSION
-        )
-        # Normalize output
-        result = []
-        for sub in subs:
-            email = sub.get("email")
-            notification_type = sub.get("notificationType")
-            if email and notification_type:
-                result.append({"email": email, "notificationType": notification_type})
-        return jsonify(result)
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to retrieve subscribers"}), 500
-
-# POST fetch and notify endpoint
 @app.route("/games/fetch", methods=["POST"])
-@validate_request(FetchRequest)  # Workaround: validation last on POST
+@validate_request(FetchRequest)
 async def fetch_and_store_games(data: FetchRequest):
     try:
         date_str = data.date
@@ -173,137 +221,16 @@ async def fetch_and_store_games(data: FetchRequest):
         except ValueError:
             return jsonify({"error": "Date must be in YYYY-MM-DD format"}), 400
 
-        job_id = f"fetch_{date_str}"
-        logger.info(f"Starting fetch job {job_id}")
-        asyncio.create_task(_fetch_process_and_notify(date_str))
+        asyncio.create_task(_fetch_process(date_str))
         return jsonify({
             "message": "Scores fetch started",
             "date": date_str
         })
-    except Exception as e:
-        logger.exception(e)
+    except Exception:
+        logger.exception("Failed to trigger fetch")
         return jsonify({"error": "Failed to trigger fetch"}), 500
 
-# GET games with query validation
-@validate_querystring(GamesQuery)  # Workaround: validation first on GET due to quart-schema defect
-@app.route("/games/all", methods=["GET"])
-async def get_all_games():
-    try:
-        date_filter = request.args.get("date")
-        team_filter = request.args.get("team")
-        offset = request.args.get("offset", default=0, type=int)
-        limit = request.args.get("limit", default=10, type=int)
-
-        all_games = []
-        if date_filter:
-            # Get games by condition on date property in the stored games
-            condition = {
-                "cyoda": {
-                    "type": "group",
-                    "operator": "AND",
-                    "conditions": [
-                        {
-                            "jsonPath": "$.Day",
-                            "operatorType": "EQUALS",
-                            "value": date_filter,
-                            "type": "simple"
-                        }
-                    ]
-                }
-            }
-            filtered_games = await entity_service.get_items_by_condition(
-                token=cyoda_auth_service,
-                entity_model=game_entity_name,
-                entity_version=ENTITY_VERSION,
-                condition=condition
-            )
-            all_games.extend(filtered_games)
-        else:
-            all_games = await entity_service.get_items(
-                token=cyoda_auth_service,
-                entity_model=game_entity_name,
-                entity_version=ENTITY_VERSION
-            )
-
-        if team_filter:
-            tf = team_filter.lower()
-            all_games = [
-                g for g in all_games
-                if tf in (g.get("HomeTeam") or "").lower() or tf in (g.get("AwayTeam") or "").lower()
-            ]
-
-        total = len(all_games)
-        paged = all_games[offset: offset + limit]
-
-        def norm(g: Dict) -> Dict:
-            return {
-                "gameId": g.get("GameID"),
-                "date": g.get("Day"),
-                "homeTeam": g.get("HomeTeam"),
-                "awayTeam": g.get("AwayTeam"),
-                "homeScore": g.get("HomeTeamScore"),
-                "awayScore": g.get("AwayTeamScore"),
-                "status": g.get("Status"),
-            }
-
-        return jsonify({
-            "games": [norm(g) for g in paged],
-            "pagination": {"offset": offset, "limit": limit, "total": total}
-        })
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to retrieve games"}), 500
-
-# GET games by date (no validation needed)
-@app.route("/games/<date>", methods=["GET"])
-async def get_games_by_date(date: str):
-    try:
-        try:
-            datetime.datetime.strptime(date, "%Y-%m-%d")
-        except ValueError:
-            return jsonify({"error": "Date must be in YYYY-MM-DD format"}), 400
-
-        condition = {
-            "cyoda": {
-                "type": "group",
-                "operator": "AND",
-                "conditions": [
-                    {
-                        "jsonPath": "$.Day",
-                        "operatorType": "EQUALS",
-                        "value": date,
-                        "type": "simple"
-                    }
-                ]
-            }
-        }
-        games = await entity_service.get_items_by_condition(
-            token=cyoda_auth_service,
-            entity_model=game_entity_name,
-            entity_version=ENTITY_VERSION,
-            condition=condition
-        )
-
-        def norm(g: Dict) -> Dict:
-            return {
-                "gameId": g.get("GameID"),
-                "date": g.get("Day"),
-                "homeTeam": g.get("HomeTeam"),
-                "awayTeam": g.get("AwayTeam"),
-                "homeScore": g.get("HomeTeamScore"),
-                "awayScore": g.get("AwayTeamScore"),
-                "status": g.get("Status"),
-            }
-
-        return jsonify({
-            "games": [norm(g) for g in games],
-            "pagination": {"offset": 0, "limit": len(games), "total": len(games)}
-        })
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"error": "Failed to retrieve games"}), 500
-
-async def _fetch_process_and_notify(date_str: str):
+async def _fetch_process(date_str: str):
     try:
         url = NBA_API_URL.format(date=date_str, key=API_KEY)
         async with httpx.AsyncClient(timeout=15.0) as client:
@@ -312,7 +239,7 @@ async def _fetch_process_and_notify(date_str: str):
             games = resp.json()
             logger.info(f"Fetched {len(games)} games for {date_str}")
 
-        # Remove old games for date to avoid duplicates
+        # Delete old games for the date (cannot do in workflow)
         condition = {
             "cyoda": {
                 "type": "group",
@@ -329,7 +256,7 @@ async def _fetch_process_and_notify(date_str: str):
         }
         old_games = await entity_service.get_items_by_condition(
             token=cyoda_auth_service,
-            entity_model=game_entity_name,
+            entity_model="game",
             entity_version=ENTITY_VERSION,
             condition=condition
         )
@@ -338,7 +265,7 @@ async def _fetch_process_and_notify(date_str: str):
             if old_id:
                 await entity_service.delete_item(
                     token=cyoda_auth_service,
-                    entity_model=game_entity_name,
+                    entity_model="game",
                     entity_version=ENTITY_VERSION,
                     technical_id=str(old_id),
                     meta={}
@@ -348,99 +275,29 @@ async def _fetch_process_and_notify(date_str: str):
         for game in games:
             await entity_service.add_item(
                 token=cyoda_auth_service,
-                entity_model=game_entity_name,
+                entity_model="game",
                 entity_version=ENTITY_VERSION,
                 entity=game,
                 workflow=process_game
             )
+    except Exception:
+        logger.exception("Failed during fetch process")
 
-        await _send_notifications(date_str, games)
-    except httpx.HTTPStatusError as e:
-        logger.error(f"HTTP error when fetching NBA scores: {e}")
-    except Exception as e:
-        logger.exception(e)
+# --- other unchanged endpoints ---
 
-async def _send_notifications(date_str: str, games: List[Dict]):
-    try:
-        subs = await entity_service.get_items(
-            token=cyoda_auth_service,
-            entity_model=entity_name,
-            entity_version=ENTITY_VERSION
-        )
-        if not subs:
-            logger.info("No subscribers to notify.")
-            return
-        for sub in subs:
-            email = sub.get("email")
-            nt = sub.get("notificationType", "summary")
-            if not email:
-                continue
-            content = _build_email_content(date_str, games, nt)
-            # TODO: Implement real email sending
-            logger.info(f"Sending {nt} email to {email} for {date_str}")
-            await asyncio.sleep(0.1)
-    except Exception as e:
-        logger.exception(e)
-
-def _build_email_content(date_str: str, games: List[Dict], notification_type: str) -> str:
-    if notification_type == "summary":
-        total_games = len(games)
-        total_points = sum(g.get("HomeTeamScore", 0) + g.get("AwayTeamScore", 0) for g in games)
-        return f"""
-        <html>
-        <body>
-            <h2>NBA Summary for {date_str}</h2>
-            <p>Total games played: {total_games}</p>
-            <p>Total points scored: {total_points}</p>
-        </body>
-        </html>
-        """
-    rows = ""
-    for g in games:
-        rows += f"<tr><td>{g.get('HomeTeam')}</td><td>{g.get('HomeTeamScore')}</td>" \
-                f"<td>vs</td><td>{g.get('AwayTeam')}</td><td>{g.get('AwayTeamScore')}</td>" \
-                f"<td>{g.get('Status')}</td></tr>"
-    return f"""
-        <html>
-        <body>
-            <h2>NBA Full Details for {date_str}</h2>
-            <table border="1" cellpadding="5" cellspacing="0">
-                <tr><th>Home Team</th><th>Score</th><th></th><th>Away Team</th><th>Score</th><th>Status</th></tr>
-                {rows}
-            </table>
-        </body>
-        </html>
-    """
-
-async def _scheduler_loop():
-    while True:
-        now = datetime.datetime.utcnow()
-        target = datetime.datetime.strptime(SCHEDULER_TIME_UTC, "%H:%M").time()
-        next_run = datetime.datetime.combine(now.date(), target)
-        if now.time() > target:
-            next_run += datetime.timedelta(days=1)
-        await asyncio.sleep((next_run - now).total_seconds())
-        today_str = datetime.datetime.utcnow().strftime("%Y-%m-%d")
-        logger.info(f"Scheduler triggering fetch for {today_str}")
-        asyncio.create_task(_fetch_process_and_notify(today_str))
-
-@app.before_serving
-async def startup():
-    app.add_background_task(_scheduler_loop)
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout,
-                        format="%(asctime)s %(levelname)s %(name)s - %(message)s")
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+# rest of the code remains the same, including _build_email_content, scheduler, etc.
 ```
 
 ---
 
-### Summary of Changes:
-- Added `async def process_subscriber(entity: Dict) -> None` workflow to normalize subscriber emails to lowercase.
-- Added `async def process_game(entity: Dict) -> None` workflow to uppercase the game status.
-- Updated all calls to `entity_service.add_item` to include the `workflow` parameter with the respective workflow function.
-- No other logic was changed.
+### Summary of what was moved:
 
-Let me know if you want me to tailor the workflow functions differently!
+- Email normalization logic moved to `process_subscriber`.
+- Game status normalization moved to `process_game`.
+- Notification sending moved into a **single** async fire-and-forget task inside `process_game` workflow, guarded to only run once per date.
+- Fetch endpoint now only fetches, deletes old games, and adds new ones with workflow, no notification logic.
+- Subscription endpoint only adds/updates subscribers with workflow.
+
+---
+
+If you want, I can provide the entire updated file again or just the diff. This approach keeps controllers thin and moves async side-effects and enrichment into workflows as you requested. Let me know if you want me to do that!

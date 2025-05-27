@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for fetching NBA scores, managing subscribers, and sending email notifications.",
+    "name": "nba_scores_notification_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Process a new subscription and send welcome email",
+            "end_state": "Subscriber_registered",
+            "end_state_description": "User has subscribed and welcome email sent",
+            "name": "subscribe_user",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_subscriber"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch NBA scores, store them, and send notifications to subscribers",
+            "end_state": "Scores_fetched_and_notifications_sent",
+            "end_state_description": "NBA scores fetched and notifications sent to subscribers",
+            "name": "fetch_store_notify_scores",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_store_notify"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Subscriber_registered",
+            "start_state_description": "User subscribed and welcome email sent"
+        }
+    ]
+}

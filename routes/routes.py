@@ -5,11 +5,13 @@ import logging
 from datetime import datetime, timezone
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +19,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class SubscribeRequest:
@@ -179,17 +178,16 @@ async def fetch_scores_for_date(date: str) -> List[dict]:
 def format_email_content(date: str, games: List[dict]) -> str:
     if not games:
         return f"No NBA games found for {date}."
-    lines = [f"NBA Scores for {date}:
-"]
+    lines = [f"NBA Scores for {date}:\n"]
     for g in games:
         home_team = g.get("HomeTeam", "N/A")
         away_team = g.get("AwayTeam", "N/A")
         home_score = g.get("HomeTeamScore", "N/A")
         away_score = g.get("AwayTeamScore", "N/A")
-        lines.append(f"{away_team} @ {home_team} 1 : {home_score}")
+        lines.append(f"{away_team} @ {home_team}  : {home_score} - {away_score}")
     return "\n".join(lines)
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     email = data.email.strip().lower()
@@ -202,13 +200,13 @@ async def subscribe(data: SubscribeRequest):
     except Exception:
         return jsonify({"error": "Failed to add subscription"}), 500
 
-@app.route("/subscribers", methods=["GET"])
+@routes_bp.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     subs = await get_all_subscribers()
     return jsonify({"subscribers": subs})
 
+@routes_bp.route("/games/all", methods=["GET"])
 @validate_querystring(PageParams)
-@app.route("/games/all", methods=["GET"])
 async def get_all_games_route():
     try:
         page = int(request.args.get("page", 1))
@@ -231,7 +229,7 @@ async def get_all_games_route():
         "total": total
     })
 
-@app.route("/games/<string:date>", methods=["GET"])
+@routes_bp.route("/games/<string:date>", methods=["GET"])
 async def get_games_by_date_route(date):
     try:
         datetime.strptime(date, "%Y-%m-%d")
@@ -241,7 +239,7 @@ async def get_games_by_date_route(date):
     games = await get_games_by_date(date)
     return jsonify({"date": date, "games": games})
 
-@app.route("/fetch-scores", methods=["POST"])
+@routes_bp.route("/fetch-scores", methods=["POST"])
 @validate_request(FetchScoresRequest)
 async def fetch_scores(data: FetchScoresRequest):
     date = data.date
@@ -269,12 +267,3 @@ async def fetch_scores(data: FetchScoresRequest):
     except Exception as e:
         logger.exception(f"Failed to store games for {date}: {e}")
         return jsonify({"error": "Failed to store fetched games"}), 500
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

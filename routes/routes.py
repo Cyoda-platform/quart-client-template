@@ -5,8 +5,8 @@ from datetime import date
 from typing import Dict, List
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,8 +14,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -146,7 +145,7 @@ async def process_game(entity_data: Dict) -> Dict:
 
     return entity_data
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     email = data.email
@@ -186,7 +185,7 @@ async def subscribe(data: SubscribeRequest):
         logger.exception(e)
         return jsonify({"message": "Failed to subscribe"}), 500
 
-@app.route("/fetch-scores", methods=["POST"])
+@routes_bp.route("/fetch-scores", methods=["POST"])
 @validate_request(FetchScoresRequest)
 async def fetch_scores(data: FetchScoresRequest):
     fetch_date = data.date
@@ -224,7 +223,7 @@ async def fetch_scores(data: FetchScoresRequest):
         logger.exception(e)
         return jsonify({"message": "Failed to trigger scores fetch"}), 500
 
-@app.route("/subscribers", methods=["GET"])
+@routes_bp.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     try:
         items = await entity_service.get_items(
@@ -237,7 +236,7 @@ async def get_subscribers():
         logger.exception(e)
         return jsonify({"subscribers": []})
 
-@app.route("/games/all", methods=["GET"])
+@routes_bp.route("/games/all", methods=["GET"])
 async def get_all_games():
     try:
         items = await entity_service.get_items(
@@ -256,7 +255,7 @@ async def get_all_games():
         logger.exception(e)
         return jsonify({"games": []})
 
-@app.route("/games/<string:fetch_date>", methods=["GET"])
+@routes_bp.route("/games/<string:fetch_date>", methods=["GET"])
 async def get_games_by_date(fetch_date):
     try:
         games = await entity_service.get_item(
@@ -269,48 +268,3 @@ async def get_games_by_date(fetch_date):
     except Exception as e:
         logger.exception(e)
         return jsonify({"games": []})
-
-async def daily_scheduler():
-    await asyncio.sleep(1)
-    today = date.today().isoformat()
-    logger.info(f"Scheduler triggered fetch for {today}")
-    try:
-        existing = None
-        try:
-            existing = await entity_service.get_item(
-                token=cyoda_auth_service,
-                entity_model=games_entity_name,
-                entity_version=ENTITY_VERSION,
-                technical_id=today
-            )
-        except Exception:
-            pass
-        if existing:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model=games_entity_name,
-                entity_version=ENTITY_VERSION,
-                entity={"date": today},
-                technical_id=today,
-                meta={}
-            )
-        else:
-            await entity_service.add_item(
-                token=cyoda_auth_service,
-                entity_model=games_entity_name,
-                entity_version=ENTITY_VERSION,
-                entity={"date": today}
-            )
-    except Exception as e:
-        logger.error(f"Scheduler failed to trigger game fetch workflow: {e}")
-
-@app.before_serving
-async def startup():
-    asyncio.create_task(daily_scheduler())
-
-if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.INFO,
-        format='[%(asctime)s] %(levelname)s in %(module)s: %(message)s'
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

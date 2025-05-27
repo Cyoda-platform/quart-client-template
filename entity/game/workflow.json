@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for processing NBA game entity including status normalization and notification sending",
+    "name": "nba_score_update_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing game entity from initial state",
+            "end_state": "Status_normalized",
+            "end_state_description": "Game status normalized",
+            "name": "start_processing_game",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Send notifications after status normalization",
+            "end_state": "Notification_sent_or_skipped",
+            "end_state_description": "Notifications sent or skipped if already sent for the date",
+            "name": "send_notifications",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_notifications"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Status_normalized",
+            "start_state_description": "Game status normalized"
+        }
+    ]
+}

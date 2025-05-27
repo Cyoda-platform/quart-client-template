@@ -1,0 +1,34 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com"
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "AwayTeam": "LAL",
+                "AwayTeamScore": 102,
+                "Channel": "ESPN",
+                "DateTime": "2023-04-15T19:00:00",
+                "GameID": 12345,
+                "HomeTeam": "BOS",
+                "HomeTeamScore": 110,
+                "Season": 2023,
+                "StadiumID": 1,
+                "Status": "Final",
+                "date": "2023-04-15"
+            },
+            "entity_name": "game"
+        },
+        {
+            "entity_data_example": {
+                "date": "2023-04-15",
+                "requestedAt": "2023-04-15T18:00:00Z",
+                "status": "queued"
+            },
+            "entity_name": "entity_job"
+        }
+    ]
+}

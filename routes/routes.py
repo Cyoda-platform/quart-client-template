@@ -5,8 +5,8 @@ import logging
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class SubscribeRequest:
@@ -44,26 +43,17 @@ API_KEY = "test"
 NBA_API_URL = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key={key}"
 SCHEDULER_TIME_UTC = "18:00"
 
-# In-memory cache to track notification sending per date (thread-safe for this single-process app)
 _notification_sent_for_date = set()
 _notification_lock = asyncio.Lock()
 
 
 async def process_subscriber(entity: Dict) -> None:
-    """
-    Workflow function applied to subscriber entity before persistence.
-    Normalize email to lowercase.
-    """
     email = entity.get("email")
     if email:
         entity["email"] = email.strip().lower()
 
 
 async def process_game(entity: Dict) -> None:
-    """
-    Workflow function applied to game entity before persistence.
-    Normalize status field and send notifications once per date.
-    """
     status = entity.get("Status")
     if status:
         entity["Status"] = status.upper()
@@ -77,7 +67,6 @@ async def process_game(entity: Dict) -> None:
             return
         _notification_sent_for_date.add(date_str)
 
-    # Fire-and-forget notification sending
     asyncio.create_task(_send_notifications_for_date(date_str))
 
 
@@ -122,9 +111,8 @@ async def _send_notifications_for_date(date_str: str):
             if not email:
                 continue
             content = _build_email_content(date_str, games, nt)
-            # TODO: Implement real email sending here
             logger.info(f"Sending {nt} email to {email} for {date_str}")
-            await asyncio.sleep(0.1)  # simulate sending email
+            await asyncio.sleep(0.1)
 
     except Exception:
         logger.exception("Failed to send notifications")
@@ -162,7 +150,7 @@ def _build_email_content(date_str: str, games: List[Dict], notification_type: st
         </html>
     """
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     try:
@@ -221,7 +209,7 @@ async def subscribe(data: SubscribeRequest):
         logger.exception("Failed to subscribe")
         return jsonify({"error": "Failed to subscribe"}), 500
 
-@app.route("/subscribers", methods=["GET"])
+@routes_bp.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     try:
         subs = await entity_service.get_items(
@@ -240,7 +228,7 @@ async def get_subscribers():
         logger.exception("Failed to retrieve subscribers")
         return jsonify({"error": "Failed to retrieve subscribers"}), 500
 
-@app.route("/games/fetch", methods=["POST"])
+@routes_bp.route("/games/fetch", methods=["POST"])
 @validate_request(FetchRequest)
 async def fetch_and_store_games(data: FetchRequest):
     try:
@@ -309,8 +297,8 @@ async def _fetch_process(date_str: str):
     except Exception:
         logger.exception("Failed during fetch process")
 
+@routes_bp.route("/games/all", methods=["GET"])
 @validate_querystring(GamesQuery)
-@app.route("/games/all", methods=["GET"])
 async def get_all_games():
     try:
         date_filter = request.args.get("date")
@@ -377,7 +365,7 @@ async def get_all_games():
         logger.exception("Failed to retrieve games")
         return jsonify({"error": "Failed to retrieve games"}), 500
 
-@app.route("/games/<date>", methods=["GET"])
+@routes_bp.route("/games/<date>", methods=["GET"])
 async def get_games_by_date(date: str):
     try:
         try:
@@ -424,30 +412,3 @@ async def get_games_by_date(date: str):
     except Exception:
         logger.exception("Failed to retrieve games")
         return jsonify({"error": "Failed to retrieve games"}), 500
-
-async def _scheduler_loop():
-    while True:
-        now = datetime.datetime.utcnow()
-        target = datetime.datetime.strptime(SCHEDULER_TIME_UTC, "%H:%M").time()
-        next_run = datetime.datetime.combine(now.date(), target)
-        if now.time() >= target:
-            next_run += datetime.timedelta(days=1)
-        sleep_seconds = (next_run - now).total_seconds()
-        if sleep_seconds > 0:
-            await asyncio.sleep(sleep_seconds)
-        today_str = datetime.datetime.utcnow().strftime("%Y-%m-%d")
-        logger.info(f"Scheduler triggering fetch for {today_str}")
-        asyncio.create_task(_fetch_process(today_str))
-
-@app.before_serving
-async def startup():
-    app.add_background_task(_scheduler_loop)
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(
-        level=logging.INFO,
-        stream=sys.stdout,
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s"
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

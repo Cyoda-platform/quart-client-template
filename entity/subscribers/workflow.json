@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to fetch NBA games, notify subscribers, and send welcome emails.",
+    "name": "nba_scores_notification_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the subscriber workflow",
+            "end_state": "Games_fetched",
+            "end_state_description": "NBA games have been fetched and stored",
+            "name": "start_subscriber_flow",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Notify subscribers about latest game scores",
+            "end_state": "Subscribers_notified",
+            "end_state_description": "Subscribers have been notified",
+            "name": "notify_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_notify_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Games_fetched",
+            "start_state_description": "NBA games have been fetched and stored"
+        },
+        {
+            "automated": true,
+            "description": "Send welcome email to new subscribers",
+            "end_state": "Welcome_email_sent",
+            "end_state_description": "Welcome emails have been sent",
+            "name": "send_welcome_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_welcome_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Subscribers_notified",
+            "start_state_description": "Subscribers have been notified"
+        }
+    ]
+}

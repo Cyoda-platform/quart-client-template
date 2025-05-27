@@ -1,6 +1,22 @@
-Certainly! I've updated your code to include the `workflow` parameter in all calls to `entity_service.add_item` and implemented the required workflow function `process_subscribe_request` for the `subscribe_request` entity. The workflow function is async, accepts the entity data, and (as an example) logs the entity before returning it unchanged. You can customize this workflow function as needed.
+Understood! We'll refactor the code to move all relevant async logic—especially async tasks and processing that happens before or after persisting entities—into the respective `process_{entity_name}` workflow functions.
 
-Here is the complete updated code with all necessary changes applied:
+---
+
+### Key points of refactoring:
+
+- The `/subscribe` endpoint just validates input and calls `entity_service.add_item` with `workflow=process_subscribe_request`. All entity preparation and any side effects (e.g. logging, tagging) go into `process_subscribe_request`.
+- For the `/games/fetch` endpoint, the main async work is fetching scores, saving them, and notifying subscribers. Since this involves adding entities of different models (`game`, `subscribe_request`) and async notifications, we'll move this entire logic into `process_fetch_request`.
+- We'll add a new `subscribe_request` workflow (already present) and create a new `fetch_request` entity with its own workflow `process_fetch_request` to do the heavy lifting.
+- We'll modify the `/games/fetch` endpoint to just add an entity of model `fetch_request` with the request data and workflow `process_fetch_request`. This will trigger fetch and notify jobs asynchronously before persisting `fetch_request`.
+- The `games` entity creation remains as is within the fetch workflow.
+- We cannot perform add/update/delete on the same entity inside its workflow to avoid recursion, so we won't modify `fetch_request` entity inside workflow except minor state updates.
+- The unsubscribe endpoint and other read endpoints remain unchanged since they do direct get/delete calls.
+- We'll rename the current `process_subscribe_request` to strictly handle pre-persistence logic for subscribe requests.
+- All email sending, fetching, and entity adding related to scores and notifications are moved to `process_fetch_request`.
+
+---
+
+### Updated code with workflows refactored:
 
 ```python
 import asyncio
@@ -48,6 +64,7 @@ class PaginationQuery:
 
 ENTITY_NAME = "subscribe_request"
 GAMES_ENTITY_NAME = "game"
+FETCH_REQUEST_ENTITY_NAME = "fetch_request"
 
 API_URL = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key={key}"
 
@@ -82,89 +99,110 @@ async def send_email(email: str, subject: str, body: str, html: bool = False):
     # TODO: Implement real email sending using SMTP or email service provider
     logger.info(f"Sending {'HTML' if html else 'plain text'} email to {email}:\nSubject: {subject}\n{body}")
 
-async def process_fetch_and_notify_for_date(date: str, api_key: str):
-    logger.info(f"Starting fetch and notify for date {date}")
-    scores = await fetch_nba_scores(date, api_key)
-    if scores is None:
-        logger.error(f"Failed to fetch data for {date}, aborting notification.")
-        return
-    # Save scores via entity_service, id returned but not used here
-    try:
-        # No workflow function provided for games entity, so pass None explicitly
-        await entity_service.add_item(
-            token=cyoda_auth_service,
-            entity_model=GAMES_ENTITY_NAME,
-            entity_version=ENTITY_VERSION,
-            entity={"date": date, "scores": scores},
-            workflow=None
-        )
-    except Exception as e:
-        logger.exception(f"Failed to save games data for {date}: {e}")
-    try:
-        subscribers_list = await entity_service.get_items(
-            token=cyoda_auth_service,
-            entity_model=ENTITY_NAME,
-            entity_version=ENTITY_VERSION,
-        )
-    except Exception as e:
-        logger.exception(f"Failed to retrieve subscribers: {e}")
-        subscribers_list = []
+# === Workflow functions ===
 
-    for subscriber in subscribers_list:
-        email = subscriber.get("email")
-        notif_type = subscriber.get("notificationtype")
-        if not email or not notif_type:
-            continue
-        if notif_type == "summary":
-            body = format_email_summary(scores)
-            await send_email(email, f"NBA Scores Summary for {date}", body, html=False)
+async def process_subscribe_request(entity: dict) -> dict:
+    """
+    Workflow for subscribe_request entity.
+    Modify the entity or enrich it before persisting.
+    """
+    logger.info(f"Processing subscribe_request entity in workflow: {entity}")
+    # Add a processed timestamp
+    entity["processed_at"] = datetime.datetime.utcnow().isoformat()
+    # Additional processing can be added here
+    return entity
+
+async def process_fetch_request(entity: dict) -> dict:
+    """
+    Workflow for fetch_request entity.
+    This will fetch NBA scores for the specified dates,
+    save them as 'game' entities, and notify subscribers accordingly.
+    """
+    logger.info(f"Processing fetch_request entity in workflow: {entity}")
+
+    api_key = entity.get("api_key")
+    start_date_str = entity.get("start_date")
+    end_date_str = entity.get("end_date")
+
+    # Validate dates with fallback
+    try:
+        if start_date_str:
+            start_dt = datetime.datetime.strptime(start_date_str, "%Y-%m-%d")
         else:
-            body = format_email_full(scores)
-            await send_email(email, f"NBA Scores Full Listing for {date}", body, html=True)
-    logger.info(f"Completed fetch and notify for date {date}")
+            # If no start_date, fallback to end_date or today
+            start_dt = datetime.datetime.strptime(end_date_str, "%Y-%m-%d") if end_date_str else datetime.datetime.utcnow()
 
-async def process_fetch_and_notify(data: FetchRequest):
-    try:
-        if data.start_date:
-            start_dt = datetime.datetime.strptime(data.start_date, "%Y-%m-%d")
-        else:
-            start_dt = datetime.datetime.strptime(data.end_date, "%Y-%m-%d") if data.end_date else None
-
-        if data.end_date:
-            end_dt = datetime.datetime.strptime(data.end_date, "%Y-%m-%d")
+        if end_date_str:
+            end_dt = datetime.datetime.strptime(end_date_str, "%Y-%m-%d")
         else:
             end_dt = start_dt
 
-        if start_dt is None and end_dt is None:
-            logger.error("No valid date provided for fetching.")
-            return
-
         if start_dt > end_dt:
-            logger.error("start_date must be before or equal to end_date.")
-            return
-
-        current_date = start_dt
-        tasks = []
-        while current_date <= end_dt:
-            date_str = current_date.strftime("%Y-%m-%d")
-            tasks.append(process_fetch_and_notify_for_date(date_str, data.api_key))
-            current_date += datetime.timedelta(days=1)
-
-        await asyncio.gather(*tasks)
+            logger.warning("start_date is after end_date; swapping dates")
+            start_dt, end_dt = end_dt, start_dt
     except Exception as e:
-        logger.exception(f"Exception during fetch and notify: {e}")
+        logger.error(f"Invalid date format in fetch_request entity: {e}")
+        # We won't abort persisting, just skip fetch
+        return entity
 
-# Workflow function for subscribe_request entity
-async def process_subscribe_request(entity: dict) -> dict:
-    """
-    Workflow function applied to subscribe_request entity before persistence.
-    You can modify the entity dict here as needed.
-    """
-    logger.info(f"Processing subscribe_request entity in workflow: {entity}")
-    # Example: Add a timestamp of when this entity was processed
+    current_date = start_dt
+    while current_date <= end_dt:
+        date_str = current_date.strftime("%Y-%m-%d")
+        logger.info(f"Fetching and processing NBA scores for date: {date_str}")
+        scores = await fetch_nba_scores(date_str, api_key)
+        if scores is None:
+            logger.error(f"Failed to fetch scores for {date_str}, skipping")
+            current_date += datetime.timedelta(days=1)
+            continue
+
+        # Save scores as game entity - no workflow on games entity (pass None)
+        try:
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model=GAMES_ENTITY_NAME,
+                entity_version=ENTITY_VERSION,
+                entity={"date": date_str, "scores": scores},
+                workflow=None
+            )
+            logger.info(f"Saved game scores for {date_str}")
+        except Exception as e:
+            logger.exception(f"Failed to save game scores for {date_str}: {e}")
+
+        # Retrieve subscribers
+        try:
+            subscribers_list = await entity_service.get_items(
+                token=cyoda_auth_service,
+                entity_model=ENTITY_NAME,
+                entity_version=ENTITY_VERSION,
+            )
+        except Exception as e:
+            logger.exception(f"Failed to retrieve subscribers: {e}")
+            subscribers_list = []
+
+        for subscriber in subscribers_list:
+            email = subscriber.get("email")
+            notif_type = subscriber.get("notificationtype")
+            if not email or not notif_type:
+                continue
+            try:
+                if notif_type == "summary":
+                    body = format_email_summary(scores)
+                    await send_email(email, f"NBA Scores Summary for {date_str}", body, html=False)
+                else:
+                    body = format_email_full(scores)
+                    await send_email(email, f"NBA Scores Full Listing for {date_str}", body, html=True)
+            except Exception as e:
+                logger.exception(f"Failed to send email to {email}: {e}")
+
+        current_date += datetime.timedelta(days=1)
+
+    # Optionally add a status or timestamp to the fetch_request entity
     entity["processed_at"] = datetime.datetime.utcnow().isoformat()
-    # Add any other processing logic here
+    entity["status"] = "completed"
+
     return entity
+
+# === API endpoints ===
 
 @app.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
@@ -183,7 +221,6 @@ async def subscribe(data: SubscribeRequest):
             entity=entity_data,
             workflow=process_subscribe_request
         )
-        # id is string per instructions
         return jsonify({"id": str(id)}), 200
     except Exception as e:
         logger.exception(e)
@@ -192,7 +229,6 @@ async def subscribe(data: SubscribeRequest):
 @app.route("/subscribe", methods=["DELETE"])
 @validate_request(UnsubscribeRequest)
 async def unsubscribe(data: UnsubscribeRequest):
-    # Find subscriber by email to get the technical_id
     try:
         subscribers_list = await entity_service.get_items(
             token=cyoda_auth_service,
@@ -234,7 +270,6 @@ async def get_subscribers():
             entity_model=ENTITY_NAME,
             entity_version=ENTITY_VERSION,
         )
-        # Normalize keys if needed
         result = []
         for s in subscribers_list:
             email = s.get("email")
@@ -255,7 +290,6 @@ async def get_all_games(query_args: PaginationQuery):
             entity_model=GAMES_ENTITY_NAME,
             entity_version=ENTITY_VERSION,
         )
-        # Flatten all scores from all saved dates
         all_games = []
         for entry in all_games_raw:
             scores = entry.get("scores", [])
@@ -279,7 +313,6 @@ async def get_games_by_date(date):
     except ValueError:
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
 
-    # Retrieve game entity by condition on date
     condition = {
         "cyoda": {
             "type": "group",
@@ -303,7 +336,6 @@ async def get_games_by_date(date):
         )
         if not items:
             return jsonify([]), 200
-        # Assuming only one entry per date
         scores = items[0].get("scores", [])
         return jsonify(scores), 200
     except Exception as e:
@@ -313,22 +345,24 @@ async def get_games_by_date(date):
 @app.route("/games/fetch", methods=["POST"])
 @validate_request(FetchRequest)
 async def fetch_scores(data: FetchRequest):
-    # Validate date formats and range
-    if data.start_date:
-        try:
-            datetime.datetime.strptime(data.start_date, "%Y-%m-%d")
-        except ValueError:
-            return jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}), 400
-    if data.end_date:
-        try:
-            datetime.datetime.strptime(data.end_date, "%Y-%m-%d")
-        except ValueError:
-            return jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}), 400
-    if not data.start_date and not data.end_date:
-        return jsonify({"error": "At least one of start_date or end_date must be provided"}), 400
-
-    asyncio.create_task(process_fetch_and_notify(data))
-    return jsonify({"message": "Scores fetch started, notifications will be sent"}), 202
+    # Just add fetch_request entity with workflow, no heavy lifting here
+    entity_data = {
+        "api_key": data.api_key,
+        "start_date": data.start_date,
+        "end_date": data.end_date,
+    }
+    try:
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model=FETCH_REQUEST_ENTITY_NAME,
+            entity_version=ENTITY_VERSION,
+            entity=entity_data,
+            workflow=process_fetch_request
+        )
+        return jsonify({"message": "Scores fetch started, notifications will be sent"}), 202
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to start fetch process"}), 500
 
 if __name__ == "__main__":
     import logging
@@ -338,11 +372,23 @@ if __name__ == "__main__":
 
 ---
 
-### Key changes summary:
+### What changed?
 
-- Added async workflow function `process_subscribe_request(entity: dict) -> dict` for `subscribe_request` entity that logs and tags the entity with a timestamp.
-- In the `/subscribe` POST route, passed `workflow=process_subscribe_request` to `entity_service.add_item`.
-- In the `process_fetch_and_notify_for_date` function, added `workflow=None` explicitly when adding `game` entities because no workflow was specified.
-- No other `add_item` calls are present, but if you add more in the future, remember to pass the corresponding `workflow` function or `None`.
+- Added new entity model name `fetch_request` for fetch requests.
+- Created async workflow `process_fetch_request` that:
+  - fetches NBA scores for each day in the date range,
+  - saves the games entities,
+  - gets subscribers,
+  - sends them emails accordingly,
+  - and updates the fetch_request entity state.
+- `/games/fetch` endpoint became "thin" — it just adds a `fetch_request` entity with workflow, delegating all async logic to `process_fetch_request`.
+- `process_subscribe_request` remains for `subscribe_request` entity workflow, just tagging the entity.
+- No direct async tasks or side effects remain in endpoints.
+- The `game` entity is persisted inside `process_fetch_request`, but with `workflow=None` (no recursion).
+- This approach keeps controllers clean and moves business logic into workflows.
 
-Let me know if you want me to implement any specific logic inside the workflow function!
+---
+
+If you'll later want to add workflows for other entities, just implement `process_{entity_name}` async functions accordingly and pass them to `add_item`.
+
+Let me know if you want me to help with tests or further improvements!

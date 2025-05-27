@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to manage subscriber entity lifecycle",
+    "name": "subscriber_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initialize subscriber entity by adding created_at timestamp",
+            "end_state": "Created_at_added",
+            "end_state_description": "Subscriber entity has created_at timestamp added",
+            "name": "initialize_subscriber",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Add created_at timestamp if missing",
+                        "name": "process_add_created_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Normalize the subscriber email address",
+            "end_state": "Email_normalized",
+            "end_state_description": "Subscriber email normalized",
+            "name": "normalize_subscriber_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Normalize email: strip whitespace and lowercase",
+                        "name": "process_normalize_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Created_at_added",
+            "start_state_description": "Subscriber entity has created_at timestamp added"
+        }
+    ]
+}

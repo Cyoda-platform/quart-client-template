@@ -1,0 +1,22 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com"
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "awayScore": 105,
+                "awayTeam": "Warriors",
+                "date": "2025-03-25",
+                "gameId": 123,
+                "homeScore": 110,
+                "homeTeam": "Lakers",
+                "status": "Final"
+            },
+            "entity_name": "game"
+        }
+    ]
+}

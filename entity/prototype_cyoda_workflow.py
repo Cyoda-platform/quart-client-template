@@ -1,94 +1,3 @@
-Absolutely! Moving asynchronous logic into the workflow functions is a great architectural improvement. It encapsulates entity-related processing and side effects closer to the data model, freeing the endpoints (controllers) from business logic and making the system more modular and robust.
-
----
-
-### What can be moved?
-
-- For `subscriber` entity:
-  - Currently, `process_subscriber` only normalizes email — keep it as is.
-  - The endpoint checks for duplicate emails — this must stay in controller (can't query inside workflow safely before adding).
-  - **No async side effects** here, so no change needed.
-
-- For `game` entity:
-  - Fetching NBA scores and notifying subscribers are currently done in the endpoint.
-  - The fetching of games is done outside controller, but notification logic can be moved.
-  - However, the entire fetch-and-store logic is invoked in `/games/fetch` endpoint.
-  
-The key issue:
-
-- The workflow function is called **per entity** before persisting that entity.
-- It can modify the entity in-place.
-- It can add other entities (different entity_model).
-- **It cannot add/update/delete the same entity_model** — to avoid infinite recursion.
-
----
-
-### Proposed refactoring:
-
-- `/subscribe` endpoint:
-  - Keep duplicate check in controller.
-  - Keep normalization and any minor adjustments in `process_subscriber`.
-  - No async side effects to move.
-
-- `/games/fetch` endpoint:
-  - This triggers fetching external API data and storing multiple `game` entities.
-  - We **cannot** move the entire fetch to workflow because the workflow is called per entity — we cannot fetch multiple games inside the workflow of a single game entity.
-  - But what about notifications?  
-    Notifications can be triggered when a new subscriber is added, or when new games are added.
-
-- **Better**: Move notification sending to the workflow function of the `subscriber` entity or `game` entity?
-
-- Since notification sends emails to subscribers about games, it makes sense to trigger notification when new games are added.
-
----
-
-### Challenges:
-
-- Workflow runs per entity before it is persisted.
-- For `game` entities, we add many entities after fetching data.
-- We cannot trigger notification email inside the workflow of each `game` entity (too many emails).
-
----
-
-### Solution:
-
-- Introduce a special entity like `notification_task` or a lightweight mechanism.
-
-- Or: in the current setup, `fetch_scores` endpoint triggers fetch, store, and notify — that is a single task and is better left in controller.
-
-- Alternatively, we can embed the notification logic in the workflow of subscriber entity — e.g., after adding a subscriber, send a welcome email (async side effect).
-
-- For `game` entity workflow, we can enrich the entity before saving (e.g. add timestamps), but triggering notifications to all subscribers on every game add is expensive and not ideal.
-
----
-
-### What can we safely move to workflow functions?
-
-- **Subscriber workflow**:
-  - Normalize email.
-  - Send welcome email after adding subscriber (fire-and-forget, async).
-
-- **Game workflow**:
-  - Add timestamps or enrich entity.
-  - Possibly track stats or logs.
-  - But do NOT send emails here (too many).
-  
-- Keep `/games/fetch` endpoint logic as is (fetch all games, add entities, then notify subscribers once).
-
----
-
-### Implementation of these changes:
-
-- Move welcome email sending to `process_subscriber`.
-- Enrich `process_game` with timestamp only.
-- Remove notification sending from `/games/fetch` endpoint controller.
-- Instead, create a separate single entity to track notification tasks or keep notification triggered outside.
-
----
-
-### Final code updated accordingly:
-
-```python
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -112,7 +21,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 app = Quart(__name__)
 QuartSchema(app)
 
-# --- Request models ---
 @dataclass
 class SubscribeRequest:
     email: str
@@ -127,33 +35,30 @@ GAME_ENTITY_NAME = "game"
 API_KEY = "test"
 API_URL_TEMPLATE = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key=" + API_KEY
 
-# Workflow function for subscriber entity
 async def process_subscriber(entity: Dict) -> None:
-    # Normalize email
     if "email" in entity and entity["email"]:
         entity["email"] = entity["email"].strip().lower()
-    
-    # Send welcome email asynchronously (fire and forget)
     async def send_welcome_email(email: str):
-        logger.info(f"Sending welcome email to {email}")
-        # Replace with real email sending logic
-        await asyncio.sleep(0.1)
-    
-    # Schedule welcome email, but do not await to avoid blocking persistence
+        try:
+            logger.info(f"Sending welcome email to {email}")
+            # Replace with real email sending logic
+            await asyncio.sleep(0.1)
+        except Exception as e:
+            logger.warning(f"Failed to send welcome email to {email}: {e}")
     asyncio.create_task(send_welcome_email(entity["email"]))
-
     logger.debug(f"Processed subscriber entity: {entity}")
 
-# Workflow function for game entity
 async def process_game(entity: Dict) -> None:
-    # Add processed timestamp before saving
     entity["processed_at"] = datetime.utcnow().isoformat() + "Z"
     logger.debug(f"Processed game entity: {entity}")
 
 async def send_email(to_emails: List[str], subject: str, body: str):
-    # TODO: Implement real email sending using SMTP or external provider
-    logger.info(f"Sending email to {to_emails} with subject {subject}")
-    await asyncio.sleep(0.1)
+    try:
+        logger.info(f"Sending email to {to_emails} with subject {subject}")
+        # Replace with actual email sending logic
+        await asyncio.sleep(0.1)
+    except Exception as e:
+        logger.warning(f"Failed to send email to {to_emails}: {e}")
 
 def format_scores_email(date: str, games: List[Dict]) -> str:
     if not games:
@@ -193,7 +98,6 @@ async def fetch_and_store_scores(date: str) -> Dict:
         except Exception as e:
             logger.warning(f"Skipping invalid game data: {game} ({e})")
 
-    # Delete old games for this date (optional)
     condition = {
         "cyoda": {
             "type": "group",
@@ -228,7 +132,6 @@ async def fetch_and_store_scores(date: str) -> Dict:
     except Exception as e:
         logger.warning(f"Could not delete old games for date {date}: {e}")
 
-    # Add new games using workflow (process_game)
     for game_data in stored_games:
         try:
             await entity_service.add_item(
@@ -288,7 +191,6 @@ async def notify_subscribers(date: str):
     await send_email(emails, subject, body)
     logger.info(f"Notifications sent to {len(emails)} subscribers for {date}")
 
-# Subscribe endpoint
 @app.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
@@ -296,7 +198,6 @@ async def subscribe(data: SubscribeRequest):
     if not email or "@" not in email:
         return jsonify({"error": "Invalid email"}), 400
 
-    # Check if already subscribed
     try:
         condition = {
             "cyoda": {
@@ -323,7 +224,6 @@ async def subscribe(data: SubscribeRequest):
     except Exception as e:
         logger.warning(f"Failed to check existing subscriber: {e}")
 
-    # Add subscriber (workflow handles normalization + welcome email)
     try:
         await entity_service.add_item(
             token=cyoda_auth_service,
@@ -338,7 +238,6 @@ async def subscribe(data: SubscribeRequest):
         logger.exception(f"Failed to add subscriber: {e}")
         return jsonify({"error": "Failed to subscribe"}), 500
 
-# Fetch scores endpoint
 @app.route("/games/fetch", methods=["POST"])
 @validate_request(FetchRequest)
 async def fetch_scores(data: FetchRequest):
@@ -351,7 +250,6 @@ async def fetch_scores(data: FetchRequest):
     async def process_fetch():
         try:
             await fetch_and_store_scores(date_str)
-            # Notification is still sent here after all games are stored
             await notify_subscribers(date_str)
             logger.info(f"Fetch and notify completed for {date_str}")
         except Exception as e:
@@ -447,22 +345,3 @@ if __name__ == '__main__':
         format="%(asctime)s %(levelname)s %(name)s - %(message)s"
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- **Subscriber workflow:**
-  - Normalizes email.
-  - Sends welcome email asynchronously after entity data is modified but before persistence completes.
-- **Game workflow:**
-  - Adds `processed_at` timestamp.
-- **Fetch endpoint:**
-  - Still responsible for fetching all games and notifying subscribers once after all games are persisted.
-- **Notification sending is not in workflow** because that would cause multiple notifications per game entity added (bad practice).
-- **Subscribe endpoint** retains duplicate check and delegates normalization + welcome email to workflow.
-
----
-
-Let me know if you want me to move more logic or if you'd like me to implement notification sending upon new subscriber addition as well!

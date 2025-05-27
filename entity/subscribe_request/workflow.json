@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to validate, update and notify subscription requests",
+    "name": "subscription_management_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing subscription request",
+            "end_state": "subscription_validation_completed",
+            "end_state_description": "Subscription validation completed",
+            "name": "start_subscription_process",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_subscription"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Update subscription data",
+            "end_state": "subscription_updated",
+            "end_state_description": "Subscription updated",
+            "name": "update_subscription",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_subscription"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "subscription_validation_completed",
+            "start_state_description": "Subscription validation completed"
+        },
+        {
+            "automated": true,
+            "description": "Notify about subscription change",
+            "end_state": "subscription_processed",
+            "end_state_description": "Subscription request processed",
+            "name": "notify_subscription_change",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_notify_subscription_change"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "subscription_updated",
+            "start_state_description": "Subscription updated"
+        }
+    ]
+}

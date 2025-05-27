@@ -1,71 +1,3 @@
-Understood! The goal is to offload as much async and side-effect logic from the endpoint handlers into the workflow functions (`process_{entity_name}`), which are invoked asynchronously just before persisting the entity.
-
-**Key points:**
-- Workflow functions are async and get the entity dict as input.
-- They can modify the entity in-place.
-- They can call `entity_service.get_items` or add entities of other models, but cannot modify the same entity model (to avoid recursion).
-- They are the right place for async tasks (e.g. sending emails, fetching external data).
-- Endpoints should become very thin, mainly validating input and calling `add_item` with the appropriate workflow.
-
----
-
-### What async logic do we have and can move?
-
-1. In `/subscribe` endpoint:
-   - Currently mostly just checks for existing email and adds the subscriber.
-   - The normalization and timestamp are already moved into `process_subscriber`.
-   - Sending confirmation emails could be added to workflow but sending email is not currently done in subscribe endpoint, so no action here.
-
-2. In `/scores/fetch` endpoint:
-   - It fetches scores from external API.
-   - Stores games in local storage.
-   - Retrieves subscribers list.
-   - Sends notification emails to subscribers.
-
-This is a perfect candidate to move into a workflow function, e.g. a new entity `score_fetch` or `score_request` entity, with workflow `process_score_request`.
-
-3. In `/unsubscribe` endpoint:
-   - Deletes subscriber entities by email.
-   - This is already a delete operation, no add_item call, so no workflow possible here.
-
-4. Other endpoints:
-   - Mostly get/read operations, no add_item calls.
-
----
-
-### Proposed changes:
-
-- Introduce a new entity model, e.g. `score_request` (lowercase underscore).
-- When `/scores/fetch` is called, we add a new `score_request` entity with the date.
-- The workflow `process_score_request` will:
-  - Fetch NBA scores from external API.
-  - Store the games in local storage or, if preferred, create a new entity for games (would require more extensive changes, so let's keep storage as-is).
-  - Get subscribers.
-  - Send notification emails.
-
-This moves the async heavy lifting to the workflow.
-
----
-
-### Changes to endpoints:
-
-- `/subscribe` stays mostly as-is, except uses workflow for normalization, timestamp (already done).
-- `/scores/fetch` no longer runs fetch in endpoint; instead, it adds a `score_request` entity with `date` and workflow `process_score_request`. The endpoint just acknowledges the request.
-- We should keep a way to check status of score fetches or games stored via other GET endpoints.
-
----
-
-### Implementation plan:
-
-- Add `process_score_request` async workflow function.
-- Modify `/scores/fetch` to just add the entity with workflow.
-- Keep `process_subscriber` as is.
-
----
-
-### Updated complete code with changes:
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -89,7 +21,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 app = Quart(__name__)
 QuartSchema(app)
 
-# Data classes for request validation
 @dataclass
 class EmailBody:
     email: str
@@ -98,64 +29,9 @@ class EmailBody:
 class DateBody:
     date: str
 
-ENTITY_NAME = "subscriber"  # entity name underscore lowercase
+ENTITY_NAME = "subscriber"
 SCORE_REQUEST_ENTITY = "score_request"
 
-# Workflow function for subscriber entity
-async def process_subscriber(entity: Dict) -> Dict:
-    # Add creation timestamp and normalize email
-    entity.setdefault("created_at", datetime.utcnow().isoformat() + "Z")
-    entity["email"] = entity.get("email", "").strip().lower()
-    return entity
-
-# Workflow function for score_request entity
-async def process_score_request(entity: Dict) -> Dict:
-    """
-    Workflow that runs before persisting a score_request entity.
-    Fetches NBA scores for the date in the entity,
-    stores them in local storage,
-    sends notification emails to subscribers.
-    """
-    date = entity.get("date")
-    if not date:
-        logger.error("No date provided in score_request entity")
-        return entity
-
-    API_KEY = "test"
-    NBA_API_URL_TEMPLATE = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key=" + API_KEY
-
-    try:
-        url = NBA_API_URL_TEMPLATE.format(date=date)
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(url, timeout=20)
-            resp.raise_for_status()
-            games = resp.json()
-    except Exception as e:
-        logger.exception(f"Failed to fetch scores for {date}: {e}")
-        entity["fetch_status"] = "failed"
-        entity["error"] = str(e)
-        return entity
-
-    # Store games in local storage (as before)
-    await storage.store_games(date, games)
-
-    # Get subscribers
-    subscribers = await get_subscribers_list()
-    if subscribers:
-        summary_html = build_html_summary(date, games)
-        # Send notification emails concurrently
-        await asyncio.gather(*(send_email(email, f"NBA Scores for {date}", summary_html) for email in subscribers))
-        entity["notifications_sent"] = len(subscribers)
-    else:
-        entity["notifications_sent"] = 0
-
-    entity["games_stored"] = len(games)
-    entity["fetch_status"] = "success"
-    entity["processed_at"] = datetime.utcnow().isoformat() + "Z"
-
-    return entity
-
-# In-memory mock persistence for games still used as no replacement instructions for games
 class Storage:
     def __init__(self):
         self._games_by_date: Dict[str, List[Dict]] = {}
@@ -174,8 +50,10 @@ class Storage:
         async with self._lock:
             all_games = []
             for date_str, games in self._games_by_date.items():
-                if start_date and date_str < start_date: continue
-                if end_date and date_str > end_date: continue
+                if start_date and date_str < start_date: 
+                    continue
+                if end_date and date_str > end_date: 
+                    continue
                 all_games.extend(games)
             return all_games
 
@@ -183,7 +61,7 @@ storage = Storage()
 
 async def send_email(to_email: str, subject: str, html_content: str):
     logger.info(f"Sending email to {to_email} with subject '{subject}'")
-    # TODO: Implement real email sending
+    # Placeholder for real email sending logic
     await asyncio.sleep(0.1)
 
 def build_html_summary(date: str, games: List[Dict]) -> str:
@@ -205,16 +83,98 @@ async def get_subscribers_list() -> List[str]:
             entity_model=ENTITY_NAME,
             entity_version=ENTITY_VERSION,
         )
-        emails = [item.get("email") for item in items if "email" in item]
+        emails = [item.get("email") for item in items if "email" in item and isinstance(item.get("email"), str)]
         return emails
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Failed to get subscribers list: {e}")
         return []
+
+# Workflow function applied to subscriber entity before persistence
+async def process_subscriber(entity: Dict) -> Dict:
+    # Add created_at timestamp if missing
+    if "created_at" not in entity:
+        entity["created_at"] = datetime.utcnow().isoformat() + "Z"
+    # Normalize email: strip whitespace and lowercase
+    email = entity.get("email")
+    if isinstance(email, str):
+        entity["email"] = email.strip().lower()
+    else:
+        entity["email"] = ""
+    return entity
+
+# Workflow function applied to score_request entity before persistence
+async def process_score_request(entity: Dict) -> Dict:
+    date = entity.get("date")
+    if not date or not isinstance(date, str):
+        entity["fetch_status"] = "failed"
+        entity["error"] = "Missing or invalid 'date' field"
+        logger.error("Score request entity missing valid date")
+        return entity
+
+    # Validate date format strictly
+    try:
+        datetime.strptime(date, "%Y-%m-%d")
+    except Exception:
+        entity["fetch_status"] = "failed"
+        entity["error"] = "Invalid date format, expected YYYY-MM-DD"
+        logger.error(f"Score request entity has invalid date format: {date}")
+        return entity
+
+    API_KEY = "test"
+    NBA_API_URL_TEMPLATE = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key=" + API_KEY
+
+    try:
+        url = NBA_API_URL_TEMPLATE.format(date=date)
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            games = resp.json()
+            if not isinstance(games, list):
+                raise ValueError("Unexpected response format: expected list of games")
+    except Exception as e:
+        logger.exception(f"Failed to fetch NBA scores for {date}: {e}")
+        entity["fetch_status"] = "failed"
+        entity["error"] = str(e)
+        return entity
+
+    # Store games locally
+    try:
+        await storage.store_games(date, games)
+    except Exception as e:
+        logger.exception(f"Failed to store games locally for {date}: {e}")
+        entity["fetch_status"] = "failed"
+        entity["error"] = f"Storage error: {e}"
+        return entity
+
+    # Fetch subscribers list
+    subscribers = await get_subscribers_list()
+    num_subscribers = len(subscribers)
+
+    # Build HTML summary once
+    summary_html = build_html_summary(date, games) if num_subscribers > 0 else ""
+
+    # Send emails concurrently, but handle exceptions individually to avoid cancellation
+    async def safe_send(email):
+        try:
+            await send_email(email, f"NBA Scores for {date}", summary_html)
+        except Exception as ex:
+            logger.warning(f"Failed to send email to {email}: {ex}")
+
+    if num_subscribers > 0:
+        await asyncio.gather(*(safe_send(email) for email in subscribers))
+
+    entity["games_stored"] = len(games)
+    entity["notifications_sent"] = num_subscribers
+    entity["fetch_status"] = "success"
+    entity["processed_at"] = datetime.utcnow().isoformat() + "Z"
+    return entity
 
 @app.route("/subscribe", methods=["POST"])
 @validate_request(EmailBody)
 async def subscribe(data: EmailBody):
     try:
+        # Check if email already subscribed
+        email_lower = data.email.strip().lower()
         condition = {
             "cyoda": {
                 "type": "group",
@@ -223,7 +183,7 @@ async def subscribe(data: EmailBody):
                     {
                         "jsonPath": "$.email",
                         "operatorType": "EQUALS",
-                        "value": data.email,
+                        "value": email_lower,
                         "type": "simple"
                     }
                 ]
@@ -236,24 +196,27 @@ async def subscribe(data: EmailBody):
             condition=condition
         )
         if existing_items:
-            return jsonify({"message": "Email already subscribed", "email": data.email}), 200
+            return jsonify({"message": "Email already subscribed", "email": email_lower}), 200
 
-        id = await entity_service.add_item(
+        # Add subscriber entity with workflow
+        entity = {"email": email_lower}
+        subscriber_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=ENTITY_NAME,
             entity_version=ENTITY_VERSION,
-            entity={"email": data.email},
+            entity=entity,
             workflow=process_subscriber
         )
-        return jsonify({"message": "Subscription successful", "email": data.email, "id": id}), 201
+        return jsonify({"message": "Subscription successful", "email": email_lower, "id": subscriber_id}), 201
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Subscription failed: {e}")
         return jsonify({"message": "Subscription failed", "email": data.email}), 500
 
 @app.route("/unsubscribe", methods=["POST"])
 @validate_request(EmailBody)
 async def unsubscribe(data: EmailBody):
     try:
+        email_lower = data.email.strip().lower()
         condition = {
             "cyoda": {
                 "type": "group",
@@ -262,7 +225,7 @@ async def unsubscribe(data: EmailBody):
                     {
                         "jsonPath": "$.email",
                         "operatorType": "EQUALS",
-                        "value": data.email,
+                        "value": email_lower,
                         "type": "simple"
                     }
                 ]
@@ -275,10 +238,13 @@ async def unsubscribe(data: EmailBody):
             condition=condition
         )
         if not items:
-            return jsonify({"message": "Email not found in subscribers", "email": data.email}), 404
+            return jsonify({"message": "Email not found in subscribers", "email": email_lower}), 404
+
+        # Delete all matching items
         for item in items:
             tech_id = item.get("id") or item.get("technical_id") or item.get("technicalId")
             if tech_id is None:
+                logger.warning(f"Subscriber item missing technical id, skipping delete: {item}")
                 continue
             await entity_service.delete_item(
                 token=cyoda_auth_service,
@@ -287,9 +253,9 @@ async def unsubscribe(data: EmailBody):
                 technical_id=str(tech_id),
                 meta={}
             )
-        return jsonify({"message": "Unsubscribed successfully", "email": data.email}), 200
+        return jsonify({"message": "Unsubscribed successfully", "email": email_lower}), 200
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Unsubscribe failed: {e}")
         return jsonify({"message": "Unsubscribe failed", "email": data.email}), 500
 
 @app.route("/subscribers", methods=["GET"])
@@ -300,45 +266,52 @@ async def get_subscribers():
             entity_model=ENTITY_NAME,
             entity_version=ENTITY_VERSION,
         )
-        emails = [item.get("email") for item in items if "email" in item]
+        emails = [item.get("email") for item in items if "email" in item and isinstance(item.get("email"), str)]
         return jsonify({"subscribers": emails}), 200
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Failed to fetch subscribers: {e}")
         return jsonify({"subscribers": []}), 500
 
 @app.route("/scores/fetch", methods=["POST"])
 @validate_request(DateBody)
 async def fetch_scores(data: DateBody):
     try:
+        # Validate date format; if invalid, reject early
         datetime.strptime(data.date, "%Y-%m-%d")
     except ValueError:
         return jsonify({"message": "Invalid date format, expected YYYY-MM-DD"}), 400
 
     try:
-        # Instead of fetching here, just add a score_request entity with workflow
-        id = await entity_service.add_item(
+        # Add a score_request entity to trigger workflow asynchronously
+        entity = {"date": data.date}
+        score_request_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=SCORE_REQUEST_ENTITY,
             entity_version=ENTITY_VERSION,
-            entity={"date": data.date},
+            entity=entity,
             workflow=process_score_request
         )
-        return jsonify({"message": "Score fetch request accepted", "id": id, "date": data.date}), 202
+        return jsonify({"message": "Score fetch request accepted", "id": score_request_id, "date": data.date}), 202
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Failed to initiate score fetch: {e}")
         return jsonify({"message": "Failed to initiate score fetch", "date": data.date}), 500
 
 @app.route("/games/all", methods=["GET"])
 async def get_all_games():
-    page = int(request.args.get("page", 1))
-    page_size = int(request.args.get("pageSize", 10))
-    start_date = request.args.get("startDate")
-    end_date = request.args.get("endDate")
-    all_games = await storage.get_all_games(start_date, end_date)
-    total = len(all_games)
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    return jsonify({"games": all_games[start_idx:end_idx], "page": page, "pageSize": page_size, "totalGames": total}), 200
+    try:
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("pageSize", 10))
+        start_date = request.args.get("startDate")
+        end_date = request.args.get("endDate")
+        all_games = await storage.get_all_games(start_date, end_date)
+        total = len(all_games)
+        start_idx = max((page - 1) * page_size, 0)
+        end_idx = start_idx + page_size
+        paged_games = all_games[start_idx:end_idx]
+        return jsonify({"games": paged_games, "page": page, "pageSize": page_size, "totalGames": total}), 200
+    except Exception as e:
+        logger.exception(f"Failed to fetch all games: {e}")
+        return jsonify({"games": [], "message": "Error fetching games"}), 500
 
 @app.route("/games/<string:date>", methods=["GET"])
 async def get_games_by_date(date):
@@ -346,32 +319,14 @@ async def get_games_by_date(date):
         datetime.strptime(date, "%Y-%m-%d")
     except ValueError:
         return jsonify({"message": "Invalid date format, expected YYYY-MM-DD"}), 400
-    games = await storage.get_games_by_date(date)
-    return jsonify({"date": date, "games": games}), 200
+    try:
+        games = await storage.get_games_by_date(date)
+        return jsonify({"date": date, "games": games}), 200
+    except Exception as e:
+        logger.exception(f"Failed to fetch games for date {date}: {e}")
+        return jsonify({"date": date, "games": [], "message": "Error fetching games"}), 500
 
 if __name__ == '__main__':
     import sys
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- **`process_subscriber`**: normalizes and timestamps subscriber entity before persist.
-- **`process_score_request`**: does all async work related to fetching scores and sending emails right before persisting the `score_request` entity.
-- `/scores/fetch` endpoint now only adds a `score_request` entity with the date and workflow. The caller gets an immediate 202 Accepted response.
-- Storage for games and email sending remain unchanged.
-- Other endpoints remain thin.
-
----
-
-If you want, we can also:
-
-- Add a GET endpoint to check `score_request` entities and their status.
-- Move game storage into entities rather than local in-memory storage.
-
-But per your instructions, this is the robust approach to move async logic to workflow functions and keep controllers lean.
-
-Let me know if you want me to proceed with those additional improvements!

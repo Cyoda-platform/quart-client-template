@@ -1,32 +1,3 @@
-Certainly! Your reasoning is absolutely correct: moving all async and business logic into workflow functions (`process_{entity_name}`) which are invoked before persistence is the right approach. This cleans controllers, centralizes logic, makes the codebase more robust and testable, and fully leverages the new workflow feature.
-
----
-
-### What will I do:
-
-- **All async logic currently in endpoints will move into workflows**.
-- Each workflow function will be async, receive the entity dict, and:
-  - Modify it as needed (e.g. add timestamps, status)
-  - Perform any async calls (HTTP, email, DB reads or writes of *other* entities)
-- Endpoints will be minimal: only validate input and call `add_item` with the correct workflow.
-- No endpoint will do `await entity_service.get_items()` or send emails directly.
-- Workflows **cannot** modify the same entity via add/update/delete to avoid recursion, but they *can* modify the entity dict directly.
-- We create one workflow per entity type needing processing.
-  
----
-
-### Entities with workflows:
-
-- `subscribe_request` → `process_subscribe_request`
-- `fetch_request` → `process_fetch_request`
-- (optional) `unsubscribe_request` could be refactored but since it involves deletion, better keep in controller (or we can do soft delete via workflow)
-- `game` entity only persisted by workflow, no workflow on it (workflow=None)
-
----
-
-### Here is the fully refactored complete code:
-
-```python
 import asyncio
 import datetime
 import logging
@@ -107,26 +78,12 @@ async def send_email(email: str, subject: str, body: str, html: bool = False):
     # TODO: Implement real email sending via SMTP or email service provider
     logger.info(f"Sending {'HTML' if html else 'plain text'} email to {email}:\nSubject: {subject}\n{body}")
 
-# === Workflow functions ===
-
 async def process_subscribe_request(entity: dict) -> dict:
-    """
-    Workflow for subscribe_request entity:
-    - Add processing timestamp
-    - Additional logic can be added here
-    """
     logger.info(f"Running workflow on subscribe_request entity: {entity}")
     entity["processed_at"] = datetime.datetime.utcnow().isoformat()
     return entity
 
 async def process_fetch_request(entity: dict) -> dict:
-    """
-    Workflow for fetch_request entity:
-    - Fetch NBA scores for date range
-    - Save games entities
-    - Retrieve subscribers
-    - Send emails accordingly
-    """
     logger.info(f"Running workflow on fetch_request entity: {entity}")
 
     api_key = entity.get("api_key")
@@ -149,7 +106,7 @@ async def process_fetch_request(entity: dict) -> dict:
             start_dt, end_dt = end_dt, start_dt
     except Exception as e:
         logger.error(f"Invalid date format in fetch_request: {e}")
-        return entity  # Don't abort persist, just skip fetching
+        return entity
 
     current_date = start_dt
     while current_date <= end_dt:
@@ -161,7 +118,6 @@ async def process_fetch_request(entity: dict) -> dict:
             current_date += datetime.timedelta(days=1)
             continue
 
-        # Save games entity, no workflow here to avoid recursion
         try:
             await entity_service.add_item(
                 token=cyoda_auth_service,
@@ -174,7 +130,6 @@ async def process_fetch_request(entity: dict) -> dict:
         except Exception as e:
             logger.exception(f"Failed to save games for {date_str}: {e}")
 
-        # Get subscribers
         try:
             subscribers_list = await entity_service.get_items(
                 token=cyoda_auth_service,
@@ -185,7 +140,6 @@ async def process_fetch_request(entity: dict) -> dict:
             logger.exception(f"Failed to get subscribers: {e}")
             subscribers_list = []
 
-        # Send notifications
         for subscriber in subscribers_list:
             email = subscriber.get("email")
             notif_type = subscriber.get("notificationtype")
@@ -203,12 +157,9 @@ async def process_fetch_request(entity: dict) -> dict:
 
         current_date += datetime.timedelta(days=1)
 
-    # Mark fetch_request entity as processed
     entity["processed_at"] = datetime.datetime.utcnow().isoformat()
     entity["status"] = "completed"
     return entity
-
-# === API endpoints ===
 
 @app.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
@@ -235,8 +186,6 @@ async def subscribe(data: SubscribeRequest):
 @app.route("/subscribe", methods=["DELETE"])
 @validate_request(UnsubscribeRequest)
 async def unsubscribe(data: UnsubscribeRequest):
-    # This endpoint requires deletion, which is not allowed inside workflow on same entity.
-    # So it stays in controller.
     try:
         subscribers_list = await entity_service.get_items(
             token=cyoda_auth_service,
@@ -353,7 +302,6 @@ async def get_games_by_date(date):
 @app.route("/games/fetch", methods=["POST"])
 @validate_request(FetchRequest)
 async def fetch_scores(data: FetchRequest):
-    # Just add fetch_request entity with workflow, no other logic here
     entity_data = {
         "api_key": data.api_key,
         "start_date": data.start_date,
@@ -376,19 +324,3 @@ if __name__ == "__main__":
     import logging
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Benefits of this refactoring:
-
-- **Controllers are minimal and focused on validation + delegation**
-- **All async, IO, and side effects live inside workflows**
-- **Workflow functions can be tested independently**
-- **No duplicate logic**
-- **No risk of infinite recursion since workflow won't add/update/delete the same entity**
-- **Better separation of concerns**
-
----
-
-If you want further help writing unit tests for workflows or endpoints, or adding more workflows, just ask!

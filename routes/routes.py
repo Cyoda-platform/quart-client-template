@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Optional
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class PetFetchRequest:
@@ -140,7 +139,7 @@ async def process_favorite_pet(entity: dict) -> dict:
         entity['favorited_at'] = datetime.utcnow().isoformat() + 'Z'
     return entity
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(PetFetchRequest)
 async def post_pets_fetch(data: PetFetchRequest):
     fetch_entity = {
@@ -158,7 +157,7 @@ async def post_pets_fetch(data: PetFetchRequest):
         logger.exception("Failed to trigger pet fetch")
         return jsonify({"error": "Failed to trigger pet fetch"}), 500
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def get_pets():
     try:
         items = await entity_service.get_items(
@@ -171,7 +170,7 @@ async def get_pets():
         logger.exception("Failed to get pets")
         return jsonify({"error": "Failed to get pets"}), 500
 
-@app.route("/pets/details", methods=["POST"])
+@routes_bp.route("/pets/details", methods=["POST"])
 @validate_request(PetDetailsRequest)
 async def post_pet_details(data: PetDetailsRequest):
     detail_entity = {"id": data.petId}
@@ -187,7 +186,7 @@ async def post_pet_details(data: PetDetailsRequest):
         logger.exception("Failed to trigger pet detail fetch")
         return jsonify({"error": "Failed to trigger pet detail fetch"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def get_pet_detail(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -203,7 +202,7 @@ async def get_pet_detail(pet_id: str):
         logger.exception(f"Failed to get pet detail for id={pet_id}")
         return jsonify({"error": "Failed to get pet details"}), 500
 
-@app.route("/pets/favorite", methods=["POST"])
+@routes_bp.route("/pets/favorite", methods=["POST"])
 @validate_request(PetFavoriteRequest)
 async def post_pet_favorite(data: PetFavoriteRequest):
     favorite_entity = {
@@ -221,7 +220,7 @@ async def post_pet_favorite(data: PetFavoriteRequest):
         logger.exception("Failed to mark pet as favorite")
         return jsonify({"error": "Failed to mark pet as favorite"}), 500
 
-@app.route("/pets/favorites", methods=["GET"])
+@routes_bp.route("/pets/favorites", methods=["GET"])
 async def get_pets_favorites():
     try:
         favorite_entities = await entity_service.get_items(
@@ -248,12 +247,3 @@ async def get_pets_favorites():
     except Exception:
         logger.exception("Failed to get favorite pets")
         return jsonify({"error": "Failed to get favorite pets"}), 500
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-        stream=sys.stdout,
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

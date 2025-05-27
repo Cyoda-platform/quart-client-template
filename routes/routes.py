@@ -1,25 +1,22 @@
-import asyncio
+from datetime import timezone, datetime
 import logging
-from datetime import datetime
-from typing import List, Dict, Optional
-
-import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
-from dataclasses import dataclass
-
+from quart import Blueprint, request, abort, jsonify
+from quart_schema import validate, validate_querystring, tag, operation_id
 from app_init.app_init import BeanFactory
-from common.config.config import ENTITY_VERSION
+from dataclasses import dataclass
+from typing import Optional, Dict, List
+import httpx
+
+logger = logging.getLogger(__name__)
+
+FINAL_STATES = {'FAILURE', 'SUCCESS', 'CANCELLED', 'CANCELLED_BY_USER', 'UNKNOWN', 'FINISHED'}
+PROCESSING_STATE = 'PROCESSING'
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 # Entity names in underscore lowercase
 entity_name_subscriber = "subscriber"
@@ -63,7 +60,6 @@ async def process_entity_job(entity: Dict) -> Dict:
     Processes the job: fetch NBA scores, store games, send notifications,
     and update the job status inside the entity dict.
     """
-    # Initial status update
     entity['status'] = "processing"
     entity['startedAt'] = datetime.utcnow().isoformat()
 
@@ -75,7 +71,6 @@ async def process_entity_job(entity: Dict) -> Dict:
         return entity
 
     try:
-        # Fetch NBA scores
         url = NBA_API_URL.format(date=date)
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=10)
@@ -88,7 +83,6 @@ async def process_entity_job(entity: Dict) -> Dict:
             entity['completedAt'] = datetime.utcnow().isoformat()
             return entity
 
-        # Delete existing games for this date (different entity_model allowed)
         condition = {
             "cyoda": {
                 "type": "group",
@@ -106,7 +100,7 @@ async def process_entity_job(entity: Dict) -> Dict:
         existing_games = await entity_service.get_items_by_condition(
             token=cyoda_auth_service,
             entity_model=entity_name_game,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             condition=condition,
         )
         for game in existing_games:
@@ -116,35 +110,32 @@ async def process_entity_job(entity: Dict) -> Dict:
                     await entity_service.delete_item(
                         token=cyoda_auth_service,
                         entity_model=entity_name_game,
-                        entity_version=ENTITY_VERSION,
+                        entity_version=None,
                         technical_id=str(tech_id),
                         meta={},
                     )
                 except Exception as e:
                     logger.warning(f"Failed to delete existing game {tech_id}: {e}")
 
-        # Add new games with date and workflow to process_game
         for game in games:
             game_to_store = dict(game)
             game_to_store["date"] = date
             await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model=entity_name_game,
-                entity_version=ENTITY_VERSION,
+                entity_version=None,
                 entity=game_to_store
             )
 
         logger.info(f"Stored {len(games)} games for {date}")
 
-        # Get subscribers to send notifications
         subscribers = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model=entity_name_subscriber,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
         )
         emails = [s.get("email") for s in subscribers if "email" in s]
 
-        # Send email notifications (simulate by logging)
         if emails:
             summary_lines = []
             for game in games:
@@ -155,7 +146,6 @@ async def process_entity_job(entity: Dict) -> Dict:
                 summary_lines.append(f"{away} {away_score} @ {home} {home_score}")
             summary = "\n".join(summary_lines)
             for email in emails:
-                # TODO: replace with real email sending logic
                 logger.info(f"Sending NBA scores notification to {email} for {date}:\n{summary}")
         else:
             logger.info("No subscribers to notify.")
@@ -172,16 +162,14 @@ async def process_entity_job(entity: Dict) -> Dict:
 
     return entity
 
-
 # -----------------------
 # Endpoints
 
-@app.route("/subscribe", methods=["POST"])
-@validate_request(SubscriptionRequest)
+@routes_bp.route("/subscribe", methods=["POST"])
+@validate(SubscriptionRequest)
 async def subscribe(data: SubscriptionRequest):
     email = data.email
     normalized_email = email.lower()
-    # Check if subscriber already exists
     condition = {
         "cyoda": {
             "type": "group",
@@ -199,7 +187,7 @@ async def subscribe(data: SubscriptionRequest):
     existing_items = await entity_service.get_items_by_condition(
         token=cyoda_auth_service,
         entity_model=entity_name_subscriber,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
         condition=condition,
     )
     if existing_items:
@@ -209,24 +197,24 @@ async def subscribe(data: SubscriptionRequest):
         await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=entity_name_subscriber,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             entity=data_dict
         )
         logger.info(f"New subscriber added: {email}")
     return jsonify({"message": "Subscription successful", "email": email})
 
-@app.route("/subscribers", methods=["GET"])
+@routes_bp.route("/subscribers", methods=["GET"])
 async def get_subscribers():
     items = await entity_service.get_items(
         token=cyoda_auth_service,
         entity_model=entity_name_subscriber,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
     )
     emails = [item.get("email") for item in items if "email" in item]
     return jsonify({"subscribers": emails})
 
+@routes_bp.route("/games/all", methods=["GET"])
 @validate_querystring(GamesAllQuery)
-@app.route("/games/all", methods=["GET"])
 async def get_all_games(query: GamesAllQuery):
     page = max(query.page, 1)
     page_size = max(query.pageSize, 1)
@@ -236,7 +224,7 @@ async def get_all_games(query: GamesAllQuery):
     all_games_full = await entity_service.get_items(
         token=cyoda_auth_service,
         entity_model=entity_name_game,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
     )
 
     filtered_games = []
@@ -266,7 +254,7 @@ async def get_all_games(query: GamesAllQuery):
         }
     })
 
-@app.route("/games/<date>", methods=["GET"])
+@routes_bp.route("/games/<date>", methods=["GET"])
 async def get_games_by_date(date: str):
     condition = {
         "cyoda": {
@@ -285,15 +273,15 @@ async def get_games_by_date(date: str):
     games = await entity_service.get_items_by_condition(
         token=cyoda_auth_service,
         entity_model=entity_name_game,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
         condition=condition,
     )
     if not games:
         return jsonify({"date": date, "games": []})
     return jsonify({"date": date, "games": games})
 
-@app.route("/fetch-scores", methods=["POST"])
-@validate_request(FetchScoresRequest)
+@routes_bp.route("/fetch-scores", methods=["POST"])
+@validate(FetchScoresRequest)
 async def fetch_scores(data: FetchScoresRequest):
     date = data.date
     job_data = {
@@ -304,16 +292,11 @@ async def fetch_scores(data: FetchScoresRequest):
     job_id = await entity_service.add_item(
         token=cyoda_auth_service,
         entity_model=entity_name_entity_job,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
         entity=job_data
     )
-    # No fire-and-forget task here, workflow handles everything
     return jsonify({
         "message": "Scores fetch job accepted",
         "jobId": str(job_id),
         "date": date
     })
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

@@ -1,0 +1,23 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com",
+                "notificationType": "summary"
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "awayScore": 98,
+                "awayTeam": "Team B",
+                "date": "2025-03-25",
+                "gameId": "12345",
+                "homeScore": 100,
+                "homeTeam": "Team A",
+                "status": "Final"
+            },
+            "entity_name": "game"
+        }
+    ]
+}

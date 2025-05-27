@@ -50,7 +50,6 @@ API_URL = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?
 async def fetch_nba_scores(date: str, api_key: str) -> Optional[List[dict]]:
     url = API_URL.format(date=date, key=api_key)
     try:
-        # Retrieve the bearer token from cyoda_auth_service
         token = await cyoda_auth_service.get_bearer_token()
         headers = {"Authorization": f"Bearer {token}"}
         
@@ -58,9 +57,11 @@ async def fetch_nba_scores(date: str, api_key: str) -> Optional[List[dict]]:
             resp = await client.get(url, headers=headers, timeout=20.0)
             resp.raise_for_status()
             return resp.json()
-    except httpx.HTTPError as e:
+    except httpx.HTTPStatusError as e:
+        logger.exception(f"HTTP error occurred while fetching NBA scores for {date}: {e.response.status_code} {e.response.text}")
+    except Exception as e:
         logger.exception(f"Failed to fetch NBA scores for {date}: {e}")
-        return None
+    return None
 
 def format_email_summary(games_for_date: List[dict]) -> str:
     lines = [f"NBA Scores Summary for {games_for_date[0]['Day']}:\n"] if games_for_date else ["NBA Scores Summary:\n"]

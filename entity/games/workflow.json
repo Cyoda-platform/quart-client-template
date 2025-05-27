@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to fetch NBA game scores, transform data, and notify subscribers",
+    "name": "nba_daily_scores_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch NBA games from external API",
+            "end_state": "Games_fetched",
+            "end_state_description": "NBA games data has been fetched",
+            "name": "fetch_nba_games_transition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_nba_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Transform fetched raw games into internal format",
+            "end_state": "Games_transformed",
+            "end_state_description": "Fetched NBA games transformed into internal format",
+            "name": "transform_games_transition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_transform_games"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Games_fetched",
+            "start_state_description": "NBA games data has been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Notify subscribers with relevant game scores",
+            "end_state": "Subscribers_notified",
+            "end_state_description": "Subscribers have been notified",
+            "name": "notify_subscribers_transition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_notify_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Games_transformed",
+            "start_state_description": "Fetched NBA games transformed into internal format"
+        }
+    ]
+}

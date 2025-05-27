@@ -1,57 +1,3 @@
-Understood! We want to refactor the code by moving all async logic related to processing or side effects into the `process_{entity_name}` workflow functions, since these are invoked asynchronously before persistence of the entity.
-
-Key points/reminders:
-- Workflow functions get the entity dict as input, can modify it.
-- They can call `entity_service` methods to get/add other entities of **different** models.
-- They **cannot** add/update/delete entities of the same model to avoid infinite recursion.
-- Workflow functions can perform asynchronous tasks (including fire and forget).
-- This will keep the endpoint handlers simple and lean, offloading business logic to workflows.
-
----
-
-### Refactoring plan:
-
-1. **Subscriber entity workflow (`process_subscriber`)**  
-   - Normalize email (lowercase) — already there.  
-   - No other logic in subscribe endpoint except checking if subscriber exists. That check remains in endpoint as it's a query before add.  
-   - No async side effects to move here.
-
-2. **Entity job workflow (`process_entity_job`)**  
-   - Job is created in fetch-scores endpoint, then fire-and-forget `process_fetch_scores` task is started.  
-   - Move the entire `process_fetch_scores` logic *inside* `process_entity_job`.  
-   - The workflow function will run asynchronously before saving the job entity, so we can perform all fetching, processing, storing games, sending emails inside it.  
-   - Since this workflow is invoked **before** persisting the job entity, it can update other entities (games, subscribers).  
-   - Since the job entity itself is being persisted, we only modify `entity` dict inside the workflow, no calls to add/update/delete the same entity model.  
-   - We will remove the fire-and-forget task from the endpoint and just add the job entity (it will trigger the workflow).  
-   - The workflow can update the state of the job entity via modifying the `entity` dict (e.g. `entity['status'] = ...`), and persist other entities (games, etc).
-
-3. **Game entity workflow (`process_game`)**  
-   - Currently no special async logic on game entity add, so keep it as pass-through.
-
----
-
-### Implementation notes:
-
-- We need to refactor `process_entity_job` to:
-  - Mark status "processing"
-  - Fetch NBA scores
-  - Delete existing games of that date (using a different entity_model => allowed)
-  - Add new games (different entity_model)
-  - Send email notifications (get subscribers, fire emails)
-  - Update job status to "completed" or "failed" by modifying `entity` dict (allowed)
-  - Return the final modified entity dict to persist.
-
----
-
-### Result
-
-The endpoint `/fetch-scores` will just add the job entity with minimal fields and workflow `process_entity_job`. No fire-and-forget or manual updates needed.
-
----
-
-### Here is the fully refactored code reflecting your request:
-
-```python
 import asyncio
 import logging
 from datetime import datetime
@@ -125,6 +71,7 @@ async def process_entity_job(entity: Dict) -> Dict:
     if not date:
         entity['status'] = "failed"
         entity['error'] = "Missing date field"
+        entity['completedAt'] = datetime.utcnow().isoformat()
         return entity
 
     try:
@@ -138,6 +85,7 @@ async def process_entity_job(entity: Dict) -> Dict:
         if not games:
             entity['status'] = "completed"
             entity['message'] = f"No games found for date {date}"
+            entity['completedAt'] = datetime.utcnow().isoformat()
             return entity
 
         # Delete existing games for this date (different entity_model allowed)
@@ -233,6 +181,7 @@ async def process_entity_job(entity: Dict) -> Dict:
 @validate_request(SubscriptionRequest)
 async def subscribe(data: SubscriptionRequest):
     email = data.email
+    normalized_email = email.lower()
     # Check if subscriber already exists
     condition = {
         "cyoda": {
@@ -242,7 +191,7 @@ async def subscribe(data: SubscriptionRequest):
                 {
                     "jsonPath": "$.email",
                     "operatorType": "EQUALS",
-                    "value": email.lower(),
+                    "value": normalized_email,
                     "type": "simple"
                 }
             ]
@@ -281,8 +230,8 @@ async def get_subscribers():
 @validate_querystring(GamesAllQuery)
 @app.route("/games/all", methods=["GET"])
 async def get_all_games(query: GamesAllQuery):
-    page = query.page
-    page_size = query.pageSize
+    page = max(query.page, 1)
+    page_size = max(query.pageSize, 1)
     start_date = query.startDate
     end_date = query.endDate
 
@@ -359,7 +308,7 @@ async def fetch_scores(data: FetchScoresRequest):
         entity_model=entity_name_entity_job,
         entity_version=ENTITY_VERSION,
         entity=job_data,
-        workflow=process_entity_job,  # Moved all processing inside this workflow
+        workflow=process_entity_job,
     )
     # No fire-and-forget task here, workflow handles everything
     return jsonify({
@@ -371,21 +320,3 @@ async def fetch_scores(data: FetchScoresRequest):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### What was moved into workflows?
-
-- The entire async NBA scores fetching, deleting old games, adding new games, sending notification emails, and updating the job status was moved into `process_entity_job`.
-- The `/fetch-scores` endpoint simply creates the job entity with minimal data and triggers the workflow.
-- `process_subscriber` normalizes email.
-- `process_game` remains simple, no extra logic currently.
-
----
-
-This approach keeps endpoints minimal, moves business logic into the guaranteed-before-persist workflow functions, which can asynchronously modify entity state and manage related entities safely.
-
----
-
-If you want me to help with adding real email sending or any other logic inside workflows, just ask!

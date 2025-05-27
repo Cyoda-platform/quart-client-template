@@ -1,66 +1,3 @@
-Absolutely, moving the business logic into the workflow functions is a great design improvement. It will clean up the route handlers (controllers), make the code more modular, and leverage the newly introduced workflow mechanism as intended.
-
----
-
-### Key points to consider:
-- Workflow functions are called **once per entity** before it is persisted.
-- **You cannot add/update/delete entities of the same model inside that workflow function** (to avoid recursion).
-- You **can**:
-  - Modify the current entity in-place (e.g., add attributes).
-  - Add or update entities of **different entity models**.
-  - Perform async tasks such as sending emails.
-- The workflow functions are async and can perform fire-and-forget or awaited async calls.
-
----
-
-### What to move into workflow functions?
-
-1. **Subscriber subscription endpoint:**
-   - Currently, the endpoint checks if subscriber exists, then adds the subscriber.
-   - We cannot check existence inside the workflow because it would cause recursion on the same entity model.
-   - So checking existence stays in the endpoint.
-   - But sending a welcome email or any post-addition async logic can move to `process_subscriber`.
-
-2. **Fetch-scores endpoint:**
-   - Currently, it triggers an async task `process_fetch_store_notify` which:
-     - Fetches NBA scores from external API.
-     - Saves games entity.
-     - Sends notification emails to subscribers.
-   - We can move all this logic to `process_game` workflow because that workflow is called before persisting the games entity.
-   - So endpoint just adds a dummy entity with date (or minimal info) and the workflow function will fetch scores, persist details, notify subscribers.
-   - Since we cannot update/delete the same entity inside workflow, we cannot call `update_item` for game entity inside `process_game`. So the workflow will:
-     - Fetch scores.
-     - Modify the entity in-place (add "games" data).
-     - Add secondary entities if needed (like raw data).
-     - Send notifications.
-   - This means the initial entity passed to `add_item` could be minimal (`{"date": "2024-06-01"}`), and the workflow will fetch and enrich the entity before persistence.
-
-3. **Subscriber list and game list endpoints:**
-   - These are simple GET endpoints, no add/update logic, so no workflow needed.
-
----
-
-### Updated implementation plan
-
-- **Subscriber Workflow:**
-  - On adding a subscriber entity, send a welcome email asynchronously inside `process_subscriber`.
-  - Modify entity if needed (e.g., add `subscribed_at` timestamp).
-
-- **Game Workflow:**
-  - On adding a game entity (with date), fetch NBA scores for that date inside `process_game`.
-  - Add `games` key with fetched games data to the entity dict (modifying entity in place).
-  - Send notification emails to all subscribers.
-  - Optionally, add raw scores or supplementary entities of a different model (e.g., "nba_scores_raw") if needed.
-
-- **Endpoint changes:**
-  - `/subscribe`: only check if exists, then add subscriber with workflow attached.
-  - `/fetch-scores`: add entity with date only, workflow enriches and persists full data + sends notifications.
-
----
-
-### Complete updated code
-
-```python
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -105,7 +42,7 @@ NBA_API_URL = "https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{da
 
 
 async def send_email(to_emails: list, subject: str, body: str):
-    # Mock send email
+    # Mock sending email
     await asyncio.sleep(0.1)
     logger.info(f"Email sent to {len(to_emails)} recipients\nSubject: {subject}\n{body}")
 
@@ -164,7 +101,6 @@ async def check_subscriber_exists(email: str) -> bool:
         return False
 
 
-# Workflow function for subscriber entity
 async def process_subscriber(entity: dict) -> dict:
     """
     Workflow called before persisting new subscriber entity.
@@ -172,7 +108,6 @@ async def process_subscriber(entity: dict) -> dict:
     """
     entity['subscribed_at'] = datetime.utcnow().isoformat()
 
-    # Send welcome email asynchronously (fire and forget)
     async def _send_welcome():
         try:
             await send_email(
@@ -187,7 +122,6 @@ async def process_subscriber(entity: dict) -> dict:
     return entity
 
 
-# Workflow function for game entity
 async def process_game(entity: dict) -> dict:
     """
     Workflow called before persisting a new game entity.
@@ -200,7 +134,6 @@ async def process_game(entity: dict) -> dict:
         logger.warning("Game entity missing 'date' field")
         return entity
 
-    # Fetch NBA scores for the date
     url = NBA_API_URL.format(date=date)
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -211,10 +144,8 @@ async def process_game(entity: dict) -> dict:
         logger.exception(f"Failed to fetch NBA scores for {date}")
         scores = []
 
-    # Add fetched games data to the entity
     entity["games"] = scores
 
-    # Add raw scores entity (different model) for archival or detailed processing
     try:
         await entity_service.add_item(
             token=cyoda_auth_service,
@@ -224,12 +155,11 @@ async def process_game(entity: dict) -> dict:
                 "date": date,
                 "raw_data": scores,
             },
-            workflow=None  # No workflow to avoid recursion on this unrelated entity
+            workflow=None
         )
     except Exception:
         logger.exception("Failed to add raw NBA scores entity")
 
-    # Notify all subscribers asynchronously (fire and forget)
     async def _notify_subscribers():
         try:
             subscribers = await list_subscribers_emails()
@@ -245,20 +175,16 @@ async def process_game(entity: dict) -> dict:
 
     asyncio.create_task(_notify_subscribers())
 
-    # You can add/update other different entities here if needed
-
     return entity
 
 
 @app.route("/subscribe", methods=["POST"])
 @validate_request(Subscriber)
 async def subscribe(data: Subscriber):
-    # Check existence here - must remain here to avoid recursion
     exists = await check_subscriber_exists(data.email)
     if exists:
         return jsonify({"message": "Email already subscribed", "email": data.email}), 409
 
-    # Add subscriber entity with workflow
     try:
         await entity_service.add_item(
             token=cyoda_auth_service,
@@ -283,13 +209,11 @@ async def get_subscribers():
 @app.route("/fetch-scores", methods=["POST"])
 @validate_request(FetchScores)
 async def fetch_scores(data: FetchScores):
-    # Validate date format
     try:
         datetime.strptime(data.date, "%Y-%m-%d")
     except ValueError:
         return jsonify({"message": "Invalid date format, expected YYYY-MM-DD"}), 400
 
-    # Add game entity with just date; workflow will fetch scores, persist data, notify subscribers
     try:
         await entity_service.add_item(
             token=cyoda_auth_service,
@@ -378,36 +302,7 @@ async def get_games_by_date(date):
 
 
 if __name__ == '__main__':
-    import sys
     import logging
 
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- **Subscriber endpoint:**
-  - Checks existence remains in the endpoint.
-  - Calls `add_item` with `workflow=process_subscriber`.
-  - `process_subscriber` adds a timestamp and sends welcome email asynchronously.
-
-- **Fetch-scores endpoint:**
-  - Simply calls `add_item` with a minimal entity `{ "date": <date> }` and `workflow=process_game`.
-  - `process_game` does:
-    - Fetch NBA scores.
-    - Adds `games` data to the entity (which will be persisted).
-    - Adds supplementary raw data entity.
-    - Sends notification emails asynchronously.
-
-- All email sending and external API fetching moved into workflow functions, freeing endpoints from async task scheduling and logic.
-
-- No recursion risk because workflow functions add/update only different entity models or modify the current entity in-place.
-
----
-
-This approach fully utilizes the workflow feature to encapsulate async tasks and side effects related to entity persistence.
-
-Let me know if you want me to help further refactor or add tests!

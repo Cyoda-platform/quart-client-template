@@ -1,0 +1,26 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": 123,
+                "name": "Fluffy",
+                "status": "available",
+                "tags": [
+                    "cute",
+                    "small"
+                ],
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "orderId": 1,
+                "petId": 123,
+                "quantity": 2,
+                "status": "placed"
+            },
+            "entity_name": "order"
+        }
+    ]
+}

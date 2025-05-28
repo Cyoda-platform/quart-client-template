@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to search, filter, and cache pets from Petstore API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the pet search process",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets data fetched from external API",
+            "name": "start_pet_search",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch pets data from Petstore API",
+                        "name": "process_fetch_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Filter fetched pets according to criteria",
+            "end_state": "Pets_filtered",
+            "end_state_description": "Pets data filtered by type and tags",
+            "name": "filter_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Filter pets based on type and tags",
+                        "name": "process_filter_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets data fetched from external API"
+        },
+        {
+            "automated": true,
+            "description": "Cache filtered pets in entity state",
+            "end_state": "Pets_cached",
+            "end_state_description": "Filtered pets cached in entity",
+            "name": "cache_filtered_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Cache filtered pets into the entity",
+                        "name": "process_cache_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_filtered",
+            "start_state_description": "Pets data filtered by type and tags"
+        }
+    ]
+}

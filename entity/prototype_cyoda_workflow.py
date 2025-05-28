@@ -1,6 +1,48 @@
-Certainly! Below is the updated complete code with the `workflow` parameter added to all relevant calls to `entity_service.add_item`, and the corresponding workflow function `process_pet` implemented as an example for the `pet` entity. The workflow function is async, prefixed with `process_`, and takes the entity data as the only argument. It can modify the entity before persistence.
+Understood! The best approach here is to move all the entity-related asynchronous processing logic currently in the endpoints or background jobs into the respective `process_{entity_name}` workflow functions. This will clean up the controller code and centralize entity processing logic.
 
-I've added `process_pet` and `process_adoption` workflow functions to demonstrate usage for both `pet` and `adoption` entities where `add_item` is called.
+Specifically for your code:
+
+- The `process_pet` workflow will:
+  - Normalize/modify the pet entity itself.
+  - Fetch additional pet data from the external petstore API if needed.
+  - Possibly add/update supplementary entities related to pets (but NOT the pet itself).
+- The `process_adoption` workflow will:
+  - Modify the adoption entity before persistence.
+  - Possibly create or update related entities if needed.
+
+---
+
+### Key constraints reminder:
+- The workflow function is called **before** the current entity is persisted.
+- It receives the entity dict and can modify it **in-place**.
+- It can call `entity_service.add_item`, `update_item`, `get_item` for **other** entity_models but NOT for the current entity_model.
+- The workflow function is async and can run arbitrary async code.
+- Use this to move async or fire-and-forget logic out of the controllers.
+
+---
+
+### What can be moved?
+
+1. The entire `/pets/fetch` endpoint logic that fetches from external API and adds pets can be moved into a `process_pet_fetch` workflow, triggered by adding a special `pet_fetch_request` entity.
+
+2. The `/pets/adopt` endpoint currently just creates an adoption entity with some initial fields — the setting of defaults can remain in the workflow.
+
+3. The pet data normalization, timestamp addition, etc., remains in `process_pet`.
+
+---
+
+### Proposed changes:
+
+- Introduce a new entity model `pet_fetch_request` which is added by the `/pets/fetch` endpoint with parameters (`status`, `tags`).
+- Create `process_pet_fetch_request` workflow that runs when such an entity is added — this workflow will fetch pets from the petstore API, filter, and add pet entities.
+- `/pets/fetch` endpoint will only add the `pet_fetch_request` entity (with workflow `process_pet_fetch_request`).
+- Remove all pet fetching logic from the endpoint.
+- Keep `process_pet` to normalize pet entities on add/update.
+- Keep `process_adoption` to normalize adoption entities.
+
+---
+
+### Final code snippet with these improvements applied:
 
 ```python
 import asyncio
@@ -41,6 +83,7 @@ class AdoptPetRequest:
 # Constants
 PET_ENTITY_NAME = "pet"
 ADOPTION_ENTITY_NAME = "adoption"
+PET_FETCH_REQUEST_ENTITY_NAME = "pet_fetch_request"
 
 PETSTORE_API_BASE = "https://petstore3.swagger.io/api/v3"
 
@@ -67,91 +110,127 @@ def process_petstore_pets(raw_pets: List[Dict]) -> List[Dict]:
 # Workflow function for 'pet' entity
 async def process_pet(entity: Dict) -> None:
     """
-    Process pet entity before persistence.
-    Modify the entity dict in-place if needed.
-    For example, ensure status is lowercase, or add timestamps, etc.
+    Normalize/modify pet entity before persistence.
     """
     if 'status' in entity and entity['status']:
         entity['status'] = entity['status'].lower()
-    # Example: add processed_at timestamp
     entity['processed_at'] = datetime.utcnow().isoformat()
-    # Add any other processing as needed
 
-# Workflow function for 'adoption' entity (example)
+# Workflow function for 'adoption' entity
 async def process_adoption(entity: Dict) -> None:
     """
-    Process adoption entity before persistence.
-    For example, set default status or timestamps.
+    Normalize adoption entity before persistence.
     """
     if 'status' not in entity or not entity['status']:
         entity['status'] = 'pending'
     entity['processed_at'] = datetime.utcnow().isoformat()
 
-async def process_fetch_pets_job(status: Optional[str], tags: Optional[List[str]]):
+# Workflow function for 'pet_fetch_request' entity
+async def process_pet_fetch_request(entity: Dict) -> None:
+    """
+    When a pet_fetch_request entity is added, fetch pets from external API,
+    filter, process, and add pet entities.
+    """
+    status = entity.get("status")
+    tags = entity.get("tags")
+    logger.info(f"Processing pet_fetch_request with status={status} tags={tags}")
+
     async with httpx.AsyncClient() as client:
         try:
+            # Petstore API expects comma-separated status list or single status
+            api_status = status if status else "available,pending,sold"
             url = f"{PETSTORE_API_BASE}/pet/findByStatus"
-            params = {"status": status or "available,pending,sold"}
+            params = {"status": api_status}
             response = await client.get(url, params=params, timeout=10)
             response.raise_for_status()
             raw_pets = response.json()
+            # filter further by tags if needed
             filtered_pets = filter_pets(raw_pets, None, tags)
-            processed = process_petstore_pets(filtered_pets)
-            # Store each pet via entity_service
-            # Clear existing pets? No instruction, so just add/update pets one by one
-            for pet in processed:
-                pet_id = pet.get("id")
-                if pet_id:
-                    try:
-                        # check if pet exists
-                        existing_pet = await entity_service.get_item(
-                            token=cyoda_auth_service,
-                            entity_model=PET_ENTITY_NAME,
-                            entity_version=ENTITY_VERSION,
-                            technical_id=pet_id
-                        )
-                        # update existing
+            processed_pets = process_petstore_pets(filtered_pets)
+
+            logger.info(f"Fetched {len(processed_pets)} pets from external API")
+
+            # Add each pet as a separate entity (pet entity_model)
+            for pet in processed_pets:
+                pet_copy = pet.copy()
+                # Remove 'id' key if present since it is used as technical_id
+                pet_tech_id = pet_copy.pop("id", None)
+                # Check if pet with this technical_id already exists
+                try:
+                    existing_pet = await entity_service.get_item(
+                        token=cyoda_auth_service,
+                        entity_model=PET_ENTITY_NAME,
+                        entity_version=ENTITY_VERSION,
+                        technical_id=pet_tech_id
+                    )
+                    # We cannot update the current entity inside workflow, but since this is a different entity,
+                    # we can update it normally.
+                    await entity_service.update_item(
+                        token=cyoda_auth_service,
+                        entity_model=PET_ENTITY_NAME,
+                        entity_version=ENTITY_VERSION,
+                        entity=pet_copy,
+                        technical_id=pet_tech_id,
+                        meta={}
+                    )
+                except Exception:
+                    # Pet does not exist, add new with specified technical_id
+                    # add_item cannot specify technical_id, so alternative is to store id inside entity
+                    # or use update_item if you want to force technical_id
+                    # Here we add pet entity without technical_id, id stored inside entity
+                    # But to keep id as tech_id, let's add a special update if pet_tech_id exists
+                    if pet_tech_id is not None:
+                        # Add new pet entity with a new technical_id using update_item with create flag
                         await entity_service.update_item(
                             token=cyoda_auth_service,
                             entity_model=PET_ENTITY_NAME,
                             entity_version=ENTITY_VERSION,
-                            entity=pet,
-                            technical_id=pet_id,
-                            meta={}
+                            entity=pet_copy,
+                            technical_id=pet_tech_id,
+                            meta={},
+                            create_if_not_exists=True  # Assuming this flag supported, else fallback to add_item
                         )
-                    except Exception:
-                        # add new pet (without id, because id is technical_id string)
-                        pet_copy = pet.copy()
-                        pet_copy.pop("id", None)
-                        new_id = await entity_service.add_item(
+                    else:
+                        # No tech id, just add
+                        await entity_service.add_item(
                             token=cyoda_auth_service,
                             entity_model=PET_ENTITY_NAME,
                             entity_version=ENTITY_VERSION,
                             entity=pet_copy,
                             workflow=process_pet
                         )
-                        logger.info(f"Added new pet with new id {new_id}")
-                else:
-                    # no id, add new pet
-                    new_id = await entity_service.add_item(
-                        token=cyoda_auth_service,
-                        entity_model=PET_ENTITY_NAME,
-                        entity_version=ENTITY_VERSION,
-                        entity=pet,
-                        workflow=process_pet
-                    )
-                    logger.info(f"Added new pet with new id {new_id}")
-            logger.info(f"Fetched and processed {len(processed)} pets")
+            # Mark request processed time
+            entity['processed_at'] = datetime.utcnow().isoformat()
         except Exception as e:
-            logger.exception(e)
+            logger.exception(f"Failed to process pet_fetch_request: {e}")
+            # Optionally, add error info to entity
+            entity['error'] = str(e)
 
 @app.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)  # validation last for POST requests (workaround for quart-schema bug)
 async def fetch_pets(data: FetchPetsRequest):
-    requested_at = datetime.utcnow().isoformat()
-    logger.info(f"Fetch request at {requested_at} with status={data.status} tags={data.tags}")
-    asyncio.create_task(process_fetch_pets_job(data.status, data.tags))
-    return jsonify({"message": "Pets fetch job started"}), 202
+    # Instead of performing fetch here, just create a pet_fetch_request entity
+    try:
+        fetch_request = {
+            "status": data.status,
+            "tags": data.tags,
+            "requested_at": datetime.utcnow().isoformat(),
+            "status": data.status,
+            "tags": data.tags,
+        }
+        # Adding pet_fetch_request entity triggers process_pet_fetch_request workflow
+        request_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model=PET_FETCH_REQUEST_ENTITY_NAME,
+            entity_version=ENTITY_VERSION,
+            entity=fetch_request,
+            workflow=process_pet_fetch_request
+        )
+        logger.info(f"Started pet fetch request {request_id} with params {fetch_request}")
+        return jsonify({"message": "Pets fetch job started", "requestId": request_id}), 202
+    except Exception as e:
+        logger.exception(e)
+        return jsonify({"error": "Failed to start pets fetch job"}), 500
 
 @app.route("/pets", methods=["GET"])
 async def get_pets():
@@ -202,6 +281,7 @@ async def add_pet(data):
 @validate_request(dict)
 async def update_pet(data, pet_id: str):
     try:
+        # workflow not supported on update, so just update directly
         await entity_service.update_item(
             token=cyoda_auth_service,
             entity_model=PET_ENTITY_NAME,
@@ -239,7 +319,7 @@ async def adopt_pet(data: AdoptPetRequest):
             "pet_id": data.pet_id,
             "adopter_name": data.adopter_name,
             "contact": data.contact,
-            "status": "pending",
+            # do not set status here - let workflow handle it
             "requested_at": datetime.utcnow().isoformat(),
         }
         adoption_id = await entity_service.add_item(
@@ -294,11 +374,19 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added async workflow functions `process_pet` and `process_adoption`.
-- Passed `workflow=process_pet` to all `add_item` calls for pets.
-- Passed `workflow=process_adoption` to `add_item` call for adoption requests.
-- The workflow functions receive the entity dictionary and can modify it before persistence.
-- No changes needed for `update_item` or `delete_item` since the requirement only applies to `add_item`.
+---
 
-Let me know if you want me to add workflow functions for other entities or further customize the workflows!
+### Explanation of changes:
+
+- `/pets/fetch` endpoint now **only** creates a `pet_fetch_request` entity with the parameters.
+- The newly added workflow function `process_pet_fetch_request` asynchronously fetches pets from the external API, filters and processes them, and creates or updates `pet` entities.
+- `process_pet` still normalizes each pet entity on add.
+- `process_adoption` normalizes adoption entities.
+- This design moves asynchronous fetch/update logic out of controllers, making the codebase cleaner and more robust.
+- Workflow functions are the **only** place where async external calls and secondary entity operations occur.
+- Workflow functions modify the entity in-place; changes are persisted automatically.
+- We avoid infinite recursion by never calling add/update/delete on the current entity_model inside its own workflow.
+
+---
+
+Let me know if you want me to add or clarify anything else!

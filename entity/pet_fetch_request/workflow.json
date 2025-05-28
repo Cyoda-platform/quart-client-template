@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for fetching, updating, and finalizing pet data processing",
+    "name": "pet_fetch_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start fetching pets from external API",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets have been fetched from external API",
+            "name": "start_fetch_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Update processed pet data",
+            "end_state": "Pets_updated",
+            "end_state_description": "Pets data has been updated",
+            "name": "update_pets_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_update_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets have been fetched from external API"
+        },
+        {
+            "automated": true,
+            "description": "Finalize the pet fetch request processing",
+            "end_state": "Processing_finalized",
+            "end_state_description": "Pet fetch request processing finalized",
+            "name": "finalize_pet_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_finalize"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_updated",
+            "start_state_description": "Pets data has been updated"
+        }
+    ]
+}

@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to handle pet fetching, adoption and finalization for Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Trigger fetching pets from external API",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets data has been fetched and processed",
+            "name": "start_fetch",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch pets from external API and process",
+                        "name": "process_fetch"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Submit adoption request",
+            "end_state": "Adoption_submitted",
+            "end_state_description": "Adoption request has been submitted",
+            "name": "submit_adoption",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Process adoption request",
+                        "name": "process_adopt"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets data has been fetched and processed"
+        },
+        {
+            "automated": true,
+            "description": "Finalize the pet processing workflow",
+            "end_state": "Finalized",
+            "end_state_description": "Workflow finalized",
+            "name": "finalize_process",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Finalize workflow tasks",
+                        "name": "process_finalize"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Adoption_submitted",
+            "start_state_description": "Adoption request has been submitted"
+        }
+    ]
+}

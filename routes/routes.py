@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class FetchPetsRequest:
@@ -106,7 +105,6 @@ async def process_pet_fetch_request(entity: Dict) -> None:
                             meta={}
                         )
                     except Exception:
-                        # If update_item with create_if_not_exists is not supported, fallback to add_item without tech id
                         try:
                             await entity_service.update_item(
                                 token=cyoda_auth_service,
@@ -136,7 +134,7 @@ async def process_pet_fetch_request(entity: Dict) -> None:
             logger.exception(f"Failed to process pet_fetch_request: {e}")
             entity['error'] = str(e)
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)
 async def fetch_pets(data: FetchPetsRequest):
     try:
@@ -157,7 +155,7 @@ async def fetch_pets(data: FetchPetsRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to start pets fetch job"}), 500
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def get_pets():
     try:
         pets = await entity_service.get_items(
@@ -170,7 +168,7 @@ async def get_pets():
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pets"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def get_pet(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -186,7 +184,7 @@ async def get_pet(pet_id: str):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pet"}), 500
 
-@app.route("/pets", methods=["POST"])
+@routes_bp.route("/pets", methods=["POST"])
 @validate_request(dict)
 async def add_pet(data):
     try:
@@ -201,7 +199,7 @@ async def add_pet(data):
         logger.exception(e)
         return jsonify({"error": "Failed to add pet"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["PUT"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["PUT"])
 @validate_request(dict)
 async def update_pet(data, pet_id: str):
     try:
@@ -218,7 +216,7 @@ async def update_pet(data, pet_id: str):
         logger.exception(e)
         return jsonify({"error": "Failed to update pet"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["DELETE"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["DELETE"])
 async def delete_pet(pet_id: str):
     try:
         await entity_service.delete_item(
@@ -233,7 +231,7 @@ async def delete_pet(pet_id: str):
         logger.exception(e)
         return jsonify({"error": "Failed to delete pet"}), 500
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptPetRequest)
 async def adopt_pet(data: AdoptPetRequest):
     try:
@@ -256,7 +254,7 @@ async def adopt_pet(data: AdoptPetRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to submit adoption request"}), 500
 
-@app.route("/adoptions", methods=["GET"])
+@routes_bp.route("/adoptions", methods=["GET"])
 async def get_adoptions():
     try:
         adoptions = await entity_service.get_items(
@@ -269,7 +267,7 @@ async def get_adoptions():
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve adoptions"}), 500
 
-@app.route("/adoptions/<string:adoption_id>", methods=["GET"])
+@routes_bp.route("/adoptions/<string:adoption_id>", methods=["GET"])
 async def get_adoption(adoption_id: str):
     try:
         adoption = await entity_service.get_item(
@@ -284,12 +282,3 @@ async def get_adoption(adoption_id: str):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve adoption"}), 500
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(
-        format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
-        level=logging.INFO,
-        stream=sys.stdout,
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

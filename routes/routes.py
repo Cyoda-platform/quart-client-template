@@ -3,8 +3,8 @@ import asyncio
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from quart import Quart, request, jsonify, abort
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, request, jsonify, abort
+from quart_schema import validate_request
 import httpx
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -12,8 +12,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -163,7 +162,7 @@ async def process_pet_search(entity: Dict[str, Any]) -> None:
 
     entity["pets"] = filtered_pets
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearch)
 async def search_pets(data: PetSearch):
     data_dict = data.__dict__
@@ -180,7 +179,7 @@ async def search_pets(data: PetSearch):
     pets = data_dict.get("pets", [])
     return jsonify({"pets": pets})
 
-@app.route("/pets/order", methods=["POST"])
+@routes_bp.route("/pets/order", methods=["POST"])
 @validate_request(OrderRequest)
 async def place_order(data: OrderRequest):
     pet_id = data.petId
@@ -220,7 +219,7 @@ async def place_order(data: OrderRequest):
         "status": order_entity["status"]
     })
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def get_pet(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -234,7 +233,7 @@ async def get_pet(pet_id: str):
         abort(404, "Pet not found")
     return jsonify(pet)
 
-@app.route("/orders/<int:order_id>", methods=["GET"])
+@routes_bp.route("/orders/<int:order_id>", methods=["GET"])
 async def get_order(order_id: int):
     order = orders_cache.get(order_id)
     if not order:
@@ -245,8 +244,3 @@ async def get_order(order_id: int):
         "quantity": order["quantity"],
         "status": order["status"]
     })
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

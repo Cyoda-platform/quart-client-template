@@ -1,0 +1,28 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": "cat",
+                "id": "1",
+                "name": "Fluffy",
+                "status": "available",
+                "tags": [
+                    "cute",
+                    "white"
+                ]
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "adopter_name": "John Doe",
+                "contact": "john@example.com",
+                "pet_id": "1",
+                "request_id": "123",
+                "requested_at": "2024-01-01T12:00:00Z",
+                "status": "pending"
+            },
+            "entity_name": "adoption"
+        }
+    ]
+}

@@ -1,0 +1,37 @@
+{
+    "description": "Workflow for processing and enriching pet orders",
+    "name": "purrfect_pets_order_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing a new order",
+            "end_state": "Order_processing_started",
+            "end_state_description": "Order processing has started",
+            "name": "start_order_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrate order processing steps",
+                        "name": "process_order"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Complete order processing",
+            "end_state": "Order_processed",
+            "end_state_description": "Order has been processed and enriched",
+            "name": "complete_order_processing",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Order_processing_started",
+            "start_state_description": "Order processing has started"
+        }
+    ]
+}

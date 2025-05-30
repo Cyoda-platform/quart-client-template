@@ -3,16 +3,19 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
-from app_init.app_init import entity_service
-from common.config.config import ENTITY_VERSION
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
+from app_init.app_init import BeanFactory
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+services = factory.get_services()
+entity_service = services['entity_service']
+cyoda_auth_service = services['cyoda_auth_service']
 
 # Constants for egg cooking durations in seconds
 EGG_COOK_TIMES = {
@@ -35,7 +38,7 @@ async def alarm_timer(alarm_id: str):
         item = await entity_service.get_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             technical_id=alarm_id
         )
         if not item:
@@ -54,7 +57,7 @@ async def alarm_timer(alarm_id: str):
         await entity_service.update_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
+            entity_version=None,
             entity=item,
             technical_id=alarm_id,
             meta={}
@@ -107,7 +110,7 @@ class AlarmRequest:
 class CancelRequest:
     alarm_id: str
 
-@app.route("/api/alarm/set", methods=["POST"])
+@routes_bp.route("/api/alarm/set", methods=["POST"])
 @validate_request(AlarmRequest)
 async def set_alarm(data: AlarmRequest):
     egg_type = data.egg_type.lower()
@@ -118,7 +121,7 @@ async def set_alarm(data: AlarmRequest):
     existing_alarms = await entity_service.get_items(
         token=cyoda_auth_service,
         entity_model=entity_name,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
     )
     for alarm in existing_alarms:
         alarm_id = alarm.get("id")
@@ -126,7 +129,7 @@ async def set_alarm(data: AlarmRequest):
             await entity_service.delete_item(
                 token=cyoda_auth_service,
                 entity_model=entity_name,
-                entity_version=ENTITY_VERSION,
+                entity_version=None,
                 technical_id=alarm_id,
                 meta={}
             )
@@ -140,7 +143,7 @@ async def set_alarm(data: AlarmRequest):
     alarm_id = await entity_service.add_item(
         token=cyoda_auth_service,
         entity_model=entity_name,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
         entity=alarm_data
     )
 
@@ -151,13 +154,13 @@ async def set_alarm(data: AlarmRequest):
         "duration_seconds": EGG_COOK_TIMES[egg_type],
     })
 
-@app.route("/api/alarm/status", methods=["GET"])
+@routes_bp.route("/api/alarm/status", methods=["GET"])
 async def get_alarm_status():
     # Get all alarms, expect only one active
     alarms = await entity_service.get_items(
         token=cyoda_auth_service,
         entity_model=entity_name,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
     )
     if not alarms:
         return jsonify({
@@ -187,7 +190,7 @@ async def get_alarm_status():
         "status": status,
     })
 
-@app.route("/api/alarm/cancel", methods=["POST"])
+@routes_bp.route("/api/alarm/cancel", methods=["POST"])
 @validate_request(CancelRequest)
 async def cancel_alarm(data: CancelRequest):
     alarm_id = data.alarm_id
@@ -199,7 +202,7 @@ async def cancel_alarm(data: CancelRequest):
     item = await entity_service.get_item(
         token=cyoda_auth_service,
         entity_model=entity_name,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
         technical_id=alarm_id
     )
     if not item:
@@ -211,7 +214,7 @@ async def cancel_alarm(data: CancelRequest):
     await entity_service.delete_item(
         token=cyoda_auth_service,
         entity_model=entity_name,
-        entity_version=ENTITY_VERSION,
+        entity_version=None,
         technical_id=alarm_id,
         meta={}
     )
@@ -221,6 +224,3 @@ async def cancel_alarm(data: CancelRequest):
         "status": "success",
         "message": "Alarm cancelled"
     })
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

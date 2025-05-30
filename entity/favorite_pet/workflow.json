@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to handle adding a pet to favorites with audit logging",
+    "name": "favorite_pet_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the favorite pet workflow",
+            "end_state": "Timestamp_added",
+            "end_state_description": "Timestamp added to entity",
+            "name": "start_favorite_pet",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_timestamp"
+                    }
+                ]
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add audit log after timestamp is added",
+            "end_state": "Favorite_pet_processed",
+            "end_state_description": "Favorite pet workflow completed with audit log",
+            "name": "add_audit_log",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_audit_log"
+                    }
+                ]
+            },
+            "start_state": "Timestamp_added",
+            "start_state_description": "Timestamp added to entity"
+        }
+    ]
+}

@@ -1,6 +1,48 @@
-Certainly! I updated your code to add the new `workflow` parameter to the `entity_service.add_item` call and implemented the required workflow function `process_alarm` as specified.
+Understood! We want to refactor all the business logic that currently resides in the Quart endpoint handlers into the workflow function `process_alarm` (the `process_{entity_name}` function), so the controller just handles HTTP and validation, but the core logic (including async tasks like timers and entity state updates) is moved into the workflow function.
 
-Here is the complete updated code:
+Key constraints/reminders:
+- The workflow function receives the entity data as input and can modify it before persistence.
+- The workflow function can perform async operations.
+- The workflow function **cannot** add/update/delete the same entity model entity (to avoid infinite recursion).
+- The workflow function CAN add/update/delete different entity models.
+- We want to move all async tasks (like the alarm timer that updates state after some delay) inside this workflow function or triggered by it.
+
+---
+
+### Plan
+
+1. **Move all alarm logic (setting `end_time`, `status`, etc.) into `process_alarm`.**  
+   When an alarm entity is added, the workflow function will set timestamps, statuses, and start async background tasks.
+
+2. **Move the timer task into the workflow function.**  
+   When an alarm is created or updated, the workflow function will launch the timer task that will update the alarm entity state to `finished` when time elapses.
+
+3. For deleting existing alarms when setting a new one, since workflow cannot delete the same entity_model entities, this deletion logic should remain in the controller before adding.  
+   (Because deleting other entities is allowed, but deleting the same entity_model from inside the workflow causes recursion.)
+
+4. For cancel endpoint, it only deletes an alarm entity, so that remains in the controller (no entity creation, no workflow needed).
+
+5. The `set_alarm` endpoint becomes very thin: validate input, delete old alarms, add new alarm entity with minimal data, pass to workflow to handle the rest.
+
+6. The `get_alarm_status` endpoint remains mostly unchanged (just read state).
+
+---
+
+### Implementation details:
+
+- In `set_alarm` endpoint: delete old alarms, then create an incomplete alarm entity (maybe only `egg_type`), send it to `add_item` with `workflow=process_alarm`.
+
+- In `process_alarm`:
+  - If `end_time` not present, set it based on `egg_type`.
+  - Set status to 'active'.
+  - Set `created_at`.
+  - Launch background task to wait till alarm fires and update status to 'finished'.
+
+- The background task still needs to update the alarm entity (using `entity_service.update_item`) — since it's a different async task, no recursion risk.
+
+---
+
+### Full revised code:
 
 ```python
 import asyncio
@@ -34,19 +76,6 @@ def time_left(end_time: datetime) -> int:
     now = datetime.utcnow()
     delta = end_time - now
     return max(int(delta.total_seconds()), 0)
-
-# Workflow function applied asynchronously before persistence.
-# This function takes the entity data as the only argument.
-# You can change entity state inside this function, get and add entities with a different entity_model,
-# but cannot add/update/delete entity of the same entity_model
-async def process_alarm(entity):
-    # Example: Ensure status is always lowercase and add created_at timestamp if missing
-    if "status" in entity and isinstance(entity["status"], str):
-        entity["status"] = entity["status"].lower()
-    if "created_at" not in entity:
-        entity["created_at"] = datetime.utcnow().isoformat()
-    # You can add more processing here if needed
-    return entity
 
 # Background task to wait for alarm and notify user (mock notification)
 async def alarm_timer(alarm_id: str):
@@ -83,6 +112,38 @@ async def alarm_timer(alarm_id: str):
     except Exception as e:
         logger.exception(e)
 
+# Workflow function applied asynchronously before persistence.
+# This function takes the entity data as the only argument.
+# You can change entity state inside this function.
+# You can get and add entities of a different entity_model.
+# You cannot add/update/delete current entity_model entities here.
+async def process_alarm(entity):
+    # Normalize status and timestamps
+    if "status" not in entity or not entity["status"]:
+        entity["status"] = "active"
+
+    if "created_at" not in entity:
+        entity["created_at"] = datetime.utcnow().isoformat()
+
+    # Set end_time if missing, based on egg_type
+    if "end_time" not in entity or not entity["end_time"]:
+        egg_type = entity.get("egg_type")
+        if egg_type not in EGG_COOK_TIMES:
+            # If invalid egg_type, default to soft
+            egg_type = "soft"
+            entity["egg_type"] = egg_type
+        duration = EGG_COOK_TIMES[egg_type]
+        end_time = datetime.utcnow() + timedelta(seconds=duration)
+        entity["end_time"] = end_time.isoformat()
+
+    # Launch the async timer task to update status when alarm ends
+    # We do this here because workflow supports async code and fire & forget
+    asyncio.create_task(alarm_timer(entity.get("id")))
+
+    # Can add any other processing here if needed
+
+    return entity
+
 @dataclass
 class AlarmRequest:
     egg_type: str
@@ -92,10 +153,9 @@ class CancelRequest:
     alarm_id: str
 
 @app.route("/api/alarm/set", methods=["POST"])
-# workaround: validate_request must be last for POST due to quart-schema defect
 @validate_request(AlarmRequest)
 async def set_alarm(data: AlarmRequest):
-    egg_type = data.egg_type
+    egg_type = data.egg_type.lower()
     if egg_type not in EGG_COOK_TIMES:
         return jsonify({"status": "error", "message": "Invalid egg_type"}), 400
 
@@ -114,32 +174,25 @@ async def set_alarm(data: AlarmRequest):
             meta={}
         )
 
-    alarm_id = str(uuid.uuid4())
-    duration = EGG_COOK_TIMES[egg_type]
-    end_time = datetime.utcnow() + timedelta(seconds=duration)
-
+    # Create minimal alarm entity, full data and async timer handled by workflow
     alarm_data = {
         "egg_type": egg_type,
-        "end_time": end_time.isoformat(),
-        "status": "active",
+        # no end_time or status here, workflow sets them
     }
 
-    id = await entity_service.add_item(
+    alarm_id = await entity_service.add_item(
         token=cyoda_auth_service,
         entity_model=entity_name,
         entity_version=ENTITY_VERSION,
         entity=alarm_data,
-        workflow=process_alarm  # added workflow function here
+        workflow=process_alarm  # pass the workflow handler here
     )
-    # id is string as per requirement
-
-    asyncio.create_task(alarm_timer(id))
 
     return jsonify({
         "status": "success",
         "message": f"Alarm set for {egg_type}-boiled egg",
-        "alarm_id": id,
-        "duration_seconds": duration,
+        "alarm_id": alarm_id,
+        "duration_seconds": EGG_COOK_TIMES[egg_type],
     })
 
 @app.route("/api/alarm/status", methods=["GET"])
@@ -175,7 +228,6 @@ async def get_alarm_status():
     })
 
 @app.route("/api/alarm/cancel", methods=["POST"])
-# workaround: validate_request must be last for POST due to quart-schema defect
 @validate_request(CancelRequest)
 async def cancel_alarm(data: CancelRequest):
     alarm_id = data.alarm_id
@@ -214,8 +266,21 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Summary of changes
-- Added the async workflow function `process_alarm(entity)`.
-- Passed `workflow=process_alarm` argument to `entity_service.add_item` in `set_alarm`.
+---
 
-Let me know if you want me to help with anything else!
+### What changed?
+
+- Removed all alarm logic from `/api/alarm/set` endpoint except input validation and deletion of previous alarms.
+- Created `process_alarm` async workflow function that:
+  - Sets `status`, `created_at`, `end_time` if missing.
+  - Launches the alarm timer background task.
+- The alarm timer task still updates the alarm entity status to `finished` after time elapses.
+- Returned `alarm_id` from add_item as usual.
+- `/api/alarm/status` and `/api/alarm/cancel` unchanged except for minor cleanup.
+- The workflow function handles all entity state initialization and async timer.
+
+---
+
+This approach fully complies with the requirement that async tasks and entity state logic live in the workflow function, making your controllers very thin and your codebase more maintainable and robust.
+
+If you want me to help with any other entity workflows or further refactoring — just ask!

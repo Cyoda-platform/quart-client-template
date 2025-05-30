@@ -1,0 +1,21 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "petId": 123,
+                "userId": "user123"
+            },
+            "entity_name": "favorite_pet"
+        },
+        {
+            "entity_data_example": {
+                "comment": "Very friendly and cute!",
+                "petId": 123,
+                "rating": 4,
+                "submittedAt": "2024-06-01T12:00:00Z",
+                "userId": "user123"
+            },
+            "entity_name": "pet_review"
+        }
+    ]
+}

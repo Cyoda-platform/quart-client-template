@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
@@ -6,13 +6,31 @@ from typing import Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+# Data models for validation
+@dataclass
+class SearchCriteria:
+    status: str
+    type: str
+
+@dataclass
+class FavoriteData:
+    userId: str
+    petId: int
+
+@dataclass
+class ReviewData:
+    userId: str
+    petId: int
+    rating: int
+    comment: str
 
 # In-memory "persistence" caches - asyncio-safe by using asyncio.Lock
 favorites_lock = asyncio.Lock()
@@ -29,14 +47,11 @@ async def fetch_pets_from_petstore(criteria: dict) -> List[dict]:
     """Query the external Petstore API /pet/findByStatus endpoint."""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
-            # Petstore API supports multiple statuses as CSV, we support one status here
             status = criteria.get("status", "")
-            # TODO: extend filtering by type locally as Petstore API does not support filtering by type
             url = f"{PETSTORE_API_BASE}/pet/findByStatus"
             response = await client.get(url, params={"status": status})
             response.raise_for_status()
             pets = response.json()
-            # Filter by type if provided (locally)
             pet_type = criteria.get("type")
             if pet_type:
                 pets = [p for p in pets if p.get("category", {}).get("name", "").lower() == pet_type.lower()]
@@ -47,11 +62,12 @@ async def fetch_pets_from_petstore(criteria: dict) -> List[dict]:
 
 
 @app.route("/pets/search", methods=["POST"])
-async def search_pets():
+# Issue workaround: validate_request must come after route decorator for POST due to quart-schema defect
+@validate_request(SearchCriteria)
+async def search_pets(data: SearchCriteria):
     try:
-        criteria = await request.get_json()
+        criteria = {"status": data.status, "type": data.type}
         pets = await fetch_pets_from_petstore(criteria)
-        # Simplify response to match functional spec
         result = []
         for pet in pets:
             result.append({
@@ -68,19 +84,16 @@ async def search_pets():
 
 
 @app.route("/pets/favorite", methods=["POST"])
-async def add_favorite_pet():
+# Issue workaround: validate_request must come after route decorator for POST due to quart-schema defect
+@validate_request(FavoriteData)
+async def add_favorite_pet(data: FavoriteData):
     try:
-        data = await request.get_json()
-        user_id = data.get("userId")
-        pet_id = data.get("petId")
-        if not user_id or not pet_id:
-            return jsonify({"error": "userId and petId are required"}), 400
-
+        user_id = data.userId
+        pet_id = data.petId
         async with favorites_lock:
             user_favs = favorites_cache.setdefault(user_id, [])
             if pet_id not in user_favs:
                 user_favs.append(pet_id)
-
         return jsonify({"message": "Pet added to favorites"})
     except Exception as e:
         logger.exception(e)
@@ -92,8 +105,6 @@ async def get_favorite_pets(user_id):
     try:
         async with favorites_lock:
             pet_ids = favorites_cache.get(user_id, []).copy()
-
-        # We need to fetch details for each pet from Petstore API (batch not supported, so do sequential)
         pets = []
         async with httpx.AsyncClient(timeout=10) as client:
             for pet_id in pet_ids:
@@ -111,7 +122,6 @@ async def get_favorite_pets(user_id):
                         logger.warning(f"Pet id={pet_id} not found in Petstore")
                 except Exception as e:
                     logger.exception(f"Error fetching pet id={pet_id}: {e}")
-
         return jsonify({"favorites": pets})
     except Exception as e:
         logger.exception(e)
@@ -119,30 +129,21 @@ async def get_favorite_pets(user_id):
 
 
 @app.route("/pets/review", methods=["POST"])
-async def submit_pet_review():
+# Issue workaround: validate_request must come after route decorator for POST due to quart-schema defect
+@validate_request(ReviewData)
+async def submit_pet_review(data: ReviewData):
     try:
-        data = await request.get_json()
-        user_id = data.get("userId")
-        pet_id = data.get("petId")
-        rating = data.get("rating")
-        comment = data.get("comment", "")
-
-        if not user_id or not pet_id or rating is None:
-            return jsonify({"error": "userId, petId and rating are required"}), 400
-        if not (1 <= rating <= 5):
+        if not (1 <= data.rating <= 5):
             return jsonify({"error": "rating must be between 1 and 5"}), 400
-
         review = {
-            "userId": user_id,
-            "rating": rating,
-            "comment": comment,
+            "userId": data.userId,
+            "rating": data.rating,
+            "comment": data.comment,
             "submittedAt": datetime.utcnow().isoformat() + "Z",
         }
-
         async with reviews_lock:
-            pet_reviews = reviews_cache.setdefault(pet_id, [])
+            pet_reviews = reviews_cache.setdefault(data.petId, [])
             pet_reviews.append(review)
-
         return jsonify({"message": "Review submitted"})
     except Exception as e:
         logger.exception(e)
@@ -162,4 +163,3 @@ async def get_pet_reviews(pet_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

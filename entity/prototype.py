@@ -1,12 +1,11 @@
-```python
 import asyncio
 import logging
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
-import httpx
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -41,24 +40,28 @@ async def alarm_timer(alarm_id: str):
         seconds_to_wait = time_left(alarm["end_time"])
         if seconds_to_wait > 0:
             await asyncio.sleep(seconds_to_wait)
-        # Mark alarm as finished
         alarm["status"] = "finished"
         logger.info(f"Alarm {alarm_id} for {alarm['egg_type']} egg finished at {datetime.utcnow().isoformat()}")
-
         # TODO: Implement real notification logic here (push notification, email, etc.)
-        # For prototype, we just log the event.
     except Exception as e:
         logger.exception(e)
 
+@dataclass
+class AlarmRequest:
+    egg_type: str
+
+@dataclass
+class CancelRequest:
+    alarm_id: str
 
 @app.route("/api/alarm/set", methods=["POST"])
-async def set_alarm():
-    data = await request.get_json()
-    egg_type = data.get("egg_type")
+# workaround: validate_request must be last for POST due to quart-schema defect
+@validate_request(AlarmRequest)
+async def set_alarm(data: AlarmRequest):
+    egg_type = data.egg_type
     if egg_type not in EGG_COOK_TIMES:
         return jsonify({"status": "error", "message": "Invalid egg_type"}), 400
 
-    # Cancel any existing alarm
     if active_alarm:
         active_alarm.clear()
 
@@ -72,7 +75,6 @@ async def set_alarm():
         "status": "active",
     }
 
-    # Fire and forget the timer task
     asyncio.create_task(alarm_timer(alarm_id))
 
     return jsonify({
@@ -81,7 +83,6 @@ async def set_alarm():
         "alarm_id": alarm_id,
         "duration_seconds": duration,
     })
-
 
 @app.route("/api/alarm/status", methods=["GET"])
 async def get_alarm_status():
@@ -93,7 +94,6 @@ async def get_alarm_status():
             "status": "none",
         })
 
-    # There should be only one active alarm
     alarm_id, alarm = next(iter(active_alarm.items()))
     status = alarm["status"]
     left = time_left(alarm["end_time"]) if status == "active" else 0
@@ -105,21 +105,18 @@ async def get_alarm_status():
         "status": status,
     })
 
-
 @app.route("/api/alarm/cancel", methods=["POST"])
-async def cancel_alarm():
-    data = await request.get_json()
-    alarm_id = data.get("alarm_id")
-
+# workaround: validate_request must be last for POST due to quart-schema defect
+@validate_request(CancelRequest)
+async def cancel_alarm(data: CancelRequest):
+    alarm_id = data.alarm_id
     if not alarm_id or alarm_id not in active_alarm:
         return jsonify({
             "status": "error",
             "message": "Invalid or unknown alarm_id"
         }), 400
 
-    # Cancel alarm by clearing it
     active_alarm.clear()
-
     # TODO: If integrated with a real scheduler/task manager, cancel the task here
 
     return jsonify({
@@ -127,7 +124,5 @@ async def cancel_alarm():
         "message": "Alarm cancelled"
     })
 
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

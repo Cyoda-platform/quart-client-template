@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Dict, List
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class SearchCriteria:
@@ -56,7 +55,7 @@ async def fetch_pets_from_petstore(criteria: dict) -> List[dict]:
         logger.exception(f"Failed fetching pets from Petstore: {e}")
         return []
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchCriteria)
 async def search_pets(data: SearchCriteria):
     try:
@@ -96,7 +95,7 @@ async def process_favorite_pet(entity: dict) -> dict:
         logger.exception("Failed to add audit_log entity in favorite_pet workflow")
     return entity
 
-@app.route("/pets/favorite", methods=["POST"])
+@routes_bp.route("/pets/favorite", methods=["POST"])
 @validate_request(FavoriteData)
 async def add_favorite_pet(data: FavoriteData):
     try:
@@ -116,7 +115,7 @@ async def add_favorite_pet(data: FavoriteData):
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/pets/favorites/<string:user_id>", methods=["GET"])
+@routes_bp.route("/pets/favorites/<string:user_id>", methods=["GET"])
 async def get_favorite_pets(user_id):
     try:
         entity_name = "favorite_pet"
@@ -190,7 +189,7 @@ async def process_pet_review(entity: dict) -> dict:
         logger.exception("Failed to add review_summary entity in pet_review workflow")
     return entity
 
-@app.route("/pets/review", methods=["POST"])
+@routes_bp.route("/pets/review", methods=["POST"])
 @validate_request(ReviewData)
 async def submit_pet_review(data: ReviewData):
     try:
@@ -214,7 +213,7 @@ async def submit_pet_review(data: ReviewData):
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/pets/reviews/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/reviews/<string:pet_id>", methods=["GET"])
 async def get_pet_reviews(pet_id):
     try:
         entity_name = "pet_review"
@@ -242,6 +241,3 @@ async def get_pet_reviews(pet_id):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

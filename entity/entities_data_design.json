@@ -1,0 +1,13 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "egg_type": "soft",
+                "end_time": "2024-06-01T12:00:00Z",
+                "id": "string",
+                "status": "active"
+            },
+            "entity_name": "alarm"
+        }
+    ]
+}

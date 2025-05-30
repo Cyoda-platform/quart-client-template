@@ -1,0 +1,24 @@
+{
+    "description": "Workflow managing the lifecycle of an egg alarm",
+    "name": "egg_alarm_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initialize alarm, set end time, and start timer",
+            "end_state": "Alarm_active",
+            "end_state_description": "Alarm is active and timer started",
+            "name": "start_alarm",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates initialization, setting end time, and starting timer",
+                        "name": "process_alarm"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

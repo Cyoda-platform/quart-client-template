@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for processing pet reviews with validation, timestamping, and summary creation",
+    "name": "pet_review_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Validate the rating value in the review",
+            "end_state": "Rating_validated",
+            "end_state_description": "Rating has been validated",
+            "name": "validate_rating",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_rating"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Set processedAt and submittedAt timestamps",
+            "end_state": "Timestamps_set",
+            "end_state_description": "Timestamps have been set",
+            "name": "set_timestamps",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_timestamps"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Rating_validated",
+            "start_state_description": "Rating has been validated"
+        },
+        {
+            "automated": true,
+            "description": "Create review summary data in entity",
+            "end_state": "Review_summary_created",
+            "end_state_description": "Review summary has been created",
+            "name": "create_review_summary",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_create_review_summary"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Timestamps_set",
+            "start_state_description": "Timestamps have been set"
+        }
+    ]
+}

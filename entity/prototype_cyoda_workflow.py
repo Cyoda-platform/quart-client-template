@@ -1,57 +1,9 @@
-Understood! We want to refactor all the business logic that currently resides in the Quart endpoint handlers into the workflow function `process_alarm` (the `process_{entity_name}` function), so the controller just handles HTTP and validation, but the core logic (including async tasks like timers and entity state updates) is moved into the workflow function.
-
-Key constraints/reminders:
-- The workflow function receives the entity data as input and can modify it before persistence.
-- The workflow function can perform async operations.
-- The workflow function **cannot** add/update/delete the same entity model entity (to avoid infinite recursion).
-- The workflow function CAN add/update/delete different entity models.
-- We want to move all async tasks (like the alarm timer that updates state after some delay) inside this workflow function or triggered by it.
-
----
-
-### Plan
-
-1. **Move all alarm logic (setting `end_time`, `status`, etc.) into `process_alarm`.**  
-   When an alarm entity is added, the workflow function will set timestamps, statuses, and start async background tasks.
-
-2. **Move the timer task into the workflow function.**  
-   When an alarm is created or updated, the workflow function will launch the timer task that will update the alarm entity state to `finished` when time elapses.
-
-3. For deleting existing alarms when setting a new one, since workflow cannot delete the same entity_model entities, this deletion logic should remain in the controller before adding.  
-   (Because deleting other entities is allowed, but deleting the same entity_model from inside the workflow causes recursion.)
-
-4. For cancel endpoint, it only deletes an alarm entity, so that remains in the controller (no entity creation, no workflow needed).
-
-5. The `set_alarm` endpoint becomes very thin: validate input, delete old alarms, add new alarm entity with minimal data, pass to workflow to handle the rest.
-
-6. The `get_alarm_status` endpoint remains mostly unchanged (just read state).
-
----
-
-### Implementation details:
-
-- In `set_alarm` endpoint: delete old alarms, then create an incomplete alarm entity (maybe only `egg_type`), send it to `add_item` with `workflow=process_alarm`.
-
-- In `process_alarm`:
-  - If `end_time` not present, set it based on `egg_type`.
-  - Set status to 'active'.
-  - Set `created_at`.
-  - Launch background task to wait till alarm fires and update status to 'finished'.
-
-- The background task still needs to update the alarm entity (using `entity_service.update_item`) — since it's a different async task, no recursion risk.
-
----
-
-### Full revised code:
-
-```python
 import asyncio
 import logging
-import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 from app_init.app_init import entity_service
 from common.config.config import ENTITY_VERSION
@@ -138,9 +90,12 @@ async def process_alarm(entity):
 
     # Launch the async timer task to update status when alarm ends
     # We do this here because workflow supports async code and fire & forget
-    asyncio.create_task(alarm_timer(entity.get("id")))
-
-    # Can add any other processing here if needed
+    # Use entity 'id' to identify the alarm; if missing, log and skip timer
+    alarm_id = entity.get("id")
+    if alarm_id:
+        asyncio.create_task(alarm_timer(alarm_id))
+    else:
+        logger.warning("Alarm entity has no 'id' during workflow; timer not started.")
 
     return entity
 
@@ -166,13 +121,15 @@ async def set_alarm(data: AlarmRequest):
         entity_version=ENTITY_VERSION,
     )
     for alarm in existing_alarms:
-        await entity_service.delete_item(
-            token=cyoda_auth_service,
-            entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
-            technical_id=alarm.get("id"),
-            meta={}
-        )
+        alarm_id = alarm.get("id")
+        if alarm_id:
+            await entity_service.delete_item(
+                token=cyoda_auth_service,
+                entity_model=entity_name,
+                entity_version=ENTITY_VERSION,
+                technical_id=alarm_id,
+                meta={}
+            )
 
     # Create minimal alarm entity, full data and async timer handled by workflow
     alarm_data = {
@@ -217,8 +174,12 @@ async def get_alarm_status():
     if status == "active":
         end_time_str = alarm.get("end_time")
         if end_time_str:
-            end_time = datetime.fromisoformat(end_time_str)
-            left = time_left(end_time)
+            try:
+                end_time = datetime.fromisoformat(end_time_str)
+                left = time_left(end_time)
+            except Exception as e:
+                logger.warning(f"Invalid end_time format in alarm status: {e}")
+                left = 0
 
     return jsonify({
         "alarm_id": alarm.get("id"),
@@ -264,23 +225,3 @@ async def cancel_alarm(data: CancelRequest):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### What changed?
-
-- Removed all alarm logic from `/api/alarm/set` endpoint except input validation and deletion of previous alarms.
-- Created `process_alarm` async workflow function that:
-  - Sets `status`, `created_at`, `end_time` if missing.
-  - Launches the alarm timer background task.
-- The alarm timer task still updates the alarm entity status to `finished` after time elapses.
-- Returned `alarm_id` from add_item as usual.
-- `/api/alarm/status` and `/api/alarm/cancel` unchanged except for minor cleanup.
-- The workflow function handles all entity state initialization and async timer.
-
----
-
-This approach fully complies with the requirement that async tasks and entity state logic live in the workflow function, making your controllers very thin and your codebase more maintainable and robust.
-
-If you want me to help with any other entity workflows or further refactoring — just ask!

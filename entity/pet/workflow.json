@@ -1,0 +1,28 @@
+{
+    "description": "Workflow for processing pet additions and enrichment in Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Add a new pet and enrich metadata",
+            "end_state": "Pet_added_and_enriched",
+            "end_state_description": "Pet has been added and metadata enriched",
+            "name": "pet_addition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_add"
+                    },
+                    {
+                        "description": "",
+                        "name": "process_pet_enrich_metadata"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

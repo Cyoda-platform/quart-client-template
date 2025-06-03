@@ -1,0 +1,23 @@
+{
+    "description": "Workflow for setting and managing egg alarm states",
+    "name": "egg_alarm_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Create and initialize alarm entity",
+            "end_state": "Alarm_created",
+            "end_state_description": "Alarm has been created and initialized",
+            "name": "create_alarm",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_alarm"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state with no alarm"
+        }
+    ]
+}

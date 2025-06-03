@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for Purrfect Pets API entity handling fetching, caching, favoriting pets and logging events",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch pets from external API and cache them",
+            "end_state": "Pets_fetched_and_cached",
+            "end_state_description": "Pets data has been fetched and cached",
+            "name": "start_fetch_and_cache_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch and cache pets from external Petstore API",
+                        "name": "process_fetch_and_cache_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Mark a pet as favorite if petId is provided",
+            "end_state": "Favorite_pet_marked",
+            "end_state_description": "Pet has been marked as favorite",
+            "name": "mark_favorite_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Mark pet as favorite in entity data",
+                        "name": "process_favorite_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched_and_cached",
+            "start_state_description": "Pets data has been fetched and cached"
+        },
+        {
+            "automated": true,
+            "description": "Log the event after processing",
+            "end_state": "Event_logged",
+            "end_state_description": "Event has been logged",
+            "name": "log_event",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Log event asynchronously",
+                        "name": "process_log_event"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Favorite_pet_marked",
+            "start_state_description": "Pet has been marked as favorite"
+        }
+    ]
+}

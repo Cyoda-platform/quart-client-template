@@ -1,43 +1,3 @@
-Absolutely, moving as much logic as possible into the `process_{entity_name}` workflow functions is a good architectural move. It will keep the controller (endpoint handlers) thin and focused on request/response handling, while business logic, side effects, and asynchronous tasks related to the entity lifecycle are encapsulated in the workflow functions.
-
----
-
-### What can be moved into the workflow function?
-
-1. **Setting timestamps and status initialization**: e.g. adding `created_at`, setting default status.
-2. **Cancel existing active alarms**: this involves querying and updating other entities of the same or different models — except we cannot update or add entities of the same model inside the workflow for infinite recursion reasons.  
-   - **Important**: The restriction says *"cannot add/update/delete entity of the same entity_model"*.  
-   - To cancel existing alarms (same model), this must remain outside the workflow because updating the same entity model inside the workflow would cause recursion.
-3. **Starting async tasks**: `alarm_countdown` can be started inside the workflow (fire and forget).
-4. **Marking `finished` status after countdown**: this involves updating the same entity, which is forbidden inside the workflow.  
-   - So finishing the alarm after countdown must remain outside or be handled carefully.
-5. **Notification logic and side effects** can be placed inside the workflow.
-6. **Validation of state and default values** can also be moved into the workflow.
-
----
-
-### Approach to refactor:
-
-- Keep **cancelling existing active alarms** in the endpoint (since it updates the same entity model).
-- Move **setting timestamps, status, starting countdown, and notification scheduling** into the workflow function.
-- Move **alarm countdown task management** inside the workflow.
-- The workflow function can spawn a background task for countdown and notification.
-- When countdown finishes, update status to `finished` outside of workflow (or via a separate update call).
-  
----
-
-### Proposed workflow function `process_alarm`:
-
-- Add timestamp if missing.
-- Ensure status is `"active"`.
-- Start the countdown timer as a background async task.
-- The countdown task does the waiting and then updates the entity status to `"finished"`.
-
----
-
-### Updated code:
-
-```python
 import asyncio
 import logging
 from datetime import datetime, timedelta
@@ -179,9 +139,6 @@ async def alarm_countdown_task(alarm_id: str, end_time_iso: str):
 
 # Workflow function for 'alarm' entity
 async def process_alarm(entity):
-    """
-    Workflow function applied to 'alarm' entity before persistence.
-    """
     # Add creation timestamp if not present
     if "created_at" not in entity:
         entity["created_at"] = datetime.utcnow().isoformat()
@@ -194,14 +151,6 @@ async def process_alarm(entity):
     if "end_time" not in entity and "start_time" in entity and "duration_seconds" in entity:
         start_time = datetime.fromisoformat(entity["start_time"])
         entity["end_time"] = (start_time + timedelta(seconds=entity["duration_seconds"])).isoformat()
-
-    # Start countdown async task (fire and forget)
-    alarm_id = entity.get("technical_id") or entity.get("id")
-    # The entity does not have technical_id yet before persistence, so we start task after persistence
-    # Instead, here we schedule countdown task after adding the entity (see below workaround)
-
-# Because the alarm_id is not available in workflow before persistence,
-# we handle starting countdown task just after add_item call in endpoint.
 
 # POST endpoint
 @app.route("/api/alarm/set", methods=["POST"])
@@ -255,7 +204,7 @@ async def set_alarm(data: AlarmRequest):
             entity_model="alarm",
             entity_version=ENTITY_VERSION,
             entity=alarm_data,
-            workflow=process_alarm  # workflow function handles initialization
+            workflow=process_alarm
         )
     except Exception as e:
         logger.exception(e)
@@ -341,25 +290,3 @@ async def cancel_alarm():
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-- **Workflow `process_alarm`**:
-  - Adds creation timestamp and ensures `status` is `"active"`.
-  - Calculates end time if missing.
-  - **Does NOT start countdown here** because `technical_id` (alarm id) is not available before persistence.
-- **Countdown task**:
-  - Started immediately after `add_item` returns the `alarm_id` in the endpoint.
-  - Runs asynchronously, sleeps until alarm end, then updates status to `"finished"`.
-- **Cancel existing alarms** remains in the endpoint because it updates the same entity model before adding a new one (to avoid recursion).
-- The endpoint is now much thinner, mostly handling request validation, cancelling previous alarms, calling `add_item` with workflow, and starting countdown task.
-
----
-
-This design fully complies with the restriction on updating the same entity model inside the workflow and moves as much logic as possible into the workflow function and async tasks.
-
-If you want, more side effects around supplementary entities or logs can be added inside `process_alarm`.
-
-Let me know if you want me to help move any additional logic into supplementary entity workflow functions!

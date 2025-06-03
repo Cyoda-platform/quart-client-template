@@ -1,25 +1,30 @@
-import asyncio
+from datetime import timezone, datetime
 import logging
-from datetime import datetime
-from typing import Dict, List, Optional
-
-import httpx
-from dataclasses import dataclass
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, request, abort, jsonify
+from quart_schema import validate, validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+logger = logging.getLogger(__name__)
+FINAL_STATES = {'FAILURE', 'SUCCESS', 'CANCELLED', 'CANCELLED_BY_USER', 'UNKNOWN', 'FINISHED'}
+PROCESSING_STATE = 'PROCESSING'
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+import asyncio
+import httpx
+from dataclasses import dataclass
+from typing import Optional, List
 
-app = Quart(__name__)
-QuartSchema(app)
+PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
+
+entity_jobs = {}
+entity_jobs_lock = asyncio.Lock()
 
 @dataclass
 class PetQuery:
@@ -29,11 +34,6 @@ class PetQuery:
 @dataclass
 class FavoritePet:
     petId: int
-
-entity_jobs: Dict[str, dict] = {}
-entity_jobs_lock = asyncio.Lock()
-
-PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
 async def fetch_pets_from_petstore(
     type_filter: Optional[str] = None, status_filter: Optional[str] = None
@@ -74,23 +74,18 @@ async def process_event_job(job_id: str):
         logger.exception(f"Error processing event job {job_id}: {e}")
 
 async def process_pet(entity: dict) -> dict:
-    # Add a timestamp for when the pet was processed
     entity["processedAt"] = datetime.utcnow().isoformat()
-    # Potential place for other enrichment or async tasks related to pet entity
-    # Do not call entity_service.add/update/delete on "pet" here to avoid recursion
     return entity
 
 async def process_favorite_pet(entity: dict) -> dict:
-    # Fire and forget trigger event for pet_favorite
     asyncio.create_task(trigger_event_workflow("pet_favorite", {"petId": entity.get("petId")}))
     return entity
 
-@app.route("/pets/query", methods=["POST"])
+@routes_bp.route("/pets/query", methods=["POST"])
 @validate_request(PetQuery)
 async def pets_query(data: PetQuery):
     try:
         pets = await fetch_pets_from_petstore(data.type, data.status)
-        # Add pets to entity_service, one by one, applying process_pet workflow
         for pet in pets:
             try:
                 await entity_service.add_item(
@@ -101,14 +96,13 @@ async def pets_query(data: PetQuery):
                 )
             except Exception as e:
                 logger.exception(f"Failed to add pet to entity_service: {e}")
-        # Trigger event related to the whole query (cannot move into workflow since workflow is per entity)
         await trigger_event_workflow("pet_query", {"type": data.type, "status": data.status, "resultCount": len(pets)})
         return jsonify({"pets": pets})
     except Exception as e:
         logger.exception("Error in /pets/query")
         return jsonify({"error": "Failed to query pets"}), 500
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def pets_get():
     try:
         pets = await entity_service.get_items(
@@ -121,7 +115,7 @@ async def pets_get():
         logger.exception("Error in /pets GET")
         return jsonify({"error": "Failed to get pets"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pet_get(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -137,7 +131,7 @@ async def pet_get(pet_id: str):
         logger.exception(f"Error in /pets/{pet_id} GET")
         return jsonify({"error": "Failed to get pet"}), 500
 
-@app.route("/pets/favorite", methods=["POST"])
+@routes_bp.route("/pets/favorite", methods=["POST"])
 @validate_request(FavoritePet)
 async def pets_favorite(data: FavoritePet):
     try:
@@ -164,6 +158,3 @@ async def pets_favorite(data: FavoritePet):
     except Exception as e:
         logger.exception("Error in /pets/favorite")
         return jsonify({"error": "Failed to mark pet as favorite"}), 500
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

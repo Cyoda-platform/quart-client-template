@@ -1,0 +1,13 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "alarm_id": "12345",
+                "egg_type": "soft",
+                "set_time": "2024-06-01T12:00:00Z",
+                "status": "created"
+            },
+            "entity_name": "alarm"
+        }
+    ]
+}

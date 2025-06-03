@@ -1,28 +1,78 @@
 {
-    "description": "Workflow for processing pet additions and enrichment in Purrfect Pets API",
+    "description": "Workflow managing pet lifecycle including search, add, update, and delete operations.",
     "name": "purrfect_pets_workflow",
     "transitions": [
         {
             "automated": true,
-            "description": "Add a new pet and enrich metadata",
-            "end_state": "Pet_added_and_enriched",
-            "end_state_description": "Pet has been added and metadata enriched",
-            "name": "pet_addition",
+            "description": "Start searching pets",
+            "end_state": "Searched",
+            "end_state_description": "Pets have been searched",
+            "name": "start_search",
             "processes": {
                 "externalized_processors": [
                     {
                         "description": "",
-                        "name": "process_pet_add"
-                    },
-                    {
-                        "description": "",
-                        "name": "process_pet_enrich_metadata"
+                        "name": "process_pet_search"
                     }
                 ],
                 "schedule_transition_processors": []
             },
             "start_state": "None",
             "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Transition from searched to adding a pet",
+            "end_state": "Added",
+            "end_state_description": "A pet has been added",
+            "name": "search_to_add",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_add"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Searched",
+            "start_state_description": "Pets have been searched"
+        },
+        {
+            "automated": true,
+            "description": "Transition from added to updating pet details",
+            "end_state": "Updated",
+            "end_state_description": "Pet details have been updated",
+            "name": "add_to_update",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_update"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Added",
+            "start_state_description": "A pet has been added"
+        },
+        {
+            "automated": true,
+            "description": "Transition from updated to deleting the pet",
+            "end_state": "Deleted",
+            "end_state_description": "Pet has been deleted",
+            "name": "update_to_delete",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_pet_delete"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Updated",
+            "start_state_description": "Pet details have been updated"
         }
     ]
 }

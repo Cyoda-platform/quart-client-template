@@ -1,10 +1,10 @@
+from datetime import datetime, timedelta
 import asyncio
 import logging
-from datetime import datetime, timedelta
 from dataclasses import dataclass
 
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -16,8 +16,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class AlarmRequest:
@@ -137,10 +136,7 @@ async def alarm_countdown_task(alarm_id: str, end_time_iso: str):
     finally:
         clear_local_alarm_task(alarm_id)
 
-# Workflow function for 'alarm' entity
-
-# POST endpoint
-@app.route("/api/alarm/set", methods=["POST"])
+@routes_bp.route("/api/alarm/set", methods=["POST"])
 @validate_request(AlarmRequest)
 async def set_alarm(data: AlarmRequest):
     egg_type = data.egg_type
@@ -209,7 +205,7 @@ async def set_alarm(data: AlarmRequest):
         "status": "active"
     })
 
-@app.route("/api/alarm/status", methods=["GET"])
+@routes_bp.route("/api/alarm/status", methods=["GET"])
 async def get_alarm_status():
     active_alarm_id, alarm = await get_active_alarm()
     if not alarm:
@@ -235,7 +231,7 @@ async def get_alarm_status():
         "status": alarm.get("status")
     })
 
-@app.route("/api/alarm/cancel", methods=["POST"])
+@routes_bp.route("/api/alarm/cancel", methods=["POST"])
 async def cancel_alarm():
     active_alarm_id, alarm = await get_active_alarm()
     if not alarm:
@@ -273,6 +269,3 @@ async def cancel_alarm():
         "alarm_id": active_alarm_id,
         "status": "cancelled"
     })
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

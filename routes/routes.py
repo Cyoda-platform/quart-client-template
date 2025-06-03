@@ -1,12 +1,11 @@
 from dataclasses import dataclass
 import asyncio
 import logging
-from datetime import datetime, timedelta, time
+from datetime import datetime
 from typing import Optional
 
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
-import httpx
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +13,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 EGG_COOK_TIMES = {"soft": 4, "medium": 7, "hard": 12}
 ENTITY_NAME = "alarm"  # entity name underscore lowercase
@@ -38,6 +36,7 @@ class DeleteRequest:
 
 async def fetch_external_time_api():
     try:
+        import httpx
         async with httpx.AsyncClient() as client:
             r = await client.get("http://worldtimeapi.org/api/timezone/Etc/UTC")
             r.raise_for_status()
@@ -85,7 +84,7 @@ async def alarm_trigger(alarm_id: str):
         logger.exception(f"Exception during alarm trigger for {alarm_id}")
 
 
-@app.route("/alarm", methods=["POST"])
+@routes_bp.route("/alarm", methods=["POST"])
 @validate_request(AlarmRequest)
 async def set_alarm(data: AlarmRequest):
     try:
@@ -116,7 +115,7 @@ async def set_alarm(data: AlarmRequest):
         return jsonify({"error": str(e)}), 400
 
 
-@app.route("/alarms", methods=["GET"])
+@routes_bp.route("/alarms", methods=["GET"])
 async def get_alarms():
     try:
         all_alarms = await entity_service.get_items(
@@ -146,7 +145,7 @@ async def get_alarms():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/alarm/delete", methods=["POST"])
+@routes_bp.route("/alarm/delete", methods=["POST"])
 @validate_request(DeleteRequest)
 async def delete_alarm(data: DeleteRequest):
     try:
@@ -173,7 +172,3 @@ async def delete_alarm(data: DeleteRequest):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": str(e)}), 400
-
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

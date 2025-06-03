@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for managing egg alarm states and processing",
+    "name": "egg_alarm_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Create alarm with creation timestamp",
+            "end_state": "Created",
+            "end_state_description": "Alarm creation timestamp added",
+            "name": "create_alarm",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_creation"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Set alarm status to active",
+            "end_state": "Active",
+            "end_state_description": "Alarm status set to active",
+            "name": "activate_alarm",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Created",
+            "start_state_description": "Alarm creation timestamp added"
+        },
+        {
+            "automated": true,
+            "description": "Calculate alarm end time based on start time and duration",
+            "end_state": "EndTimeCalculated",
+            "end_state_description": "Alarm end time calculated",
+            "name": "calculate_end_time",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_end_time"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Active",
+            "start_state_description": "Alarm status set to active"
+        }
+    ]
+}

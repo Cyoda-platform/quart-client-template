@@ -1,0 +1,23 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": 123,
+                "name": "Buddy",
+                "photoUrls": [
+                    "https://example.com/photos/buddy1.jpg",
+                    "https://example.com/photos/buddy2.jpg"
+                ],
+                "status": "available",
+                "type": "dog"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "petId": 123
+            },
+            "entity_name": "favorite_pet"
+        }
+    ]
+}

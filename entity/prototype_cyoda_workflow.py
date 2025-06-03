@@ -1,8 +1,50 @@
-Certainly! I have updated the code to add the required `workflow` parameter to the `entity_service.add_item` calls and implemented the corresponding workflow function `process_pet` (underscore lowercase entity name = `pet`).
+Understood. To follow the new best practice and requirements, I will move all asynchronous logic that happens right before persisting or related to entity enrichment into the corresponding `process_{entity_name}` workflow functions.
 
-The workflow function `process_pet` takes the entity data as input, allows you to modify it asynchronously before persistence, and returns the potentially modified entity.
+This includes:
 
-Here is the complete updated `entity/prototype_cyoda.py` file with the required changes:
+- In `/pets/query` endpoint:
+  - Fetching pets from the external Petstore API remains in the endpoint (since it's external data retrieval).
+  - The loop that adds each pet entity via `add_item` will remain in the endpoint (because it triggers persistence).
+  - The enrichment/modification of each pet entity (adding timestamps, etc.) and any additional asynchronous tasks (like triggering events) will be moved into `process_pet`.
+- The event trigger call `trigger_event_workflow("pet_query", ...)` will move into the workflow.
+- Similarly, in `/pets/favorite` endpoint:
+  - The logic of adding the favorite_pet entity remains in the endpoint (since it triggers persistence).
+  - The event trigger `trigger_event_workflow("pet_favorite", ...)` will move into the workflow function `process_favorite_pet`.
+
+---
+
+### Changes planned:
+
+1. **`process_pet(entity)` workflow:**
+
+- Add enrichment logic (already present: add `"processedAt"` timestamp).
+- Trigger event `"pet_query"` with relevant info.
+- The event is about the query, but since pets are added individually, we might want to trigger event per pet or else add a new entity "pet_query_event" or similar.
+- Since the event is about the query as a whole (with count), it should be done once for the whole query result, which is outside the workflow's scope (workflow is per entity).
+- So **we cannot trigger the "pet_query" event inside `process_pet`**, because the workflow is called for each pet, and the event is about the whole query.
+
+- Therefore, the event trigger for `"pet_query"` must remain in the endpoint.
+
+- However, **any per-pet enrichment and async task can move to `process_pet`**.
+
+2. **`process_favorite_pet(entity)` workflow:**
+
+- Trigger event `"pet_favorite"`.
+
+- This can be moved into workflow.
+
+---
+
+### Final approach:
+
+- Keep external API calls and overall orchestration in endpoints.
+- Move all entity-specific async tasks and event trigger calls to the appropriate workflow function **except** the "pet_query" event triggered once per query (outside the per-entity workflow).
+- Modify workflows to be async functions and call async functions inside them.
+- Return modified entity from workflow functions as required.
+
+---
+
+### Updated code below:
 
 ```python
 import asyncio
@@ -93,9 +135,20 @@ async def process_pet(entity: dict) -> dict:
     Asynchronously process the pet entity before persistence.
     You can modify the entity state here.
     """
-    # Example: Add a timestamp for when the pet was processed
+    # Add a timestamp for when the pet was processed
     entity["processedAt"] = datetime.utcnow().isoformat()
-    # You can add more processing logic as needed
+    # Add any other async tasks related to pet entity here if needed
+    return entity
+
+
+# Workflow function for 'favorite_pet' entity
+async def process_favorite_pet(entity: dict) -> dict:
+    """
+    Workflow function for favorite_pet entity.
+    Trigger pet_favorite event asynchronously.
+    """
+    # Fire and forget trigger event
+    asyncio.create_task(trigger_event_workflow("pet_favorite", {"petId": entity.get("petId")}))
     return entity
 
 
@@ -105,13 +158,9 @@ async def process_pet(entity: dict) -> dict:
 async def pets_query(data: PetQuery):
     try:
         pets = await fetch_pets_from_petstore(data.type, data.status)
-        # Add pets to entity_service, one by one
-        # Since add_item returns id only, we do not store pets locally anymore
+        # Add pets to entity_service, one by one, with workflow=process_pet
         for pet in pets:
             try:
-                # convert pet id to string for technical_id usage if needed later
-                pet_id_str = str(pet.get("id")) if pet.get("id") is not None else None
-                # Add pet to entity_service asynchronously with workflow function applied
                 await entity_service.add_item(
                     token=cyoda_auth_service,
                     entity_model="pet",
@@ -121,6 +170,7 @@ async def pets_query(data: PetQuery):
                 )
             except Exception as e:
                 logger.exception(f"Failed to add pet to entity_service: {e}")
+        # Trigger event related to the whole query (cannot move into workflow since workflow is per entity)
         await trigger_event_workflow("pet_query", {"type": data.type, "status": data.status, "resultCount": len(pets)})
         # Return pets list immediately as before
         return jsonify({"pets": pets})
@@ -132,7 +182,6 @@ async def pets_query(data: PetQuery):
 @app.route("/pets", methods=["GET"])
 async def pets_get():
     try:
-        # Fetch all pets from entity_service
         pets = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model="pet",
@@ -175,19 +224,17 @@ async def pets_favorite(data: FavoritePet):
         )
         if pet is None:
             return jsonify({"error": "Pet not found"}), 404
-        # Mark as favorite by adding to favorite_pet entity model
         try:
             await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model="favorite_pet",
                 entity_version=ENTITY_VERSION,
                 entity={"petId": pet_id_str},
-                workflow=None  # No workflow needed for favorite_pet currently
+                workflow=process_favorite_pet
             )
         except Exception as e:
             logger.exception(f"Failed to add favorite pet: {e}")
             return jsonify({"error": "Failed to mark pet as favorite"}), 500
-        await trigger_event_workflow("pet_favorite", {"petId": pet_id_str})
         return jsonify({"message": "Pet marked as favorite", "petId": pet_id_str})
     except Exception as e:
         logger.exception("Error in /pets/favorite")
@@ -200,10 +247,14 @@ if __name__ == "__main__":
 
 ---
 
-### Summary of changes:
-- Added the async workflow function `process_pet(entity: dict) -> dict` which modifies the entity before persistence.
-- Passed `workflow=process_pet` to `entity_service.add_item` calls where the entity model is `"pet"`.
-- For other entity models like `"favorite_pet"`, passed `workflow=None` or simply omitted it if workflow is not needed.
-- The new workflow function currently adds a `"processedAt"` timestamp as an example. You can expand this logic as necessary.
+### Explanation:
 
-Let me know if you want me to help implement workflows for other entities or other modifications!
+- The `process_pet` workflow function now handles all async tasks related to pet entity enrichment. Currently, it adds a timestamp.
+- The `process_favorite_pet` workflow triggers the `"pet_favorite"` event asynchronously, decoupling event logic from the controller.
+- The `"pet_query"` event is still triggered in the `/pets/query` endpoint because it is about the whole query result (not per-entity).
+- The endpoints are now slimmed down with business async logic moved to workflows.
+- All calls to `entity_service.add_item` pass the appropriate workflow function.
+
+This makes the codebase more robust, testable, and maintainable, following your requirements.
+
+Let me know if you want me to help with further refactoring or adding workflows for other entities!

@@ -1,13 +1,11 @@
-```python
 import asyncio
 import logging
 import uuid
 from datetime import datetime, timedelta
+from dataclasses import dataclass
 
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
-
-import httpx
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -15,59 +13,19 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# Mock in-memory "persistence" for alarms keyed by alarm_id
-# Structure: {alarm_id: {egg_type, duration_seconds, end_time, status}}
-alarms = {}
+@dataclass
+class AlarmRequest:
+    egg_type: str
 
-# Egg type to duration mapping (seconds)
-EGG_TIMES = {
-    "soft": 240,    # 4 minutes
-    "medium": 420,  # 7 minutes
-    "hard": 600     # 10 minutes
-}
-
-# Helper to get current active alarm if any (only one active alarm at a time)
-async def get_active_alarm():
-    now = datetime.utcnow()
-    for alarm_id, alarm in alarms.items():
-        if alarm["status"] == "active" and alarm["end_time"] > now:
-            return alarm_id, alarm
-        elif alarm["status"] == "active" and alarm["end_time"] <= now:
-            # Alarm expired but status still active, mark it as finished
-            alarm["status"] = "finished"
-    return None, None
-
-
-# Background task to wait for alarm and notify (mock notification)
-async def alarm_countdown(alarm_id: str):
-    alarm = alarms.get(alarm_id)
-    if not alarm:
-        return
-
-    now = datetime.utcnow()
-    delay = (alarm["end_time"] - now).total_seconds()
-    if delay > 0:
-        logger.info(f"Alarm {alarm_id} countdown started for {delay:.1f} seconds.")
-        try:
-            await asyncio.sleep(delay)
-        except asyncio.CancelledError:
-            logger.info(f"Alarm {alarm_id} countdown cancelled.")
-            return
-
-    # TODO: Real notification (sound/message) should be triggered here.
-    logger.info(f"Alarm {alarm_id} finished! Notify user: sound + message.")
-    alarm["status"] = "finished"
-
-
+# POST - route first, validation last due to validate_request defect workaround
 @app.route("/api/alarm/set", methods=["POST"])
-async def set_alarm():
-    data = await request.get_json()
-    egg_type = data.get("egg_type")
-
-    if egg_type not in EGG_TIMES:
+@validate_request(AlarmRequest)
+async def set_alarm(data: AlarmRequest):
+    egg_type = data.egg_type
+    if egg_type not in ("soft", "medium", "hard"):
         return jsonify({"error": "Invalid egg_type, allowed: soft, medium, hard"}), 400
 
-    # Cancel existing active alarm if any
+    # Cancel any existing active alarm
     active_alarm_id, active_alarm = await get_active_alarm()
     if active_alarm_id:
         active_alarm["status"] = "cancelled"
@@ -84,12 +42,10 @@ async def set_alarm():
         "start_time": now,
         "end_time": end_time,
         "status": "active",
-        "task": None  # Will hold asyncio.Task for countdown
+        "task": None
     }
 
-    # Fire and forget alarm countdown task
     alarms[alarm_id]["task"] = asyncio.create_task(alarm_countdown(alarm_id))
-
     logger.info(f"Set alarm {alarm_id} for {egg_type} egg for {duration_seconds} seconds.")
 
     return jsonify({
@@ -98,7 +54,6 @@ async def set_alarm():
         "duration_seconds": duration_seconds,
         "status": "active"
     })
-
 
 @app.route("/api/alarm/status", methods=["GET"])
 async def get_alarm_status():
@@ -113,14 +68,12 @@ async def get_alarm_status():
 
     now = datetime.utcnow()
     time_remaining = max(0, int((alarm["end_time"] - now).total_seconds()))
-
     return jsonify({
         "alarm_id": active_alarm_id,
         "egg_type": alarm["egg_type"],
         "time_remaining_seconds": time_remaining,
         "status": alarm["status"]
     })
-
 
 @app.route("/api/alarm/cancel", methods=["POST"])
 async def cancel_alarm():
@@ -131,7 +84,6 @@ async def cancel_alarm():
             "status": "no_active_alarm"
         })
 
-    # Cancel countdown task
     task = alarm.get("task")
     if task and not task.done():
         task.cancel()
@@ -148,7 +100,36 @@ async def cancel_alarm():
         "status": "cancelled"
     })
 
+# Mock in-memory storage and helpers
+
+alarms = {}
+EGG_TIMES = {"soft": 240, "medium": 420, "hard": 600}
+
+async def get_active_alarm():
+    now = datetime.utcnow()
+    for aid, alarm in alarms.items():
+        if alarm["status"] == "active" and alarm["end_time"] > now:
+            return aid, alarm
+        if alarm["status"] == "active" and alarm["end_time"] <= now:
+            alarm["status"] = "finished"
+    return None, None
+
+async def alarm_countdown(alarm_id: str):
+    alarm = alarms.get(alarm_id)
+    if not alarm:
+        return
+    now = datetime.utcnow()
+    delay = (alarm["end_time"] - now).total_seconds()
+    if delay > 0:
+        logger.info(f"Alarm {alarm_id} countdown started for {delay:.1f} seconds.")
+        try:
+            await asyncio.sleep(delay)
+        except asyncio.CancelledError:
+            logger.info(f"Alarm {alarm_id} countdown cancelled.")
+            return
+    # TODO: real notification (sound/message)
+    logger.info(f"Alarm {alarm_id} finished! Notify user: sound + message.")
+    alarm["status"] = "finished"
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

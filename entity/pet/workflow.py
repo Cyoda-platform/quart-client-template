@@ -1,32 +1,38 @@
 from datetime import datetime
 from typing import Dict, Any
-import logging
 
-logger = logging.getLogger(__name__)
-
-async def process_pet_add(entity: Dict[str, Any]) -> Dict[str, Any]:
-    entity.setdefault("created_at", datetime.utcnow().isoformat())
-    if "tags" in entity and isinstance(entity["tags"], list):
-        entity["tags"] = [tag.lower() for tag in entity["tags"]]
-    await process_pet_enrich_metadata(entity)
+async def process_pet_search(entity: Dict[str, Any]) -> Dict[str, Any]:
+    # Here should be business logic for searching pets, e.g. filtering external data
+    # For prototype: simulate setting a "search_results" attribute
+    entity['search_results'] = []  # TODO: populate with actual search results
+    entity['search_completed_at'] = datetime.utcnow().isoformat()
     return entity
 
-async def process_pet_enrich_metadata(entity: Dict[str, Any]) -> None:
-    try:
-        if "type" in entity and entity["type"]:
-            metadata_condition = {
-                "type": "simple",
-                "jsonPath": "$.pet_type",
-                "operatorType": "EQUALS",
-                "value": entity["type"].lower()
-            }
-            pet_metadata = await entity_service.get_items_by_condition(
-                token=cyoda_auth_service,
-                entity_model="pet_metadata",
-                entity_version=ENTITY_VERSION,
-                condition=metadata_condition
-            )
-            if pet_metadata:
-                entity["metadata"] = pet_metadata[0]
-    except Exception:
-        logger.exception("Failed to enrich pet metadata in workflow")
+async def process_pet_add(entity: Dict[str, Any]) -> Dict[str, Any]:
+    # Business logic for adding a pet
+    entity['created_at'] = datetime.utcnow().isoformat()
+    entity['status'] = entity.get('status', 'available').lower() if isinstance(entity.get('status'), str) else 'available'
+    # Additional processing or enrichment can be placed here
+    return entity
+
+async def process_pet_update(entity: Dict[str, Any]) -> Dict[str, Any]:
+    entity["updated_at"] = datetime.utcnow().isoformat()
+    if "status" in entity and isinstance(entity["status"], str):
+        entity["status"] = entity["status"].lower()
+    # Workflow orchestration: call other process_* functions as needed (example)
+    # No direct business logic here, only orchestration
+    # Example:
+    # if entity.get('action') == 'add':
+    #     await process_pet_add(entity)
+    # elif entity.get('action') == 'search':
+    #     await process_pet_search(entity)
+    # else:
+    #     # default update logic or enrichment
+    #     pass
+    return entity
+
+async def process_pet_delete(entity: Dict[str, Any]) -> Dict[str, Any]:
+    # Business logic for deleting a pet
+    entity['deleted_at'] = datetime.utcnow().isoformat()
+    entity['status'] = 'deleted'
+    return entity

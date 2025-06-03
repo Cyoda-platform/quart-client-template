@@ -1,0 +1,54 @@
+{
+    "description": "Workflow to fetch pets, cache them, and handle favorite pet marking with event triggers",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch pets from Petstore API and cache them",
+            "end_state": "Pets_fetched_and_cached",
+            "end_state_description": "Pets have been fetched and cached",
+            "name": "fetch_and_cache_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pets"
+                    },
+                    {
+                        "description": "",
+                        "name": "process_cache_pets"
+                    },
+                    {
+                        "description": "",
+                        "name": "process_trigger_query_event"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Mark a pet as favorite and trigger favorite event",
+            "end_state": "Pet_marked_favorite",
+            "end_state_description": "Pet has been marked as favorite",
+            "name": "favorite_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_mark_favorite"
+                    },
+                    {
+                        "description": "",
+                        "name": "process_trigger_favorite_event"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched_and_cached",
+            "start_state_description": "Pets have been fetched and cached"
+        }
+    ]
+}

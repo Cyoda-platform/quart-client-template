@@ -1,0 +1,286 @@
+
+= Quart Client Template
+
+This template provides a structured framework for developing a web client using the asynchronous web framework Quart. It offers a foundation to quickly begin development and testing, leveraging Python's asyncio capabilities for efficient handling of requests.
+
+== Features
+
+- **Asynchronous**: Utilizes Python's asyncio capabilities for efficient request handling.
+- **Extensibility**: A flexible and configurable project structure designed for easy customization.
+
+== Installation Guide
+
+=== 1. Clone the Repository
+
+[source]
+----
+git clone <your-repository-URL>
+cd quart-client-template
+----
+
+=== 2. Set Up a Virtual Environment
+
+**Windows:**
+
+[source]
+----
+python -m venv venv
+venv\Scripts\activate
+----
+
+**Unix/MacOS:**
+
+[source]
+----
+python3 -m venv venv
+source venv/bin/activate
+----
+
+=== 3. Install Dependencies
+
+[source]
+----
+pip install -r requirements.txt
+----
+
+=== 4. Launch the Application
+
+== Project Structure Overview
+
+=== 1. app_init/
+
+This module contains a service factory responsible for initializing all essential services.
+
+=== 2. common/
+
+This module contains boilerplate code for integration with Cyoda. Key components include:
+
+- **auth**: Manages login and refresh token logic (modifications not typically required).
+- **config**: Contains constants, environment variables from .env, and enums.
+- **exception**: Customize error handling logic as necessary.
+- **grpc_client**: Handles integration with the Cyoda gRPC server (modifications usually unnecessary).
+- **repository**: Facilitates integration with the Coda REST API (modifications usually unnecessary).
+- **service**: Additional services for your application.
+- **utils**: Various utility functions.
+
+To interact with Cyoda, use the common/service/entity_service_interface.py, which provides all the necessary methods. To add new integrations with Cyoda, extend the following files:
+
+Interface: You can, but don't have to modify common/service/entity_service_interface.py to define the required service methods. This provides the abstraction layer for Cyoda interaction.
+
+Implementation: You can, but don't have to modify common/service/service.py to implement the methods from the interface. Add business logic for Cyoda integration here.
+
+Repository Interface: The common/repository/crud_repository.py file defines the generic repository interface. Modify only if new operations are needed for Cyoda.
+
+Cyoda Repository: Update common/repository/cyoda/cyoda_repository.py implement the methods from the interface. Modify only if new operations are needed for Cyoda.
+crud_repository.py and cyoda_repository.py changes are rare, needed only for significant changes to the data access layer.
+
+Always interact with the service interface, not directly with the repository.
+
+=== 3. entity/
+
+The primary module for business logic development. Key files include:
+
+- **workflow.py**: Dispatches gRPC events to your entity upon receipt. Modifications unnecessary.
+- **functional_requirements.md**: Describes the application’s functional requirements—review this file before making changes.
+- **prototype.py**: Contains the initial prototype configuration.
+
+Entities should be defined using the following structure:
+
+[source]
+----
+entity/$entity_name/workflow.json
+----
+
+This file defines the workflow configuration using a finite-state machine (FSM) model, which specifies states and transitions between them.
+
+Example:
+
+[source]
+----
+{
+    "description": "Workflow to process and manage data through various states.",
+    "name": "generic_data_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Begin processing the data and compute the initial status.",
+            "end_state": "Status_computed",
+            "end_state_description": "The status has been successfully computed.",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Processor that computes the status based on input data.",
+                        "name": "process_compute_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before processing begins."
+        }
+    ]
+}
+----
+
+The logic for processing workflows is implemented in entity/$entity_name/workflow.py:
+Each function name matches externalized_processors processor name.
+
+[source]
+----
+async def process_compute_status(entity: dict):
+    final_result = do_some_user_request(...)
+    entity["final_result"] = final_result
+    entity["workflowProcessed"] = True
+----
+
+=== 4. helm/
+
+This folder contains deployment configurations for the Cyoda cloud. **Do not modify** unless you are certain of what you're doing.
+
+=== 5. routes/
+
+The routes/routes.py file contains the core API logic. Feel free to improve this code, but always preserve the existing structure and business logic.
+
+== API Integration Guidelines
+
+=== 1. Adding an Item
+
+[source]
+----
+id = await entity_service.add_item(
+    token=cyoda_auth_service,
+    entity_model="{entity_name}",
+    entity_version=ENTITY_VERSION,
+    entity=data
+)
+----
+
+=== 2. Retrieving an Item
+
+[source]
+----
+await entity_service.get_item(...)
+await entity_service.get_items(...)
+await entity_service.get_items_by_condition(...)
+----
+
+=== 3. Updating an Item
+
+[source]
+----
+await entity_service.update_item(...)
+----
+
+=== 4. Deleting an Item
+
+[source]
+----
+await entity_service.delete_item(...)
+----
+
+Important: Ensure that the `id` is treated as a string. If numeric values were previously used, now use a string as the technical ID.
+
+For managing entity versions, always use:
+
+[source]
+----
+from common.config.config import ENTITY_VERSION
+----
+
+=== Example Condition Format
+
+[source]
+----
+{
+  "cyoda": {
+    "type": "group",
+    "operator": "AND",
+    "conditions": [
+      {
+        "jsonPath": "my_attribute",
+        "operatorType": "EQUALS",
+        "value": false,
+        "type": "simple"
+      },
+      {
+        "jsonPath": "my_attribute",
+        "operatorType": "GREATER_THAN",
+        "value": 1,
+        "type": "simple"
+      }
+    ]
+  }
+}
+----
+
+== Response Format
+
+=== 1. Adding an Item
+
+[source]
+----
+id = await entity_service.add_item(
+    token=cyoda_auth_service,
+    entity_model="{entity_name}",
+    entity_version=ENTITY_VERSION,
+    entity=data
+)
+return id  # Return the id, without retrieving the result immediately.
+----
+
+=== 2. Retrieving an Item
+
+[source]
+----
+await entity_service.get_item(
+    token=cyoda_auth_service,
+    entity_model="{entity_name}",
+    entity_version=ENTITY_VERSION,
+    technical_id=<id>
+)
+await entity_service.get_items(...)
+await entity_service.get_items_by_condition(...)
+----
+
+=== 3. Updating an Item
+
+[source]
+----
+await entity_service.update_item(
+    token=cyoda_auth_service,
+    entity_model="{entity_name}",
+    entity_version=ENTITY_VERSION,
+    entity=data,
+    technical_id=id,
+    meta={}
+)
+----
+
+=== 4. Deleting an Item
+
+[source]
+----
+await entity_service.delete_item(
+    token=cyoda_auth_service,
+    entity_model="{entity_name}",
+    entity_version=ENTITY_VERSION,
+    technical_id=id,
+    meta={}
+)
+----
+
+== Logging Example
+
+[source]
+----
+import logging
+from app_init.app_init import BeanFactory
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service: EntityService = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.exception(e)
+----

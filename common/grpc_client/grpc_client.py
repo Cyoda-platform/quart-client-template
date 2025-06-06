@@ -152,13 +152,13 @@ class GrpcClient:
 
                     async for response in call:
                         if response.type == KEEP_ALIVE_EVENT_TYPE:
-                            await self.handle_keep_alive_event(response, queue)
+                            asyncio.create_task(self.handle_keep_alive_event(response, queue))
                         elif response.type == EVENT_ACK_TYPE:
                             logger.debug(response)
                         elif response.type in (CALC_REQ_EVENT_TYPE, CRITERIA_CALC_REQ_EVENT_TYPE):
                             logger.info(f"Calc request: {response.type}")
                             data = json.loads(response.text_data)
-                            await self.process_calc_req_event(data, queue, response.type)
+                            asyncio.create_task(self.process_calc_req_event(data, queue, response.type))
                         elif response.type == GREET_EVENT_TYPE:
                             logger.info("Greet event received")
                         else:

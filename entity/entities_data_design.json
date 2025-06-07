@@ -1,0 +1,44 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "counterpartyLEI": "5493001KJTIIGC8Y1R12",
+                "createdAt": "2024-06-01T12:30:00.000Z",
+                "eventType": "tradeConfirmation",
+                "lastUpdated": "2024-06-01T12:34:56.789Z",
+                "status": "confirmed",
+                "timestamp": "2024-06-01T12:34:56.789Z",
+                "tradeDetails": "<FpML XML snippet or summary>",
+                "tradeId": "123e4567-e89b-12d3-a456-426614174000"
+            },
+            "entity_name": "trade"
+        },
+        {
+            "entity_data_example": {
+                "jurisdiction": "US",
+                "lei": "5493001KJTIIGC8Y1R12",
+                "name": "Example Legal Entity Ltd",
+                "status": "active",
+                "updatedAt": "2024-06-01T12:00:00.000Z"
+            },
+            "entity_name": "legal_entity"
+        },
+        {
+            "entity_data_example": {
+                "createdAt": "2024-06-01T13:00:00.000Z",
+                "dtccMessageId": "223e4567-e89b-12d3-a456-426614174111",
+                "history": [
+                    {
+                        "details": "DTCC message created and ready to send",
+                        "event": "created",
+                        "timestamp": "2024-06-01T13:00:01.000Z"
+                    }
+                ],
+                "messageType": "new",
+                "status": "readyToSend",
+                "tradeId": "123e4567-e89b-12d3-a456-426614174000"
+            },
+            "entity_name": "dtcc_message"
+        }
+    ]
+}

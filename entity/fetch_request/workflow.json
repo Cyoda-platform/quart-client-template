@@ -21,9 +21,9 @@
         },
         {
             "automated": true,
-            "description": "Notify subscribers with NBA scores",
-            "end_state": "Subscribers_notified",
-            "end_state_description": "Subscribers notified via email",
+            "description": "Create notification messages for subscribers",
+            "end_state": "Notification_messages_created",
+            "end_state_description": "Individual notification message entities created for each subscriber",
             "name": "notify_subscribers",
             "processes": {
                 "externalized_processors": [

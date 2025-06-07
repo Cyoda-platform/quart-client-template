@@ -15,3 +15,7 @@ aiofiles==24.1.0
 httpx==0.28.1
 quart-schema[pydantic]==0.21.0
 PyJWT==2.10.1
+# Testing dependencies
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-mock==3.14.0

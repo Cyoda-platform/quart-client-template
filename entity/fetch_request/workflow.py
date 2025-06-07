@@ -6,7 +6,15 @@ import httpx
 from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request, validate_querystring
 
+from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
+
 logger = logging.getLogger(__name__)
+
+# Initialize services
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 async def fetch_nba_scores(date: str, api_key: str) -> Optional[List[dict]]:
     url = f"https://api.sportsdata.io/v3/nba/scores/json/ScoresBasicFinal/{date}?key={api_key}"
@@ -47,21 +55,55 @@ async def process_save_scores(entity: dict, date_str: str, scores: List[dict]):
     logger.info(f"Scores saved in entity for date {date_str}")
 
 async def process_notify_subscribers(entity: dict, date_str: str, scores: List[dict]):
-    subscribers_list = entity.get("subscribers", [])
-    for subscriber in subscribers_list:
-        email = subscriber.get("email")
-        notif_type = subscriber.get("notificationtype")
-        if not email or not notif_type:
-            continue
-        try:
-            if notif_type == "summary":
-                body = format_email_summary(scores)
-                await send_email(email, f"NBA Scores Summary for {date_str}", body, html=False)
-            else:
-                body = format_email_full(scores)
-                await send_email(email, f"NBA Scores Full Listing for {date_str}", body, html=True)
-        except Exception as e:
-            logger.exception(f"Failed to send email to {email}: {e}")
+    """Create subscriber_notification_message entities for each active subscriber."""
+    try:
+        # Get all active subscribers from the subscribe_request entities
+        subscribers_list = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model="subscribe_request",
+            entity_version=ENTITY_VERSION
+        )
+
+        logger.info(f"Found {len(subscribers_list)} subscribers to notify for date {date_str}")
+
+        # Create notification entities for each subscriber
+        for subscriber in subscribers_list:
+            email = subscriber.get("email")
+            notif_type = subscriber.get("notificationType") or subscriber.get("notificationtype")
+
+            # Skip if subscriber data is incomplete or not subscribed
+            if not email or not notif_type or not subscriber.get("subscribed", True):
+                logger.warning(f"Skipping incomplete subscriber data: {subscriber}")
+                continue
+
+            try:
+                # Create notification message entity
+                notification_entity = {
+                    "subscriber_email": email,
+                    "notification_type": notif_type,
+                    "date": date_str,
+                    "scores_data": scores,
+                    "status": "pending",
+                    "retry_count": 0,
+                    "max_retries": 3,
+                    "created_at": datetime.datetime.utcnow().isoformat()
+                }
+
+                # Add the notification entity to trigger its workflow
+                notification_id = await entity_service.add_item(
+                    token=cyoda_auth_service,
+                    entity_model="subscriber_notification_message",
+                    entity_version=ENTITY_VERSION,
+                    entity=notification_entity
+                )
+
+                logger.info(f"Created notification entity {notification_id} for {email}")
+
+            except Exception as e:
+                logger.exception(f"Failed to create notification entity for {email}: {e}")
+
+    except Exception as e:
+        logger.exception(f"Failed to retrieve subscribers or create notifications: {e}")
 
 async def process_fetch_request(entity: dict) -> dict:
     logger.info(f"Running workflow on fetch_request entity: {entity}")

@@ -42,6 +42,30 @@
                 "homeTeam": "Team A"
             },
             "entity_name": "game"
+        },
+        {
+            "entity_data_example": {
+                "subscriber_email": "user@example.com",
+                "notification_type": "summary",
+                "date": "2024-01-01",
+                "scores_data": [
+                    {
+                        "AwayTeam": "Team B",
+                        "HomeTeam": "Team A",
+                        "AwayTeamScore": 105,
+                        "HomeTeamScore": 110,
+                        "Day": "2024-01-01",
+                        "Status": "Final",
+                        "Quarter": 4,
+                        "TimeRemaining": "0:00"
+                    }
+                ],
+                "status": "pending",
+                "retry_count": 0,
+                "max_retries": 3,
+                "created_at": "2024-01-01T12:00:00Z"
+            },
+            "entity_name": "subscriber_notification_message"
         }
     ]
 }

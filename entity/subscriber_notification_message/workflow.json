@@ -1,0 +1,57 @@
+{
+    "description": "Workflow for managing individual subscriber notification messages with resend and cancellation capabilities",
+    "name": "Subscriber_Notification_Message_Workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Send notification message to subscriber",
+            "end_state": "Notification_sent",
+            "end_state_description": "Notification successfully sent to subscriber",
+            "name": "send_notification",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_send_notification"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state - notification ready to send"
+        },
+        {
+            "automated": true,
+            "description": "Retry sending notification after failure",
+            "end_state": "Notification_sent",
+            "end_state_description": "Notification successfully sent after retry",
+            "name": "retry_notification",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_retry_notification"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Send_failed",
+            "start_state_description": "Previous send attempt failed"
+        },
+        {
+            "automated": false,
+            "description": "Cancel the notification message",
+            "end_state": "Notification_cancelled",
+            "end_state_description": "Notification has been cancelled and will not be sent",
+            "name": "cancel_notification",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_cancel_notification"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Can be cancelled from any state before sending"
+        }
+    ]
+}

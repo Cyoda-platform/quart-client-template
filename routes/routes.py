@@ -1,4 +1,5 @@
-```python
+# ABOUTME: This file contains the API routes for the NBA scores notification system.
+# ABOUTME: It handles subscription management, game data retrieval, and score fetching operations.
 import asyncio
 import datetime
 import logging
@@ -324,4 +325,3 @@ async def fetch_scores(data: FetchRequest):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to start fetch process"}), 500
-```

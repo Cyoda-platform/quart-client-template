@@ -1,0 +1,72 @@
+{
+    "description": "Workflow managing OTC derivative trade confirmation lifecycle and DTCC message sending",
+    "name": "otc_derivative_trade_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Ingest and validate FpML message",
+            "end_state": "validation_completed",
+            "end_state_description": "FpML message validated and parsed",
+            "name": "ingest_fpml_message",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_fpml"
+                    },
+                    {
+                        "description": "",
+                        "name": "process_verify_message_source"
+                    },
+                    {
+                        "description": "",
+                        "name": "process_parse_fpml"
+                    },
+                    {
+                        "description": "",
+                        "name": "process_check_legal_entity"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before trade ingestion"
+        },
+        {
+            "automated": true,
+            "description": "Transition trade state based on event type and validation results",
+            "end_state": "trade_state_updated",
+            "end_state_description": "Trade state updated according to lifecycle rules",
+            "name": "process_trade_state_transition",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_transition_trade_state"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "validation_completed",
+            "start_state_description": "FpML message validated and parsed"
+        },
+        {
+            "automated": true,
+            "description": "Send DTCC message and update its status",
+            "end_state": "dtcc_message_sent",
+            "end_state_description": "DTCC message sent or marked failed",
+            "name": "send_dtcc_message",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_dtcc"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "trade_state_updated",
+            "start_state_description": "Trade state updated according to lifecycle rules"
+        }
+    ]
+}

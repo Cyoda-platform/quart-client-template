@@ -1,0 +1,150 @@
+{
+    "description": "Workflow managing lifecycle states of OTC derivative trades, legal entities, and DTCC messages.",
+    "name": "otc_derivative_trade_lifecycle",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Create or update legal entity and update timestamp",
+            "end_state": "legal_entity_updated",
+            "end_state_description": "Legal entity has been created or updated with current timestamp",
+            "name": "create_legal_entity",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Update legal entity timestamp",
+                        "name": "process_legal_entity"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before legal entity exists"
+        },
+        {
+            "automated": true,
+            "description": "Create trade in draft state from execution or newTrade event",
+            "end_state": "draft",
+            "end_state_description": "Trade created in draft state",
+            "name": "ingest_trade_execution",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Set trade in draft state",
+                        "name": "process_trade"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before trade ingestion"
+        },
+        {
+            "automated": true,
+            "description": "Transition trade from draft to confirmed on tradeConfirmation event",
+            "end_state": "confirmed",
+            "end_state_description": "Trade confirmed",
+            "name": "confirm_trade",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Transition to confirmed state",
+                        "name": "process_trade"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "draft",
+            "start_state_description": "Trade in draft state"
+        },
+        {
+            "automated": true,
+            "description": "Transition trade from confirmed to amended on amendment or modification event",
+            "end_state": "amended",
+            "end_state_description": "Trade amended",
+            "name": "amend_trade",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Transition to amended state",
+                        "name": "process_trade"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "confirmed",
+            "start_state_description": "Trade confirmed"
+        },
+        {
+            "automated": true,
+            "description": "Transition trade from any state to cancelled on cancel or termination event",
+            "end_state": "cancelled",
+            "end_state_description": "Trade cancelled",
+            "name": "cancel_trade",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Transition to cancelled state",
+                        "name": "process_trade"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "amended",
+            "start_state_description": "Trade amended"
+        },
+        {
+            "automated": true,
+            "description": "Transition trade from draft or confirmed to rejected on rejection event",
+            "end_state": "rejected",
+            "end_state_description": "Trade rejected",
+            "name": "reject_trade",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Transition to rejected state",
+                        "name": "process_trade"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "draft",
+            "start_state_description": "Trade in draft state"
+        },
+        {
+            "automated": true,
+            "description": "Create DTCC message in readyToSend state",
+            "end_state": "readyToSend",
+            "end_state_description": "DTCC message ready to send",
+            "name": "dtcc_message_ready_to_send",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Prepare DTCC message for sending",
+                        "name": "process_dtcc_message"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before DTCC message creation"
+        },
+        {
+            "automated": true,
+            "description": "Transition DTCC message from readyToSend to sent after sending",
+            "end_state": "sent",
+            "end_state_description": "DTCC message sent",
+            "name": "dtcc_message_sent",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Mark DTCC message as sent",
+                        "name": "process_dtcc_message"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "readyToSend",
+            "start_state_description": "DTCC message ready to send"
+        }
+    ]
+}

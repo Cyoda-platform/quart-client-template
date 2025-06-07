@@ -1,0 +1,60 @@
+{
+    "description": "Manage the lifecycle of OTC derivative trades through validation and state transitions",
+    "name": "trade_lifecycle_management",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Begin processing a new trade from initial state",
+            "end_state": "legal_entity_checked",
+            "end_state_description": "Trade after legal entity existence check",
+            "name": "start_trade_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_check_legal_entity"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before trade is processed"
+        },
+        {
+            "automated": true,
+            "description": "Transition trade state if legal entity valid",
+            "end_state": "state_transitioned",
+            "end_state_description": "Trade after state transition",
+            "name": "transition_trade_state",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_transition_state"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "legal_entity_checked",
+            "start_state_description": "Trade after legal entity existence check"
+        },
+        {
+            "automated": true,
+            "description": "Set the last processed timestamp on the trade",
+            "end_state": "processed",
+            "end_state_description": "Trade fully processed",
+            "name": "set_last_processed_timestamp",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_last_processed_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "state_transitioned",
+            "start_state_description": "Trade after state transition"
+        }
+    ]
+}

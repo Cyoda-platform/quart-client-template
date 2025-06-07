@@ -6,8 +6,8 @@ from typing import Optional
 import uuid
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -15,12 +15,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 # Dataclasses for request validation
 @dataclass
@@ -173,7 +172,7 @@ async def process_dtcc_message(dtcc_data: dict):
         })
         logger.exception(f"Error sending DTCC message {dtcc_id}: {e}")
 
-@app.route("/trades/fpml", methods=["POST"])
+@routes_bp.route("/trades/fpml", methods=["POST"])
 @validate_request(Fpml_trade_request)
 async def post_fpml_trade(data: Fpml_trade_request):
     try:
@@ -200,7 +199,7 @@ async def post_fpml_trade(data: Fpml_trade_request):
         return jsonify({"message": "Internal server error"}), 500
 
 @validate_querystring(Legal_entity_query)
-@app.route("/legal-entities", methods=["GET"])
+@routes_bp.route("/legal-entities", methods=["GET"])
 async def get_legal_entities():
     try:
         lei = request.args.get("lei")
@@ -253,7 +252,7 @@ async def get_legal_entities():
         logger.exception(e)
         return jsonify({"message": "Internal server error"}), 500
 
-@app.route("/legal-entities", methods=["POST"])
+@routes_bp.route("/legal-entities", methods=["POST"])
 @validate_request(Legal_entity_request)
 async def post_legal_entity(data: Legal_entity_request):
     try:
@@ -290,7 +289,7 @@ async def post_legal_entity(data: Legal_entity_request):
         logger.exception(e)
         return jsonify({"message": "Internal server error"}), 500
 
-@app.route("/dtcc/messages", methods=["POST"])
+@routes_bp.route("/dtcc/messages", methods=["POST"])
 @validate_request(Dtcc_message_request)
 async def post_dtcc_message(data: Dtcc_message_request):
     try:
@@ -326,7 +325,7 @@ async def post_dtcc_message(data: Dtcc_message_request):
         logger.exception(e)
         return jsonify({"message": "Internal server error"}), 500
 
-@app.route("/dtcc/messages/<dtcc_id>/resend", methods=["POST"])
+@routes_bp.route("/dtcc/messages/<dtcc_id>/resend", methods=["POST"])
 async def post_dtcc_message_resend(dtcc_id: str):
     try:
         msg = await entity_service.get_item(
@@ -393,7 +392,7 @@ async def post_dtcc_message_resend(dtcc_id: str):
         logger.exception(e)
         return jsonify({"message": "Internal server error"}), 500
 
-@app.route("/dtcc/messages/<dtcc_id>", methods=["GET"])
+@routes_bp.route("/dtcc/messages/<dtcc_id>", methods=["GET"])
 async def get_dtcc_message(dtcc_id: str):
     try:
         msg = await entity_service.get_item(
@@ -408,12 +407,3 @@ async def get_dtcc_message(dtcc_id: str):
     except Exception as e:
         logger.exception(e)
         return jsonify({"message": "Internal server error"}), 500
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(
-        stream=sys.stdout,
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-        level=logging.INFO,
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

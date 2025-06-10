@@ -1,10 +1,10 @@
-```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime
 
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -13,8 +13,12 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+# Request schema dataclass
+@dataclass
+class HelloRequest:
+    name: str = None  # optional name for personalization
+
 # In-memory cache to store last greeting message and jobs
-# Use a dict with asyncio.Lock for safe concurrency
 class Cache:
     def __init__(self):
         self._lock = asyncio.Lock()
@@ -37,44 +41,25 @@ class Cache:
 
 cache = Cache()
 
-
 async def fetch_external_greeting(name: str = None) -> str:
-    """
-    Example external API call to get a greeting message.
-    We will use the 'greet' API from an open source or public API.
-    Since no real 'hello' API is standard, 
-    we will call https://api.agify.io/?name={name} to simulate external call, then build greeting.
-
-    TODO: Replace with a real greeting API if available.
-    """
-
     async with httpx.AsyncClient() as client:
         try:
             if name:
-                # Using agify.io as a placeholder external API to get info about the name
                 resp = await client.get("https://api.agify.io/", params={"name": name})
                 resp.raise_for_status()
                 data = resp.json()
-                # Compose greeting using the data as a simple example
                 age = data.get("age")
                 greeting = f"Hello, {name}!"
                 if age:
                     greeting += f" I guess you are around {age} years old."
                 return greeting
             else:
-                # No name provided, return simple Hello World
                 return "Hello World"
         except Exception as e:
             logger.exception(e)
-            # Fallback message
             return "Hello World"
 
-
 async def process_entity(entity_job: dict, data: dict):
-    """
-    Simulate processing business logic or external data retrieval.
-    Will call external greeting API and store result.
-    """
     job_id = data.get("job_id")
     name = data.get("name", None)
     try:
@@ -91,30 +76,24 @@ async def process_entity(entity_job: dict, data: dict):
             entity_job[job_id]["status"] = "failed"
             entity_job[job_id]["error"] = str(e)
 
-
 @app.route("/hello", methods=["POST"])
-async def post_hello():
-    data = await request.get_json(force=True, silent=True)
-    if data is None:
-        return jsonify({"error": "Invalid or missing JSON body"}), 400
-
-    name = data.get("name", None)
+@validate_request(HelloRequest)  # validation last for POST due to quart-schema defect workaround
+async def post_hello(data: HelloRequest):
     job_id = datetime.utcnow().isoformat() + "-" + str(id(data))
     requested_at = datetime.utcnow().isoformat()
 
     job_data = {
         "status": "processing",
         "requestedAt": requested_at,
-        "name": name
+        "name": data.name
     }
 
     await cache.add_job(job_id, job_data)
 
     # Fire and forget processing task
-    asyncio.create_task(process_entity(cache._data["entity_job"], {"job_id": job_id, "name": name}))
+    asyncio.create_task(process_entity(cache._data["entity_job"], {"job_id": job_id, "name": data.name}))
 
     return jsonify({"job_id": job_id, "status": "processing"}), 202
-
 
 @app.route("/hello/result", methods=["GET"])
 async def get_hello_result():
@@ -123,10 +102,6 @@ async def get_hello_result():
         return jsonify({"message": "No greeting message available yet"}), 404
     return jsonify({"message": last_greeting})
 
-
 if __name__ == "__main__":
-    import logging
-
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

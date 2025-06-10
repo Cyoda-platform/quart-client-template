@@ -1,12 +1,12 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import datetime
 import logging
-from typing import Dict
+from typing import Dict, Any
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,19 +14,27 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory local cache for prototype persistence
-entity_job: Dict[str, Dict] = {}
-results_cache: Dict[str, Dict] = {}
-feedback_cache: Dict[str, Dict] = {}
+# Data classes for request validation
+@dataclass
+class ProcessDataRequest:
+    inputData: Dict[str, Any]
 
+@dataclass
+class FeedbackRequest:
+    resultId: str
+    feedback: str
+
+# In-memory local cache for prototype persistence
+entity_job: Dict[str, Dict[str, Any]] = {}
+results_cache: Dict[str, Dict[str, Any]] = {}
+feedback_cache: Dict[str, Dict[str, Any]] = {}
 
 async def fetch_external_data(input_data: dict) -> dict:
     """
     Example external API call using httpx.AsyncClient.
-    This prototype uses a public API to simulate external data retrieval.
     TODO: Replace with your actual external API logic and URL.
     """
-    url = "https://api.agify.io"  # Public API that estimates age by name
+    url = "https://api.agify.io"
     params = {"name": input_data.get("name", "default")}
     try:
         async with httpx.AsyncClient() as client:
@@ -39,7 +47,6 @@ async def fetch_external_data(input_data: dict) -> dict:
         logger.exception(f"External API call failed: {e}")
         return {}
 
-
 async def process_entity(job_id: str, input_data: dict):
     """
     Process the entity: call external API, do calculations, update job and results cache.
@@ -48,18 +55,15 @@ async def process_entity(job_id: str, input_data: dict):
         entity_job[job_id]["status"] = "processing"
         entity_job[job_id]["startedAt"] = datetime.datetime.utcnow().isoformat()
 
-        # Fetch external data
         external_data = await fetch_external_data(input_data)
 
-        # TODO: Add any specific calculations or business logic here.
-        # For prototype, combine input_data and external_data as processedResult:
+        # TODO: Add specific calculations or business logic here.
         processed_result = {
             "input": input_data,
             "externalData": external_data,
-            "calculatedValue": external_data.get("age", None)  # Example calculation
+            "calculatedValue": external_data.get("age")
         }
 
-        # Save processed result
         results_cache[job_id] = {
             "resultId": job_id,
             "resultData": processed_result,
@@ -74,31 +78,27 @@ async def process_entity(job_id: str, input_data: dict):
         entity_job[job_id]["error"] = str(e)
         logger.exception(f"Processing job {job_id} failed.")
 
-
 @app.route("/process-data", methods=["POST"])
-async def process_data():
+# issue workaround: validate_request must come after route for POST
+@validate_request(ProcessDataRequest)
+async def process_data(data: ProcessDataRequest):
     """
     POST /process-data
     Accept input data, invoke external data sources, perform calculations, return job status.
     """
-    data = await request.get_json()
-    if not data:
-        return jsonify({"status": "error", "message": "Missing JSON body"}), 400
-
+    input_data = data.inputData
     job_id = datetime.datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
     requested_at = datetime.datetime.utcnow().isoformat()
 
     entity_job[job_id] = {"status": "queued", "requestedAt": requested_at}
 
-    # Fire and forget the processing task.
-    asyncio.create_task(process_entity(job_id, data))
+    asyncio.create_task(process_entity(job_id, input_data))
 
     return jsonify({
         "status": "accepted",
         "jobId": job_id,
         "message": "Processing started"
     })
-
 
 @app.route("/results/<string:result_id>", methods=["GET"])
 async def get_results(result_id):
@@ -109,27 +109,19 @@ async def get_results(result_id):
     result = results_cache.get(result_id)
     if not result:
         return jsonify({"status": "error", "message": "Result not found"}), 404
-
     return jsonify(result)
 
-
 @app.route("/submit-feedback", methods=["POST"])
-async def submit_feedback():
+# issue workaround: validate_request must come after route for POST
+@validate_request(FeedbackRequest)
+async def submit_feedback(data: FeedbackRequest):
     """
     POST /submit-feedback
     Accept user feedback related to processed results or app experience.
     """
-    data = await request.get_json()
-    if not data:
-        return jsonify({"status": "error", "message": "Missing JSON body"}), 400
+    result_id = data.resultId
+    feedback_text = data.feedback
 
-    result_id = data.get("resultId")
-    feedback_text = data.get("feedback")
-
-    if not result_id or not feedback_text:
-        return jsonify({"status": "error", "message": "Missing 'resultId' or 'feedback' fields"}), 400
-
-    # Save feedback in cache with timestamp
     feedback_cache[result_id] = {
         "feedback": feedback_text,
         "submittedAt": datetime.datetime.utcnow().isoformat()
@@ -139,7 +131,5 @@ async def submit_feedback():
 
     return jsonify({"status": "success", "message": "Feedback received"})
 
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

@@ -1,0 +1,43 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "report_id": "report_12345",
+                "requestedAt": "2024-06-01T12:00:00Z",
+                "status": "completed",
+                "triggerDate": "2024-05-31"
+            },
+            "entity_name": "books_analysis_job"
+        },
+        {
+            "entity_data_example": {
+                "generatedAt": "2024-06-01T12:30:00Z",
+                "popularTitles": [
+                    {
+                        "description": "Brief description",
+                        "excerpt": "Excerpt text",
+                        "id": 1,
+                        "pageCount": 500,
+                        "publishDate": "2022-05-01",
+                        "title": "Book Title 1"
+                    },
+                    {
+                        "description": "Another description",
+                        "excerpt": "Another excerpt",
+                        "id": 2,
+                        "pageCount": 450,
+                        "publishDate": "2021-06-15",
+                        "title": "Book Title 2"
+                    }
+                ],
+                "publicationDateRange": {
+                    "earliest": "2020-01-01",
+                    "latest": "2024-05-01"
+                },
+                "totalBooks": 123,
+                "totalPageCount": 45678
+            },
+            "entity_name": "books_report"
+        }
+    ]
+}

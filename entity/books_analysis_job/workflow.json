@@ -1,0 +1,78 @@
+{
+    "description": "Workflow to fetch, analyze, save report and send email for books data",
+    "name": "books_analysis_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the books analysis workflow",
+            "end_state": "Books_fetched",
+            "end_state_description": "Books data fetched from external API",
+            "name": "start_analysis",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_books"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Analyze the fetched books data",
+            "end_state": "Report_analyzed",
+            "end_state_description": "Books data analyzed and report generated",
+            "name": "analyze_books_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_analyze_books"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Books_fetched",
+            "start_state_description": "Books data fetched from external API"
+        },
+        {
+            "automated": true,
+            "description": "Save the generated report",
+            "end_state": "Report_saved",
+            "end_state_description": "Report saved successfully",
+            "name": "save_report",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_save_report"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Report_analyzed",
+            "start_state_description": "Books data analyzed and report generated"
+        },
+        {
+            "automated": true,
+            "description": "Send the report email to analytics team",
+            "end_state": "Completed",
+            "end_state_description": "Report email sent and workflow completed",
+            "name": "send_report_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Report_saved",
+            "start_state_description": "Report saved successfully"
+        }
+    ]
+}

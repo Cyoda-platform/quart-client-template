@@ -1,32 +1,31 @@
-import asyncio
+from datetime import timezone, datetime
 import logging
-from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional
-
-import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate, validate_request
 
 from app_init.app_init import BeanFactory
-from common.config.config import ENTITY_VERSION
+
+logger = logging.getLogger(__name__)
+FINAL_STATES = {'FAILURE', 'SUCCESS', 'CANCELLED', 'CANCELLED_BY_USER', 'UNKNOWN', 'FINISHED'}
+PROCESSING_STATE = 'PROCESSING'
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+FAKE_REST_API_BOOKS_URL = "https://fakerestapi.azurewebsites.net/api/v1/Books"
+ANALYTICS_TEAM_EMAIL = "analytics-team@example.com"  # TODO: Replace with real email or config
 
-app = Quart(__name__)
-QuartSchema(app)
+from dataclasses import dataclass
+from typing import Optional, Dict, Any, List
+import asyncio
+import httpx
 
 @dataclass
 class AnalyzeRequest:
     triggerDate: Optional[str] = None
-
-FAKE_REST_API_BOOKS_URL = "https://fakerestapi.azurewebsites.net/api/v1/Books"
-ANALYTICS_TEAM_EMAIL = "analytics-team@example.com"  # TODO: Replace with real email or config
 
 async def fetch_books() -> Optional[Dict[str, Any]]:
     async with httpx.AsyncClient(timeout=30) as client:
@@ -38,7 +37,7 @@ async def fetch_books() -> Optional[Dict[str, Any]]:
             logger.exception(f"Failed to fetch books from external API: {e}")
             return None
 
-def analyze_books(books: list) -> Dict[str, Any]:
+def analyze_books(books: List[Dict[str, Any]]) -> Dict[str, Any]:
     if not books:
         return {
             "totalBooks": 0,
@@ -92,7 +91,7 @@ async def send_email_report(report: Dict[str, Any]) -> None:
     except Exception as e:
         logger.exception(f"Failed to send email report: {e}")
 
-@app.route("/api/books/analyze", methods=["POST"])
+@routes_bp.route("/api/books/analyze", methods=["POST"])
 @validate_request(AnalyzeRequest)
 async def analyze_books_endpoint(data: AnalyzeRequest):
     job_id = datetime.now(timezone.utc).isoformat()
@@ -101,7 +100,7 @@ async def analyze_books_endpoint(data: AnalyzeRequest):
     await entity_service.add_item(
         token=cyoda_auth_service,
         entity_model="books_analysis_job",
-        entity_version=ENTITY_VERSION,
+        entity_version="1",  # or ENTITY_VERSION if imported from config
         entity={
             "status": "queued",
             "requestedAt": job_id,
@@ -114,13 +113,13 @@ async def analyze_books_endpoint(data: AnalyzeRequest):
         "jobId": job_id,
     })
 
-@app.route("/api/books/report", methods=["GET"])
+@routes_bp.route("/api/books/report", methods=["GET"])
 async def get_latest_report():
     try:
         reports = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model="books_report",
-            entity_version=ENTITY_VERSION,
+            entity_version="1",  # or ENTITY_VERSION if imported from config
         )
         if not reports:
             return jsonify({"error": "No report available"}), 404
@@ -129,11 +128,3 @@ async def get_latest_report():
     except Exception as e:
         logger.exception(f"Failed to get latest report: {e}")
         return jsonify({"error": "Failed to get latest report"}), 500
-
-if __name__ == "__main__":
-    import logging
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s %(name)s %(message)s",
-        level=logging.INFO,
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

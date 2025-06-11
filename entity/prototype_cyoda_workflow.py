@@ -1,49 +1,3 @@
-Excellent approach! Moving async logic and side-effects into the `process_{entity_name}` workflow functions will indeed declutter the endpoints, centralize the business logic, and make the system more robust and maintainable.
-
----
-
-### What can be moved?
-
-- **Job status updates:** Instead of the endpoint or external async task manually updating job status, move the logic of setting `"status": "queued"`, `"status": "processing"`, `"status": "completed"`, `"status": "failed"`, etc., inside the workflow function(s).
-- **Fetching external data, analyzing, and saving reports:** These async operations can be performed inside the workflow function that is triggered when the job entity is being persisted.
-- **Sending email notifications:** This side-effect can be moved inside the workflow function.
-- **Fire-and-forget async tasks:** No need for separate `asyncio.create_task` calls in the endpoint; the workflow function handles it.
-
----
-
-### Constraints to keep in mind:
-
-- The workflow function receives the current entity (job) as argument and can modify it directly.
-- It **cannot** call `entity_service.add/update/delete` on the same entity model (to avoid recursion).
-- It **can** call `entity_service.add/update/delete` on other entity models.
-- It’s asynchronous, so can perform all async I/O.
-- The entity state will be saved after the workflow completes.
-
----
-
-### Proposed changes:
-
-- Remove the `asyncio.create_task(process_analysis_job(...))` from the endpoint.
-- Rename and merge `process_analysis_job` logic inside `process_books_analysis_job`.
-- Move all job status updates, fetching books, analysis, report saving, and email sending into `process_books_analysis_job`.
-- Keep the endpoint minimal — just create the initial job entity with `"status": "queued"` and pass it to the workflow function.
-- The workflow function will run **before** the job entity is persisted with status `"queued"`. We want to persist `"queued"` first, then process the job — so to trigger processing **after** persisting, we need to invert the sequence or use a separate trigger entity.
-
----
-
-### Important note on the workflow invocation timing
-
-Your description says the workflow function is invoked **before** persisting the entity. If the workflow function does heavy processing (fetching books, analyzing, sending email), this will **block** the save operation until it finishes.
-
-If this is acceptable, then the workflow function will do everything and modify the entity state before the final persist.
-
-If not, typically you would persist the job as `"queued"`, then have a separate worker process or event listener to pick up and process jobs asynchronously.
-
----
-
-### Assuming the former (workflow runs before persist and can do heavy async work), here is the refactored code:
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -130,10 +84,13 @@ def analyze_books(books: list) -> Dict[str, Any]:
 
 async def send_email_report(report: Dict[str, Any]) -> None:
     # TODO: Replace with real email sending functionality
-    logger.info(f"Sending report email to {ANALYTICS_TEAM_EMAIL} with summary: "
-                f"Total Books: {report['totalBooks']}, Total Pages: {report['totalPageCount']}, "
-                f"Popular Titles: {len(report['popularTitles'])}")
-    await asyncio.sleep(0.1)
+    try:
+        logger.info(f"Sending report email to {ANALYTICS_TEAM_EMAIL} with summary: "
+                    f"Total Books: {report['totalBooks']}, Total Pages: {report['totalPageCount']}, "
+                    f"Popular Titles: {len(report['popularTitles'])}")
+        await asyncio.sleep(0.1)
+    except Exception as e:
+        logger.exception(f"Failed to send email report: {e}")
 
 async def process_books_analysis_job(entity: Dict[str, Any]) -> None:
     """
@@ -147,10 +104,7 @@ async def process_books_analysis_job(entity: Dict[str, Any]) -> None:
     - Sends email notification
     """
     entity['workflowProcessedAt'] = datetime.now(timezone.utc).isoformat()
-    
-    # Set status to processing
     entity['status'] = "processing"
-    
     try:
         books_data = await fetch_books()
         if books_data is None:
@@ -170,7 +124,6 @@ async def process_books_analysis_job(entity: Dict[str, Any]) -> None:
             entity_version=ENTITY_VERSION,
             entity=report
         )
-        # Update entity to completed with report_id
         entity['status'] = "completed"
         entity['report_id'] = report_id
 
@@ -185,8 +138,8 @@ async def process_books_analysis_job(entity: Dict[str, Any]) -> None:
 @validate_request(AnalyzeRequest)
 async def analyze_books_endpoint(data: AnalyzeRequest):
     job_id = datetime.now(timezone.utc).isoformat()
-    # Simply add the job entity with status queued and the workflow function
-    # The workflow function will run before persistence and perform all processing
+    # Add the job entity with status queued and workflow function
+    # Workflow function runs before persistence and performs all processing
     await entity_service.add_item(
         token=cyoda_auth_service,
         entity_model="books_analysis_job",
@@ -198,7 +151,6 @@ async def analyze_books_endpoint(data: AnalyzeRequest):
         },
         workflow=process_books_analysis_job
     )
-    # Return immediately after job creation
     return jsonify({
         "status": "success",
         "message": "Analysis job started",
@@ -228,24 +180,3 @@ if __name__ == "__main__":
         level=logging.INFO,
     )
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Key points about this refactor:
-
-- The endpoint is now minimal: it only creates the job entity with `"status": "queued"` and passes the workflow function.
-- The workflow function `process_books_analysis_job` performs **all** async operations: fetch books, analyze, save report, send email, and update the job entity state.
-- The entity state (`entity`) is modified directly in the workflow function (`entity['status']`, `entity['error']`, `entity['report_id']`), so after the workflow finishes, the final state is persisted.
-- No more `asyncio.create_task` or external task runner needed.
-- The workflow function respects the rule: no calls to add/update/delete on the same entity model (`books_analysis_job`), so updates to the same entity are done by direct mutation only.
-- Calls to add a different entity model (`books_report`) are allowed.
-- Any errors caught in the workflow function update the entity status to `"failed"` and log the error.
-
----
-
-This pattern makes your endpoint lean and lets the workflow function orchestrate the entire business process.
-
----
-
-If you want me to split workflows into smaller specialized functions or add more detailed logging, just ask!

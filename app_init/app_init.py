@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 
-from common.config.config import CHAT_REPOSITORY
+from common.config.config import CHAT_REPOSITORY, CYODA_CLIENT_ID, CYODA_CLIENT_SECRET, CYODA_TOKEN_URL
 from common.grpc_client.grpc_client import GrpcClient
 from common.repository.cyoda.cyoda_init import CyodaInitService
 from common.repository.cyoda.cyoda_repository import CyodaRepository
@@ -13,6 +13,7 @@ from common.auth.cyoda_auth import CyodaAuthService
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 
 class BeanFactory:
     _instance = None
@@ -33,7 +34,11 @@ class BeanFactory:
         self.chat_lock = asyncio.Lock()
 
         try:
-            self.cyoda_auth_service = CyodaAuthService()
+            self.cyoda_auth_service = CyodaAuthService(
+                client_id=CYODA_CLIENT_ID,
+                client_secret=CYODA_CLIENT_SECRET,
+                token_url=CYODA_TOKEN_URL
+            )
             self.entity_repository = self._create_repository(
                 repo_type=CHAT_REPOSITORY,
                 cyoda_auth_service=self.cyoda_auth_service

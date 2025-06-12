@@ -6,10 +6,9 @@ load_dotenv()  # Loads the .env file automatically
 get_env = lambda key: os.getenv(key) or (_ for _ in ()).throw(Exception(f"{key} not found"))
 
 CYODA_HOST = get_env("CYODA_HOST")
-decoded_bytes_cyoda_api_key = base64.b64decode(get_env("CYODA_API_KEY"))
-API_KEY = decoded_bytes_cyoda_api_key.decode("utf-8")
-decoded_bytes_cyoda_api_secret = base64.b64decode(get_env("CYODA_API_SECRET"))
-API_SECRET = decoded_bytes_cyoda_api_secret.decode("utf-8")
+CYODA_CLIENT_ID = get_env("CYODA_CLIENT_ID")
+CYODA_CLIENT_SECRET = get_env("CYODA_CLIENT_SECRET")
+CYODA_TOKEN_URL = f"https://{CYODA_HOST}/api/oauth/token"
 CHAT_ID = get_env("CHAT_ID")
 ENTITY_VERSION = get_env("ENTITY_VERSION")
 GRPC_PROCESSOR_TAG = os.getenv("GRPC_PROCESSOR_TAG", "cloud_manager_app")

@@ -1,118 +1,122 @@
-import json
-import logging
 import time
+import logging
 from typing import Optional
 
-import requests
-
-from common.config import config
-from common.config.config import CYODA_API_URL
+from authlib.integrations.httpx_client import AsyncOAuth2Client
+from authlib.integrations.requests_client import OAuth2Session
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-
 
 class CyodaAuthService:
     """
-    Auth service for interacting with the Cyoda API.
-    Handles obtaining and caching a refresh token, fetching access tokens,
-    and transparently re-authenticating if tokens are revoked.
+    OAuth2-based auth service for Cyoda API using client_credentials flow.
+    Handles token acquisition, caching, and re-authentication on expiration.
+    Supports both async and sync contexts.
     """
 
-    def __init__(self):
-        self._refresh_token: Optional[str] = None
+    def __init__(self, client_id: str, client_secret: str, token_url: str, scope: Optional[str] = None):
+        self._client_id = client_id
+        self._client_secret = client_secret
+        self._token_url = token_url
+        self._scope = scope
+
         self._access_token: Optional[str] = None
         self._access_token_expiry: Optional[float] = None
 
+        self._client: Optional[AsyncOAuth2Client] = None
+        self._sync_client: Optional[OAuth2Session] = None
+
     def invalidate_tokens(self):
         """
-        Wipe any cached tokens so the next request does a full login.
+        Wipe any cached tokens so the next request does a full re-authentication.
         """
-        logger.info("Invalidating cached tokens")
-        self._refresh_token = None
+        logger.info("Invalidating cached OAuth2 tokens")
         self._access_token = None
         self._access_token_expiry = None
 
-    def _login(self) -> str:
+    # -----------------------
+    # ASYNC VERSION
+    # -----------------------
+
+    async def get_access_token(self) -> str:
         """
-        Perform login to obtain a new refresh token.
+        Returns a valid access token, fetching a new one if missing or expired (async).
         """
-        login_url = f"{CYODA_API_URL}/auth/login"
-        headers = {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/json'
-        }
-        credentials = {"username": config.API_KEY, "password": config.API_SECRET}
-        payload = json.dumps(credentials)
+        if self._is_token_stale():
+            await self._fetch_access_token()
+        return self._access_token
 
-        logger.info(f"Authenticating with Cyoda API at {login_url}")
-        resp = requests.post(login_url, headers=headers, data=payload)
-
-        if resp.status_code != 200:
-            logger.error(f"Login failed ({resp.status_code}): {resp.text}")
-            raise RuntimeError(f"Login failed: {resp.status_code} {resp.text}")
-
-        data = resp.json()
-        token = data.get('refreshToken') or data.get('refresh_token')
-        if not token:
-            logger.error("No refresh token found in login response")
-            raise RuntimeError("Refresh token missing in login response")
-
-        logger.info("Successfully obtained refresh token")
-        return token
-
-    def _refresh_access_token(self) -> None:
+    async def _fetch_access_token(self):
         """
-        Use the refresh token to get a new access token.
-        If the refresh token itself is revoked (HTTP 401/403), wipe tokens and retry login.
+        Perform client_credentials token request using Authlib (async).
         """
-        if not self._refresh_token:
-            self._refresh_token = self._login()
+        if not self._client:
+            self._client = AsyncOAuth2Client(
+                client_id=self._client_id,
+                client_secret=self._client_secret,
+                scope=self._scope
+            )
 
-        token_url = f"{CYODA_API_URL}/auth/token"
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self._refresh_token}'
-        }
+        logger.info(f"[async] Requesting new access token from {self._token_url}")
+        token = await self._client.fetch_token(token_url=self._token_url)
 
-        logger.info(f"Refreshing access token at {token_url}")
-        resp = requests.get(token_url, headers=headers)
+        self._access_token = token.get("access_token")
+        expires_in = token.get("expires_in", 300)
+        self._access_token_expiry = time.time() + float(expires_in)
 
-        # If the refresh token has been revoked or is invalid:
-        if resp.status_code in (401, 403):
-            logger.warning(f"Refresh token invalid ({resp.status_code}); re-authenticating")
-            self.invalidate_tokens()
-            # retry from scratch
-            self._refresh_token = self._login()
-            return self._refresh_access_token()
+        logger.info("[async] Successfully obtained new OAuth2 access token")
 
-        if resp.status_code != 200:
-            logger.error(f"Token refresh failed ({resp.status_code}): {resp.text}")
-            raise RuntimeError(f"Token refresh failed: {resp.status_code} {resp.text}")
+    # -----------------------
+    # SYNC VERSION
+    # -----------------------
 
-        data = resp.json()
-        token = data.get('token') or data.get('access_token')
-        expiry = data.get('expires_in')  # seconds from now
-
-        if not token:
-            logger.error("No access token found in token response")
-            raise RuntimeError("Access token missing in token response")
-
-        self._access_token = token
-        self._access_token_expiry = (
-            time.time() + float(expiry)
-            if expiry is not None else time.time() + 300
-        )
-
-        logger.info("Successfully obtained access token")
-        return None
-
-    def get_access_token(self) -> str:
+    def get_access_token_sync(self) -> str:
         """
-        Returns a valid access token, refreshing it if it's missing,
-        expired, or about to expire within 60 seconds.
+        Synchronous version of get_access_token for use in sync contexts.
+        """
+        if self._is_token_stale():
+            self._fetch_access_token_sync()
+        return self._access_token
+
+    def _fetch_access_token_sync(self):
+        """
+        Perform client_credentials token request using Authlib (sync).
+        """
+        if not self._sync_client:
+            self._sync_client = OAuth2Session(
+                client_id=self._client_id,
+                client_secret=self._client_secret,
+                scope=self._scope,
+            )
+
+        logger.info(f"[sync] Requesting new access token from {self._token_url}")
+
+        try:
+            token = self._sync_client.fetch_token(
+                url=self._token_url,
+                grant_type="client_credentials"
+            )
+        except Exception as e:
+            logger.error("Failed to fetch token synchronously", exc_info=e)
+            raise
+
+        self._access_token = token.get("access_token")
+        expires_in = token.get("expires_in", 300)
+        self._access_token_expiry = time.time() + float(expires_in)
+
+        logger.info("[sync] Successfully obtained new OAuth2 access token")
+
+    # -----------------------
+    # Shared Logic
+    # -----------------------
+
+    def _is_token_stale(self) -> bool:
+        """
+        Determine whether the access token is missing or expiring within 60 seconds.
         """
         now = time.time()
-        if (not self._access_token) or (self._access_token_expiry is not None and now >= self._access_token_expiry - 60):
-            self._refresh_access_token()
-        return self._access_token
+        return (
+            not self._access_token
+            or not self._access_token_expiry
+            or now >= self._access_token_expiry - 60
+        )

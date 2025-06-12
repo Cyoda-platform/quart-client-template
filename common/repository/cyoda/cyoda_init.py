@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 from common.auth.cyoda_auth import CyodaAuthService
-from common.config.config import CYODA_API_URL, IMPORT_WORKFLOWS
+from common.config.config import CYODA_API_URL, IMPORT_WORKFLOWS, CYODA_CLIENT_ID, CYODA_CLIENT_SECRET, CYODA_TOKEN_URL
 from common.repository.cyoda.cyoda_repository import CyodaRepository
 from common.utils.utils import send_cyoda_request
 
@@ -77,7 +77,11 @@ class CyodaInitService:
 
 def main():
     # Initialize required services and repository
-    cyoda_auth_service = CyodaAuthService()
+    cyoda_auth_service = CyodaAuthService(
+                client_id=CYODA_CLIENT_ID,
+                client_secret=CYODA_CLIENT_SECRET,
+                token_url=CYODA_TOKEN_URL
+            )
     cyoda_repository = CyodaRepository(
         cyoda_auth_service=cyoda_auth_service)  # Make sure this can be instantiated or mocked appropriately
 

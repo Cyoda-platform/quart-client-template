@@ -38,11 +38,11 @@ class GrpcClient:
         If retrieving the token fails, it invalidates and retries once.
         """
         try:
-            token = self.auth.get_access_token()
+            token = self.auth.get_access_token_sync()
         except Exception as e:
             logger.warning("Access‑token fetch failed, invalidating and retrying", exc_info=e)
             self.auth.invalidate_tokens()
-            token = self.auth.get_access_token()
+            token = self.auth.get_access_token_sync()
 
         callback([('authorization', f'Bearer {token}')], None)
 

@@ -548,7 +548,7 @@ async def send_cyoda_request(
     """
     Send an HTTP request to the Cyoda API with automatic retry on 401.
     """
-    token = cyoda_auth_service.get_access_token()
+    token = await cyoda_auth_service.get_access_token()
     for attempt in range(2):
         try:
             if method.lower() == "get":
@@ -567,14 +567,14 @@ async def send_cyoda_request(
             if attempt == 0 and ("401" in msg or "Unauthorized" in msg):
                 logger.warning(f"Request to {path} failed with 401; invalidating tokens and retrying")
                 _invalidate_tokens(cyoda_auth_service=cyoda_auth_service)
-                token = cyoda_auth_service.get_access_token()
+                token = await cyoda_auth_service.get_access_token()
                 continue
             raise
         status = resp.get("status") if isinstance(resp, dict) else None
         if attempt == 0 and status == 401:
             logger.warning(f"Response from {path} returned status 401; invalidating tokens and retrying")
             _invalidate_tokens(cyoda_auth_service=cyoda_auth_service)
-            token = cyoda_auth_service.get_access_token()
+            token = await cyoda_auth_service.get_access_token()
             continue
         return resp
     raise RuntimeError(f"Failed request {method.upper()} {path} after retry")

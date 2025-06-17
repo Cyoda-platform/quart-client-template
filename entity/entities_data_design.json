@@ -1,0 +1,44 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "generatedOn": "2024-06-01T12:00:00Z",
+                "popularTitles": [
+                    {
+                        "description": "A detailed description of the first popular book.",
+                        "excerpt": "An excerpt from the first popular book.",
+                        "id": 1,
+                        "pageCount": 500,
+                        "publishDate": "2020-05-20",
+                        "title": "Example Book Title 1"
+                    },
+                    {
+                        "description": "A detailed description of the second popular book.",
+                        "excerpt": "An excerpt from the second popular book.",
+                        "id": 2,
+                        "pageCount": 480,
+                        "publishDate": "2018-11-11",
+                        "title": "Example Book Title 2"
+                    },
+                    {
+                        "description": "A detailed description of the third popular book.",
+                        "excerpt": "An excerpt from the third popular book.",
+                        "id": 3,
+                        "pageCount": 450,
+                        "publishDate": "2019-07-15",
+                        "title": "Example Book Title 3"
+                    }
+                ],
+                "publicationDateRange": {
+                    "earliest": "1950-01-01",
+                    "latest": "2023-12-31"
+                },
+                "reportId": "123e4567-e89b-12d3-a456-426614174000",
+                "summary": "Analyzed 100 books with a total of 25000 pages. Publication dates range from 1950-01-01 to 2023-12-31. Top popular titles are based on highest page counts.",
+                "totalBooks": 100,
+                "totalPageCount": 25000
+            },
+            "entity_name": "report"
+        }
+    ]
+}

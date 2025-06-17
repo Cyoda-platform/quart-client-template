@@ -1,44 +1,9 @@
-Absolutely, moving the business logic and async tasks from the controller into the workflow function is a great approach. It keeps the endpoints slim and focused on request/response handling and delegates the heavy lifting and side effects to the workflow, which is designed exactly for this purpose.
-
----
-
-### What to move to the workflow `process_report`?
-
-- Fetching and analyzing books data.
-- Sending the email report.
-- Updating the entity state with analysis results.
-- Handling errors and updating the entity state accordingly.
-- All async tasks related to the entity lifecycle before persistence.
-
----
-
-### What to keep in the endpoint?
-
-- Validate the request.
-- Generate the initial entity (status = 'processing') and call `add_item` with the workflow function.
-- Return immediately with the job ID.
-
----
-
-### Important constraints & notes:
-
-- The workflow function receives the entity, modifies it in-place before persistence.
-- It **cannot** call `add_item`/`update_item` on the same entity_model (to avoid recursion).
-- It **can** call `add_item`/`update_item` on other entity models if needed.
-- Workflow is async and supports async code.
-- Any fire-and-forget or background processing should be done inside the workflow function.
-
----
-
-### Below is your updated complete code with all async logic from the endpoint moved into the workflow function `process_report`.
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 import httpx
 import uuid
@@ -71,7 +36,7 @@ def parse_iso_date(date_str: str) -> Optional[datetime]:
         return None
 
 async def fetch_books() -> Any:
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get("https://fakerestapi.azurewebsites.net/api/v1/Books")
         resp.raise_for_status()
         return resp.json()
@@ -118,16 +83,14 @@ def analyze_books_data(books: list) -> Dict[str, Any]:
     }
 
 async def send_email_report(report: Dict[str, Any]) -> None:
-    # TODO: Implement real email sending logic here
-    logger.info(f"Sending email report to analytics@example.com:\n{report['summary']}")
-    await asyncio.sleep(0.1)
+    try:
+        # Placeholder for real email sending logic
+        logger.info(f"Sending email report to analytics@example.com:\n{report['summary']}")
+        await asyncio.sleep(0.1)
+    except Exception:
+        logger.exception("Failed to send email report")
 
-# Workflow function with prefix process_ + entity_name
 async def process_report(entity: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Workflow applied on 'report' entity before persistence.
-    Moves all async tasks here: fetch, analyze, update entity, send email.
-    """
     report_id = entity.get("reportId")
     requested_at = entity.get("requestedAt")
     triggered_by = entity.get("triggeredBy", "unknown")
@@ -135,24 +98,15 @@ async def process_report(entity: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"Workflow process_report started for reportId: {report_id}")
 
     try:
-        # Fetch books data
         books = await fetch_books()
-
-        # Analyze books
         analysis = analyze_books_data(books)
-
-        # Update entity with analysis results
         entity.update({
             "status": "completed",
             "generatedOn": datetime.now(timezone.utc).isoformat(),
             **analysis,
         })
-
-        # Send email report asynchronously (fire and forget)
         await send_email_report(entity)
-
         logger.info(f"Workflow process_report completed successfully for reportId: {report_id}")
-
     except Exception as e:
         logger.exception(f"Error in workflow process_report for reportId {report_id}: {e}")
         entity.update({
@@ -160,7 +114,6 @@ async def process_report(entity: Dict[str, Any]) -> Dict[str, Any]:
             "error": str(e),
         })
 
-    # Add a timestamp that workflow was applied
     entity['workflowAppliedAt'] = datetime.now(timezone.utc).isoformat()
 
     return entity
@@ -172,7 +125,6 @@ async def analyze_books(data: AnalyzeBooksRequest):
     requested_at = data.date or datetime.now(timezone.utc).isoformat()
     job_id = str(uuid.uuid4())
 
-    # Prepare initial entity state
     initial_entity = {
         "reportId": job_id,
         "status": "processing",
@@ -181,7 +133,6 @@ async def analyze_books(data: AnalyzeBooksRequest):
     }
 
     try:
-        # Add entity with workflow function assigned (async tasks run inside workflow)
         await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
@@ -193,7 +144,6 @@ async def analyze_books(data: AnalyzeBooksRequest):
         logger.exception(f"Failed to add initial report status for job {job_id}: {e}")
         return jsonify({"status": "error", "message": "Failed to initiate analysis job."}), 500
 
-    # Immediately return response, workflow will continue asynchronously
     return jsonify({
         "status": "success",
         "message": "Book data analysis started.",
@@ -223,27 +173,3 @@ async def get_report(report_id):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation
-
-- The endpoint `/analyze-books` now only creates an initial entity with `"status": "processing"`, sets `triggeredBy` and timestamps, and calls `add_item` with the `workflow=process_report`.
-- The heavy lifting (fetching books, analyzing, sending emails, updating entity state) is done inside `process_report`.
-- If an error occurs during the workflow, the entity's `status` is updated to `"failed"` and error details are stored.
-- The workflow modifies the entity in-place and the `entity_service` persists the updated state after the workflow resolves.
-- No direct calls to update the same entity inside the workflow (avoiding recursion).
-- The GET endpoint remains untouched and just reads the entity state.
-
----
-
-This approach ensures that:
-
-- Controllers are free from complex async logic.
-- All async processing and side effects related to the entity are in the workflow function.
-- The code is more robust, maintainable, and aligned with your requirement.
-
----
-
-If you want me to help further modularize, add unit tests, or handle other entity_models similarly, just ask!

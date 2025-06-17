@@ -1,6 +1,36 @@
-Certainly! I've updated the code to add the required workflow function as a parameter to `entity_service.add_item`. Also, I implemented the workflow function `process_report` as per your specification, which will be applied asynchronously before the entity is persisted. The workflow function here just demonstrates a simple example of modifying the entity state, but you can customize it further.
+Absolutely, moving the business logic and async tasks from the controller into the workflow function is a great approach. It keeps the endpoints slim and focused on request/response handling and delegates the heavy lifting and side effects to the workflow, which is designed exactly for this purpose.
 
-Here is the complete updated code with the new workflow integration:
+---
+
+### What to move to the workflow `process_report`?
+
+- Fetching and analyzing books data.
+- Sending the email report.
+- Updating the entity state with analysis results.
+- Handling errors and updating the entity state accordingly.
+- All async tasks related to the entity lifecycle before persistence.
+
+---
+
+### What to keep in the endpoint?
+
+- Validate the request.
+- Generate the initial entity (status = 'processing') and call `add_item` with the workflow function.
+- Return immediately with the job ID.
+
+---
+
+### Important constraints & notes:
+
+- The workflow function receives the entity, modifies it in-place before persistence.
+- It **cannot** call `add_item`/`update_item` on the same entity_model (to avoid recursion).
+- It **can** call `add_item`/`update_item` on other entity models if needed.
+- Workflow is async and supports async code.
+- Any fire-and-forget or background processing should be done inside the workflow function.
+
+---
+
+### Below is your updated complete code with all async logic from the endpoint moved into the workflow function `process_report`.
 
 ```python
 import asyncio
@@ -9,7 +39,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart_schema import QuartSchema, validate_request
 import httpx
 import uuid
 
@@ -26,15 +56,13 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 app = Quart(__name__)
 QuartSchema(app)
 
-# entity name in underscore lowercase
-entity_name = "report"
+entity_name = "report"  # underscore lowercase
 
 @dataclass
 class AnalyzeBooksRequest:
     triggeredBy: str
     date: Optional[str] = None
 
-# Helper: parse ISO date safely
 def parse_iso_date(date_str: str) -> Optional[datetime]:
     try:
         return datetime.fromisoformat(date_str.rstrip("Z")).replace(tzinfo=timezone.utc)
@@ -94,57 +122,46 @@ async def send_email_report(report: Dict[str, Any]) -> None:
     logger.info(f"Sending email report to analytics@example.com:\n{report['summary']}")
     await asyncio.sleep(0.1)
 
-async def process_analysis_job(job_id: str, triggered_by: str, requested_at: str) -> None:
-    try:
-        logger.info(f"Start processing analysis job {job_id} triggered by {triggered_by} at {requested_at}")
-        books = await fetch_books()
-        analysis = analyze_books_data(books)
-
-        report_data = {
-            "reportId": job_id,
-            "generatedOn": datetime.now(timezone.utc).isoformat(),
-            **analysis,
-        }
-
-        # update the entity_service with the report data
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model=entity_name,
-            entity_version=ENTITY_VERSION,
-            entity=report_data,
-            technical_id=job_id,
-            meta={}
-        )
-
-        await send_email_report(report_data)
-        logger.info(f"Analysis job {job_id} completed and report generated.")
-    except Exception as e:
-        logger.exception(f"Failed processing analysis job {job_id}: {e}")
-        error_report = {"status": "failed", "error": str(e)}
-        try:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model=entity_name,
-                entity_version=ENTITY_VERSION,
-                entity=error_report,
-                technical_id=job_id,
-                meta={}
-            )
-        except Exception as ex:
-            logger.exception(f"Failed to update failure status for job {job_id}: {ex}")
-
-# The new workflow function with prefix 'process_' + entity_name
-# This function takes the entity data as argument and can modify it async before persistence.
+# Workflow function with prefix process_ + entity_name
 async def process_report(entity: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Example workflow function applied to 'report' entity before persistence.
-    You can update entity state here, call other services, add/get other entities etc.
+    Workflow applied on 'report' entity before persistence.
+    Moves all async tasks here: fetch, analyze, update entity, send email.
     """
-    logger.info(f"Running workflow process_report on entity: {entity.get('reportId')}")
-    # Example modification: add a timestamp indicating workflow was applied
-    entity['workflowAppliedAt'] = datetime.now(timezone.utc).isoformat()
+    report_id = entity.get("reportId")
+    requested_at = entity.get("requestedAt")
+    triggered_by = entity.get("triggeredBy", "unknown")
 
-    # You can perform other async operations here if needed
+    logger.info(f"Workflow process_report started for reportId: {report_id}")
+
+    try:
+        # Fetch books data
+        books = await fetch_books()
+
+        # Analyze books
+        analysis = analyze_books_data(books)
+
+        # Update entity with analysis results
+        entity.update({
+            "status": "completed",
+            "generatedOn": datetime.now(timezone.utc).isoformat(),
+            **analysis,
+        })
+
+        # Send email report asynchronously (fire and forget)
+        await send_email_report(entity)
+
+        logger.info(f"Workflow process_report completed successfully for reportId: {report_id}")
+
+    except Exception as e:
+        logger.exception(f"Error in workflow process_report for reportId {report_id}: {e}")
+        entity.update({
+            "status": "failed",
+            "error": str(e),
+        })
+
+    # Add a timestamp that workflow was applied
+    entity['workflowAppliedAt'] = datetime.now(timezone.utc).isoformat()
 
     return entity
 
@@ -155,21 +172,28 @@ async def analyze_books(data: AnalyzeBooksRequest):
     requested_at = data.date or datetime.now(timezone.utc).isoformat()
     job_id = str(uuid.uuid4())
 
-    # insert initial status into entity_service with workflow function added
-    initial_status = {"status": "processing", "requestedAt": requested_at}
+    # Prepare initial entity state
+    initial_entity = {
+        "reportId": job_id,
+        "status": "processing",
+        "requestedAt": requested_at,
+        "triggeredBy": triggered_by,
+    }
+
     try:
+        # Add entity with workflow function assigned (async tasks run inside workflow)
         await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
-            entity={"reportId": job_id, **initial_status},
-            workflow=process_report  # Pass the workflow function here
+            entity=initial_entity,
+            workflow=process_report
         )
     except Exception as e:
         logger.exception(f"Failed to add initial report status for job {job_id}: {e}")
         return jsonify({"status": "error", "message": "Failed to initiate analysis job."}), 500
 
-    asyncio.create_task(process_analysis_job(job_id, triggered_by, requested_at))
+    # Immediately return response, workflow will continue asynchronously
     return jsonify({
         "status": "success",
         "message": "Book data analysis started.",
@@ -203,9 +227,23 @@ if __name__ == '__main__':
 
 ---
 
-### Summary of changes:
-- Added an async function `process_report(entity: Dict[str, Any])` which modifies the entity before persistence.
-- Passed `workflow=process_report` as a parameter to the `entity_service.add_item` call inside the `/analyze-books` POST route.
-- This matches your requirement for the `workflow` function naming convention and usage.
+### Explanation
 
-Let me know if you want the workflow to do something more specific!
+- The endpoint `/analyze-books` now only creates an initial entity with `"status": "processing"`, sets `triggeredBy` and timestamps, and calls `add_item` with the `workflow=process_report`.
+- The heavy lifting (fetching books, analyzing, sending emails, updating entity state) is done inside `process_report`.
+- If an error occurs during the workflow, the entity's `status` is updated to `"failed"` and error details are stored.
+- The workflow modifies the entity in-place and the `entity_service` persists the updated state after the workflow resolves.
+- No direct calls to update the same entity inside the workflow (avoiding recursion).
+- The GET endpoint remains untouched and just reads the entity state.
+
+---
+
+This approach ensures that:
+
+- Controllers are free from complex async logic.
+- All async processing and side effects related to the entity are in the workflow function.
+- The code is more robust, maintainable, and aligned with your requirement.
+
+---
+
+If you want me to help further modularize, add unit tests, or handle other entity_models similarly, just ask!

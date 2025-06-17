@@ -1,0 +1,69 @@
+{
+    "description": "Workflow for fetching book data, analyzing it, generating report and emailing analytics team",
+    "name": "book_report_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the book report",
+            "end_state": "Books_fetched",
+            "end_state_description": "Books data fetched from external API",
+            "name": "start_report_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_books"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before processing report"
+        },
+        {
+            "automated": true,
+            "description": "Analyze the fetched book data",
+            "end_state": "Books_analyzed",
+            "end_state_description": "Book data analyzed with key metrics calculated",
+            "name": "analyze_books_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_analyze_books"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Books_fetched",
+            "start_state_description": "Books data fetched from external API"
+        },
+        {
+            "automated": true,
+            "description": "Send the generated report email to analytics team",
+            "end_state": "Report_sent",
+            "end_state_description": "Report email sent to analytics team",
+            "name": "send_report_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Books_analyzed",
+            "start_state_description": "Book data analyzed with key metrics calculated"
+        },
+        {
+            "automated": true,
+            "description": "Mark the report workflow as completed",
+            "end_state": "Completed",
+            "end_state_description": "Report workflow completed successfully",
+            "name": "complete_report",
+            "start_state": "Report_sent",
+            "start_state_description": "Report email sent to analytics team"
+        }
+    ]
+}

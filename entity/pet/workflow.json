@@ -1,0 +1,60 @@
+{
+    "description": "Workflow to enrich pet entity before persistence and handle side effects",
+    "name": "pet_enrichment_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing pet entity by setting created_at timestamp",
+            "end_state": "Created_at_set",
+            "end_state_description": "Created_at timestamp has been set on the pet entity",
+            "name": "start_pet_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_created_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Normalize the pet type string to lowercase",
+            "end_state": "Type_normalized",
+            "end_state_description": "Pet type has been normalized to lowercase",
+            "name": "normalize_pet_type",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_normalize_type"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Created_at_set",
+            "start_state_description": "Created_at timestamp has been set on the pet entity"
+        },
+        {
+            "automated": true,
+            "description": "Validate the pet status and fix invalid values",
+            "end_state": "Status_validated",
+            "end_state_description": "Pet status has been validated and corrected if necessary",
+            "name": "validate_pet_status",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_status"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Type_normalized",
+            "start_state_description": "Pet type has been normalized to lowercase"
+        }
+    ]
+}

@@ -1,0 +1,33 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": 123,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "url1",
+                    "url2"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "pet_id": 123,
+                "user_id": "string"
+            },
+            "entity_name": "favorite"
+        },
+        {
+            "entity_data_example": {
+                "id": 456,
+                "name": "Whiskers",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "recommendation"
+        }
+    ]
+}

@@ -1,30 +1,3 @@
-Absolutely, moving as much logic as possible into the workflow functions (`process_{entity_name}`) is a solid architectural improvement. It reduces controller complexity, centralizes entity-specific business rules, and leverages the asynchronous workflow mechanism for preprocessing and side effects before persistence.
-
-I will refactor your endpoints to move all async tasks and related logic into their respective workflow functions. The controllers will become thin layers that only receive and validate requests, then call `add_item` or other entity service methods with the appropriate workflow function.
-
----
-
-### What will be moved into workflow functions?
-
-- Validation or enrichment of entity data before persistence (e.g. setting timestamps, normalizing fields).
-- Calls to external APIs or auxiliary lookups needed for entity completeness.
-- Updates of related or supplementary entities.
-- Any async side effects or fire-and-forget style logic.
-- Filtering or transformation of data directly related to the entity being persisted.
-
----
-
-### What remains in controllers?
-
-- Handling HTTP request/response, validation, and authorization.
-- Invoking the service layer with entity data and workflow functions.
-- Returning API responses.
-
----
-
-### Refactored code below
-
-```python
 from dataclasses import dataclass
 import logging
 from datetime import datetime
@@ -75,9 +48,6 @@ class AddPetReq:
 # In-memory cache for favorites: {userId: set(petId)}
 favorites_cache: Dict[str, set] = {}
 
-# In-memory cache for search results keyed by request id
-search_cache: Dict[str, List[Dict]] = {}
-
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
 
@@ -97,8 +67,11 @@ async def process_pet(entity: dict):
     if entity.get("type"):
         entity["type"] = entity["type"].lower()
 
-    # Example side effect: Log or augment with external data
-    # (No external call here for demo, but you could call other services)
+    # Additional validation example: enforce status is one of allowed values
+    allowed_statuses = {"available", "pending", "sold"}
+    if "status" in entity and entity["status"] not in allowed_statuses:
+        logger.warning(f"Invalid status '{entity['status']}' set to 'available'")
+        entity["status"] = "available"
 
 async def process_search(entity: dict):
     """
@@ -111,7 +84,7 @@ async def process_search(entity: dict):
     status = entity.get("status") or "available"
     name = entity.get("name")
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10) as client:
         try:
             r = await client.get(f"{PETSTORE_API_BASE}/pet/findByStatus", params={"status": status})
             r.raise_for_status()
@@ -138,7 +111,6 @@ async def process_search(entity: dict):
             "photoUrls": pet.get("photoUrls", [])
         })
 
-    # Store filtered pets in entity for persistence or further processing
     entity['results'] = filtered
 
 async def process_favorite(entity: dict):
@@ -150,7 +122,6 @@ async def process_favorite(entity: dict):
     pet_id = entity["petId"]
     user_favs = favorites_cache.setdefault(user_id, set())
     user_favs.add(pet_id)
-
 
 async def process_recommend(entity: dict):
     """
@@ -164,7 +135,7 @@ async def process_recommend(entity: dict):
     type_ = prefs.get("type")
     status = prefs.get("status") or "available"
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10) as client:
         try:
             r = await client.get(f"{PETSTORE_API_BASE}/pet/findByStatus", params={"status": status})
             r.raise_for_status()
@@ -177,7 +148,7 @@ async def process_recommend(entity: dict):
     user_favs = favorites_cache.get(user_id, set())
     recommended = []
     for pet in pets:
-        if pet["id"] not in user_favs:
+        if pet.get("id") not in user_favs:
             if type_:
                 cat = pet.get("category", {}).get("name")
                 if not cat or cat.lower() != type_.lower():
@@ -201,13 +172,8 @@ async def process_recommend(entity: dict):
 @app.route("/pets/search", methods=["POST"])
 @validate_request(SearchReq)
 async def pets_search(data: SearchReq):
-    # Convert dataclass to dict for processing
     entity = data.__dict__
-
-    # Run workflow which fetches and prepares results in entity['results']
     await process_search(entity)
-
-    # Optionally persist the search entity if needed; here we just return results
     return jsonify({"pets": entity.get("results", [])})
 
 @app.route("/pets/favorites", methods=["POST"])
@@ -215,8 +181,6 @@ async def pets_search(data: SearchReq):
 async def add_favorite(data: FavoriteReq):
     entity = data.__dict__
     await process_favorite(entity)
-    # If you want to persist favorite entity, call entity_service.add_item here with workflow
-    # For now just return success
     return jsonify({"message": "Pet added to favorites"})
 
 @app.route("/pets/favorites/<user_id>", methods=["GET"])
@@ -226,7 +190,7 @@ async def get_favorites(user_id: str):
         return jsonify({"favorites": []})
 
     pets = []
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10) as client:
         for pet_id in user_favs:
             try:
                 r = await client.get(f"{PETSTORE_API_BASE}/pet/{pet_id}")
@@ -255,7 +219,6 @@ async def recommend_pets(data: RecommendReq):
 @validate_request(AddPetReq)
 async def add_pet(data: AddPetReq):
     entity = data.__dict__
-
     try:
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
@@ -275,28 +238,3 @@ if __name__ == '__main__':
     import sys
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation of refactoring:
-
-- **Search:** The external API call, filtering, and result preparation moved into `process_search`. Controller only triggers it and returns results.
-- **Favorites:** Cache update moved into `process_favorite`. Controller calls it and returns success.
-- **Recommendations:** External API call and filtering moved into `process_recommend`. Controller just calls workflow and returns data.
-- **Adding pet:** Enrichment and normalization moved into `process_pet`. Controller calls `entity_service.add_item` passing workflow.
-
----
-
-### Benefits:
-
-- Controllers are thin, only handling request/response.
-- Workflow functions encapsulate entity-specific logic and async side effects.
-- Easier to maintain and test entity workflows in isolation.
-- Avoid duplication of async logic and external service calls in controllers.
-
----
-
-If you want, I can help further by implementing persistence for searches or favorites with proper workflow usage, or add unit tests for workflows.
-
-Let me know!

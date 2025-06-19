@@ -1,3 +1,5 @@
+import asyncio
+import threading
 import time
 import logging
 from typing import Optional
@@ -25,14 +27,18 @@ class CyodaAuthService:
 
         self._client: Optional[AsyncOAuth2Client] = None
         self._sync_client: Optional[OAuth2Session] = None
+        self._thread_lock = threading.Lock()
+        self._async_lock = asyncio.Lock()
+
 
     def invalidate_tokens(self):
         """
         Wipe any cached tokens so the next request does a full re-authentication.
         """
-        logger.info("Invalidating cached OAuth2 tokens")
-        self._access_token = None
-        self._access_token_expiry = None
+        with self._thread_lock:
+            logger.info("Invalidating cached OAuth2 tokens")
+            self._access_token = None
+            self._access_token_expiry = None
 
     # -----------------------
     # ASYNC VERSION
@@ -42,9 +48,10 @@ class CyodaAuthService:
         """
         Returns a valid access token, fetching a new one if missing or expired (async).
         """
-        if self._is_token_stale():
-            await self._fetch_access_token()
-        return self._access_token
+        async with self._async_lock:
+            if self._is_token_stale():
+                await self._fetch_access_token()
+            return self._access_token
 
     async def _fetch_access_token(self):
         """
@@ -74,9 +81,10 @@ class CyodaAuthService:
         """
         Synchronous version of get_access_token for use in sync contexts.
         """
-        if self._is_token_stale():
-            self._fetch_access_token_sync()
-        return self._access_token
+        with self._thread_lock:
+            if self._is_token_stale():
+                self._fetch_access_token_sync()
+            return self._access_token
 
     def _fetch_access_token_sync(self):
         """

@@ -1,25 +1,27 @@
-import asyncio
+from datetime import timezone, datetime
 import logging
-from datetime import datetime
-from typing import Dict, List, Optional
-from dataclasses import dataclass
-
-import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
-
+from quart import Blueprint, request, abort, jsonify
+from quart_schema import validate, validate_querystring, tag, operation_id
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+FINAL_STATES = {'FAILURE', 'SUCCESS', 'CANCELLED', 'CANCELLED_BY_USER', 'UNKNOWN', 'FINISHED'}
+PROCESSING_STATE = 'PROCESSING'
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+PET_ENTITY_NAME = "pets"
+PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
+
+import asyncio
+from typing import Dict, List, Optional
+from dataclasses import dataclass
+import httpx
 
 @dataclass
 class FetchPetsRequest:
@@ -37,24 +39,12 @@ class GetPetsQuery:
 class AdoptPetRequest:
     petid: str
 
-PET_ENTITY_NAME = "pets"
-PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
-
-# Workflow function for pets entity
 async def process_pets(entity: Dict) -> Dict:
-    # Normalize status field to lowercase if present
     if "status" in entity and isinstance(entity["status"], str):
         entity["status"] = entity["status"].lower()
-
-    # Add processed timestamp
     entity["processed_at"] = datetime.utcnow().isoformat()
-
-    # Example enrichment: length of name
     if "name" in entity and isinstance(entity["name"], str):
         entity["name_length"] = len(entity["name"])
-
-    # Example: add supplementary entities of different model here if needed (not implemented)
-
     return entity
 
 async def fetch_pets_from_petstore(status: Optional[str], category: Optional[str]) -> List[Dict]:
@@ -107,12 +97,9 @@ async def store_pets(pets: List[Dict]):
                 )
             except Exception as e:
                 logger.exception(f"Failed to store pet id {technical_id}: {e}")
-        else:
-            # Do not update existing pets here to avoid infinite recursion
-            pass
 
-@app.route("/pets/fetch", methods=["POST"])
-@validate_request(FetchPetsRequest)
+@routes_bp.route("/pets/fetch", methods=["POST"])
+@validate(FetchPetsRequest)
 async def fetch_pets(data: FetchPetsRequest):
     requested_at = datetime.utcnow().isoformat()
     logger.info(f"Fetch request at {requested_at} with status={data.status} category={data.category}")
@@ -125,8 +112,8 @@ async def fetch_pets(data: FetchPetsRequest):
     asyncio.create_task(async_fetch_and_store())
     return jsonify({"message": "Pets data fetch started asynchronously.", "requestedAt": requested_at}), 202
 
+@routes_bp.route("/pets", methods=["GET"])
 @validate_querystring(GetPetsQuery)
-@app.route("/pets", methods=["GET"])
 async def get_pets():
     try:
         status = request.args.get("status")
@@ -174,8 +161,8 @@ async def get_pets():
         logger.exception(f"Failed to retrieve pets: {e}")
         return jsonify({"error": "Failed to retrieve pets"}), 500
 
-@app.route("/pets/adopt", methods=["POST"])
-@validate_request(AdoptPetRequest)
+@routes_bp.route("/pets/adopt", methods=["POST"])
+@validate(AdoptPetRequest)
 async def adopt(data: AdoptPetRequest):
     pet_id = data.petid
     try:
@@ -202,6 +189,3 @@ async def adopt(data: AdoptPetRequest):
     except Exception as e:
         logger.exception(f"Failed to adopt pet id {pet_id}: {e}")
         return jsonify({"error": "Failed to adopt pet"}), 500
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

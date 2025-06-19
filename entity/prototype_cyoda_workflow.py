@@ -1,8 +1,36 @@
-Certainly! Below is the updated complete code of `entity/prototype_cyoda.py` with the required changes:
+Absolutely, moving all business logic and async tasks into workflow functions `process_{entity_name}` is a clean, maintainable, and recommended approach. This keeps your endpoint controllers slim and lets workflows handle data enrichment, async processing, and side effects before persistence.
 
-- Added a new workflow function `process_search_request` as the `workflow` parameter to the `entity_service.add_item` call inside the `/pets/search` endpoint.
-- The workflow function is named with prefix `process_` followed by the entity name in underscore lowercase (`search_request`).
-- The workflow function takes the entity data as the only argument and processes it asynchronously before persistence (function already existing as `process_search_request`).
+---
+
+### What can move to workflow functions?
+
+- The main search logic that fetches pets from external API and augments fun facts.
+- Any cache update related to the entity.
+- Potentially, the favorites could be enhanced similarly, but since favorites are in-memory and simple, we keep them as is.
+- For `/pets/results/<search_id>` and `/pets/favorites/<user_id>` endpoints, those are pure read endpoints — no workflow needed.
+
+---
+
+### Proposed changes
+
+- Create `process_search_request` workflow to handle fetching pets and adding fun facts (already done).
+- Create a new workflow `process_favorite_request` to move favorite adding logic inside the workflow.
+- Update `/pets/favorite` endpoint to just add the favorite entity via `entity_service.add_item` with the workflow `process_favorite_request`.
+- Maintain caching _search_results_cache in the workflow only.
+
+---
+
+### Important notes:
+
+- We cannot call `entity_service.add/update/delete` on the same entity inside its workflow — that causes recursion.
+- Workflows can add supplementary entities (of different models).
+- So for favorites, we can add a new entity "favorite" for each favorite action; storing user favorites in cache will be moved to workflow.
+- For simplicity, favorites cache will be updated inside the workflow.
+- We'll store favorites in cache only; persistence of favorites can be added as separate entities if needed.
+
+---
+
+### Updated full code
 
 ```python
 import asyncio
@@ -82,6 +110,7 @@ async def fetch_pets_from_petstore(
         logger.exception(f"Error fetching pets from Petstore API: {e}")
     return pets
 
+# Workflow function for search_request entity
 async def process_search_request(entity: dict):
     # entity here is the search_request data dict
     search_id = entity.get("id")
@@ -115,28 +144,40 @@ async def process_search_request(entity: dict):
             "status": "failed",
         }
 
+# Workflow function for favorite_request entity
+async def process_favorite_request(entity: dict):
+    """
+    entity is dict with keys pet_id, user_id
+    Add pet_id to the in-memory _user_favorites_cache[user_id] set.
+    """
+    user_id = entity.get("user_id")
+    pet_id = entity.get("pet_id")
+    if not user_id or not pet_id:
+        logger.warning(f"Favorite request missing user_id or pet_id: {entity}")
+        return
+    favorites = _user_favorites_cache.setdefault(user_id, set())
+    favorites.add(pet_id)
+    logger.info(f"Added pet_id={pet_id} to favorites for user_id={user_id}")
+
 @app.route("/pets/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def pets_search(data: SearchRequest):
-    # Instead of local cache, add search request to entity_service with workflow
     data_dict = data.__dict__
     try:
-        id = await entity_service.add_item(
+        entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="search_request",
             entity_version=ENTITY_VERSION,
             entity=data_dict,
-            workflow=process_search_request  # Workflow function applied before persistence
+            workflow=process_search_request
         )
-        return jsonify({"searchId": str(id)})
+        return jsonify({"searchId": str(entity_id)})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to add search request"}), 500
 
 @app.route("/pets/results/<string:search_id>", methods=["GET"])
 async def pets_results(search_id):
-    # Retrieve search result from cache first - since no mention of replacing cache with entity_service for this,
-    # we keep existing cache retrieval
     result = _search_results_cache.get(search_id)
     if not result:
         return jsonify({"error": "searchId not found"}), 404
@@ -149,14 +190,16 @@ async def pets_results(search_id):
 @app.route("/pets/favorite", methods=["POST"])
 @validate_request(FavoriteRequest)
 async def pets_favorite(data: FavoriteRequest):
-    pet_id = data.pet_id
-    user_id = data.user_id
-    if not pet_id or not user_id:
-        return jsonify({"error": "petId and userId required"}), 400
+    data_dict = data.__dict__
     try:
-        favorites = _user_favorites_cache.setdefault(user_id, set())
-        favorites.add(pet_id)
-        return jsonify({"success": True})
+        entity_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="favorite_request",
+            entity_version=ENTITY_VERSION,
+            entity=data_dict,
+            workflow=process_favorite_request
+        )
+        return jsonify({"favoriteId": str(entity_id)})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to add favorite"}), 500
@@ -204,10 +247,18 @@ if __name__ == "__main__":
 
 ---
 
-### Explanation of changes:
-- Added the `workflow=process_search_request` argument to the call to `entity_service.add_item` in `pets_search`.
-- Ensured the workflow function is named `process_search_request` to follow the prefix + entity name in underscore lowercase.
-- The workflow function `process_search_request` is async and takes the entity (search_request) data as input, performs the pet fetching and updates the cache accordingly.
-- This matches your specification that the workflow function is applied asynchronously before persistence.
+### Summary of changes:
+- `/pets/search` endpoint now only adds the search_request entity and relies fully on `process_search_request` workflow to:
+  - fetch pets,
+  - add fun facts,
+  - update `_search_results_cache`.
+- `/pets/favorite` endpoint adds a favorite_request entity and relies fully on `process_favorite_request` workflow to:
+  - update `_user_favorites_cache`.
+- Endpoints are now slim, only responsible for request validation and calling `entity_service.add_item` with the appropriate workflow.
+- All async tasks and side effects are inside workflows as required.
 
-Let me know if you need further adjustments!
+---
+
+This approach makes your codebase more modular, testable, and easy to maintain. The controller endpoints become thin wrappers over your business logic workflows.
+
+Let me know if you want me to help with adding persistence for favorites, or any other improvements!

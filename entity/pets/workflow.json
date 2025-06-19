@@ -1,0 +1,64 @@
+{
+    "description": "Workflow for Purrfect Pets API app managing pet data fetching, storing, filtering, and adoption.",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch pet data from external Petstore API and store internally",
+            "end_state": "Pets_fetched_and_stored",
+            "end_state_description": "Pets data has been fetched and stored",
+            "name": "fetch_pets_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetch pet data from external API",
+                        "name": "process_fetch"
+                    },
+                    {
+                        "description": "Store fetched pet data internally",
+                        "name": "process_store"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Filter stored pets by status and category",
+            "end_state": "Pets_filtered",
+            "end_state_description": "Stored pets have been filtered by criteria",
+            "name": "filter_stored_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Filter pets based on criteria",
+                        "name": "process_filter"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched_and_stored",
+            "start_state_description": "Pets data has been fetched and stored"
+        },
+        {
+            "automated": true,
+            "description": "Adopt a pet by marking it as sold",
+            "end_state": "Pet_adopted",
+            "end_state_description": "A pet has been adopted and status updated",
+            "name": "adopt_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Mark pet as adopted",
+                        "name": "process_adopt"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_filtered",
+            "start_state_description": "Stored pets have been filtered by criteria"
+        }
+    ]
+}

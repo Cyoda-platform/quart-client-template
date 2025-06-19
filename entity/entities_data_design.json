@@ -1,0 +1,13 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": "cats",
+                "id": 123,
+                "name": "Whiskers",
+                "status": "available"
+            },
+            "entity_name": "pets"
+        }
+    ]
+}

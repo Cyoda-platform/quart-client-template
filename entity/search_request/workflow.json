@@ -1,0 +1,78 @@
+{
+    "description": "Workflow to fetch, enrich, and store pet search results",
+    "name": "purrfect_pets_search_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start pet search process",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets data fetched from external API",
+            "name": "start_search",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_pets"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Enrich pet data with fun facts",
+            "end_state": "Facts_enriched",
+            "end_state_description": "Pet data enriched with fun facts",
+            "name": "enrich_pet_facts",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_enrich_facts"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets data fetched from external API"
+        },
+        {
+            "automated": true,
+            "description": "Store the search results in cache",
+            "end_state": "Results_stored",
+            "end_state_description": "Search results stored successfully",
+            "name": "store_search_results",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_store_results"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Facts_enriched",
+            "start_state_description": "Pet data enriched with fun facts"
+        },
+        {
+            "automated": true,
+            "description": "Handle failure during search processing",
+            "end_state": "Failed",
+            "end_state_description": "Search processing failed",
+            "name": "handle_search_failure",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_handle_failure"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

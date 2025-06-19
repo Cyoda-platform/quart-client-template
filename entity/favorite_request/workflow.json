@@ -1,0 +1,42 @@
+{
+    "description": "Workflow to validate and add a pet to user's favorites",
+    "name": "favorite_pet_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start validation of favorite request",
+            "end_state": "Validated",
+            "end_state_description": "Favorite request validated",
+            "name": "start_validation",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_favorite_request"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Add pet to user's favorites after validation",
+            "end_state": "Completed",
+            "end_state_description": "Pet added to favorites or failed",
+            "name": "add_favorite_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_favorite"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Validated",
+            "start_state_description": "Favorite request validated"
+        }
+    ]
+}

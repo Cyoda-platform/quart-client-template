@@ -1,38 +1,3 @@
-Absolutely, moving all business logic and async tasks into workflow functions `process_{entity_name}` is a clean, maintainable, and recommended approach. This keeps your endpoint controllers slim and lets workflows handle data enrichment, async processing, and side effects before persistence.
-
----
-
-### What can move to workflow functions?
-
-- The main search logic that fetches pets from external API and augments fun facts.
-- Any cache update related to the entity.
-- Potentially, the favorites could be enhanced similarly, but since favorites are in-memory and simple, we keep them as is.
-- For `/pets/results/<search_id>` and `/pets/favorites/<user_id>` endpoints, those are pure read endpoints — no workflow needed.
-
----
-
-### Proposed changes
-
-- Create `process_search_request` workflow to handle fetching pets and adding fun facts (already done).
-- Create a new workflow `process_favorite_request` to move favorite adding logic inside the workflow.
-- Update `/pets/favorite` endpoint to just add the favorite entity via `entity_service.add_item` with the workflow `process_favorite_request`.
-- Maintain caching _search_results_cache in the workflow only.
-
----
-
-### Important notes:
-
-- We cannot call `entity_service.add/update/delete` on the same entity inside its workflow — that causes recursion.
-- Workflows can add supplementary entities (of different models).
-- So for favorites, we can add a new entity "favorite" for each favorite action; storing user favorites in cache will be moved to workflow.
-- For simplicity, favorites cache will be updated inside the workflow.
-- We'll store favorites in cache only; persistence of favorites can be added as separate entities if needed.
-
----
-
-### Updated full code
-
-```python
 import asyncio
 import logging
 import uuid
@@ -41,8 +6,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -65,7 +30,7 @@ class SearchRequest:
 
 @dataclass
 class FavoriteRequest:
-    pet_id: str  # changed to string as technical id is string
+    pet_id: str  # pet id as string
     user_id: str
 
 _search_results_cache: Dict[str, Dict] = {}
@@ -101,7 +66,7 @@ async def fetch_pets_from_petstore(
             if name_contains and name_contains.lower() not in pet_name:
                 continue
             pets.append({
-                "id": str(pet.get("id")),  # cast to string
+                "id": str(pet.get("id")),
                 "name": pet.get("name"),
                 "type": pet_type or "unknown",
                 "status": status_query,
@@ -110,15 +75,12 @@ async def fetch_pets_from_petstore(
         logger.exception(f"Error fetching pets from Petstore API: {e}")
     return pets
 
-# Workflow function for search_request entity
 async def process_search_request(entity: dict):
-    # entity here is the search_request data dict
     search_id = entity.get("id")
-    criteria = entity
     if not search_id:
-        # generate an id if not present
         search_id = str(uuid.uuid4())
         entity["id"] = search_id
+    criteria = entity
     try:
         pets = await fetch_pets_from_petstore(
             criteria.get("type"),
@@ -144,12 +106,7 @@ async def process_search_request(entity: dict):
             "status": "failed",
         }
 
-# Workflow function for favorite_request entity
 async def process_favorite_request(entity: dict):
-    """
-    entity is dict with keys pet_id, user_id
-    Add pet_id to the in-memory _user_favorites_cache[user_id] set.
-    """
     user_id = entity.get("user_id")
     pet_id = entity.get("pet_id")
     if not user_id or not pet_id:
@@ -243,22 +200,3 @@ async def shutdown():
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Summary of changes:
-- `/pets/search` endpoint now only adds the search_request entity and relies fully on `process_search_request` workflow to:
-  - fetch pets,
-  - add fun facts,
-  - update `_search_results_cache`.
-- `/pets/favorite` endpoint adds a favorite_request entity and relies fully on `process_favorite_request` workflow to:
-  - update `_user_favorites_cache`.
-- Endpoints are now slim, only responsible for request validation and calling `entity_service.add_item` with the appropriate workflow.
-- All async tasks and side effects are inside workflows as required.
-
----
-
-This approach makes your codebase more modular, testable, and easy to maintain. The controller endpoints become thin wrappers over your business logic workflows.
-
-Let me know if you want me to help with adding persistence for favorites, or any other improvements!

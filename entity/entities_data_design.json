@@ -1,0 +1,44 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "nameContains": "whiskers",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "search_request"
+        },
+        {
+            "entity_data_example": {
+                "pets": [
+                    {
+                        "funFact": "Cats are curious and love to explore!",
+                        "id": 101,
+                        "name": "Whiskers",
+                        "status": "available",
+                        "type": "cat"
+                    }
+                ],
+                "searchId": "abc123",
+                "status": "completed"
+            },
+            "entity_name": "search_result"
+        },
+        {
+            "entity_data_example": {
+                "petId": 101,
+                "userId": "user_001"
+            },
+            "entity_name": "favorite"
+        },
+        {
+            "entity_data_example": {
+                "id": 101,
+                "name": "Whiskers",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "favorite_pet"
+        }
+    ]
+}

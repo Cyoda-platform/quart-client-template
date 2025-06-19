@@ -6,11 +6,13 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -18,9 +20,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class SearchRequest:
@@ -116,7 +115,7 @@ async def process_favorite_request(entity: dict):
     favorites.add(pet_id)
     logger.info(f"Added pet_id={pet_id} to favorites for user_id={user_id}")
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def pets_search(data: SearchRequest):
     data_dict = data.__dict__
@@ -132,7 +131,7 @@ async def pets_search(data: SearchRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to add search request"}), 500
 
-@app.route("/pets/results/<string:search_id>", methods=["GET"])
+@routes_bp.route("/pets/results/<string:search_id>", methods=["GET"])
 async def pets_results(search_id):
     result = _search_results_cache.get(search_id)
     if not result:
@@ -143,7 +142,7 @@ async def pets_results(search_id):
         "pets": result.get("pets", []),
     })
 
-@app.route("/pets/favorite", methods=["POST"])
+@routes_bp.route("/pets/favorite", methods=["POST"])
 @validate_request(FavoriteRequest)
 async def pets_favorite(data: FavoriteRequest):
     data_dict = data.__dict__
@@ -159,7 +158,7 @@ async def pets_favorite(data: FavoriteRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to add favorite"}), 500
 
-@app.route("/pets/favorites/<string:user_id>", methods=["GET"])
+@routes_bp.route("/pets/favorites/<string:user_id>", methods=["GET"])
 async def pets_favorites(user_id):
     favorites = _user_favorites_cache.get(user_id, set())
     pets_result = []
@@ -186,15 +185,3 @@ async def pets_favorites(user_id):
                 "status": "Unknown",
             })
     return jsonify({"userId": user_id, "favorites": pets_result})
-
-@app.before_serving
-async def startup():
-    logger.info("Purrfect Pets API starting up...")
-
-@app.after_serving
-async def shutdown():
-    await http_client.aclose()
-    logger.info("Purrfect Pets API shutting down...")
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

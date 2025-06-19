@@ -1,110 +1,82 @@
-Absolutely! Moving the business logic and async tasks into the workflow functions is indeed the right approach. It encapsulates entity-specific processing inside the workflow, keeps controllers/controllers clean, and leverages the asynchronous nature of the workflow.
+import asyncio
+import logging
+from datetime import datetime
+from typing import Dict, List, Optional
+from dataclasses import dataclass
 
----
+import httpx
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
-### What to move into workflow functions?
+from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
 
-1. **In `/pets/fetch` endpoint:**
-   - The fetching pets from external Petstore API.
-   - Storing pets (adding new pets) - except we cannot `add/update/delete` the same entity from inside the workflow for that entity (to prevent infinite recursion).
-   - So here: the workflow for `pets` entity cannot add/update/delete `pets` entity itself.
-   - But since we **need** to fetch pets remotely and add them as entities, and cannot do that inside the workflow for `pets`, we can:
-     - Move the fetch logic into a **new workflow of a different entity**, e.g. a "fetch_task" entity (or similar), or
-     - Or move the fetch logic into an async task that triggers adding pets entities individually (that's current approach).
-   - Since the instructions say workflow cannot add/update/delete same entity model to avoid infinite recursion, we can keep the fetch outside, but can move the "processing" of the single pet entity into the workflow.
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-2. **In `/pets/adopt`:**
-   - The adopt logic is currently fetching the pet entity, updating its status to "sold", and updating the entity.
-   - This is a mutation of the same entity, so it cannot be done inside the workflow for `pets` entity (that would cause infinite recursion).
-   - So the controller must keep the update logic (or delegate to a service function).
-   - However, any supplementary async tasks related to adoption (e.g., sending notifications) can be moved inside the workflow, if adoption triggers any workflow.
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-3. **The `/pets` GET endpoint is purely read-only, no side effects, so no workflow needed there.**
+app = Quart(__name__)
+QuartSchema(app)
 
----
+@dataclass
+class FetchPetsRequest:
+    status: Optional[str] = None
+    category: Optional[str] = None
 
-### What can we do practically?
+@dataclass
+class GetPetsQuery:
+    status: Optional[str] = None
+    category: Optional[str] = None
+    limit: int = 20
+    offset: int = 0
 
-- Move all entity-specific processing logic into the entity workflow function `process_pets`.
-- For example, the normalization of status, adding timestamps, etc.
-- The `store_pets` function should just call `entity_service.add_item()` with the workflow function.
-- Any complex processing per pet entity (like enrichment, secondary entity creation) can be done inside the workflow.
+@dataclass
+class AdoptPetRequest:
+    petid: str
 
-- For the `/pets/fetch` endpoint:
-  - The fetching of raw data from external API remains in the controller (or a helper function).
-  - The storing of pets is done in a loop calling `add_item` with the workflow function.
-  - The workflow function will contain all processing logic on the pet entity itself.
-
-- For adoption:
-  - The status update remains in the controller.
-  - If you want to trigger any async logic related to adoption, you can trigger it via a **different entity** or in the workflow of pets if you update the entity.
-
----
-
-### Implementation plan:
-
-- Move all entity processing logic into `process_pets`.
-- Create a new workflow function `process_pet_adoption` if needed, for any async tasks after adoption.
-- Clean up endpoints to be mostly API input/output and simple orchestration.
-- Keep external API calls outside workflow (since workflow only processes one entity at a time).
-- Keep `store_pets` minimal: just add items with workflow.
-- In `/pets/fetch`, just fetch pets and call `store_pets(pets)`.
-
----
-
-### Updated code snippet with detailed comments:
-
-```python
-# ... [imports unchanged] ...
-
-PET_ENTITY_NAME = "pets"  # entity name underscore lowercase
+PET_ENTITY_NAME = "pets"
+PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
 # Workflow function for pets entity
 async def process_pets(entity: Dict) -> Dict:
-    """
-    This workflow function is called just before persisting any pet entity.
-    It can modify the entity directly.
-
-    Move all pet-specific processing logic here, e.g.:
-    - Normalize statuses
-    - Add timestamps
-    - Enrich entity data
-    - Add secondary entities of different models if needed (but not pets)
-    """
-    # Normalize status field
+    # Normalize status field to lowercase if present
     if "status" in entity and isinstance(entity["status"], str):
         entity["status"] = entity["status"].lower()
 
     # Add processed timestamp
     entity["processed_at"] = datetime.utcnow().isoformat()
 
-    # Example: enrich pet with a derived attribute
-    if "name" in entity and entity["name"]:
+    # Example enrichment: length of name
+    if "name" in entity and isinstance(entity["name"], str):
         entity["name_length"] = len(entity["name"])
 
-    # If you want to add supplementary entities of a different model, do it here
-    # For example, add a "pet_metadata" entity for analytics (not shown here)
+    # Example: add supplementary entities of different model here if needed (not implemented)
 
     return entity
 
 async def fetch_pets_from_petstore(status: Optional[str], category: Optional[str]) -> List[Dict]:
-    # No change here; this fetches raw data from external API
-    async with httpx.AsyncClient() as client:
-        query_status = status if status else "available,pending,sold"
-        url = f"{PETSTORE_BASE_URL}/pet/findByStatus"
-        response = await client.get(url, params={"status": query_status})
-        response.raise_for_status()
-        pets = response.json()
-        if category:
-            cat_lower = category.lower()
-            pets = [
-                pet for pet in pets
-                if pet.get("category", {}).get("name", "").lower() == cat_lower
-            ]
-        return pets
+    try:
+        async with httpx.AsyncClient() as client:
+            query_status = status if status else "available,pending,sold"
+            url = f"{PETSTORE_BASE_URL}/pet/findByStatus"
+            response = await client.get(url, params={"status": query_status})
+            response.raise_for_status()
+            pets = response.json()
+            if category:
+                cat_lower = category.lower()
+                pets = [
+                    pet for pet in pets
+                    if pet.get("category", {}).get("name", "").lower() == cat_lower
+                ]
+            return pets
+    except Exception as e:
+        logger.exception(f"Failed to fetch pets from Petstore API: {e}")
+        return []
 
 async def store_pets(pets: List[Dict]):
-    # Store pets, calling add_item with workflow function
     for pet in pets:
         pet_id = pet.get("id")
         if pet_id is None:
@@ -127,7 +99,6 @@ async def store_pets(pets: List[Dict]):
                 "status": pet.get("status", ""),
             }
             try:
-                # Pass workflow function here
                 await entity_service.add_item(
                     token=cyoda_auth_service,
                     entity_model=PET_ENTITY_NAME,
@@ -138,7 +109,7 @@ async def store_pets(pets: List[Dict]):
             except Exception as e:
                 logger.exception(f"Failed to store pet id {technical_id}: {e}")
         else:
-            # Do not update here to avoid infinite recursion
+            # Do not update existing pets here to avoid infinite recursion
             pass
 
 @app.route("/pets/fetch", methods=["POST"])
@@ -147,7 +118,6 @@ async def fetch_pets(data: FetchPetsRequest):
     requested_at = datetime.utcnow().isoformat()
     logger.info(f"Fetch request at {requested_at} with status={data.status} category={data.category}")
 
-    # Fire and forget async fetch and store pets, no logic in endpoint
     async def async_fetch_and_store():
         pets = await fetch_pets_from_petstore(data.status, data.category)
         await store_pets(pets)
@@ -155,6 +125,55 @@ async def fetch_pets(data: FetchPetsRequest):
 
     asyncio.create_task(async_fetch_and_store())
     return jsonify({"message": "Pets data fetch started asynchronously.", "requestedAt": requested_at}), 202
+
+@validate_querystring(GetPetsQuery)
+@app.route("/pets", methods=["GET"])
+async def get_pets():
+    try:
+        status = request.args.get("status")
+        category = request.args.get("category")
+        limit = int(request.args.get("limit", 20))
+        offset = int(request.args.get("offset", 0))
+
+        conditions = {"cyoda": {"type": "group", "operator": "AND", "conditions": []}}
+
+        if status:
+            conditions["cyoda"]["conditions"].append({
+                "jsonPath": "$.status",
+                "operatorType": "EQUALS",
+                "value": status.lower(),
+                "type": "simple"
+            })
+        if category:
+            conditions["cyoda"]["conditions"].append({
+                "jsonPath": "$.category",
+                "operatorType": "EQUALS",
+                "value": category.lower(),
+                "type": "simple"
+            })
+
+        if conditions["cyoda"]["conditions"]:
+            all_pets = await entity_service.get_items_by_condition(
+                token=cyoda_auth_service,
+                entity_model=PET_ENTITY_NAME,
+                entity_version=ENTITY_VERSION,
+                condition=conditions
+            )
+        else:
+            all_pets = await entity_service.get_items(
+                token=cyoda_auth_service,
+                entity_model=PET_ENTITY_NAME,
+                entity_version=ENTITY_VERSION
+            )
+
+        pets_list = all_pets or []
+        total = len(pets_list)
+        page = pets_list[offset: offset + limit]
+
+        return jsonify({"pets": page, "total": total, "limit": limit, "offset": offset})
+    except Exception as e:
+        logger.exception(f"Failed to retrieve pets: {e}")
+        return jsonify({"error": "Failed to retrieve pets"}), 500
 
 @app.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptPetRequest)
@@ -170,10 +189,7 @@ async def adopt(data: AdoptPetRequest):
         if not pet:
             return jsonify({"error": f"Pet with id {pet_id} not found"}), 404
 
-        # Change status inside the entity - safe here because we update directly
         pet["status"] = "sold"
-
-        # You can optionally modify pet further here or trigger other workflows on other entities
 
         await entity_service.update_item(
             token=cyoda_auth_service,
@@ -187,20 +203,6 @@ async def adopt(data: AdoptPetRequest):
     except Exception as e:
         logger.exception(f"Failed to adopt pet id {pet_id}: {e}")
         return jsonify({"error": "Failed to adopt pet"}), 500
-```
 
----
-
-### Summary:
-
-- All entity-specific processing (normalizing, timestamps, enrichment, supplementary entities) moved to `process_pets`.
-- Endpoints and helper functions focus on API and orchestration only.
-- Async "fire and forget" fetch moved into an async inner function and launched by the endpoint.
-- No infinite recursion because workflow function does not add/update/delete the same entity model.
-- Adoption logic remains in the controller because it updates the entity directly.
-
----
-
-This approach satisfies your requirement for robustness, separation of concerns, and better maintainability.
-
-If you want, I can provide the full updated code with all changes applied. Would you like me to do that?
+if __name__ == '__main__':
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

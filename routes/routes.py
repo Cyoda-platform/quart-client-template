@@ -1,26 +1,22 @@
-import asyncio
+from datetime import datetime
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
-
-# DATA CLASSES FOR REQUESTS
 
 @dataclass
 class FetchPetsRequest:
@@ -33,8 +29,6 @@ class FilterPetsRequest:
     min_age: Optional[int] = None
     max_age: Optional[int] = None
     fun_category: Optional[str] = None
-
-# EXTERNAL API UTILS
 
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
@@ -66,8 +60,6 @@ async def fetch_pets_from_petstore(pet_type: Optional[str], status: Optional[str
         })
     return normalized
 
-# FILTER LOGIC
-
 def apply_filter_logic_sync(pets: List[Dict], min_age: Optional[int], max_age: Optional[int], fun_category: Optional[str]) -> List[Dict]:
     filtered = []
     for pet in pets:
@@ -92,21 +84,16 @@ def apply_filter_logic_sync(pets: List[Dict], min_age: Optional[int], max_age: O
         filtered.append(p)
     return filtered
 
-# WORKFLOW FUNCTIONS
-
 async def process_pet(entity: dict):
-    # Add a processedAt timestamp before persistence.
     entity["processedAt"] = datetime.utcnow().isoformat()
 
 async def process_pet_fetch_job(entity: dict):
-    # Guard against multiple runs if already completed or failed
     if entity.get("status") in ("completed", "failed"):
         return
 
     entity["status"] = "processing"
     entity["startedAt"] = datetime.utcnow().isoformat()
 
-    # Defensive: petstore api params must not be None type
     pet_type = entity.get("type")
     status_filter = entity.get("status_filter")
     limit = entity.get("limit")
@@ -121,7 +108,6 @@ async def process_pet_fetch_job(entity: dict):
             pet_data = pet.copy()
             if "id" in pet_data:
                 pet_data["id"] = str(pet_data["id"])
-            # Add pet entity with workflow
             new_id = await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model="pet",
@@ -171,9 +157,7 @@ async def process_pet_filter_job(entity: dict):
         entity["error"] = str(e)
         entity["completedAt"] = datetime.utcnow().isoformat()
 
-# ENDPOINTS
-
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)
 async def pets_fetch(data: FetchPetsRequest):
     job_entity = {
@@ -191,7 +175,7 @@ async def pets_fetch(data: FetchPetsRequest):
     )
     return jsonify({"message": "Fetch job started", "job_id": job_id}), 202
 
-@app.route("/pets/filter", methods=["POST"])
+@routes_bp.route("/pets/filter", methods=["POST"])
 @validate_request(FilterPetsRequest)
 async def pets_filter(data: FilterPetsRequest):
     job_entity = {
@@ -209,7 +193,7 @@ async def pets_filter(data: FilterPetsRequest):
     )
     return jsonify({"message": "Filter job started", "job_id": job_id}), 202
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def pets_get():
     try:
         pets = await entity_service.get_items(
@@ -222,7 +206,7 @@ async def pets_get():
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pets"}), 500
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pet_get(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -238,7 +222,7 @@ async def pet_get(pet_id: str):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pet"}), 500
 
-@app.route("/jobs/<string:job_id>", methods=["GET"])
+@routes_bp.route("/jobs/<string:job_id>", methods=["GET"])
 async def job_status(job_id: str):
     job = await entity_service.get_item(
         token=cyoda_auth_service,
@@ -256,10 +240,3 @@ async def job_status(job_id: str):
     if not job:
         return jsonify({"error": "Job ID not found"}), 404
     return jsonify(job)
-
-# MAIN
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

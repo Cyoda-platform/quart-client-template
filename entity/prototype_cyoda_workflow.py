@@ -1,61 +1,8 @@
-Absolutely, moving the logic from the endpoint into the `process_{entity_name}` workflow functions is a sound architectural choice. This will keep controllers slim, improve maintainability, and leverage the asynchronous workflow capabilities properly.
-
-Per your requirements and the constraints:
-
-- The workflow functions (`process_pet`) run asynchronously before persistence.
-- They can mutate the entity directly.
-- They can perform async operations including fetching or adding other entities (different models).
-- They **cannot** add/update/delete the same entity model (to avoid recursion).
-- Fire-and-forget async tasks belong here.
-- Controllers should only handle request/response and basic validation.
-
----
-
-## Refactoring plan for your current code:
-
-### Candidate logic to move into `process_pet` workflow function:
-
-1. **Marking adoption state**  
-   The current adoption state is tracked in memory (`app_state.adopted_pet_ids`) and checked during pet transformation.
-
-   Instead of the controller managing this flag, the workflow for the pet entity can:
-
-   - Check if the pet is adopted (e.g. from a dedicated `adoption` entity or a flag elsewhere)
-   - Add a derived attribute `adopted` to the pet entity before persistence.
-
-   However, adoption is a separate operation involving a separate entity (`AdoptPet` request), so we must keep the adoption marking logic in the adoption endpoint, but the state update for `adopted` flag can be moved to the pet workflow.
-
-2. **Transformation of pet entity (e.g. adding description)**  
-   Currently done in the controller (`transform_pet`) before storing.
-
-   Instead, this logic can be moved into the workflow function so the entity is saved already with the derived fields like `description`.
-
-3. **Fetching and filtering pets from external API**  
-   This is definitely outside the scope of the workflow function and should stay in the controller or a dedicated service.
-
-4. **Syncing pet entity with `entity_service.add_item`**  
-   The workflow is applied during this call, so the controller should only pass the raw or transformed data.
-
----
-
-## Proposed concrete changes
-
-- Move all pet entity mutation logic (adding description, `last_processed` timestamp, `adopted` flag) into `process_pet`.
-- Remove `transform_pet` function from controller, pass raw pet data to `add_item` and let workflow function do all transformations.
-- Update adoption logic: mark adoption in a separate entity or DB, then on next update of pet entity, the workflow function picks it up and marks `adopted` flag.
-- To keep this example simple, keep adoption marking in memory as before, but move the `adopted` flag setting into workflow.
-- `process_pet` can access `app_state` or other services to check adoption status asynchronously.
-
----
-
-## Full updated code with these changes:
-
-```python
 from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 import httpx
 from quart import Quart, jsonify, request, abort
@@ -101,29 +48,20 @@ app_state = AppState()
 PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
 
 async def process_pet(entity: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Workflow function applied to 'pet' entity before persistence.
-    Moves all entity mutations here:
-      - Add last_processed timestamp
-      - Add description field
-      - Add adopted flag by checking app_state asynchronously
-    """
-    pet_id = entity.get("id")
-    # Add last_processed timestamp
+    # Add last processed timestamp
     entity['last_processed'] = datetime.utcnow().isoformat() + 'Z'
 
-    # Add description if missing or update
+    # Add or update description
     name = entity.get("name") or "Unknown"
     pet_type = entity.get("type") or "pet"
     entity['description'] = f"{name} is a lovely {pet_type}."
 
-    # Add adopted flag (async check)
+    # Add adopted flag asynchronously
+    pet_id = entity.get("id")
     adopted = False
     if pet_id is not None:
         adopted = await app_state.is_adopted(str(pet_id))
     entity['adopted'] = adopted
-
-    # Other async or side effects can be implemented here, e.g. syncing related entities
 
     return entity
 
@@ -154,26 +92,21 @@ async def pets_search(data: SearchPets):
         name_filter_lower = name_filter.lower()
         all_pets = [pet for pet in all_pets if pet.get("name") and name_filter_lower in pet["name"].lower()]
 
-    # Now persist each pet entity with workflow processing inside add_item
     for pet in all_pets:
         pet_id = pet.get("id")
         if pet_id is None:
             continue
 
-        # Normalize pet entity to our 'pet' entity_model format:
-        # Map fields from external API format to internal entity format:
         entity_pet = {
             "id": str(pet_id),
-            # Use category name as type if available
             "type": pet.get("category", {}).get("name") if pet.get("category") else None,
             "name": pet.get("name"),
             "status": pet.get("status"),
             "photoUrls": pet.get("photoUrls", []),
-            # description, adopted, last_processed will be added in workflow
         }
 
         try:
-            _entity_id = await entity_service.add_item(
+            await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model="pet",
                 entity_version=ENTITY_VERSION,
@@ -184,9 +117,6 @@ async def pets_search(data: SearchPets):
         except Exception as e:
             logger.exception(f"Error syncing pet id={pet_id} to entity_service: {e}")
 
-    # Return raw pets (or you can refetch from entity service)
-    # If you want the transformed entities with adopted flag, you can fetch from entity_service here,
-    # but to avoid extra call, assume client will get it later.
     return jsonify({"results": all_pets})
 
 @app.route("/pets/adopt", methods=["POST"])
@@ -211,11 +141,7 @@ async def pets_adopt(data: AdoptPet):
     if pet is None:
         abort(404, f"Pet with id {pet_id} not found in entity service. Please search first.")
 
-    # Mark adoption in app_state (or ideally in a dedicated adoption entity)
     await app_state.mark_adopted(pet_id)
-
-    # Note: We don't update the pet entity here because this would cause recursion.
-    # The 'adopted' flag will be added on next add/update of pet entity via workflow.
 
     return jsonify({
         "adopted": True,
@@ -295,30 +221,3 @@ if __name__ == '__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s - %(message)s")
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- Removed `transform_pet` function entirely.
-- In `pets_search`, the raw external pet data is mapped to a minimal internal pet entity.
-- The `process_pet` workflow function enriches the entity by adding:
-  - `last_processed` timestamp
-  - `description`
-  - `adopted` flag (checks adoption state asynchronously)
-- Adoption endpoint only marks adoption state in memory; it does **not** update pet entity directly to avoid recursion.
-- All entity mutations related to pet happen inside `process_pet`.
-
----
-
-### Benefits:
-
-- Controllers are simplified: fetching/filtering external data, basic validation, and calling `entity_service`.
-- All data enrichment and async side effects related to pet entity happen inside the workflow function.
-- This approach can be extended for other entity models by implementing `process_{entity_name}` functions.
-- Async fire-and-forget tasks can be integrated into workflow functions.
-
----
-
-If you want me to also move any other async logic or implement workflow functions for other entities, just let me know!

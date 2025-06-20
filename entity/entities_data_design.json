@@ -1,0 +1,57 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "adopted": false,
+                "description": "Fluffy is a lovely cat.",
+                "id": 123,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "https://example.com/photos/fluffy1.jpg",
+                    "https://example.com/photos/fluffy2.jpg"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "petId": 123
+            },
+            "entity_name": "adopt_pet_request"
+        },
+        {
+            "entity_data_example": {
+                "adopted": true,
+                "message": "Congratulations! You have adopted Fluffy.",
+                "petId": 123
+            },
+            "entity_name": "adopt_pet_response"
+        },
+        {
+            "entity_data_example": {
+                "name": "fluff",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "search_pets_request"
+        },
+        {
+            "entity_data_example": {
+                "results": [
+                    {
+                        "id": 123,
+                        "name": "Fluffy",
+                        "photoUrls": [
+                            "https://example.com/photos/fluffy1.jpg"
+                        ],
+                        "status": "available",
+                        "type": "cat"
+                    }
+                ]
+            },
+            "entity_name": "search_pets_response"
+        }
+    ]
+}

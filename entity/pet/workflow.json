@@ -1,0 +1,57 @@
+{
+    "description": "Workflow for fetching and filtering pet data for Purrfect Pets API",
+    "name": "purrfect_pets_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initiate fetching pet data",
+            "end_state": "Pets_fetched",
+            "end_state_description": "Pets have been fetched from external API",
+            "name": "start_fetch_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_fetch_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before fetching pets"
+        },
+        {
+            "automated": true,
+            "description": "Filter fetched pets and assign fun categories",
+            "end_state": "Pets_filtered",
+            "end_state_description": "Pets have been filtered and fun categories assigned",
+            "name": "filter_fetched_pets",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_filter_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_fetched",
+            "start_state_description": "Pets have been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Mark processing complete",
+            "end_state": "Processed",
+            "end_state_description": "Pets processing workflow completed",
+            "name": "complete_pet_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "name": "process_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Pets_filtered",
+            "start_state_description": "Pets have been filtered"
+        }
+    ]
+}

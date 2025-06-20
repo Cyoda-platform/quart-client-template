@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 import httpx
-from quart import Quart, jsonify, request, abort
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request, abort
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class SearchPets:
@@ -65,7 +64,7 @@ async def process_pet(entity: Dict[str, Any]) -> Dict[str, Any]:
 
     return entity
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchPets)
 async def pets_search(data: SearchPets):
     pet_type = data.type
@@ -118,7 +117,7 @@ async def pets_search(data: SearchPets):
 
     return jsonify({"results": all_pets})
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptPet)
 async def pets_adopt(data: AdoptPet):
     pet_id_int = data.petId
@@ -148,7 +147,7 @@ async def pets_adopt(data: AdoptPet):
         "message": f"Congratulations! You have adopted {pet.get('name')}."
     })
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def pets_list():
     try:
         pets = await entity_service.get_items(
@@ -161,7 +160,7 @@ async def pets_list():
         pets = []
     return jsonify({"pets": pets})
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pet_detail(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -178,7 +177,7 @@ async def pet_detail(pet_id: str):
         abort(404, f"Pet with id {pet_id} not found in entity service.")
     return jsonify(pet)
 
-@app.route("/pets/<string:pet_id>", methods=["PUT"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["PUT"])
 async def pet_update(pet_id: str):
     data = await request.get_json()
     if not data:
@@ -199,7 +198,7 @@ async def pet_update(pet_id: str):
 
     return jsonify({"updated": True, "petId": pet_id})
 
-@app.route("/pets/<string:pet_id>", methods=["DELETE"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["DELETE"])
 async def pet_delete(pet_id: str):
     try:
         await entity_service.delete_item(
@@ -214,9 +213,3 @@ async def pet_delete(pet_id: str):
         abort(404, f"Pet with id {pet_id} not found or could not be deleted.")
 
     return jsonify({"deleted": True, "petId": pet_id})
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                        format="%(asctime)s %(levelname)s %(name)s - %(message)s")
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

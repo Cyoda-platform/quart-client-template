@@ -1,0 +1,50 @@
+{
+    "description": "Workflow to fetch pets and apply filters with fun categories",
+    "name": "purrfect_pets_filter_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the pet filter job and process fetching and filtering",
+            "end_state": "processing",
+            "end_state_description": "The pet filter job is processing",
+            "name": "start_pet_filter_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates fetching pets and applying filters",
+                        "name": "process_pet_filter_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Complete the pet filter job successfully",
+            "end_state": "completed",
+            "end_state_description": "The pet filter job has completed successfully",
+            "name": "complete_pet_filter_job",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "processing",
+            "start_state_description": "The pet filter job is processing"
+        },
+        {
+            "automated": true,
+            "description": "Fail the pet filter job due to an error",
+            "end_state": "failed",
+            "end_state_description": "The pet filter job has failed",
+            "name": "fail_pet_filter_job",
+            "processes": {
+                "externalized_processors": [],
+                "schedule_transition_processors": []
+            },
+            "start_state": "processing",
+            "start_state_description": "The pet filter job is processing"
+        }
+    ]
+}

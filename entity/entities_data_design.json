@@ -1,0 +1,25 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "completedAt": "2024-06-01T12:01:00Z",
+                "error": null,
+                "inputData": {
+                    "key1": "value1",
+                    "key2": 42
+                },
+                "processId": "123e4567-e89b-12d3-a456-426614174000",
+                "resultData": {
+                    "externalInfo": "Why don't scientists trust atoms? Because they make up everything!",
+                    "inputReceived": {
+                        "key1": "value1",
+                        "key2": 42
+                    },
+                    "processedAt": "2024-06-01T12:00:00Z"
+                },
+                "status": "processing"
+            },
+            "entity_name": "process_request"
+        }
+    ]
+}

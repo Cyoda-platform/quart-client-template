@@ -1,0 +1,60 @@
+{
+    "description": "Workflow processing Hello World request with external data fetch and finalization",
+    "name": "hello_world_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing the entity",
+            "end_state": "Processing_started",
+            "end_state_description": "Entity processing started",
+            "name": "start_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_process_request"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch external data for the entity",
+            "end_state": "External_data_fetched",
+            "end_state_description": "External data has been fetched",
+            "name": "fetch_external_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_external_data"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing_started",
+            "start_state_description": "Entity processing started"
+        },
+        {
+            "automated": true,
+            "description": "Finalize the entity processing",
+            "end_state": "Processing_completed",
+            "end_state_description": "Entity processing completed",
+            "name": "finalize_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_finalize"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "External_data_fetched",
+            "start_state_description": "External data has been fetched"
+        }
+    ]
+}

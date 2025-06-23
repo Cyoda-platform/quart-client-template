@@ -1,51 +1,3 @@
-Understood! The goal is to move all async processing logic—including fire-and-forget tasks like fetching weather data and updating the entity status—into the workflow function `process_weather_fetch_job`. This way the endpoint becomes very thin, just validating input and adding the entity, and the workflow handles the entire lifecycle of the entity’s processing asynchronously before the initial persistence.
-
-### Important constraints:
-- The workflow function is called **before** persisting the entity.
-- It can modify the entity in-place and can add/get entities of **different** models.
-- It **cannot** call add/update/delete on the **same** entity model to avoid recursion.
-- It can be async and can run arbitrary async code.
-- The entity state modifications inside the workflow will be persisted atomically.
-
----
-
-### How to implement this:
-
-1. Move all async calls like fetching weather and updating status inside the workflow function.
-2. Since the workflow runs **before** the initial `add_item`, we cannot update the same entity asynchronously after adding it.
-3. Instead, the entire lifecycle from `status: processing` → `status: fetching` → `status: completed` or `failed` should be handled inside the workflow function **before** returning the entity for persistence.
-4. Because the workflow runs once before persistence, fire-and-forget tasks (like `asyncio.create_task`) cannot be used directly inside the endpoint. Instead, the workflow runs the async code inline.
-5. Because the workflow cannot update the same entity via `entity_service.update_item` (would cause recursion), it must modify the entity dict in-place.
-6. For long-running tasks, this design means initial entity is persisted **after** the workflow completes, so the initial response waits for the workflow to finish. This behavior differs from current fire-and-forget.
-
-If you want to keep the asynchronous response initiation (i.e. the endpoint returning immediately), the workflow function can spawn secondary asynchronous entity updates on a different entity_model.
-
----
-
-### Proposed approach here:
-
-- The workflow function `process_weather_fetch_job` will:
-
-  - Set initial timestamps and status "processing"
-  - Perform the weather data fetch async call
-  - Update the entity dict with the final result or error
-  - Set final status "completed" or "failed"
-  - Because the workflow runs before the entity is persisted, the final state is persisted atomically.
-
-- The endpoint simply validates and calls `add_item` with the workflow function, immediately returning the `job_id`.
-
----
-
-### Caveat:
-
-- The entire flow now runs **before** the entity is initially persisted, meaning the client response will wait for the workflow to finish.
-- This may increase the latency of the endpoint, but fits the requirement to move logic inside the workflow function.
-
----
-
-### Updated code:
-
-```python
 from dataclasses import dataclass
 from typing import List
 import logging
@@ -76,7 +28,6 @@ class WeatherFetch:
     start_date: str
     end_date: str
 
-
 async def fetch_weather_data(latitude, longitude, parameters, start_date, end_date):
     base_url = "https://api.open-meteo.com/v1/forecast"
     params = {
@@ -92,18 +43,16 @@ async def fetch_weather_data(latitude, longitude, parameters, start_date, end_da
         response.raise_for_status()
         return response.json()
 
-
 async def process_weather_fetch_job(entity: dict):
     """
     Workflow function for 'weather_fetch_job' entity.
     Runs asynchronously before the entity is persisted.
-    This function modifies the entity dict in place, setting the status and result.
+    Modifies entity in-place to set status and results.
     """
     entity.setdefault("created_at", datetime.utcnow().isoformat() + "Z")
     entity["status"] = "processing"
     try:
         entity["status"] = "fetching"
-        # Fetch weather data
         weather_data = await fetch_weather_data(
             entity["latitude"],
             entity["longitude"],
@@ -111,9 +60,7 @@ async def process_weather_fetch_job(entity: dict):
             entity["start_date"],
             entity["end_date"],
         )
-        # Prepare result
         result_data = {
-            "request_id": None,  # job id not known yet, will be set after persistence
             "latitude": entity["latitude"],
             "longitude": entity["longitude"],
             "parameters": weather_data.get("hourly", {}),
@@ -123,25 +70,29 @@ async def process_weather_fetch_job(entity: dict):
         }
         entity["result"] = result_data
         entity["status"] = "completed"
+        # Clear error if previously set
+        entity.pop("error", None)
     except Exception as e:
         logger.exception("Weather fetch failed in workflow")
         entity["status"] = "failed"
         entity["error"] = str(e)
+        # Clear result if previously set
+        entity.pop("result", None)
     return entity
-
 
 @app.route("/weather/fetch", methods=["POST"])
 @validate_request(WeatherFetch)
 async def weather_fetch(data: WeatherFetch):
+    # Prepare entity data dict
     data_dict = data.__dict__.copy()
-    # No need to set status here, workflow will do it
+    # Workflow sets status and timestamps
     try:
         job_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="weather_fetch_job",
             entity_version=ENTITY_VERSION,
             entity=data_dict,
-            workflow=process_weather_fetch_job
+            workflow=process_weather_fetch_job,
         )
     except Exception as e:
         logger.exception("Failed to add weather_fetch_job entity")
@@ -152,7 +103,6 @@ async def weather_fetch(data: WeatherFetch):
         "message": "Weather data fetch completed or failed, see status",
         "request_id": job_id,
     })
-
 
 @app.route("/weather/result/<string:job_id>", methods=["GET"])
 async def weather_result(job_id: str):
@@ -177,36 +127,5 @@ async def weather_result(job_id: str):
         return jsonify({"status": "failed", "error": job.get("error", "Unknown error")}), 500
     return jsonify({"status": "success", "data": job.get("result")})
 
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- The endpoint `/weather/fetch` only validates input and calls `add_item` with the workflow function.
-- `process_weather_fetch_job` performs the entire lifecycle:
-  - Sets initial timestamps, status to `"processing"`.
-  - Fetches weather data asynchronously.
-  - Sets `"fetching"`, then `"completed"` or `"failed"` with results or error.
-- The entity is persisted **once** after the workflow returns.
-- The client receives the `request_id` immediately after persistence.
-- The `/weather/result/<job_id>` endpoint reads the persisted entity and returns status/result.
-
----
-
-### Benefits:
-
-- All async logic is centralized in the workflow function.
-- Controllers remain thin, only responsible for routing and validation.
-- Consistent entity lifecycle state changes are in one place.
-- Avoids fire-and-forget complexity and potential race conditions.
-- Clean separation of concerns.
-
----
-
-If you want to keep the fire-and-forget pattern (immediate response, processing in background), that would require a different approach (like a background worker or external task queue). However, the above meets your requirement fully using the workflow function.
-
-Let me know if you want me to adapt it differently!

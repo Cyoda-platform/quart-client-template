@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -13,12 +13,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class Subscription:
@@ -116,7 +115,7 @@ async def process_fact_sent(entity: dict):
 
     return entity
 
-@app.route("/api/subscribe", methods=["POST"])
+@routes_bp.route("/api/subscribe", methods=["POST"])
 @validate_request(Subscription)
 async def subscribe(data: Subscription):
     email = data.email
@@ -165,7 +164,7 @@ async def subscribe(data: Subscription):
 
     return jsonify({"success": True, "message": "Subscription successful", "id": str(id)})
 
-@app.route("/api/facts/send-weekly", methods=["POST"])
+@routes_bp.route("/api/facts/send-weekly", methods=["POST"])
 async def send_weekly_fact():
     async with httpx.AsyncClient() as client:
         try:
@@ -194,7 +193,7 @@ async def send_weekly_fact():
 
     return jsonify({"success": True, "message": "Weekly cat fact sent"})
 
-@app.route("/api/report/subscribers-count", methods=["GET"])
+@routes_bp.route("/api/report/subscribers-count", methods=["GET"])
 async def subscribers_count():
     try:
         subscribers = await entity_service.get_items(
@@ -208,16 +207,16 @@ async def subscribers_count():
         return jsonify({"success": False, "message": "Error fetching subscriber count"}), 500
     return jsonify({"subscribersCount": count})
 
-@app.route("/api/report/interactions", methods=["GET"])
+@routes_bp.route("/api/report/interactions", methods=["GET"])
 async def interactions():
     try:
-        interactions = await entity_service.get_items(
+        interactions_list = await entity_service.get_items(
             token=cyoda_auth_service,
             entity_model=INTERACTION_ENTITY_NAME,
             entity_version=ENTITY_VERSION
         )
-        if interactions:
-            interaction = interactions[0]
+        if interactions_list:
+            interaction = interactions_list[0]
             total_emails_sent = interaction.get("emails_sent", 0)
             total_opens = interaction.get("opens", 0)
             total_clicks = interaction.get("clicks", 0)
@@ -234,6 +233,3 @@ async def interactions():
         "totalOpens": total_opens,
         "totalClicks": total_clicks,
     })
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

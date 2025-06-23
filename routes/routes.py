@@ -5,8 +5,8 @@ from typing import Optional
 
 import httpx
 from dataclasses import dataclass
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class SubscriptionRequest:
@@ -106,7 +105,7 @@ async def process_interaction(entity: dict) -> dict:
 
 # Routes
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscriptionRequest)
 async def subscribe(data: SubscriptionRequest):
     email = data.email
@@ -145,7 +144,7 @@ async def subscribe(data: SubscriptionRequest):
     return jsonify({"message": "Subscription successful", "subscriberId": subscriber_id}), 201
 
 
-@app.route("/subscribers/count", methods=["GET"])
+@routes_bp.route("/subscribers/count", methods=["GET"])
 async def get_subscribers_count():
     try:
         subscribers = await entity_service.get_items(
@@ -160,7 +159,7 @@ async def get_subscribers_count():
     return jsonify({"count": len(subscribers)})
 
 
-@app.route("/fetch-and-send-fact", methods=["POST"])
+@routes_bp.route("/fetch-and-send-fact", methods=["POST"])
 async def fetch_and_send_fact():
     requested_at = datetime.utcnow().isoformat()
     try:
@@ -188,7 +187,7 @@ async def fetch_and_send_fact():
         return jsonify({"message": "Failed to fetch and send cat fact"}), 500
 
 
-@app.route("/interaction", methods=["POST"])
+@routes_bp.route("/interaction", methods=["POST"])
 @validate_request(InteractionRequest)
 async def record_interaction(data: InteractionRequest):
     subscriber_id = data.subscriberId
@@ -250,7 +249,7 @@ async def record_interaction(data: InteractionRequest):
     return jsonify({"message": "Interaction recorded"})
 
 
-@app.route("/interactions/report", methods=["GET"])
+@routes_bp.route("/interactions/report", methods=["GET"])
 async def interactions_report():
     try:
         interactions = await entity_service.get_items(
@@ -265,10 +264,3 @@ async def interactions_report():
     total_opens = sum(1 for i in interactions.values() if i.get("interactionType") == "open")
     total_clicks = sum(1 for i in interactions.values() if i.get("interactionType") == "click")
     return jsonify({"totalOpens": total_opens, "totalClicks": total_clicks})
-
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

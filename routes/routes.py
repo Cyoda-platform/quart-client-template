@@ -1,11 +1,11 @@
- from dataclasses import dataclass
+from dataclasses import dataclass
 from typing import List
 import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -17,8 +17,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class WeatherFetch:
@@ -80,7 +79,7 @@ async def process_weather_fetch_job(entity: dict):
         entity.pop("result", None)
     return entity
 
-@app.route("/weather/fetch", methods=["POST"])
+@routes_bp.route("/weather/fetch", methods=["POST"])
 @validate_request(WeatherFetch)
 async def weather_fetch(data: WeatherFetch):
     # Prepare entity data dict
@@ -103,7 +102,7 @@ async def weather_fetch(data: WeatherFetch):
         "request_id": job_id,
     })
 
-@app.route("/weather/result/<string:job_id>", methods=["GET"])
+@routes_bp.route("/weather/result/<string:job_id>", methods=["GET"])
 async def weather_result(job_id: str):
     try:
         job = await entity_service.get_item(
@@ -125,6 +124,3 @@ async def weather_result(job_id: str):
     if status == "failed":
         return jsonify({"status": "failed", "error": job.get("error", "Unknown error")}), 500
     return jsonify({"status": "success", "data": job.get("result")})
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

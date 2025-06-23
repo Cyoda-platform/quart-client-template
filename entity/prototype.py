@@ -1,18 +1,22 @@
-```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request, validate_querystring
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
 QuartSchema(app)
+
+@dataclass
+class Subscription:
+    email: str  # simple email field for subscription
 
 # In-memory async-safe storage using asyncio.Lock for concurrency control
 class Storage:
@@ -60,20 +64,18 @@ CAT_FACT_API_URL = "https://catfact.ninja/fact"
 
 # Dummy email sending function
 async def send_email(to_email: str, subject: str, body: str):
-    # TODO: Replace with real email sending implementation (e.g. SMTP, third-party service)
+    # TODO: Replace with real email sending implementation
     logger.info(f"Sending email to {to_email} | Subject: {subject} | Body preview: {body[:50]}...")
 
 @app.route("/api/subscribe", methods=["POST"])
-async def subscribe():
-    data = await request.get_json(force=True)
-    email = data.get("email")
-    if not email or "@" not in email:
+@validate_request(Subscription)  # workaround: validate_request last for POST requests due to library defect
+async def subscribe(data: Subscription):
+    email = data.email
+    if "@" not in email:
         return jsonify({"success": False, "message": "Invalid email"}), 400
-
     added = await storage.add_subscriber(email)
     if not added:
         return jsonify({"success": False, "message": "Email already subscribed"}), 400
-
     return jsonify({"success": True, "message": "Subscription successful"})
 
 @app.route("/api/facts/send-weekly", methods=["POST"])
@@ -92,8 +94,6 @@ async def send_weekly_fact():
             return jsonify({"success": False, "message": "Error fetching cat fact"}), 500
 
     subscribers = await storage.get_subscribers()
-    sent_count = 0
-    # Fire and forget email sending - but here we await all to keep it simple for prototype
     send_tasks = []
     subject = "Your Weekly Cat Fact 🐱"
     for email in subscribers:
@@ -103,9 +103,7 @@ async def send_weekly_fact():
 
     now = datetime.utcnow()
     await storage.add_fact_sent(fact, now)
-    # Update interactions count for emails_sent
-    async with asyncio.Lock():
-        await storage.increment_interaction("emails_sent")
+    await storage.increment_interaction("emails_sent")
 
     return jsonify({"success": True, "sentTo": sent_count, "fact": fact})
 
@@ -123,9 +121,5 @@ async def interactions():
         "totalClicks": interactions.get("clicks", 0),
     })
 
-# TODO: For prototype: We do not track real opens or clicks.
-# This would require embedding tracking pixels or unique links in emails and webhook endpoints.
-
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

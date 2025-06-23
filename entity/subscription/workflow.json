@@ -1,0 +1,42 @@
+{
+    "description": "Workflow for handling weekly cat fact subscription processing",
+    "name": "weekly_cat_fact_subscription_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start processing a new subscription",
+            "end_state": "Subscription_timestamp_added",
+            "end_state_description": "Subscription timestamp has been added",
+            "name": "start_subscription_processing",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_add_subscription_timestamp"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state before subscription processing"
+        },
+        {
+            "automated": true,
+            "description": "Send confirmation email after timestamp added",
+            "end_state": "Subscription_processed",
+            "end_state_description": "Subscription confirmation email sent",
+            "name": "send_confirmation_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_confirmation_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Subscription_timestamp_added",
+            "start_state_description": "Subscription timestamp has been added"
+        }
+    ]
+}

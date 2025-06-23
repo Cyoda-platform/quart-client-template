@@ -1,0 +1,217 @@
+Certainly! I've updated your code to include the new `workflow` parameter in `entity_service.add_item` calls. For each entity model used, I have implemented an async workflow function with the prefix `process_` followed by the entity name in underscore lowercase (e.g., `process_subscriber`, `process_cat_fact`, `process_interaction`). These workflow functions currently just return the entity data unchanged, but you can extend them to modify state or add related entities asynchronously.
+
+Here is the complete updated code for `entity/prototype_cyoda.py`:
+
+```python
+import asyncio
+import logging
+import uuid
+from datetime import datetime
+from typing import Optional
+
+import httpx
+from dataclasses import dataclass
+from quart import Quart, request, jsonify
+from quart_schema import QuartSchema, validate_request, validate_querystring
+
+from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
+
+app = Quart(__name__)
+QuartSchema(app)
+
+@dataclass
+class SubscriptionRequest:
+    email: str
+    name: Optional[str] = None
+
+@dataclass
+class InteractionRequest:
+    subscriberId: str
+    interactionType: str
+    factId: str
+
+CAT_FACT_API_URL = "https://catfact.ninja/fact"
+
+async def fetch_cat_fact() -> dict:
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(CAT_FACT_API_URL, timeout=10)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.exception(f"Failed to fetch cat fact: {e}")
+            raise
+
+async def send_email(to_email: str, subject: str, body: str):
+    # TODO: Implement real email service
+    logger.info(f"Sending email to {to_email} with subject '{subject}' and body: {body}")
+
+# Workflow functions for entities
+
+async def process_cat_fact(entity: dict) -> dict:
+    # You can modify entity state here if needed
+    return entity
+
+async def process_subscriber(entity: dict) -> dict:
+    # You can modify entity state here if needed
+    return entity
+
+async def process_interaction(entity: dict) -> dict:
+    # You can modify entity state here if needed
+    return entity
+
+async def process_fetch_and_send():
+    cat_fact_data = await fetch_cat_fact()
+    fact_text = cat_fact_data.get("fact", "No fact retrieved")
+    # Add cat_fact entity via entity_service with workflow
+    fact_data = {"fact": fact_text, "createdAt": datetime.utcnow().isoformat()}
+    fact_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="cat_fact",
+        entity_version=ENTITY_VERSION,
+        entity=fact_data,
+        workflow=process_cat_fact
+    )
+    count_sent = 0
+    # Retrieve all subscribers
+    subscribers = await entity_service.get_items(
+        token=cyoda_auth_service,
+        entity_model="subscriber",
+        entity_version=ENTITY_VERSION
+    )
+    for sub_id, sub in subscribers.items():
+        try:
+            await send_email(sub["email"], "Your Weekly Cat Fact 🐱", fact_text)
+            count_sent += 1
+        except Exception as e:
+            logger.exception(f"Failed to send email to {sub['email']}: {e}")
+    return count_sent, fact_id, fact_text
+
+@app.route("/subscribe", methods=["POST"])
+@validate_request(SubscriptionRequest)
+async def subscribe(data: SubscriptionRequest):
+    email = data.email
+    name = data.name
+    if not email:
+        return jsonify({"message": "Email is required"}), 400
+    # Check if email already subscribed
+    subscribers = await entity_service.get_items(
+        token=cyoda_auth_service,
+        entity_model="subscriber",
+        entity_version=ENTITY_VERSION
+    )
+    for sub_id, sub in subscribers.items():
+        if sub["email"].lower() == email.lower():
+            return jsonify({"message": "Email already subscribed", "subscriberId": sub_id}), 200
+    subscriber_data = {"email": email, "name": name}
+    subscriber_id = await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="subscriber",
+        entity_version=ENTITY_VERSION,
+        entity=subscriber_data,
+        workflow=process_subscriber
+    )
+    logger.info(f"New subscriber added: {email} (id: {subscriber_id})")
+    return jsonify({"message": "Subscription successful", "subscriberId": subscriber_id}), 201
+
+@app.route("/subscribers/count", methods=["GET"])
+async def get_subscribers_count():
+    subscribers = await entity_service.get_items(
+        token=cyoda_auth_service,
+        entity_model="subscriber",
+        entity_version=ENTITY_VERSION
+    )
+    return jsonify({"count": len(subscribers)})
+
+@app.route("/fetch-and-send-fact", methods=["POST"])
+async def fetch_and_send_fact():
+    requested_at = datetime.utcnow().isoformat()
+    try:
+        count_sent, fact_id, fact_text = await process_fetch_and_send()
+        return jsonify({
+            "message": f"Cat fact sent to {count_sent} subscribers",
+            "fact": fact_text,
+            "factId": fact_id,
+            "sentAt": requested_at
+        })
+    except Exception:
+        return jsonify({"message": "Failed to fetch and send cat fact"}), 500
+
+@app.route("/interaction", methods=["POST"])
+@validate_request(InteractionRequest)
+async def record_interaction(data: InteractionRequest):
+    subscriber_id = data.subscriberId
+    interaction_type = data.interactionType
+    fact_id = data.factId
+    # Check subscriber exists
+    subscriber = await entity_service.get_item(
+        token=cyoda_auth_service,
+        entity_model="subscriber",
+        entity_version=ENTITY_VERSION,
+        technical_id=subscriber_id
+    )
+    if subscriber is None:
+        return jsonify({"message": "Subscriber not found"}), 404
+    # Check fact exists
+    fact = await entity_service.get_item(
+        token=cyoda_auth_service,
+        entity_model="cat_fact",
+        entity_version=ENTITY_VERSION,
+        technical_id=fact_id
+    )
+    if fact is None:
+        return jsonify({"message": "Fact not found"}), 404
+    if interaction_type not in ("open", "click"):
+        return jsonify({"message": "Invalid interactionType"}), 400
+    interaction_data = {
+        "subscriberId": subscriber_id,
+        "interactionType": interaction_type,
+        "factId": fact_id,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    # Store interaction with workflow
+    await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="interaction",
+        entity_version=ENTITY_VERSION,
+        entity=interaction_data,
+        workflow=process_interaction
+    )
+    logger.info(f"Recorded interaction: sub={subscriber_id}, type={interaction_type}, fact={fact_id}")
+    return jsonify({"message": "Interaction recorded"})
+
+@app.route("/interactions/report", methods=["GET"])
+async def interactions_report():
+    # Retrieve all interactions
+    interactions = await entity_service.get_items(
+        token=cyoda_auth_service,
+        entity_model="interaction",
+        entity_version=ENTITY_VERSION
+    )
+    total_opens = sum(1 for i in interactions.values() if i.get("interactionType") == "open")
+    total_clicks = sum(1 for i in interactions.values() if i.get("interactionType") == "click")
+    return jsonify({"totalOpens": total_opens, "totalClicks": total_clicks})
+
+if __name__ == '__main__':
+    import sys
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
+```
+
+### Summary of changes:
+- Added async workflow functions:
+  - `process_cat_fact(entity: dict) -> dict`
+  - `process_subscriber(entity: dict) -> dict`
+  - `process_interaction(entity: dict) -> dict`
+- Passed these workflow functions as the `workflow` argument to `entity_service.add_item` calls for corresponding entity models.
+
+You can now customize these `process_*` functions to modify entity data or trigger additional asynchronous logic before the entity gets persisted. Let me know if you want me to help with any specific workflow logic!

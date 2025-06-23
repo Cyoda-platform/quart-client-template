@@ -2,6 +2,8 @@ import logging
 import uuid
 import json
 import asyncio
+from xml.dom import InvalidStateErr
+
 import grpc
 
 from cloudevents_pb2 import CloudEvent
@@ -126,7 +128,12 @@ class GrpcClient:
         await queue.put(ack)
 
     async def process_calc_req_event(self, data: dict, queue: asyncio.Queue, type: str):
-        processor_name = data.get('processorName')
+        if type == CALC_REQ_EVENT_TYPE:
+            processor_name = data['processorName']
+        elif type == CRITERIA_CALC_REQ_EVENT_TYPE:
+            processor_name = data['criteriaName']
+        else:
+            raise ValueError(f"Unsupported event type: {type}")
         try:
             # Process the first or subsequent versions of the entity
             if processor_name in process_dispatch:

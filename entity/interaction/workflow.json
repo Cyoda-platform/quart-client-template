@@ -1,0 +1,60 @@
+{
+    "description": "Workflow managing subscription, cat fact ingestion, email sending, and interaction recording.",
+    "name": "weekly_cat_fact_subscription_workflow",
+    "transitions": [
+        {
+            "automated": false,
+            "description": "Start user subscription process",
+            "end_state": "Subscribed",
+            "end_state_description": "User has subscribed",
+            "name": "start_subscription",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Handles user subscription logic",
+                        "name": "process_subscribe"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Trigger fetching a new cat fact and sending it to subscribers",
+            "end_state": "FactSent",
+            "end_state_description": "New cat fact fetched and sent to subscribers",
+            "name": "start_fetch_and_send_fact",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Fetches cat fact and sends emails",
+                        "name": "process_fetch_and_send_fact"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Subscribed",
+            "start_state_description": "User has subscribed"
+        },
+        {
+            "automated": false,
+            "description": "Record interaction of subscriber with cat fact email",
+            "end_state": "InteractionRecorded",
+            "end_state_description": "Subscriber interaction recorded",
+            "name": "start_record_interaction",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Records subscriber interaction",
+                        "name": "process_record_interaction"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "FactSent",
+            "start_state_description": "New cat fact fetched and sent"
+        }
+    ]
+}

@@ -1,0 +1,51 @@
+{
+    "description": "Workflow to fetch weather data and update entity status accordingly",
+    "name": "weather_fetch_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start the weather fetch process",
+            "end_state": "Processing",
+            "end_state_description": "Weather fetch job is processing",
+            "name": "start_fetch",
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Fetch weather data from external API and update entity",
+            "end_state": "Fetching",
+            "end_state_description": "Fetching weather data from API",
+            "name": "fetch_weather_data",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates weather fetching workflow",
+                        "name": "process_weather_fetch_job"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Processing",
+            "start_state_description": "Weather fetch job is processing"
+        },
+        {
+            "automated": true,
+            "description": "Complete the weather fetch process successfully",
+            "end_state": "Completed",
+            "end_state_description": "Weather fetch job completed successfully",
+            "name": "complete_fetch",
+            "start_state": "Fetching",
+            "start_state_description": "Fetching weather data from API"
+        },
+        {
+            "automated": true,
+            "description": "Fail the weather fetch process due to error",
+            "end_state": "Failed",
+            "end_state_description": "Weather fetch job failed",
+            "name": "fail_fetch",
+            "start_state": "Fetching",
+            "start_state_description": "Fetching weather data from API"
+        }
+    ]
+}

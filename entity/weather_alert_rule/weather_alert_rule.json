@@ -1,0 +1,19 @@
+{
+    "active": true,
+    "conditions": {
+        "rain_forecast": true,
+        "temperature_above": 30
+    },
+    "last_triggered_at": null,
+    "name": "High Temperature Alert",
+    "notification_channels": [
+        "email",
+        "sms"
+    ],
+    "notification_targets": {
+        "email": "user@example.com",
+        "sms": "+1234567890",
+        "webhook": "https://example.com/webhook"
+    },
+    "user_id": "12345"
+}

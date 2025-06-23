@@ -1,50 +1,3 @@
-Absolutely, moving logic from the endpoints into the workflow functions is a great design improvement. It keeps endpoints slim and focused on HTTP concerns, while workflows encapsulate side effects and business logic related to entity state changes. This leverages the new `workflow` mechanism fully, supports async tasks naturally, and ensures code maintainability and robustness.
-
----
-
-### Plan to refactor:
-
-Let's analyze the existing async logic within each endpoint that calls `entity_service.add_item` and identify what can be moved into the workflow functions.
-
-#### 1. Subscriber creation (`/subscribe` endpoint)
-- Current endpoint:
-  - Checks if email already subscribed — this must remain in controller to avoid duplicate entries.
-  - Calls `entity_service.add_item` with new subscriber data.
-- Workflow candidate:
-  - Currently no async side effects on subscriber creation.
-  - We could add logic like sending a welcome email here if desired.
-
-#### 2. Cat fact creation (`fetch-and-send-fact` logic)
-- Currently:
-  - `fetch_cat_fact` is called before `add_item` for `cat_fact`.
-  - After adding the cat_fact entity, it loops over all subscribers and sends emails.
-- Workflow candidate (`process_cat_fact`):
-  - Fetching cat fact **cannot** be inside workflow because it happens before entity creation.
-  - But sending emails to subscribers **can** be moved inside `process_cat_fact` workflow.
-  - Workflow can get all subscribers, send emails, and if needed add new entities related to this fact.
-
-#### 3. Interaction creation (`/interaction` endpoint)
-- Currently:
-  - Checks subscriber and fact existence – these remain in controller (validation).
-  - Calls `entity_service.add_item` with interaction data.
-- Workflow candidate (`process_interaction`):
-  - No async side effects currently.
-  - Could be extended later if needed.
-
----
-
-### Implementation Notes:
-- In the workflow function, we can:
-  - Modify the entity directly before persistence.
-  - Call `entity_service.get_items` or `entity_service.add_item` for *other* entity models.
-  - Perform async operations (like sending emails).
-- Cannot add/update/delete the **same** entity_model inside its own workflow (to avoid recursion).
-
----
-
-### Now, the updated code reflecting these changes:
-
-```python
 import asyncio
 import logging
 from datetime import datetime
@@ -52,7 +5,7 @@ from typing import Optional
 
 import httpx
 from dataclasses import dataclass
-from quart import Quart, request, jsonify
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -162,34 +115,49 @@ async def subscribe(data: SubscriptionRequest):
         return jsonify({"message": "Email is required"}), 400
 
     # Check if email already subscribed
-    subscribers = await entity_service.get_items(
-        token=cyoda_auth_service,
-        entity_model="subscriber",
-        entity_version=ENTITY_VERSION
-    )
+    try:
+        subscribers = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model="subscriber",
+            entity_version=ENTITY_VERSION
+        )
+    except Exception as e:
+        logger.error(f"Failed to get subscribers: {e}")
+        return jsonify({"message": "Internal server error"}), 500
+
     for sub_id, sub in subscribers.items():
-        if sub["email"].lower() == email.lower():
+        if sub.get("email", "").lower() == email.lower():
             return jsonify({"message": "Email already subscribed", "subscriberId": sub_id}), 200
 
     subscriber_data = {"email": email, "name": name}
-    subscriber_id = await entity_service.add_item(
-        token=cyoda_auth_service,
-        entity_model="subscriber",
-        entity_version=ENTITY_VERSION,
-        entity=subscriber_data,
-        workflow=process_subscriber
-    )
+    try:
+        subscriber_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="subscriber",
+            entity_version=ENTITY_VERSION,
+            entity=subscriber_data,
+            workflow=process_subscriber
+        )
+    except Exception as e:
+        logger.error(f"Failed to add subscriber: {e}")
+        return jsonify({"message": "Internal server error"}), 500
+
     logger.info(f"New subscriber added: {email} (id: {subscriber_id})")
     return jsonify({"message": "Subscription successful", "subscriberId": subscriber_id}), 201
 
 
 @app.route("/subscribers/count", methods=["GET"])
 async def get_subscribers_count():
-    subscribers = await entity_service.get_items(
-        token=cyoda_auth_service,
-        entity_model="subscriber",
-        entity_version=ENTITY_VERSION
-    )
+    try:
+        subscribers = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model="subscriber",
+            entity_version=ENTITY_VERSION
+        )
+    except Exception as e:
+        logger.error(f"Failed to get subscribers count: {e}")
+        return jsonify({"message": "Internal server error"}), 500
+
     return jsonify({"count": len(subscribers)})
 
 
@@ -230,22 +198,32 @@ async def record_interaction(data: InteractionRequest):
     fact_id = data.factId
 
     # Check subscriber exists
-    subscriber = await entity_service.get_item(
-        token=cyoda_auth_service,
-        entity_model="subscriber",
-        entity_version=ENTITY_VERSION,
-        technical_id=subscriber_id
-    )
+    try:
+        subscriber = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="subscriber",
+            entity_version=ENTITY_VERSION,
+            technical_id=subscriber_id
+        )
+    except Exception as e:
+        logger.error(f"Failed to get subscriber {subscriber_id}: {e}")
+        return jsonify({"message": "Internal server error"}), 500
+
     if subscriber is None:
         return jsonify({"message": "Subscriber not found"}), 404
 
     # Check fact exists
-    fact = await entity_service.get_item(
-        token=cyoda_auth_service,
-        entity_model="cat_fact",
-        entity_version=ENTITY_VERSION,
-        technical_id=fact_id
-    )
+    try:
+        fact = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="cat_fact",
+            entity_version=ENTITY_VERSION,
+            technical_id=fact_id
+        )
+    except Exception as e:
+        logger.error(f"Failed to get cat fact {fact_id}: {e}")
+        return jsonify({"message": "Internal server error"}), 500
+
     if fact is None:
         return jsonify({"message": "Fact not found"}), 404
 
@@ -259,24 +237,34 @@ async def record_interaction(data: InteractionRequest):
         "timestamp": datetime.utcnow().isoformat()
     }
 
-    await entity_service.add_item(
-        token=cyoda_auth_service,
-        entity_model="interaction",
-        entity_version=ENTITY_VERSION,
-        entity=interaction_data,
-        workflow=process_interaction
-    )
+    try:
+        await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="interaction",
+            entity_version=ENTITY_VERSION,
+            entity=interaction_data,
+            workflow=process_interaction
+        )
+    except Exception as e:
+        logger.error(f"Failed to add interaction: {e}")
+        return jsonify({"message": "Internal server error"}), 500
+
     logger.info(f"Recorded interaction: sub={subscriber_id}, type={interaction_type}, fact={fact_id}")
     return jsonify({"message": "Interaction recorded"})
 
 
 @app.route("/interactions/report", methods=["GET"])
 async def interactions_report():
-    interactions = await entity_service.get_items(
-        token=cyoda_auth_service,
-        entity_model="interaction",
-        entity_version=ENTITY_VERSION
-    )
+    try:
+        interactions = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model="interaction",
+            entity_version=ENTITY_VERSION
+        )
+    except Exception as e:
+        logger.error(f"Failed to get interactions: {e}")
+        return jsonify({"message": "Internal server error"}), 500
+
     total_opens = sum(1 for i in interactions.values() if i.get("interactionType") == "open")
     total_clicks = sum(1 for i in interactions.values() if i.get("interactionType") == "click")
     return jsonify({"totalOpens": total_opens, "totalClicks": total_clicks})
@@ -287,22 +275,3 @@ if __name__ == '__main__':
     logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation of refactor:
-- **Subscriber workflow**: sends a welcome email asynchronously after subscription.
-- **Cat fact workflow**: sends the cat fact email to all subscribers asynchronously after a fact entity is created.
-- **Interaction workflow**: currently no additional logic but ready for future expansions.
-- **Endpoints**:
-  - Slimmed down, only perform validation and entity existence checks.
-  - Actual side effects moved into workflows.
-- Fetching cat fact still occurs in endpoint because it must happen before the entity exists.
-- Sending emails is fully async and run inside workflows, freeing controllers from that responsibility.
-
----
-
-This approach fully leverages the new `workflow` parameter and makes your app more modular, testable, and maintainable.
-
-If you want, I can help you further enhance workflows, add error handling/retries, or extend this pattern to other entities.

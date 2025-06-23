@@ -1,5 +1,5 @@
 {
-    "description": "Workflow to fetch weather data and update entity status accordingly",
+    "description": "Workflow to fetch weather data, evaluate alert rules, send notifications, and update entity status accordingly",
     "name": "weather_fetch_workflow",
     "transitions": [
         {
@@ -31,12 +31,30 @@
         },
         {
             "automated": true,
+            "description": "Evaluate weather alert rules and send notifications if conditions are met",
+            "end_state": "EvaluatingAlerts",
+            "end_state_description": "Evaluating alert rules after weather data fetch",
+            "name": "evaluate_alert_rules",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Process to evaluate alert rules and send notifications",
+                        "name": "process_evaluate_weather_alert_rules"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "Fetching",
+            "start_state_description": "Fetching weather data from API"
+        },
+        {
+            "automated": true,
             "description": "Complete the weather fetch process successfully",
             "end_state": "Completed",
             "end_state_description": "Weather fetch job completed successfully",
             "name": "complete_fetch",
-            "start_state": "Fetching",
-            "start_state_description": "Fetching weather data from API"
+            "start_state": "EvaluatingAlerts",
+            "start_state_description": "Evaluating alert rules after weather data fetch"
         },
         {
             "automated": true,

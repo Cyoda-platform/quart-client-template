@@ -1,0 +1,78 @@
+{
+    "description": "Workflow for fetching cat facts, sending emails, tracking interactions, and managing subscribers",
+    "name": "weekly_cat_fact_subscription_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Fetch a new cat fact from external API",
+            "end_state": "fact_fetched",
+            "end_state_description": "Cat fact has been fetched",
+            "name": "fetch_cat_fact",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_and_send_fact"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Send the fetched cat fact to all subscribers",
+            "end_state": "emails_sent",
+            "end_state_description": "Emails have been sent",
+            "name": "send_cat_fact_emails",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_emails"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "fact_fetched",
+            "start_state_description": "Cat fact has been fetched"
+        },
+        {
+            "automated": true,
+            "description": "Track subscriber interactions with cat fact emails",
+            "end_state": "interactions_tracked",
+            "end_state_description": "Interactions have been tracked",
+            "name": "track_interactions",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_track_interactions"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "emails_sent",
+            "start_state_description": "Emails have been sent"
+        },
+        {
+            "automated": true,
+            "description": "Manage subscriber lifecycle states and send welcome email if new",
+            "end_state": "active_subscriber",
+            "end_state_description": "Subscriber is active",
+            "name": "manage_subscriber_lifecycle",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_subscriber"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "interactions_tracked",
+            "start_state_description": "Interactions have been tracked"
+        }
+    ]
+}

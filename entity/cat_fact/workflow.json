@@ -1,0 +1,24 @@
+{
+    "description": "Workflow for orchestrating cat fact emails to subscribers",
+    "name": "cat_fact_email_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Orchestrate sending cat fact emails to subscribers",
+            "end_state": "emails_sent",
+            "end_state_description": "Cat fact emails have been sent",
+            "name": "orchestrate_send_emails",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_cat_fact"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

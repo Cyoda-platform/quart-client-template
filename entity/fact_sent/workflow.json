@@ -1,0 +1,24 @@
+{
+    "description": "Workflow for sending weekly cat facts to subscribers with interaction tracking",
+    "name": "weekly_cat_fact_subscription_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start workflow to process fact sent",
+            "end_state": "Fact_sent_processed",
+            "end_state_description": "Cat fact has been processed and emails sent",
+            "name": "start_fact_sent",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates sending cat fact emails and updates interactions",
+                        "name": "process_fact_sent"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

@@ -1,0 +1,27 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com",
+                "name": "Optional User Name"
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "createdAt": "2024-06-01T12:00:00Z",
+                "fact": "Cats have five toes on their front paws, but only four toes on their back paws."
+            },
+            "entity_name": "cat_fact"
+        },
+        {
+            "entity_data_example": {
+                "factId": "uuid",
+                "interactionType": "open",
+                "subscriberId": "uuid",
+                "timestamp": "2024-06-01T12:10:00Z"
+            },
+            "entity_name": "interaction"
+        }
+    ]
+}

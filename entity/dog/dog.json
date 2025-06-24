@@ -1,0 +1,18 @@
+{
+    "dog": {
+        "adoptionStatus": "Available",
+        "age": 3,
+        "breed": "Golden Retriever",
+        "color": "Golden",
+        "description": "Friendly and playful, loves to fetch and go for walks.",
+        "id": "1",
+        "name": "Buddy",
+        "owner": {
+            "contact": "555-1234",
+            "id": "101",
+            "name": "John Doe"
+        },
+        "vaccinationStatus": "Up to date",
+        "weight": 65
+    }
+}

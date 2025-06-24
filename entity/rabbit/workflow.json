@@ -1,0 +1,79 @@
+```json
+{
+  "version": "1.0",
+  "description": "FSM workflow for brushing a rabbit entity",
+  "initial_state": "none",
+  "workflow_name": "brush_rabbit_workflow",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_brushing": {
+          "next": "prepare_brush",
+          "action": {
+            "name": "start_brushing"
+          }
+        }
+      }
+    },
+    "prepare_brush": {
+      "transitions": {
+        "pick_brush": {
+          "next": "approach_rabbit",
+          "action": {
+            "name": "pick_brush"
+          }
+        }
+      }
+    },
+    "approach_rabbit": {
+      "transitions": {
+        "move_to_rabbit": {
+          "next": "check_rabbit_mood",
+          "action": {
+            "name": "move_to_rabbit"
+          }
+        }
+      }
+    },
+    "check_rabbit_mood": {
+      "transitions": {
+        "evaluate_mood": {
+          "next": "brush_rabbit",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_rabbit_calmed"
+            }
+          }
+        },
+        "wait_and_retry": {
+          "next": "check_rabbit_mood",
+          "action": {
+            "name": "wait_before_retry"
+          }
+        }
+      }
+    },
+    "brush_rabbit": {
+      "transitions": {
+        "brush_action": {
+          "next": "finish_brushing",
+          "action": {
+            "name": "brush_rabbit"
+          }
+        }
+      }
+    },
+    "finish_brushing": {
+      "transitions": {
+        "clean_brush": {
+          "next": "none",
+          "action": {
+            "name": "clean_brush"
+          }
+        }
+      }
+    }
+  }
+}
+```

@@ -1,114 +1,112 @@
-```json
 {
-  "version": "1.0",
-  "description": "FSM workflow to brush a rabbit using a finite-state machine model",
-  "initial_state": "none",
-  "workflow_name": "brush_rabbit_workflow",
-  "states": {
-    "none": {
-      "transitions": {
-        "start_brushing": {
-          "next": "prepare_brush",
-          "action": {
-            "name": "start_brushing"
-          }
-        }
-      }
-    },
-    "prepare_brush": {
-      "transitions": {
-        "pick_brush": {
-          "next": "approach_rabbit",
-          "action": {
-            "name": "pick_brush"
-          }
-        }
-      }
-    },
-    "approach_rabbit": {
-      "transitions": {
-        "move_to_rabbit": {
-          "next": "check_rabbit_willingness",
-          "action": {
-            "name": "move_to_rabbit"
-          }
-        }
-      }
-    },
-    "check_rabbit_willingness": {
-      "transitions": {
-        "rabbit_is_willing": {
-          "next": "brush_rabbit",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "rabbit_is_willing"
+    "description": "FSM workflow to brush a rabbit using a finite-state machine model",
+    "initial_state": "none",
+    "name": "brush_rabbit_workflow",
+    "states": {
+        "approach_rabbit": {
+            "transitions": {
+                "move_to_rabbit": {
+                    "action": {
+                        "name": "move_to_rabbit"
+                    },
+                    "next": "check_rabbit_willingness"
+                }
             }
-          }
         },
-        "rabbit_not_willing": {
-          "next": "calm_rabbit",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "rabbit_not_willing"
+        "brush_rabbit": {
+            "transitions": {
+                "start_brush_stroke": {
+                    "action": {
+                        "name": "brush_stroke"
+                    },
+                    "next": "check_brush_complete"
+                }
             }
-          }
-        }
-      }
-    },
-    "calm_rabbit": {
-      "transitions": {
-        "calm_down": {
-          "next": "check_rabbit_willingness",
-          "action": {
-            "name": "calm_down_rabbit"
-          }
-        }
-      }
-    },
-    "brush_rabbit": {
-      "transitions": {
-        "start_brush_stroke": {
-          "next": "check_brush_complete",
-          "action": {
-            "name": "brush_stroke"
-          }
-        }
-      }
-    },
-    "check_brush_complete": {
-      "transitions": {
-        "brush_complete": {
-          "next": "finish_brushing",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "is_brush_complete"
-            }
-          }
         },
-        "brush_not_complete": {
-          "next": "brush_rabbit",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "is_brush_not_complete"
+        "calm_rabbit": {
+            "transitions": {
+                "calm_down": {
+                    "action": {
+                        "name": "calm_down_rabbit"
+                    },
+                    "next": "check_rabbit_willingness"
+                }
             }
-          }
+        },
+        "check_brush_complete": {
+            "transitions": {
+                "brush_complete": {
+                    "condition": {
+                        "function": {
+                            "name": "is_brush_complete"
+                        },
+                        "type": "function"
+                    },
+                    "next": "finish_brushing"
+                },
+                "brush_not_complete": {
+                    "condition": {
+                        "function": {
+                            "name": "is_brush_not_complete"
+                        },
+                        "type": "function"
+                    },
+                    "next": "brush_rabbit"
+                }
+            }
+        },
+        "check_rabbit_willingness": {
+            "transitions": {
+                "rabbit_is_willing": {
+                    "condition": {
+                        "function": {
+                            "name": "rabbit_is_willing"
+                        },
+                        "type": "function"
+                    },
+                    "next": "brush_rabbit"
+                },
+                "rabbit_not_willing": {
+                    "condition": {
+                        "function": {
+                            "name": "rabbit_not_willing"
+                        },
+                        "type": "function"
+                    },
+                    "next": "calm_rabbit"
+                }
+            }
+        },
+        "finish_brushing": {
+            "transitions": {
+                "end_brushing": {
+                    "action": {
+                        "name": "end_brushing"
+                    },
+                    "next": "none"
+                }
+            }
+        },
+        "none": {
+            "transitions": {
+                "start_brushing": {
+                    "action": {
+                        "name": "start_brushing"
+                    },
+                    "next": "prepare_brush"
+                }
+            }
+        },
+        "prepare_brush": {
+            "transitions": {
+                "pick_brush": {
+                    "action": {
+                        "name": "pick_brush"
+                    },
+                    "next": "approach_rabbit"
+                }
+            }
         }
-      }
     },
-    "finish_brushing": {
-      "transitions": {
-        "end_brushing": {
-          "next": "none",
-          "action": {
-            "name": "end_brushing"
-          }
-        }
-      }
-    }
-  }
+    "version": "1.0"
 }
-```

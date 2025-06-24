@@ -1,78 +1,107 @@
+```json
 {
-    "description": "FSM constructed from user_request using typical FSM model",
-    "initial_state": "none",
-    "name": "user_request_workflow",
-    "states": {
-        "complete": {
-            "transitions": {
-                "finish": {
-                    "action": {
-                        "name": "finalize_workflow"
-                    },
-                    "next": "terminated"
-                }
-            }
-        },
-        "error": {
-            "transitions": {
-                "abort": {
-                    "action": {
-                        "name": "abort_workflow"
-                    },
-                    "next": "terminated"
-                },
-                "retry": {
-                    "action": {
-                        "name": "retry_process"
-                    },
-                    "next": "processing"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start": {
-                    "action": {
-                        "name": "start_process"
-                    },
-                    "next": "processing"
-                }
-            }
-        },
-        "processing": {
-            "transitions": {
-                "process_complete": {
-                    "action": {
-                        "name": "process_data"
-                    },
-                    "next": "review"
-                },
-                "process_fail": {
-                    "action": {
-                        "name": "handle_error"
-                    },
-                    "next": "error"
-                }
-            }
-        },
-        "review": {
-            "transitions": {
-                "approve": {
-                    "action": {
-                        "name": "approve_request"
-                    },
-                    "next": "complete"
-                },
-                "reject": {
-                    "action": {
-                        "name": "reject_request"
-                    },
-                    "next": "error"
-                }
-            }
-        },
-        "terminated": {
-            "transitions": {}
+  "version": "1.0",
+  "description": "FSM workflow to brush rabbit entity",
+  "initial_state": "none",
+  "workflow_name": "brush_rabbit_workflow",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_brushing": {
+          "next": "approach_rabbit",
+          "action": {
+            "name": "start_brushing"
+          }
         }
+      }
+    },
+    "approach_rabbit": {
+      "transitions": {
+        "reach_rabbit": {
+          "next": "check_rabbit_mood",
+          "action": {
+            "name": "approach_rabbit"
+          }
+        }
+      }
+    },
+    "check_rabbit_mood": {
+      "transitions": {
+        "rabbit_is_calm": {
+          "next": "start_brush",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_rabbit_calm"
+            }
+          }
+        },
+        "rabbit_is_agitated": {
+          "next": "calm_rabbit",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_rabbit_agitated"
+            }
+          }
+        }
+      }
+    },
+    "calm_rabbit": {
+      "transitions": {
+        "try_to_calm": {
+          "next": "check_rabbit_mood",
+          "action": {
+            "name": "calm_rabbit"
+          }
+        }
+      }
+    },
+    "start_brush": {
+      "transitions": {
+        "brush_in_progress": {
+          "next": "brush_rabbit",
+          "action": {
+            "name": "start_brush"
+          }
+        }
+      }
+    },
+    "brush_rabbit": {
+      "transitions": {
+        "finish_brushing": {
+          "next": "end_brushing",
+          "action": {
+            "name": "brush_rabbit"
+          }
+        },
+        "rabbit_moves_away": {
+          "next": "handle_escape",
+          "action": {
+            "name": "handle_escape"
+          }
+        }
+      }
+    },
+    "handle_escape": {
+      "transitions": {
+        "regain_rabbit": {
+          "next": "approach_rabbit",
+          "action": {
+            "name": "regain_rabbit"
+          }
+        },
+        "give_up": {
+          "next": "end_brushing",
+          "action": {
+            "name": "give_up_brushing"
+          }
+        }
+      }
+    },
+    "end_brushing": {
+      "transitions": {}
     }
+  }
 }
+```

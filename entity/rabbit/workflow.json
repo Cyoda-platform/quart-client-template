@@ -1,69 +1,67 @@
-```json
 {
-  "version": "1.0",
-  "description": "FSM workflow generated from user_request",
-  "initial_state": "none",
-  "workflow_name": "user_request_workflow",
-  "states": {
-    "none": {
-      "transitions": {
-        "start": {
-          "next": "state_01",
-          "action": {
-            "name": "start_process"
-          }
-        }
-      }
-    },
-    "state_01": {
-      "transitions": {
-        "to_state_02": {
-          "next": "state_02",
-          "action": {
-            "name": "process_state_01_to_02"
-          }
-        }
-      }
-    },
-    "state_02": {
-      "transitions": {
-        "check_condition": {
-          "next": "state_condition_check_01",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "check_condition"
+    "description": "FSM workflow generated from user_request",
+    "initial_state": "none",
+    "name": "user_request_workflow",
+    "states": {
+        "none": {
+            "transitions": {
+                "start": {
+                    "action": {
+                        "name": "start_process"
+                    },
+                    "next": "state_01"
+                }
             }
-          }
+        },
+        "state_01": {
+            "transitions": {
+                "to_state_02": {
+                    "action": {
+                        "name": "process_state_01_to_02"
+                    },
+                    "next": "state_02"
+                }
+            }
+        },
+        "state_02": {
+            "transitions": {
+                "check_condition": {
+                    "condition": {
+                        "function": {
+                            "name": "check_condition"
+                        },
+                        "type": "function"
+                    },
+                    "next": "state_condition_check_01"
+                }
+            }
+        },
+        "state_condition_check_01": {
+            "transitions": {
+                "finalize_if_condition": {
+                    "action": {
+                        "name": "finalize_process"
+                    },
+                    "condition": {
+                        "name": "condition_group_gamma",
+                        "operator": "AND",
+                        "parameters": [
+                            {
+                                "jsonPath": "sampleFieldA",
+                                "operatorType": "IEQUALS",
+                                "type": "simple",
+                                "value": "template_value_01"
+                            }
+                        ],
+                        "type": "group"
+                    },
+                    "next": "state_terminal"
+                }
+            }
+        },
+        "state_terminal": {
+            "transitions": {}
         }
-      }
     },
-    "state_condition_check_01": {
-      "transitions": {
-        "finalize_if_condition": {
-          "next": "state_terminal",
-          "condition": {
-            "type": "group",
-            "name": "condition_group_gamma",
-            "operator": "AND",
-            "parameters": [
-              {
-                "jsonPath": "sampleFieldA",
-                "operatorType": "IEQUALS",
-                "value": "template_value_01",
-                "type": "simple"
-              }
-            ]
-          },
-          "action": {
-            "name": "finalize_process"
-          }
-        }
-      }
-    },
-    "state_terminal": {
-      "transitions": {}
-    }
-  }
+    "version": "1.0"
 }
-```

@@ -1,0 +1,30 @@
+{
+    "description": "FSM for washing a cat entity",
+    "initial_state": "none",
+    "name": "washing_cat_workflow",
+    "states": {
+        "none": {
+            "transitions": {
+                "start_washing": {
+                    "action": {
+                        "name": "process_start"
+                    },
+                    "next": "washing"
+                }
+            }
+        },
+        "washed": {
+            "transitions": {}
+        },
+        "washing": {
+            "transitions": {
+                "finish_washing": {
+                    "action": {
+                        "name": "process_wash_cat"
+                    },
+                    "next": "washed"
+                }
+            }
+        }
+    }
+}

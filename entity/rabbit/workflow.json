@@ -1,76 +1,75 @@
+```json
 {
-    "description": "FSM workflow for brushing a rabbit entity",
-    "initial_state": "none",
-    "name": "brush_rabbit_workflow",
-    "states": {
-        "approach_rabbit": {
-            "transitions": {
-                "move_to_rabbit": {
-                    "action": {
-                        "name": "move_to_rabbit"
-                    },
-                    "next": "check_rabbit_mood"
-                }
-            }
-        },
-        "brush_rabbit": {
-            "transitions": {
-                "brush_action": {
-                    "action": {
-                        "name": "brush_rabbit"
-                    },
-                    "next": "finish_brushing"
-                }
-            }
-        },
-        "check_rabbit_mood": {
-            "transitions": {
-                "evaluate_mood": {
-                    "condition": {
-                        "function": {
-                            "name": "is_rabbit_calmed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "brush_rabbit"
-                },
-                "wait_and_retry": {
-                    "action": {
-                        "name": "wait_before_retry"
-                    },
-                    "next": "check_rabbit_mood"
-                }
-            }
-        },
-        "finish_brushing": {
-            "transitions": {
-                "clean_brush": {
-                    "action": {
-                        "name": "clean_brush"
-                    },
-                    "next": "none"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_brushing": {
-                    "action": {
-                        "name": "start_brushing"
-                    },
-                    "next": "prepare_brush"
-                }
-            }
-        },
-        "prepare_brush": {
-            "transitions": {
-                "pick_brush": {
-                    "action": {
-                        "name": "pick_brush"
-                    },
-                    "next": "approach_rabbit"
-                }
-            }
+  "version": "1.0",
+  "description": "FSM workflow for brushing a rabbit entity using a finite-state machine model",
+  "initial_state": "none",
+  "workflow_name": "brush_rabbit_workflow",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_brushing": {
+          "next": "prepare_brush",
+          "action": {
+            "name": "start_brushing"
+          }
         }
+      }
+    },
+    "prepare_brush": {
+      "transitions": {
+        "pick_brush": {
+          "next": "brush_rabbit",
+          "action": {
+            "name": "pick_brush"
+          }
+        }
+      }
+    },
+    "brush_rabbit": {
+      "transitions": {
+        "brush_rabbit_fur": {
+          "next": "check_brush_done",
+          "action": {
+            "name": "brush_rabbit_fur"
+          }
+        }
+      }
+    },
+    "check_brush_done": {
+      "transitions": {
+        "is_brush_complete": {
+          "next": "brush_finished",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_brush_complete"
+            }
+          }
+        },
+        "continue_brushing": {
+          "next": "brush_rabbit",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_brush_complete"
+            }
+          },
+          "action": {
+            "name": "continue_brushing"
+          }
+        }
+      }
+    },
+    "brush_finished": {
+      "transitions": {
+        "finish_brushing": {
+          "next": "none",
+          "action": {
+            "name": "finish_brushing"
+          }
+        }
+      }
     }
+  }
 }
+```

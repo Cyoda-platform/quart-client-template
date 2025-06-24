@@ -1,0 +1,32 @@
+{
+    "properties": {
+        "rabbit": {
+            "adopted": true,
+            "adoption_date": "2022-06-15",
+            "age": 3,
+            "breed": "Holland Lop",
+            "color": "White",
+            "id": 1,
+            "medical_records": [
+                {
+                    "date": "2022-07-01",
+                    "description": "Routine check-up",
+                    "vet": "Dr. Brown"
+                },
+                {
+                    "date": "2023-01-15",
+                    "description": "Vaccination",
+                    "vet": "Dr. Green"
+                }
+            ],
+            "name": "Bunny",
+            "owner": {
+                "contact_number": "123-456-7890",
+                "id": 101,
+                "name": "Alice Smith"
+            },
+            "weight": 2.5
+        }
+    },
+    "type": "object"
+}

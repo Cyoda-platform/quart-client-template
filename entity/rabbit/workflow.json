@@ -1,67 +1,81 @@
+```json
 {
-    "description": "FSM workflow generated from user_request",
-    "initial_state": "none",
-    "name": "user_request_workflow",
-    "states": {
-        "none": {
-            "transitions": {
-                "start": {
-                    "action": {
-                        "name": "start_process"
-                    },
-                    "next": "state_01"
-                }
-            }
-        },
-        "state_01": {
-            "transitions": {
-                "to_state_02": {
-                    "action": {
-                        "name": "process_state_01_to_02"
-                    },
-                    "next": "state_02"
-                }
-            }
-        },
-        "state_02": {
-            "transitions": {
-                "check_condition": {
-                    "condition": {
-                        "function": {
-                            "name": "check_condition"
-                        },
-                        "type": "function"
-                    },
-                    "next": "state_condition_check_01"
-                }
-            }
-        },
-        "state_condition_check_01": {
-            "transitions": {
-                "finalize_if_condition": {
-                    "action": {
-                        "name": "finalize_process"
-                    },
-                    "condition": {
-                        "name": "condition_group_gamma",
-                        "operator": "AND",
-                        "parameters": [
-                            {
-                                "jsonPath": "sampleFieldA",
-                                "operatorType": "IEQUALS",
-                                "type": "simple",
-                                "value": "template_value_01"
-                            }
-                        ],
-                        "type": "group"
-                    },
-                    "next": "state_terminal"
-                }
-            }
-        },
-        "state_terminal": {
-            "transitions": {}
+  "version": "1.0",
+  "description": "FSM constructed from user_request using typical FSM model",
+  "initial_state": "none",
+  "workflow_name": "user_request_workflow",
+  "states": {
+    "none": {
+      "transitions": {
+        "start": {
+          "next": "processing",
+          "action": {
+            "name": "start_process"
+          }
         }
+      }
     },
-    "version": "1.0"
+    "processing": {
+      "transitions": {
+        "process_complete": {
+          "next": "review",
+          "action": {
+            "name": "process_data"
+          }
+        },
+        "process_fail": {
+          "next": "error",
+          "action": {
+            "name": "handle_error"
+          }
+        }
+      }
+    },
+    "review": {
+      "transitions": {
+        "approve": {
+          "next": "complete",
+          "action": {
+            "name": "approve_request"
+          }
+        },
+        "reject": {
+          "next": "error",
+          "action": {
+            "name": "reject_request"
+          }
+        }
+      }
+    },
+    "error": {
+      "transitions": {
+        "retry": {
+          "next": "processing",
+          "action": {
+            "name": "retry_process"
+          }
+        },
+        "abort": {
+          "next": "terminated",
+          "action": {
+            "name": "abort_workflow"
+          }
+        }
+      }
+    },
+    "complete": {
+      "transitions": {
+        "finish": {
+          "next": "terminated",
+          "action": {
+            "name": "finalize_workflow"
+          }
+        }
+      }
+    },
+    "terminated": {
+      "transitions": {}
+    }
+  }
 }
+```

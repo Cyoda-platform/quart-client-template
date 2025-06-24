@@ -1,34 +1,43 @@
-async def start_process(entity: dict):
-    entity["status"] = "started"
-    entity["workflowProcessed"] = False
-
-async def process_data(entity: dict):
-    # Example processing: brush rabbit entity
-    if "rabbit" in entity:
-        entity["rabbit"]["brushed"] = True
-    entity["status"] = "processed"
+async def start_brushing(entity: dict):
+    entity["status"] = "brushing_started"
     entity["workflowProcessed"] = True
 
-async def handle_error(entity: dict):
-    entity["status"] = "error"
-    entity["errorHandled"] = True
+async def approach_rabbit(entity: dict):
+    entity["status"] = "approaching_rabbit"
+    entity["workflowProcessed"] = True
 
-async def approve_request(entity: dict):
-    entity["status"] = "approved"
-    entity["approvedBy"] = "system"
+async def is_rabbit_calm(entity: dict) -> bool:
+    return entity.get("mood") == "calm"
 
-async def reject_request(entity: dict):
-    entity["status"] = "rejected"
-    entity["rejectedBy"] = "system"
+async def is_rabbit_agitated(entity: dict) -> bool:
+    return entity.get("mood") == "agitated"
 
-async def retry_process(entity: dict):
-    entity["status"] = "retrying"
-    entity["retryCount"] = entity.get("retryCount", 0) + 1
+async def calm_rabbit(entity: dict):
+    entity["status"] = "calming_rabbit"
+    # Example: apply calming procedure
+    entity["mood"] = "calm"
+    entity["workflowProcessed"] = True
 
-async def abort_workflow(entity: dict):
-    entity["status"] = "aborted"
-    entity["workflowProcessed"] = False
+async def start_brush(entity: dict):
+    entity["status"] = "brushing_started"
+    entity["workflowProcessed"] = True
 
-async def finalize_workflow(entity: dict):
-    entity["status"] = "completed"
+async def brush_rabbit(entity: dict):
+    entity["status"] = "brushing_in_progress"
+    # Example: simulate brushing action
+    entity["brushed"] = True
+    entity["workflowProcessed"] = True
+
+async def handle_escape(entity: dict):
+    entity["status"] = "rabbit_moved_away"
+    entity["workflowProcessed"] = True
+
+async def regain_rabbit(entity: dict):
+    entity["status"] = "regaining_rabbit"
+    # Example: reset mood to calm to allow brushing again
+    entity["mood"] = "calm"
+    entity["workflowProcessed"] = True
+
+async def give_up_brushing(entity: dict):
+    entity["status"] = "gave_up_brushing"
     entity["workflowProcessed"] = True

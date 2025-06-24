@@ -1,0 +1,24 @@
+{
+    "description": "A workflow to process pet entities by setting last processed timestamp, description, and adoption status.",
+    "name": "purrfect_pets_processing_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Initial transition to start processing a pet entity.",
+            "end_state": "Pet_processed",
+            "end_state_description": "Pet entity has been processed",
+            "name": "start_processing_pet",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "Orchestrates all pet processing steps.",
+                        "name": "process_pet"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        }
+    ]
+}

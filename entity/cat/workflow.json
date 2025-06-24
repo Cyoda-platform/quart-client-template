@@ -1,0 +1,30 @@
+{
+    "description": "Workflow for cat entity",
+    "initial_state": "none",
+    "name": "cat_entity_workflow",
+    "states": {
+        "done": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "start_to_processing": {
+                    "action": {
+                        "name": "process_start"
+                    },
+                    "next": "processing"
+                }
+            }
+        },
+        "processing": {
+            "transitions": {
+                "processing_to_done": {
+                    "action": {
+                        "name": "process_process_cat"
+                    },
+                    "next": "done"
+                }
+            }
+        }
+    }
+}

@@ -1,81 +1,78 @@
-```json
 {
-  "version": "1.0",
-  "description": "FSM constructed from user_request using typical FSM model",
-  "initial_state": "none",
-  "workflow_name": "user_request_workflow",
-  "states": {
-    "none": {
-      "transitions": {
-        "start": {
-          "next": "processing",
-          "action": {
-            "name": "start_process"
-          }
-        }
-      }
-    },
-    "processing": {
-      "transitions": {
-        "process_complete": {
-          "next": "review",
-          "action": {
-            "name": "process_data"
-          }
+    "description": "FSM constructed from user_request using typical FSM model",
+    "initial_state": "none",
+    "name": "user_request_workflow",
+    "states": {
+        "complete": {
+            "transitions": {
+                "finish": {
+                    "action": {
+                        "name": "finalize_workflow"
+                    },
+                    "next": "terminated"
+                }
+            }
         },
-        "process_fail": {
-          "next": "error",
-          "action": {
-            "name": "handle_error"
-          }
-        }
-      }
-    },
-    "review": {
-      "transitions": {
-        "approve": {
-          "next": "complete",
-          "action": {
-            "name": "approve_request"
-          }
+        "error": {
+            "transitions": {
+                "abort": {
+                    "action": {
+                        "name": "abort_workflow"
+                    },
+                    "next": "terminated"
+                },
+                "retry": {
+                    "action": {
+                        "name": "retry_process"
+                    },
+                    "next": "processing"
+                }
+            }
         },
-        "reject": {
-          "next": "error",
-          "action": {
-            "name": "reject_request"
-          }
-        }
-      }
-    },
-    "error": {
-      "transitions": {
-        "retry": {
-          "next": "processing",
-          "action": {
-            "name": "retry_process"
-          }
+        "none": {
+            "transitions": {
+                "start": {
+                    "action": {
+                        "name": "start_process"
+                    },
+                    "next": "processing"
+                }
+            }
         },
-        "abort": {
-          "next": "terminated",
-          "action": {
-            "name": "abort_workflow"
-          }
+        "processing": {
+            "transitions": {
+                "process_complete": {
+                    "action": {
+                        "name": "process_data"
+                    },
+                    "next": "review"
+                },
+                "process_fail": {
+                    "action": {
+                        "name": "handle_error"
+                    },
+                    "next": "error"
+                }
+            }
+        },
+        "review": {
+            "transitions": {
+                "approve": {
+                    "action": {
+                        "name": "approve_request"
+                    },
+                    "next": "complete"
+                },
+                "reject": {
+                    "action": {
+                        "name": "reject_request"
+                    },
+                    "next": "error"
+                }
+            }
+        },
+        "terminated": {
+            "transitions": {}
         }
-      }
-    },
-    "complete": {
-      "transitions": {
-        "finish": {
-          "next": "terminated",
-          "action": {
-            "name": "finalize_workflow"
-          }
-        }
-      }
-    },
-    "terminated": {
-      "transitions": {}
     }
-  }
 }
-```

@@ -1,0 +1,50 @@
+{
+    "description": "Finite-state machine workflow derived from user_request",
+    "initial_state": "none",
+    "name": "user_request_workflow",
+    "states": {
+        "decision": {
+            "transitions": {
+                "transition_to_end": {
+                    "condition": {
+                        "function": {
+                            "name": "process_transition_to_end_returns_bool"
+                        },
+                        "type": "function"
+                    },
+                    "next": "end"
+                }
+            }
+        },
+        "end": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "transition_to_start": {
+                    "next": "start"
+                }
+            }
+        },
+        "process": {
+            "transitions": {
+                "transition_to_decision": {
+                    "action": {
+                        "name": "process_transition_to_decision"
+                    },
+                    "next": "decision"
+                }
+            }
+        },
+        "start": {
+            "transitions": {
+                "transition_to_process": {
+                    "action": {
+                        "name": "process_transition_to_process"
+                    },
+                    "next": "process"
+                }
+            }
+        }
+    }
+}

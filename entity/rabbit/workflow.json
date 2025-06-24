@@ -1,48 +1,90 @@
 ```json
 {
   "version": "1.0",
-  "description": "FSM workflow for brushing a rabbit entity using a finite-state machine model",
+  "description": "FSM workflow to brush a rabbit entity using a finite-state machine model",
   "initial_state": "none",
   "workflow_name": "brush_rabbit_workflow",
   "states": {
     "none": {
       "transitions": {
-        "start_brushing": {
+        "start_brush": {
           "next": "prepare_brush",
           "action": {
-            "name": "start_brushing"
+            "name": "start_brush"
           }
         }
       }
     },
     "prepare_brush": {
       "transitions": {
-        "pick_brush": {
-          "next": "brush_rabbit",
+        "gather_brush_tools": {
+          "next": "approach_rabbit",
           "action": {
-            "name": "pick_brush"
+            "name": "gather_brush_tools"
+          }
+        }
+      }
+    },
+    "approach_rabbit": {
+      "transitions": {
+        "move_towards_rabbit": {
+          "next": "check_rabbit_mood",
+          "action": {
+            "name": "move_towards_rabbit"
+          }
+        }
+      }
+    },
+    "check_rabbit_mood": {
+      "transitions": {
+        "check_if_rabbit_is_calm": {
+          "next": "brush_rabbit",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_rabbit_calm"
+            }
+          }
+        },
+        "rabbit_not_calm": {
+          "next": "calm_rabbit_down",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_rabbit_not_calm"
+            }
+          }
+        }
+      }
+    },
+    "calm_rabbit_down": {
+      "transitions": {
+        "perform_calming_action": {
+          "next": "check_rabbit_mood",
+          "action": {
+            "name": "calm_rabbit_down"
           }
         }
       }
     },
     "brush_rabbit": {
       "transitions": {
-        "brush_rabbit_fur": {
-          "next": "check_brush_done",
+        "brush_fur": {
+          "next": "check_brush_completion",
           "action": {
-            "name": "brush_rabbit_fur"
+            "name": "brush_fur"
           }
         }
       }
     },
-    "check_brush_done": {
+    "check_brush_completion": {
       "transitions": {
-        "is_brush_complete": {
-          "next": "brush_finished",
+        "is_brushing_done": {
+          "next": "finish_brushing",
           "condition": {
             "type": "function",
             "function": {
-              "name": "is_brush_complete"
+              "name": "is_brushing_complete"
             }
           }
         },
@@ -51,21 +93,18 @@
           "condition": {
             "type": "function",
             "function": {
-              "name": "is_brush_complete"
+              "name": "is_brushing_not_complete"
             }
-          },
-          "action": {
-            "name": "continue_brushing"
           }
         }
       }
     },
-    "brush_finished": {
+    "finish_brushing": {
       "transitions": {
-        "finish_brushing": {
+        "end_brush": {
           "next": "none",
           "action": {
-            "name": "finish_brushing"
+            "name": "end_brush"
           }
         }
       }

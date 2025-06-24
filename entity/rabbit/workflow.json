@@ -1,70 +1,72 @@
+```json
 {
-    "description": "User-defined FSM workflow",
-    "initial_state": "none",
-    "states": {
-        "none": {
-            "transitions": {
-                "transition_to_state_1": {
-                    "action": {
-                        "name": "process_transition_to_state_1"
-                    },
-                    "next": "state_1"
-                }
-            }
-        },
-        "state_1": {
-            "transitions": {
-                "transition_to_state_2": {
-                    "action": {
-                        "name": "process_transition_to_state_2"
-                    },
-                    "next": "state_2"
-                }
-            }
-        },
-        "state_2": {
-            "transitions": {
-                "check_condition": {
-                    "action": {
-                        "name": "process_check_condition"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "process_check_condition_returns_bool"
-                        },
-                        "type": "function"
-                    },
-                    "next": "state_condition_check"
-                }
-            }
-        },
-        "state_condition_check": {
-            "transitions": {
-                "final_transition": {
-                    "action": {
-                        "name": "process_final_transition"
-                    },
-                    "condition": {
-                        "name": "condition_group_final",
-                        "operator": "AND",
-                        "parameters": [
-                            {
-                                "jsonPath": "sampleFieldA",
-                                "operatorType": "EQUALS",
-                                "type": "simple",
-                                "value": "template_value_01"
-                            }
-                        ],
-                        "type": "group"
-                    },
-                    "next": "state_terminal"
-                }
-            }
-        },
-        "state_terminal": {
-            "transitions": {}
+  "version": "1.0",
+  "description": "FSM workflow derived from user_request",
+  "initial_state": "none",
+  "workflow_name": "user_request_workflow",
+  "states": {
+    "none": {
+      "transitions": {
+        "transition_to_state_01": {
+          "next": "state_01",
+          "action": {
+            "name": "process_transition_to_state_01"
+          }
         }
+      }
     },
-    "version": "1.0",
-    "workflow_name": "user_workflow"
+    "state_01": {
+      "transitions": {
+        "transition_to_state_02": {
+          "next": "state_02",
+          "action": {
+            "name": "process_transition_to_state_02"
+          }
+        }
+      }
+    },
+    "state_02": {
+      "transitions": {
+        "transition_with_condition_simple": {
+          "next": "state_condition_check_01",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "process_transition_with_condition_simple_returns_bool"
+            }
+          },
+          "action": {
+            "name": "process_transition_with_condition_simple"
+          }
+        }
+      }
+    },
+    "state_condition_check_01": {
+      "transitions": {
+        "transition_with_condition_group": {
+          "next": "state_terminal",
+          "condition": {
+            "type": "group",
+            "name": "condition_group_gamma",
+            "operator": "AND",
+            "parameters": [
+              {
+                "jsonPath": "sampleFieldA",
+                "operatorType": "IEQUALS",
+                "value": "template_value_01",
+                "type": "simple"
+              }
+            ]
+          },
+          "action": {
+            "name": "process_transition_with_condition_group"
+          }
+        }
+      }
+    },
+    "state_terminal": {
+      "transitions": {}
+    }
+  }
 }
+```

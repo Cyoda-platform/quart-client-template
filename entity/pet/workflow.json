@@ -1,95 +1,95 @@
 {
-    "description": "Purrfect Pets FSM workflow",
-    "initial_state": "none",
-    "states": {
-        "adding_favorite": {
-            "transitions": {
-                "normalize": {
-                    "action": {
-                        "name": "process_normalize_pet"
-                    },
-                    "next": "normalized_pet"
-                }
-            }
-        },
-        "adding_pet": {
-            "transitions": {
-                "normalize": {
-                    "action": {
-                        "name": "process_normalize_pet"
-                    },
-                    "next": "normalized_pet"
-                }
-            }
-        },
-        "deleting_pet": {
-            "transitions": {
-                "normalize": {
-                    "action": {
-                        "name": "process_normalize_pet"
-                    },
-                    "next": "normalized_pet"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "action_add": {
-                    "action": {
-                        "name": "process_add_pet"
-                    },
-                    "next": "adding_pet"
-                },
-                "action_delete": {
-                    "action": {
-                        "name": "process_delete_pet"
-                    },
-                    "next": "deleting_pet"
-                },
-                "action_favorite_add": {
-                    "action": {
-                        "name": "process_favorite_add"
-                    },
-                    "next": "adding_favorite"
-                },
-                "action_favorite_remove": {
-                    "action": {
-                        "name": "process_favorite_remove"
-                    },
-                    "next": "removing_favorite"
-                },
-                "action_update": {
-                    "action": {
-                        "name": "process_update_pet"
-                    },
-                    "next": "updating_pet"
-                }
-            }
-        },
-        "normalized_pet": {
-            "transitions": {}
-        },
-        "removing_favorite": {
-            "transitions": {
-                "normalize": {
-                    "action": {
-                        "name": "process_normalize_pet"
-                    },
-                    "next": "normalized_pet"
-                }
-            }
-        },
-        "updating_pet": {
-            "transitions": {
-                "normalize": {
-                    "action": {
-                        "name": "process_normalize_pet"
-                    },
-                    "next": "normalized_pet"
-                }
-            }
+  "description": "Purrfect Pets FSM workflow",
+  "initial_state": "none",
+  "states": {
+    "adding_favorite": {
+      "transitions": {
+        "normalize": {
+          "action": {
+            "name": "process_normalize_pet"
+          },
+          "next": "normalized_pet"
         }
+      }
     },
-    "version": "1.0",
-    "workflow_name": "purrfect_pets_workflow"
+    "adding_pet": {
+      "transitions": {
+        "normalize": {
+          "action": {
+            "name": "process_normalize_pet"
+          },
+          "next": "normalized_pet"
+        }
+      }
+    },
+    "deleting_pet": {
+      "transitions": {
+        "normalize": {
+          "action": {
+            "name": "process_normalize_pet"
+          },
+          "next": "normalized_pet"
+        }
+      }
+    },
+    "none": {
+      "transitions": {
+        "action_add": {
+          "action": {
+            "name": "process_add_pet"
+          },
+          "next": "adding_pet"
+        },
+        "action_delete": {
+          "action": {
+            "name": "process_delete_pet"
+          },
+          "next": "deleting_pet"
+        },
+        "action_favorite_add": {
+          "action": {
+            "name": "process_favorite_add"
+          },
+          "next": "adding_favorite"
+        },
+        "action_favorite_remove": {
+          "action": {
+            "name": "process_favorite_remove"
+          },
+          "next": "removing_favorite"
+        },
+        "action_update": {
+          "action": {
+            "name": "process_update_pet"
+          },
+          "next": "updating_pet"
+        }
+      }
+    },
+    "normalized_pet": {
+      "transitions": {}
+    },
+    "removing_favorite": {
+      "transitions": {
+        "normalize": {
+          "action": {
+            "name": "process_normalize_pet"
+          },
+          "next": "normalized_pet"
+        }
+      }
+    },
+    "updating_pet": {
+      "transitions": {
+        "normalize": {
+          "action": {
+            "name": "process_normalize_pet"
+          },
+          "next": "normalized_pet"
+        }
+      }
+    }
+  },
+  "version": "1.0",
+  "workflow_name": "purrfect_pets_workflow"
 }

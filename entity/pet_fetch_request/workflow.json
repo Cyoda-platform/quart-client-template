@@ -1,61 +1,61 @@
 {
-    "description": "Purrfect Pets adoption workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "adoption_failed": {
-            "transitions": {}
-        },
-        "adoption_success": {
-            "transitions": {}
-        },
-        "fetch_pet": {
-            "transitions": {
-                "fetch_failed": {
-                    "condition": {
-                        "function": {
-                            "name": "is_pet_fetched_failed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "adoption_failed"
-                },
-                "pet_fetched": {
-                    "condition": {
-                        "function": {
-                            "name": "is_pet_fetched_successfully"
-                        },
-                        "type": "function"
-                    },
-                    "next": "update_pet_status"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_adoption": {
-                    "action": {
-                        "name": "process_fetch_pet"
-                    },
-                    "next": "fetch_pet"
-                }
-            }
-        },
-        "update_pet_status": {
-            "transitions": {
-                "update_failed": {
-                    "action": {
-                        "name": "process_update_pet_status"
-                    },
-                    "next": "adoption_failed"
-                },
-                "update_success": {
-                    "action": {
-                        "name": "process_update_pet_status"
-                    },
-                    "next": "adoption_success"
-                }
-            }
+  "description": "Purrfect Pets adoption workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_adoption": {
+          "action": {
+            "name": "process_fetch_pet"
+          },
+          "next": "fetch_pet"
         }
+      }
     },
-    "workflow_name": "pet_adoption_workflow"
+    "fetch_pet": {
+      "transitions": {
+        "fetch_failed": {
+          "condition": {
+            "function": {
+              "name": "is_pet_fetched_failed"
+            },
+            "type": "function"
+          },
+          "next": "adoption_failed"
+        },
+        "pet_fetched": {
+          "condition": {
+            "function": {
+              "name": "is_pet_fetched_successfully"
+            },
+            "type": "function"
+          },
+          "next": "update_pet_status"
+        }
+      }
+    },
+    "adoption_failed": {
+      "transitions": {}
+    },
+    "update_pet_status": {
+      "transitions": {
+        "update_failed": {
+          "action": {
+            "name": "process_update_pet_status"
+          },
+          "next": "adoption_failed"
+        },
+        "update_success": {
+          "action": {
+            "name": "process_update_pet_status"
+          },
+          "next": "adoption_success"
+        }
+      }
+    },
+    "adoption_success": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "pet_adoption_workflow"
 }

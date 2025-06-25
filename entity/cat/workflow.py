@@ -1,44 +1,20 @@
-async def start_check_mood(entity: dict):
-    entity["workflowProcessed"] = True
+async def process_is_cat_calm(entity: dict) -> bool:
+    # Example condition: cat is calm if mood is 'calm' or not set yet
+    return entity.get("mood", "calm") == "calm"
 
-async def handle_calm_mood(entity: dict):
-    entity["mood"] = "calm"
-    entity["workflowProcessed"] = True
+async def process_is_cat_playful(entity: dict) -> bool:
+    # Example condition: cat is playful if mood is 'playful'
+    return entity.get("mood") == "playful"
 
-async def handle_playful_mood(entity: dict):
-    entity["mood"] = "playful"
-    entity["workflowProcessed"] = True
+async def process_is_cat_agitated(entity: dict) -> bool:
+    # Example condition: cat is agitated if mood is 'agitated'
+    return entity.get("mood") == "agitated"
 
-async def handle_agitated_mood(entity: dict):
-    entity["mood"] = "agitated"
-    entity["workflowProcessed"] = True
+async def process_is_cat_still_calm(entity: dict) -> bool:
+    # Example condition: cat remains calm during brushing (could check brushing_started and mood)
+    return entity.get("mood") == "calm" and entity.get("brushing_started", False) is True
 
-async def start_brushing(entity: dict):
-    entity["brushing_started"] = True
-    entity["workflowProcessed"] = True
-
-async def engage_play(entity: dict):
-    entity["playing_with_cat"] = True
-    entity["workflowProcessed"] = True
-
-async def wait_until_calm(entity: dict):
-    entity["waiting"] = True
-    entity["workflowProcessed"] = True
-
-async def cat_calms_down(entity: dict):
-    entity["mood"] = "calm"
-    entity["waiting"] = False
-    entity["playing_with_cat"] = False
-    entity["workflowProcessed"] = True
-
-async def continue_brushing(entity: dict):
-    entity["brushing_continued"] = True
-    entity["workflowProcessed"] = True
-
-async def finish_brushing(entity: dict):
-    entity["brushing_finished"] = True
-    entity["workflowProcessed"] = True
-
-async def stop_brushing(entity: dict):
-    entity["brushing_stopped"] = True
-    entity["workflowProcessed"] = True
+async def process_is_brushing_complete(entity: dict) -> bool:
+    # Example condition: brushing complete if brushing_continued is True and some flag or timer present
+    # Here we simulate by a flag; in real case, you might check a timer or brushing thoroughness
+    return entity.get("brushing_continued", False) is True and entity.get("brushing_finished", False) is False

@@ -1,0 +1,45 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet_search"
+        },
+        {
+            "entity_data_example": {
+                "name": "Whiskers",
+                "photoUrls": [
+                    "url1"
+                ],
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet_add"
+        },
+        {
+            "entity_data_example": {
+                "id": "124",
+                "name": "Whiskers",
+                "status": "sold"
+            },
+            "entity_name": "pet_update"
+        },
+        {
+            "entity_data_example": {
+                "id": "124"
+            },
+            "entity_name": "pet_id"
+        },
+        {
+            "entity_data_example": {
+                "id": "123",
+                "name": "Fluffy",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet_favorite"
+        }
+    ]
+}

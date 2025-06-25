@@ -1,0 +1,26 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "cat_type": "siamese",
+                "event_type": "created",
+                "order_id": "order123",
+                "price": 199.99,
+                "quantity": 2,
+                "timestamp": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "order_event"
+        },
+        {
+            "entity_data_example": {
+                "cat_type": "siamese",
+                "last_updated": "2024-06-01T12:00:00Z",
+                "order_id": "order123",
+                "price": 199.99,
+                "quantity": 2,
+                "status": "created"
+            },
+            "entity_name": "order"
+        }
+    ]
+}

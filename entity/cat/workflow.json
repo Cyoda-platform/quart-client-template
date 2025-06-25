@@ -1,157 +1,157 @@
 {
-    "description": "Workflow FSM for brushing a cat based on mood states",
-    "initial_state": "none",
-    "states": {
-        "agitated": {
-            "transitions": {
-                "wait_until_calm": {
-                    "action": {
-                        "name": "wait_until_calm"
-                    },
-                    "next": "wait"
-                }
-            }
-        },
-        "begin_brushing": {
-            "transitions": {
-                "continue_if_calm": {
-                    "action": {
-                        "name": "continue_brushing"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_cat_still_calm"
-                        },
-                        "type": "function"
-                    },
-                    "next": "continue_brushing"
-                }
-            }
-        },
-        "calm": {
-            "transitions": {
-                "start_brushing": {
-                    "action": {
-                        "name": "start_brushing"
-                    },
-                    "next": "begin_brushing"
-                }
-            }
-        },
-        "check_mood": {
-            "transitions": {
-                "cat_is_agitated": {
-                    "action": {
-                        "name": "handle_agitated_mood"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_cat_agitated"
-                        },
-                        "type": "function"
-                    },
-                    "next": "agitated"
-                },
-                "cat_is_calm": {
-                    "action": {
-                        "name": "handle_calm_mood"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_cat_calm"
-                        },
-                        "type": "function"
-                    },
-                    "next": "calm"
-                },
-                "cat_is_playful": {
-                    "action": {
-                        "name": "handle_playful_mood"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_cat_playful"
-                        },
-                        "type": "function"
-                    },
-                    "next": "playful"
-                }
-            }
-        },
-        "continue_brushing": {
-            "transitions": {
-                "finish_brushing": {
-                    "action": {
-                        "name": "finish_brushing"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_brushing_complete"
-                        },
-                        "type": "function"
-                    },
-                    "next": "finish"
-                },
-                "stop_if_agitated": {
-                    "action": {
-                        "name": "stop_brushing"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_cat_agitated"
-                        },
-                        "type": "function"
-                    },
-                    "next": "stop"
-                }
-            }
-        },
-        "finish": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "start_check_mood": {
-                    "action": {
-                        "name": "start_check_mood"
-                    },
-                    "next": "check_mood"
-                }
-            }
-        },
-        "play_with_cat": {
-            "transitions": {
-                "cat_calms_down": {
-                    "action": {
-                        "name": "cat_calms_down"
-                    },
-                    "next": "calm"
-                }
-            }
-        },
-        "playful": {
-            "transitions": {
-                "engage_play": {
-                    "action": {
-                        "name": "engage_play"
-                    },
-                    "next": "play_with_cat"
-                }
-            }
-        },
-        "stop": {
-            "transitions": {}
-        },
-        "wait": {
-            "transitions": {
-                "cat_calms_down": {
-                    "action": {
-                        "name": "cat_calms_down"
-                    },
-                    "next": "calm"
-                }
-            }
+  "description": "Workflow FSM for brushing a cat based on mood states",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_check_mood": {
+          "action": {
+            "name": "start_check_mood"
+          },
+          "next": "check_mood"
         }
+      }
     },
-    "workflow_name": "cat_brushing_workflow"
+    "check_mood": {
+      "transitions": {
+        "cat_is_agitated": {
+          "action": {
+            "name": "handle_agitated_mood"
+          },
+          "condition": {
+            "function": {
+              "name": "is_cat_agitated"
+            },
+            "type": "function"
+          },
+          "next": "agitated"
+        },
+        "cat_is_calm": {
+          "action": {
+            "name": "handle_calm_mood"
+          },
+          "condition": {
+            "function": {
+              "name": "is_cat_calm"
+            },
+            "type": "function"
+          },
+          "next": "calm"
+        },
+        "cat_is_playful": {
+          "action": {
+            "name": "handle_playful_mood"
+          },
+          "condition": {
+            "function": {
+              "name": "is_cat_playful"
+            },
+            "type": "function"
+          },
+          "next": "playful"
+        }
+      }
+    },
+    "agitated": {
+      "transitions": {
+        "wait_until_calm": {
+          "action": {
+            "name": "wait_until_calm"
+          },
+          "next": "wait"
+        }
+      }
+    },
+    "wait": {
+      "transitions": {
+        "cat_calms_down": {
+          "action": {
+            "name": "cat_calms_down"
+          },
+          "next": "calm"
+        }
+      }
+    },
+    "calm": {
+      "transitions": {
+        "start_brushing": {
+          "action": {
+            "name": "start_brushing"
+          },
+          "next": "begin_brushing"
+        }
+      }
+    },
+    "begin_brushing": {
+      "transitions": {
+        "continue_if_calm": {
+          "action": {
+            "name": "continue_brushing"
+          },
+          "condition": {
+            "function": {
+              "name": "is_cat_still_calm"
+            },
+            "type": "function"
+          },
+          "next": "continue_brushing"
+        }
+      }
+    },
+    "continue_brushing": {
+      "transitions": {
+        "finish_brushing": {
+          "action": {
+            "name": "finish_brushing"
+          },
+          "condition": {
+            "function": {
+              "name": "is_brushing_complete"
+            },
+            "type": "function"
+          },
+          "next": "finish"
+        },
+        "stop_if_agitated": {
+          "action": {
+            "name": "stop_brushing"
+          },
+          "condition": {
+            "function": {
+              "name": "is_cat_agitated"
+            },
+            "type": "function"
+          },
+          "next": "stop"
+        }
+      }
+    },
+    "finish": {
+      "transitions": {}
+    },
+    "stop": {
+      "transitions": {}
+    },
+    "playful": {
+      "transitions": {
+        "engage_play": {
+          "action": {
+            "name": "engage_play"
+          },
+          "next": "play_with_cat"
+        }
+      }
+    },
+    "play_with_cat": {
+      "transitions": {
+        "cat_calms_down": {
+          "action": {
+            "name": "cat_calms_down"
+          },
+          "next": "calm"
+        }
+      }
+    }
+  },
+  "workflow_name": "cat_brushing_workflow"
 }

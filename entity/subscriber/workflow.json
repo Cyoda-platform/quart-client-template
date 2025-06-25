@@ -1,40 +1,40 @@
 {
-    "description": "FSM workflow for subscriber processing with normalization, subscription timestamp, and welcome email",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
-        },
-        "email_normalized": {
-            "transitions": {
-                "set_subscription_date": {
-                    "action": {
-                        "name": "process_set_subscribed_at"
-                    },
-                    "next": "subscribed_at_set"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_normalize_email": {
-                    "action": {
-                        "name": "process_normalize_email"
-                    },
-                    "next": "email_normalized"
-                }
-            }
-        },
-        "subscribed_at_set": {
-            "transitions": {
-                "send_welcome_email": {
-                    "action": {
-                        "name": "process_send_welcome_email"
-                    },
-                    "next": "completed"
-                }
-            }
+  "description": "FSM workflow for subscriber processing with normalization, subscription timestamp, and welcome email",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_normalize_email": {
+          "action": {
+            "name": "process_normalize_email"
+          },
+          "next": "email_normalized"
         }
+      }
     },
-    "workflow_name": "subscriber_workflow"
+    "email_normalized": {
+      "transitions": {
+        "set_subscription_date": {
+          "action": {
+            "name": "process_set_subscribed_at"
+          },
+          "next": "subscribed_at_set"
+        }
+      }
+    },
+    "subscribed_at_set": {
+      "transitions": {
+        "send_welcome_email": {
+          "action": {
+            "name": "process_send_welcome_email"
+          },
+          "next": "completed"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "subscriber_workflow"
 }

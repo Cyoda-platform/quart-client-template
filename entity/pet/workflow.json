@@ -1,80 +1,99 @@
 ```json
 {
   "version": "1.0",
-  "description": "Pet workflow on how to buy a gift for the pet using a finite-state machine model",
+  "description": "FSM workflow for brushing a pet using a finite-state machine model",
   "initial_state": "none",
-  "workflow_name": "pet_gift_purchase_workflow",
+  "workflow_name": "brushing_pet_workflow",
   "states": {
     "none": {
       "transitions": {
-        "start_gift_purchase": {
-          "next": "identify_pet"
-        }
-      }
-    },
-    "identify_pet": {
-      "transitions": {
-        "pet_identified": {
-          "next": "choose_gift",
+        "start_brushing": {
+          "next": "prepare_brush",
           "action": {
-            "name": "identify_pet_action"
+            "name": "start_brushing"
           }
         }
       }
     },
-    "choose_gift": {
+    "prepare_brush": {
       "transitions": {
-        "gift_chosen": {
-          "next": "confirm_purchase",
+        "brush_ready": {
+          "next": "approach_pet",
           "action": {
-            "name": "choose_gift_action"
+            "name": "prepare_brush"
           }
         }
       }
     },
-    "confirm_purchase": {
+    "approach_pet": {
       "transitions": {
-        "purchase_confirmed": {
-          "next": "process_payment",
+        "pet_ready_to_brush": {
+          "next": "start_brushing_pet",
           "action": {
-            "name": "confirm_purchase_action"
+            "name": "approach_pet"
           }
         },
-        "purchase_cancelled": {
+        "pet_not_ready": {
+          "next": "calm_pet_down",
+          "action": {
+            "name": "calm_pet_down"
+          }
+        }
+      }
+    },
+    "calm_pet_down": {
+      "transitions": {
+        "pet_calm": {
+          "next": "approach_pet",
+          "action": {
+            "name": "calm_pet_down"
+          }
+        },
+        "pet_unresponsive": {
+          "next": "abort_brushing",
+          "action": {
+            "name": "abort_brushing"
+          }
+        }
+      }
+    },
+    "start_brushing_pet": {
+      "transitions": {
+        "brushing_progress": {
+          "next": "brushing_pet",
+          "action": {
+            "name": "start_brushing_pet"
+          }
+        }
+      }
+    },
+    "brushing_pet": {
+      "transitions": {
+        "complete_brushing": {
+          "next": "finish_brushing",
+          "action": {
+            "name": "brush_pet"
+          }
+        },
+        "pet_uncomfortable": {
+          "next": "calm_pet_down",
+          "action": {
+            "name": "calm_pet_down"
+          }
+        }
+      }
+    },
+    "finish_brushing": {
+      "transitions": {
+        "end_brushing": {
           "next": "none",
           "action": {
-            "name": "cancel_purchase_action"
+            "name": "finish_brushing"
           }
         }
       }
     },
-    "process_payment": {
-      "transitions": {
-        "payment_successful": {
-          "next": "gift_purchased",
-          "action": {
-            "name": "process_payment_action"
-          }
-        },
-        "payment_failed": {
-          "next": "confirm_purchase",
-          "action": {
-            "name": "handle_payment_failure"
-          }
-        }
-      }
-    },
-    "gift_purchased": {
-      "transitions": {
-        "complete": {
-          "next": "end",
-          "action": {
-            "name": "gift_purchased_action"
-          }
-        }
-      }
-    },
-    "end": {
+    "abort_brushing": {
       "transitions": {}
     }
   }

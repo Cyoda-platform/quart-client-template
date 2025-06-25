@@ -1,50 +1,50 @@
 {
-    "description": "FSM workflow for weekly cat fact ingestion, sending emails, and logging",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
-        },
-        "emails_sent": {
-            "transitions": {
-                "log_cat_fact": {
-                    "action": {
-                        "name": "process_log_cat_fact"
-                    },
-                    "next": "completed"
-                }
-            }
-        },
-        "fact_fetched": {
-            "transitions": {
-                "get_subscribers": {
-                    "action": {
-                        "name": "process_get_subscribers"
-                    },
-                    "next": "subscribers_got"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "fetch_cat_fact": {
-                    "action": {
-                        "name": "process_fetch_cat_fact"
-                    },
-                    "next": "fact_fetched"
-                }
-            }
-        },
-        "subscribers_got": {
-            "transitions": {
-                "send_emails": {
-                    "action": {
-                        "name": "process_send_emails"
-                    },
-                    "next": "emails_sent"
-                }
-            }
+  "description": "FSM workflow for weekly cat fact ingestion, sending emails, and logging",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "fetch_cat_fact": {
+          "action": {
+            "name": "process_fetch_cat_fact"
+          },
+          "next": "fact_fetched"
         }
+      }
     },
-    "workflow_name": "cat_fact_sent_workflow"
+    "fact_fetched": {
+      "transitions": {
+        "get_subscribers": {
+          "action": {
+            "name": "process_get_subscribers"
+          },
+          "next": "subscribers_got"
+        }
+      }
+    },
+    "subscribers_got": {
+      "transitions": {
+        "send_emails": {
+          "action": {
+            "name": "process_send_emails"
+          },
+          "next": "emails_sent"
+        }
+      }
+    },
+    "emails_sent": {
+      "transitions": {
+        "log_cat_fact": {
+          "action": {
+            "name": "process_log_cat_fact"
+          },
+          "next": "completed"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "cat_fact_sent_workflow"
 }

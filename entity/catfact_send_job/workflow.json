@@ -1,0 +1,74 @@
+{
+    "description": "Workflow to fetch a cat fact, send it to subscribers, and record the send result",
+    "name": "weekly_cat_fact_subscription_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "end_state": "fact_fetched",
+            "end_state_description": "Cat fact has been fetched",
+            "name": "start_catfact_send_job",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_fetch_cat_fact"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "end_state": "subscribers_retrieved",
+            "end_state_description": "Subscribers have been retrieved",
+            "name": "retrieve_subscribers",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_retrieve_subscribers"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "fact_fetched",
+            "start_state_description": "Cat fact has been fetched"
+        },
+        {
+            "automated": true,
+            "end_state": "emails_sent",
+            "end_state_description": "Cat fact emails sent to subscribers",
+            "name": "send_catfact_emails",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_send_emails"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "subscribers_retrieved",
+            "start_state_description": "Subscribers have been retrieved"
+        },
+        {
+            "automated": true,
+            "end_state": "send_result_recorded",
+            "end_state_description": "Send job result has been recorded",
+            "name": "record_send_result",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_record_send_result"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "emails_sent",
+            "start_state_description": "Cat fact emails sent to subscribers"
+        }
+    ]
+}

@@ -1,0 +1,25 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "inputData": {
+                    "name": "alice"
+                }
+            },
+            "entity_name": "process_data"
+        },
+        {
+            "entity_data_example": {
+                "result": {
+                    "count": 1000,
+                    "inputName": "alice",
+                    "predictedAge": 25,
+                    "source": "agify.io"
+                },
+                "status": "completed",
+                "workflowId": "123e4567-e89b-12d3-a456-426614174000"
+            },
+            "entity_name": "workflow_result"
+        }
+    ]
+}

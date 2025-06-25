@@ -1,58 +1,49 @@
-from datetime import datetime
-import logging
-import httpx
+async def start_processing(entity: dict):
+    entity["status"] = "started"
+    entity["workflowProcessed"] = False
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+async def prepare_data(entity: dict):
+    # Example: prepare data before API call
+    entity["prepared_data"] = {"key": "value"}  # replace with actual preparation logic
+    entity["status"] = "data_prepared"
 
-EXTERNAL_API_URL = "https://api.agify.io"
+async def call_external_api(entity: dict):
+    # Example: simulate external API call
+    import asyncio
+    await asyncio.sleep(1)  # simulate network delay
+    # simulate response
+    entity["api_response"] = {"success": True, "data": {"id": 123, "result": "ok"}}
+    entity["status"] = "api_called"
 
-async def fetch_external_data(name: str) -> dict:
-    async with httpx.AsyncClient(timeout=10.0) as client:  # set reasonable timeout
-        try:
-            response = await client.get(EXTERNAL_API_URL, params={"name": name})
-            response.raise_for_status()
-            data = response.json()
-            logger.info(f"Fetched external data for '{name}': {data}")
-            return data
-        except (httpx.HTTPError, httpx.RequestError) as e:
-            logger.error(f"Failed to fetch external data for '{name}': {e}")
-            return {"error": "Failed to fetch external data"}
+async def handle_api_response(entity: dict):
+    response = entity.get("api_response", {})
+    if response.get("success"):
+        entity["processed_data"] = response.get("data")
+    else:
+        entity["processed_data"] = None
+    entity["status"] = "response_handled"
 
-async def process_validate_name(entity: dict):
-    name = entity.get('name')
-    if not name or not isinstance(name, str) or not name.strip():
-        entity['status'] = 'failed'
-        entity['result'] = {'error': 'Missing or invalid "name" attribute'}
-        logger.error("process_validate_name: Missing or invalid 'name' attribute in entity")
-        return False
-    entity['name'] = name.strip()
-    return True
+async def is_response_successful(entity: dict) -> bool:
+    response = entity.get("api_response", {})
+    return response.get("success", False)
 
-async def process_enrich_external_data(entity: dict):
-    name = entity['name']
-    external_data = await fetch_external_data(name)
-    if 'error' in external_data:
-        entity['status'] = 'failed'
-        entity['result'] = external_data
-        logger.error(f"process_enrich_external_data: External API error for '{name}': {external_data['error']}")
-        return False
-    entity['result'] = {
-        "inputName": name,
-        "predictedAge": external_data.get("age"),
-        "count": external_data.get("count"),
-        "source": "agify.io"
-    }
-    return True
+async def is_response_failure(entity: dict) -> bool:
+    response = entity.get("api_response", {})
+    return not response.get("success", False)
 
-async def process_process_data(entity: dict):
-    entity['status'] = 'processing'
-    entity['requestedAt'] = datetime.utcnow().isoformat()
+async def handle_api_error(entity: dict):
+    # Example: simple retry logic or mark error
+    retries = entity.get("retries", 0)
+    if retries < 3:
+        entity["retries"] = retries + 1
+        entity["status"] = "retrying"
+    else:
+        entity["status"] = "failed"
+        entity["error"] = "API call failed after retries"
 
-    if not await process_validate_name(entity):
-        return
-
-    if not await process_enrich_external_data(entity):
-        return
-
-    entity['status'] = 'completed'
+async def finalize_processing(entity: dict):
+    if entity.get("status") == "failed":
+        entity["workflowProcessed"] = False
+    else:
+        entity["workflowProcessed"] = True
+        entity["status"] = "completed"

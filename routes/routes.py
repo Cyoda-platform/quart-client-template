@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class OrderEvent:
@@ -173,7 +172,7 @@ async def process_event(event: dict):
     except Exception:
         logger.exception(f"Failed to persist order {order_id}")
 
-@app.route("/orders/events", methods=["POST"])
+@routes_bp.route("/orders/events", methods=["POST"])
 @validate_request(OrderEvent)
 async def post_order_event(data: OrderEvent):
     event = data.__dict__
@@ -184,7 +183,7 @@ async def post_order_event(data: OrderEvent):
         return jsonify({"status": "error", "message": "Failed to start event processing"}), 500
     return jsonify({"status": "success", "message": "Event processing started", "order_id": event.get("order_id")}), 200
 
-@app.route("/orders/<order_id>", methods=["GET"])
+@routes_bp.route("/orders/<order_id>", methods=["GET"])
 async def get_order(order_id: str):
     try:
         order = await entity_service.get_item(
@@ -201,7 +200,7 @@ async def get_order(order_id: str):
         return jsonify({"status": "error", "message": "Order not found"}), 404
     return jsonify(order), 200
 
-@app.route("/orders", methods=["GET"])
+@routes_bp.route("/orders", methods=["GET"])
 async def get_all_orders():
     try:
         all_orders = await entity_service.get_items(
@@ -213,7 +212,3 @@ async def get_all_orders():
         logger.exception("Failed to fetch all orders")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
     return jsonify(all_orders), 200
-
-if __name__ == '__main__':
-    # Using threaded=True to allow concurrency; use_reloader=False to avoid Quart reload issues with asyncio tasks
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

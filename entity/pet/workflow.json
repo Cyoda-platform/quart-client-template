@@ -1,9 +1,9 @@
 ```json
 {
   "version": "1.0",
-  "description": "FSM workflow for brushing a pet using typical finite-state machine model",
+  "description": "FSM workflow for brushing a pet using a typical finite-state machine model",
   "initial_state": "none",
-  "workflow_name": "pet_brushing_workflow",
+  "workflow_name": "brushing_pet_workflow",
   "states": {
     "none": {
       "transitions": {
@@ -17,44 +17,56 @@
     },
     "prepare_brush": {
       "transitions": {
-        "pick_up_brush": {
+        "brush_ready": {
           "next": "brush_pet",
           "action": {
-            "name": "pick_up_brush"
+            "name": "prepare_brush"
+          }
+        },
+        "brush_not_ready": {
+          "next": "none",
+          "action": {
+            "name": "handle_brush_not_ready"
           }
         }
       }
     },
     "brush_pet": {
       "transitions": {
-        "brush_body": {
+        "brushing_complete": {
           "next": "check_pet_reaction",
           "action": {
-            "name": "brush_body"
+            "name": "brush_pet"
+          }
+        },
+        "brushing_failed": {
+          "next": "handle_brushing_issue",
+          "action": {
+            "name": "handle_brushing_failed"
           }
         }
       }
     },
     "check_pet_reaction": {
       "transitions": {
-        "pet_is_uncomfortable": {
-          "next": "soothe_pet",
+        "pet_happy": {
+          "next": "finish_brushing",
           "condition": {
             "type": "function",
             "function": {
-              "name": "is_pet_uncomfortable"
+              "name": "is_pet_happy"
             }
           },
           "action": {
             "name": "check_pet_reaction"
           }
         },
-        "pet_is_comfortable": {
-          "next": "finish_brushing",
+        "pet_unhappy": {
+          "next": "handle_unhappy_pet",
           "condition": {
             "type": "function",
             "function": {
-              "name": "is_pet_comfortable"
+              "name": "is_pet_unhappy"
             }
           },
           "action": {
@@ -63,34 +75,47 @@
         }
       }
     },
-    "soothe_pet": {
+    "handle_unhappy_pet": {
       "transitions": {
-        "soothe_and_retry": {
+        "retry_brushing": {
           "next": "brush_pet",
           "action": {
             "name": "soothe_pet"
           }
         },
-        "stop_brushing": {
-          "next": "end",
+        "abort_brushing": {
+          "next": "finish_brushing",
           "action": {
-            "name": "stop_brushing"
+            "name": "abort_brushing"
+          }
+        }
+      }
+    },
+    "handle_brushing_issue": {
+      "transitions": {
+        "fix_issue": {
+          "next": "prepare_brush",
+          "action": {
+            "name": "fix_brushing_issue"
+          }
+        },
+        "abort_brushing": {
+          "next": "finish_brushing",
+          "action": {
+            "name": "abort_brushing"
           }
         }
       }
     },
     "finish_brushing": {
       "transitions": {
-        "put_away_brush": {
-          "next": "end",
+        "end": {
+          "next": "none",
           "action": {
-            "name": "put_away_brush"
+            "name": "finish_brushing"
           }
         }
       }
-    },
-    "end": {
-      "transitions": {}
     }
   }
 }

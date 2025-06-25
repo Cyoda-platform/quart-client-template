@@ -1,0 +1,52 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "breed": "siamese",
+                "name": "whiskers",
+                "type": "cat"
+            },
+            "entity_name": "search_request"
+        },
+        {
+            "entity_data_example": {
+                "petId": "12345",
+                "userName": "john_doe"
+            },
+            "entity_name": "adopt_request"
+        },
+        {
+            "entity_data_example": {
+                "petId": "12345",
+                "userName": "john_doe"
+            },
+            "entity_name": "favorite_add_request"
+        },
+        {
+            "entity_data_example": {
+                "userName": "john_doe"
+            },
+            "entity_name": "favorites_query"
+        },
+        {
+            "entity_data_example": {
+                "age": 3,
+                "breed": "siamese",
+                "id": "12345",
+                "name": "Whiskers",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "breed": "siamese",
+                "id": "fav_67890",
+                "name": "Whiskers",
+                "type": "cat"
+            },
+            "entity_name": "favorite"
+        }
+    ]
+}

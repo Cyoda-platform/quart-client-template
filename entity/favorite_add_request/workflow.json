@@ -1,0 +1,48 @@
+{
+    "description": "Workflow FSM for favorite add request processing",
+    "initial_state": "none",
+    "states": {
+        "add_metadata": {
+            "transitions": {
+                "to_done": {
+                    "next": "done"
+                }
+            }
+        },
+        "done": {
+            "transitions": {}
+        },
+        "fetch_pet_info": {
+            "transitions": {
+                "to_add_metadata": {
+                    "action": {
+                        "name": "process_add_metadata"
+                    },
+                    "next": "add_metadata"
+                }
+            }
+        },
+        "none": {
+            "transitions": {
+                "to_validate_pet_id": {
+                    "action": {
+                        "name": "process_validate_pet_id"
+                    },
+                    "next": "validate_pet_id"
+                }
+            }
+        },
+        "validate_pet_id": {
+            "transitions": {
+                "to_fetch_pet_info": {
+                    "action": {
+                        "name": "process_fetch_pet_info"
+                    },
+                    "next": "fetch_pet_info"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "favorite_add_request_workflow"
+}

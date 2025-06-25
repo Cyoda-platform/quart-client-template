@@ -1,0 +1,21 @@
+{
+    "properties": {
+        "cat": {
+            "age": 3,
+            "breed": "Siamese",
+            "color": "Cream",
+            "microchipID": "MICRO123456",
+            "name": "Whiskers",
+            "owner": {
+                "contact": "123-456-7890",
+                "name": "John Doe"
+            },
+            "vaccinationStatus": {
+                "lastVaccineDate": "2023-01-15",
+                "nextVaccineDue": "2024-01-15"
+            },
+            "weight": 10
+        }
+    },
+    "type": "object"
+}

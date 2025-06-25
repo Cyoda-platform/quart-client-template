@@ -1,0 +1,29 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com",
+                "id": "uuid",
+                "subscribed_at": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "emails_sent": 100,
+                "fact_text": "Cats have five toes on their front paws.",
+                "id": "uuid",
+                "sent_at": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "cat_fact_sent"
+        },
+        {
+            "entity_data_example": {
+                "total_clicks": 120,
+                "total_emails_sent": 500,
+                "total_opens": 300
+            },
+            "entity_name": "interaction_metrics"
+        }
+    ]
+}

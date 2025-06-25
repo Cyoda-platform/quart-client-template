@@ -1,0 +1,60 @@
+{
+    "description": "Workflow for handling subscribe request entity lifecycle",
+    "name": "subscribe_request_workflow",
+    "transitions": [
+        {
+            "automated": true,
+            "description": "Start subscription request processing",
+            "end_state": "email_validated",
+            "end_state_description": "Email has been validated",
+            "name": "start_subscribe_request",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_validate_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "None",
+            "start_state_description": "Initial state"
+        },
+        {
+            "automated": true,
+            "description": "Check for duplicate email subscription",
+            "end_state": "duplicate_checked",
+            "end_state_description": "Duplicate email check completed",
+            "name": "check_duplicate_email",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_check_duplicate_email"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "email_validated",
+            "start_state_description": "Email has been validated"
+        },
+        {
+            "automated": true,
+            "description": "Set subscription timestamp if not present",
+            "end_state": "subscription_ready",
+            "end_state_description": "Subscription ready for persistence",
+            "name": "set_subscribed_at",
+            "processes": {
+                "externalized_processors": [
+                    {
+                        "description": "",
+                        "name": "process_set_subscribed_at"
+                    }
+                ],
+                "schedule_transition_processors": []
+            },
+            "start_state": "duplicate_checked",
+            "start_state_description": "Duplicate email check completed"
+        }
+    ]
+}

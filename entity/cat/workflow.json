@@ -1,121 +1,121 @@
 {
-    "description": "Workflow FSM for brushing a cat based on mood states",
-    "initial_state": "none",
-    "states": {
-        "agitated": {
-            "transitions": {
-                "wait_until_calm": {
-                    "action": {
-                        "name": "wait_until_calm"
-                    },
-                    "next": "wait"
-                }
-            }
-        },
-        "begin_brushing": {
-            "transitions": {
-                "continue_if_calm": {
-                    "action": {
-                        "name": "continue_brushing"
-                    },
-                    "next": "continue_brushing"
-                }
-            }
-        },
-        "calm": {
-            "transitions": {
-                "start_brushing": {
-                    "action": {
-                        "name": "start_brushing"
-                    },
-                    "next": "begin_brushing"
-                }
-            }
-        },
-        "check_mood": {
-            "transitions": {
-                "cat_is_agitated": {
-                    "action": {
-                        "name": "handle_agitated_mood"
-                    },
-                    "next": "agitated"
-                },
-                "cat_is_calm": {
-                    "action": {
-                        "name": "handle_calm_mood"
-                    },
-                    "next": "calm"
-                },
-                "cat_is_playful": {
-                    "action": {
-                        "name": "handle_playful_mood"
-                    },
-                    "next": "playful"
-                }
-            }
-        },
-        "continue_brushing": {
-            "transitions": {
-                "finish_brushing": {
-                    "action": {
-                        "name": "finish_brushing"
-                    },
-                    "next": "finish"
-                },
-                "stop_if_agitated": {
-                    "action": {
-                        "name": "stop_brushing"
-                    },
-                    "next": "stop"
-                }
-            }
-        },
-        "finish": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "start_check_mood": {
-                    "action": {
-                        "name": "start_check_mood"
-                    },
-                    "next": "check_mood"
-                }
-            }
-        },
-        "play_with_cat": {
-            "transitions": {
-                "cat_calms_down": {
-                    "action": {
-                        "name": "cat_calms_down"
-                    },
-                    "next": "calm"
-                }
-            }
-        },
-        "playful": {
-            "transitions": {
-                "engage_play": {
-                    "action": {
-                        "name": "engage_play"
-                    },
-                    "next": "play_with_cat"
-                }
-            }
-        },
-        "stop": {
-            "transitions": {}
-        },
-        "wait": {
-            "transitions": {
-                "cat_calms_down": {
-                    "action": {
-                        "name": "cat_calms_down"
-                    },
-                    "next": "calm"
-                }
-            }
+  "description": "Workflow FSM for brushing a cat based on mood states",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_check_mood": {
+          "action": {
+            "name": "start_check_mood"
+          },
+          "next": "check_mood"
         }
+      }
     },
-    "workflow_name": "cat_brushing_workflow"
+    "check_mood": {
+      "transitions": {
+        "cat_is_agitated": {
+          "action": {
+            "name": "handle_agitated_mood"
+          },
+          "next": "agitated"
+        },
+        "cat_is_calm": {
+          "action": {
+            "name": "handle_calm_mood"
+          },
+          "next": "calm"
+        },
+        "cat_is_playful": {
+          "action": {
+            "name": "handle_playful_mood"
+          },
+          "next": "playful"
+        }
+      }
+    },
+    "agitated": {
+      "transitions": {
+        "wait_until_calm": {
+          "action": {
+            "name": "wait_until_calm"
+          },
+          "next": "wait"
+        }
+      }
+    },
+    "wait": {
+      "transitions": {
+        "cat_calms_down": {
+          "action": {
+            "name": "cat_calms_down"
+          },
+          "next": "calm"
+        }
+      }
+    },
+    "calm": {
+      "transitions": {
+        "start_brushing": {
+          "action": {
+            "name": "start_brushing"
+          },
+          "next": "begin_brushing"
+        }
+      }
+    },
+    "begin_brushing": {
+      "transitions": {
+        "continue_if_calm": {
+          "action": {
+            "name": "continue_brushing"
+          },
+          "next": "continue_brushing"
+        }
+      }
+    },
+    "continue_brushing": {
+      "transitions": {
+        "finish_brushing": {
+          "action": {
+            "name": "finish_brushing"
+          },
+          "next": "finish"
+        },
+        "stop_if_agitated": {
+          "action": {
+            "name": "stop_brushing"
+          },
+          "next": "stop"
+        }
+      }
+    },
+    "finish": {
+      "transitions": {}
+    },
+    "stop": {
+      "transitions": {}
+    },
+    "playful": {
+      "transitions": {
+        "engage_play": {
+          "action": {
+            "name": "engage_play"
+          },
+          "next": "play_with_cat"
+        }
+      }
+    },
+    "play_with_cat": {
+      "transitions": {
+        "cat_calms_down": {
+          "action": {
+            "name": "cat_calms_down"
+          },
+          "next": "calm"
+        }
+      }
+    }
+  },
+  "workflow_name": "cat_brushing_workflow"
 }

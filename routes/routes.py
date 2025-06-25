@@ -5,11 +5,13 @@ from datetime import datetime
 from typing import Dict, List
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +19,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class SearchRequest:
@@ -113,7 +112,7 @@ async def process_adopt_request(entity: dict) -> dict:
 
     return entity
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def pets_search(data: SearchRequest):
     pets = await fetch_pets_by_status("available")
@@ -138,7 +137,7 @@ async def pets_search(data: SearchRequest):
         })
     return jsonify({"pets": filtered})
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptRequest)
 async def pets_adopt(data: AdoptRequest):
     entity = {"petId": data.petId, "userName": data.userName}
@@ -157,7 +156,7 @@ async def pets_adopt(data: AdoptRequest):
         logger.exception(f"Error in adopt endpoint: {e}")
         return jsonify({"success": False, "message": "Adoption failed due to server error."}), 500
 
-@app.route("/pets/favorites/add", methods=["POST"])
+@routes_bp.route("/pets/favorites/add", methods=["POST"])
 @validate_request(FavoriteAddRequest)
 async def pets_favorites_add(data: FavoriteAddRequest):
     entity = {"pet_id": data.petId, "user_name": data.userName}
@@ -173,8 +172,8 @@ async def pets_favorites_add(data: FavoriteAddRequest):
         logger.exception(f"Error in favorites add endpoint: {e}")
         return jsonify({"success": False, "message": "Failed to add favorite."}), 500
 
+@routes_bp.route("/pets/favorites", methods=["GET"])
 @validate_querystring(FavoritesQuery)
-@app.route("/pets/favorites", methods=["GET"])
 async def pets_favorites():
     user_name = request.args.get("userName")
     try:
@@ -202,12 +201,3 @@ async def pets_favorites():
     except Exception as e:
         logger.exception(f"Error fetching favorites: {e}")
         return jsonify({"favorites": []}), 500
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        stream=sys.stdout,
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

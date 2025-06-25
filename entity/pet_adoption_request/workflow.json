@@ -1,83 +1,83 @@
 {
-    "description": "Pet Adoption FSM workflow",
-    "initial_state": "none",
-    "states": {
-        "check_pet_id": {
-            "transitions": {
-                "pet_id_missing": {
-                    "condition": {
-                        "function": {
-                            "name": "is_pet_id_missing"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                },
-                "pet_id_present": {
-                    "condition": {
-                        "function": {
-                            "name": "is_pet_id_present"
-                        },
-                        "type": "function"
-                    },
-                    "next": "fetch_pet"
-                }
-            }
-        },
-        "failed": {
-            "transitions": {}
-        },
-        "fetch_pet": {
-            "transitions": {
-                "fetch_pet_data": {
-                    "action": {
-                        "name": "process_fetch_pet"
-                    },
-                    "next": "update_pet_status"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_adoption": {
-                    "action": {
-                        "name": "process_pet_adoption_request"
-                    },
-                    "next": "check_pet_id"
-                }
-            }
-        },
-        "success": {
-            "transitions": {}
-        },
-        "update_pet_status": {
-            "transitions": {
-                "update_failed": {
-                    "condition": {
-                        "function": {
-                            "name": "is_update_failed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                },
-                "update_pet_data": {
-                    "action": {
-                        "name": "process_update_pet_status"
-                    },
-                    "next": "success"
-                },
-                "update_success": {
-                    "condition": {
-                        "function": {
-                            "name": "is_update_success"
-                        },
-                        "type": "function"
-                    },
-                    "next": "success"
-                }
-            }
+  "description": "Pet Adoption FSM workflow",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_adoption": {
+          "action": {
+            "name": "process_pet_adoption_request"
+          },
+          "next": "check_pet_id"
         }
+      }
     },
-    "workflow_name": "pet_adoption_workflow"
+    "check_pet_id": {
+      "transitions": {
+        "pet_id_missing": {
+          "condition": {
+            "function": {
+              "name": "is_pet_id_missing"
+            },
+            "type": "function"
+          },
+          "next": "failed"
+        },
+        "pet_id_present": {
+          "condition": {
+            "function": {
+              "name": "is_pet_id_present"
+            },
+            "type": "function"
+          },
+          "next": "fetch_pet"
+        }
+      }
+    },
+    "failed": {
+      "transitions": {}
+    },
+    "fetch_pet": {
+      "transitions": {
+        "fetch_pet_data": {
+          "action": {
+            "name": "process_fetch_pet"
+          },
+          "next": "update_pet_status"
+        }
+      }
+    },
+    "update_pet_status": {
+      "transitions": {
+        "update_failed": {
+          "condition": {
+            "function": {
+              "name": "is_update_failed"
+            },
+            "type": "function"
+          },
+          "next": "failed"
+        },
+        "update_pet_data": {
+          "action": {
+            "name": "process_update_pet_status"
+          },
+          "next": "success"
+        },
+        "update_success": {
+          "condition": {
+            "function": {
+              "name": "is_update_success"
+            },
+            "type": "function"
+          },
+          "next": "success"
+        }
+      }
+    },
+    "success": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "pet_adoption_workflow"
 }

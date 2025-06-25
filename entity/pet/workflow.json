@@ -1,53 +1,53 @@
 {
-    "description": "Purrfect Pets FSM Workflow",
-    "initial_state": "none",
-    "states": {
-        "adopting": {
-            "transitions": {
-                "adopt_complete": {
-                    "next": "done"
-                }
-            }
+  "description": "Purrfect Pets FSM Workflow",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_adopt": {
+          "action": {
+            "name": "process_adopt_pet"
+          },
+          "next": "adopting"
         },
-        "done": {
-            "transitions": {}
+        "start_fetch": {
+          "action": {
+            "name": "process_fetch_pets"
+          },
+          "next": "fetching"
         },
-        "fetching": {
-            "transitions": {
-                "fetch_complete": {
-                    "next": "done"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_adopt": {
-                    "action": {
-                        "name": "process_adopt_pet"
-                    },
-                    "next": "adopting"
-                },
-                "start_fetch": {
-                    "action": {
-                        "name": "process_fetch_pets"
-                    },
-                    "next": "fetching"
-                },
-                "start_normalize": {
-                    "action": {
-                        "name": "process_normalize_pet"
-                    },
-                    "next": "normalizing"
-                }
-            }
-        },
-        "normalizing": {
-            "transitions": {
-                "normalize_complete": {
-                    "next": "done"
-                }
-            }
+        "start_normalize": {
+          "action": {
+            "name": "process_normalize_pet"
+          },
+          "next": "normalizing"
         }
+      }
     },
-    "workflow_name": "purrfect_pets_workflow"
+    "adopting": {
+      "transitions": {
+        "adopt_complete": {
+          "next": "done"
+        }
+      }
+    },
+    "done": {
+      "transitions": {}
+    },
+    "fetching": {
+      "transitions": {
+        "fetch_complete": {
+          "next": "done"
+        }
+      }
+    },
+    "normalizing": {
+      "transitions": {
+        "normalize_complete": {
+          "next": "done"
+        }
+      }
+    }
+  },
+  "workflow_name": "purrfect_pets_workflow"
 }

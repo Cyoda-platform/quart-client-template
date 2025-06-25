@@ -3,8 +3,8 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -16,8 +16,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class ProcessData:
@@ -65,7 +64,7 @@ async def process_process_data(entity: dict):
         }
         entity['status'] = 'completed'
 
-@app.route("/process-data", methods=["POST"])
+@routes_bp.route("/process-data", methods=["POST"])
 @validate_request(ProcessData)
 async def process_data(data: ProcessData):
     try:
@@ -85,7 +84,7 @@ async def process_data(data: ProcessData):
         logger.exception(f"Failed to start processing: {e}")
         return jsonify({"error": "Failed to start processing"}), 500
 
-@app.route("/results/<string:workflow_id>", methods=["GET"])
+@routes_bp.route("/results/<string:workflow_id>", methods=["GET"])
 async def get_results(workflow_id: str):
     try:
         item = await entity_service.get_item(
@@ -111,7 +110,3 @@ async def get_results(workflow_id: str):
     except Exception as e:
         logger.exception(f"Error retrieving results for workflow {workflow_id}: {e}")
         return jsonify({"error": "Error retrieving results"}), 500
-
-if __name__ == '__main__':
-    # Run app with threaded=True for better concurrency
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

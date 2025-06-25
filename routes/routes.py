@@ -3,11 +3,13 @@ from typing import Optional, List, Dict
 import asyncio
 import logging
 
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -15,9 +17,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 favorites_lock = asyncio.Lock()
 favorites_cache: Dict[str, dict] = {}
@@ -46,12 +45,9 @@ class PetUpdate:
 class PetId:
     id: str  # id is now string
 
-# Workflow function for 'pet' entity on add
 async def process_pet(entity: dict):
-    # Set default status if missing
     if not entity.get("status"):
         entity["status"] = "available"
-    # Ensure category is a dict with id and name defaults
     category = entity.get("category")
     if not category or not isinstance(category, dict):
         entity["category"] = {"id": 0, "name": ""}
@@ -61,25 +57,21 @@ async def process_pet(entity: dict):
         if "id" not in category or category["id"] is None:
             category["id"] = 0
         entity["category"] = category
-    # Return entity is optional, but included for clarity
     return entity
 
-# Workflow function for 'pet' entity on update
 async def process_pet_update(entity: dict, update_data: dict):
-    # Apply partial updates to entity dict safely
     if update_data.get("name") is not None:
         entity["name"] = update_data["name"]
     if update_data.get("status") is not None:
         entity["status"] = update_data["status"]
     if update_data.get("photoUrls") is not None:
-        # Defensive: ensure list type for photoUrls
         if isinstance(update_data["photoUrls"], list):
             entity["photoUrls"] = update_data["photoUrls"]
     if update_data.get("type") is not None:
         entity["category"] = {"id": 0, "name": update_data["type"]}
     return entity
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearch)
 async def pets_search(data: PetSearch):
     condition = {
@@ -126,7 +118,7 @@ async def pets_search(data: PetSearch):
         })
     return jsonify({"pets": result})
 
-@app.route("/pets/add", methods=["POST"])
+@routes_bp.route("/pets/add", methods=["POST"])
 @validate_request(PetAdd)
 async def pets_add(data: PetAdd):
     pet_payload = {
@@ -147,7 +139,7 @@ async def pets_add(data: PetAdd):
         return jsonify({"success": False}), 500
     return jsonify({"success": True, "petId": str(pet_id)})
 
-@app.route("/pets/update", methods=["POST"])
+@routes_bp.route("/pets/update", methods=["POST"])
 @validate_request(PetUpdate)
 async def pets_update(data: PetUpdate):
     if not data.id:
@@ -165,7 +157,6 @@ async def pets_update(data: PetUpdate):
         return jsonify({"success": False, "error": "Pet not found"}), 404
 
     try:
-        # Apply workflow update logic
         pet = await process_pet_update(pet, data.__dict__)
     except Exception as e:
         logger.exception(f"Error processing pet update workflow: {e}")
@@ -186,7 +177,7 @@ async def pets_update(data: PetUpdate):
 
     return jsonify({"success": True})
 
-@app.route("/pets/delete", methods=["POST"])
+@routes_bp.route("/pets/delete", methods=["POST"])
 @validate_request(PetId)
 async def pets_delete(data: PetId):
     try:
@@ -206,13 +197,13 @@ async def pets_delete(data: PetId):
 
     return jsonify({"success": True})
 
-@app.route("/pets/favorites", methods=["GET"])
+@routes_bp.route("/pets/favorites", methods=["GET"])
 async def pets_favorites():
     async with favorites_lock:
         favs = list(favorites_cache.values())
     return jsonify({"favorites": favs})
 
-@app.route("/pets/favorites/add", methods=["POST"])
+@routes_bp.route("/pets/favorites/add", methods=["POST"])
 @validate_request(PetId)
 async def pets_favorites_add(data: PetId):
     try:
@@ -238,12 +229,9 @@ async def pets_favorites_add(data: PetId):
 
     return jsonify({"success": True})
 
-@app.route("/pets/favorites/remove", methods=["POST"])
+@routes_bp.route("/pets/favorites/remove", methods=["POST"])
 @validate_request(PetId)
 async def pets_favorites_remove(data: PetId):
     async with favorites_lock:
         favorites_cache.pop(data.id, None)
     return jsonify({"success": True})
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

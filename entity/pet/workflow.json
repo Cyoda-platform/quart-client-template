@@ -1,0 +1,82 @@
+```json
+{
+  "version": "1.0",
+  "description": "Pet workflow on how to buy a gift for the pet using a finite-state machine model",
+  "initial_state": "none",
+  "workflow_name": "pet_gift_purchase_workflow",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_gift_purchase": {
+          "next": "identify_pet"
+        }
+      }
+    },
+    "identify_pet": {
+      "transitions": {
+        "pet_identified": {
+          "next": "choose_gift",
+          "action": {
+            "name": "identify_pet_action"
+          }
+        }
+      }
+    },
+    "choose_gift": {
+      "transitions": {
+        "gift_chosen": {
+          "next": "confirm_purchase",
+          "action": {
+            "name": "choose_gift_action"
+          }
+        }
+      }
+    },
+    "confirm_purchase": {
+      "transitions": {
+        "purchase_confirmed": {
+          "next": "process_payment",
+          "action": {
+            "name": "confirm_purchase_action"
+          }
+        },
+        "purchase_cancelled": {
+          "next": "none",
+          "action": {
+            "name": "cancel_purchase_action"
+          }
+        }
+      }
+    },
+    "process_payment": {
+      "transitions": {
+        "payment_successful": {
+          "next": "gift_purchased",
+          "action": {
+            "name": "process_payment_action"
+          }
+        },
+        "payment_failed": {
+          "next": "confirm_purchase",
+          "action": {
+            "name": "handle_payment_failure"
+          }
+        }
+      }
+    },
+    "gift_purchased": {
+      "transitions": {
+        "complete": {
+          "next": "end",
+          "action": {
+            "name": "gift_purchased_action"
+          }
+        }
+      }
+    },
+    "end": {
+      "transitions": {}
+    }
+  }
+}
+```

@@ -6,8 +6,8 @@ from typing import Dict, Any
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -19,8 +19,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class SubscribeRequest:
@@ -125,7 +124,7 @@ async def process_cat_fact_sent(entity: Dict[str, Any]) -> Dict[str, Any]:
 
     return entity
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     email = data.email
@@ -177,7 +176,7 @@ async def subscribe(data: SubscribeRequest):
     logger.info(f"New subscriber added: {email} with id {new_id}")
     return jsonify({"message": "Subscription successful", "subscriberId": new_id}), 201
 
-@app.route("/subscribers/count", methods=["GET"])
+@routes_bp.route("/subscribers/count", methods=["GET"])
 async def subscribers_count():
     try:
         items = await entity_service.get_items(
@@ -191,7 +190,7 @@ async def subscribers_count():
         return jsonify({"error": "Failed to retrieve subscribers count"}), 500
     return jsonify({"count": count})
 
-@app.route("/facts/ingest-and-send", methods=["POST"])
+@routes_bp.route("/facts/ingest-and-send", methods=["POST"])
 async def ingest_and_send():
     try:
         new_id = await entity_service.add_item(
@@ -206,17 +205,6 @@ async def ingest_and_send():
 
     return jsonify({"message": "Cat fact ingested and sent", "catFactSentId": new_id})
 
-@app.route("/reports/interactions", methods=["GET"])
+@routes_bp.route("/reports/interactions", methods=["GET"])
 async def reports_interactions():
     return jsonify(interaction_metrics)
-
-if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(
-        stream=sys.stdout,
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s",
-        level=logging.INFO,
-    )
-
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

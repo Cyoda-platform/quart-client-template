@@ -1,9 +1,9 @@
 ```json
 {
   "version": "1.0",
-  "description": "FSM workflow for brushing a pet using a finite-state machine model",
+  "description": "FSM workflow for brushing a pet using typical finite-state machine model",
   "initial_state": "none",
-  "workflow_name": "brushing_pet_workflow",
+  "workflow_name": "pet_brushing_workflow",
   "states": {
     "none": {
       "transitions": {
@@ -17,83 +17,79 @@
     },
     "prepare_brush": {
       "transitions": {
-        "brush_ready": {
-          "next": "approach_pet",
+        "pick_up_brush": {
+          "next": "brush_pet",
           "action": {
-            "name": "prepare_brush"
+            "name": "pick_up_brush"
           }
         }
       }
     },
-    "approach_pet": {
+    "brush_pet": {
       "transitions": {
-        "pet_ready_to_brush": {
-          "next": "start_brushing_pet",
+        "brush_body": {
+          "next": "check_pet_reaction",
           "action": {
-            "name": "approach_pet"
+            "name": "brush_body"
+          }
+        }
+      }
+    },
+    "check_pet_reaction": {
+      "transitions": {
+        "pet_is_uncomfortable": {
+          "next": "soothe_pet",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_pet_uncomfortable"
+            }
+          },
+          "action": {
+            "name": "check_pet_reaction"
           }
         },
-        "pet_not_ready": {
-          "next": "calm_pet_down",
-          "action": {
-            "name": "calm_pet_down"
-          }
-        }
-      }
-    },
-    "calm_pet_down": {
-      "transitions": {
-        "pet_calm": {
-          "next": "approach_pet",
-          "action": {
-            "name": "calm_pet_down"
-          }
-        },
-        "pet_unresponsive": {
-          "next": "abort_brushing",
-          "action": {
-            "name": "abort_brushing"
-          }
-        }
-      }
-    },
-    "start_brushing_pet": {
-      "transitions": {
-        "brushing_progress": {
-          "next": "brushing_pet",
-          "action": {
-            "name": "start_brushing_pet"
-          }
-        }
-      }
-    },
-    "brushing_pet": {
-      "transitions": {
-        "complete_brushing": {
+        "pet_is_comfortable": {
           "next": "finish_brushing",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_pet_comfortable"
+            }
+          },
           "action": {
-            "name": "brush_pet"
+            "name": "check_pet_reaction"
+          }
+        }
+      }
+    },
+    "soothe_pet": {
+      "transitions": {
+        "soothe_and_retry": {
+          "next": "brush_pet",
+          "action": {
+            "name": "soothe_pet"
           }
         },
-        "pet_uncomfortable": {
-          "next": "calm_pet_down",
+        "stop_brushing": {
+          "next": "end",
           "action": {
-            "name": "calm_pet_down"
+            "name": "stop_brushing"
           }
         }
       }
     },
     "finish_brushing": {
       "transitions": {
-        "end_brushing": {
-          "next": "none",
+        "put_away_brush": {
+          "next": "end",
           "action": {
-            "name": "finish_brushing"
+            "name": "put_away_brush"
           }
         }
       }
     },
-    "abort_brushing": {
+    "end": {
       "transitions": {}
     }
   }

@@ -1,32 +1,40 @@
 async def start_brushing(entity: dict):
-    entity["status"] = "Brushing process started"
+    entity["status"] = "Brushing started"
     entity["workflowProcessed"] = True
 
-async def prepare_brush(entity: dict):
-    entity["brush_prepared"] = True
+async def pick_up_brush(entity: dict):
+    entity["brush"] = "picked up"
     entity["workflowProcessed"] = True
 
-async def approach_pet(entity: dict):
-    entity["pet_approached"] = True
+async def brush_body(entity: dict):
+    if "brushed_parts" not in entity:
+        entity["brushed_parts"] = []
+    entity["brushed_parts"].append("body")
     entity["workflowProcessed"] = True
 
-async def calm_pet_down(entity: dict):
-    entity["pet_calm"] = True
+async def check_pet_reaction(entity: dict):
+    # Placeholder logic, should be replaced with actual pet reaction check
+    if entity.get("pet_mood", "calm") in ["agitated", "scared"]:
+        entity["pet_reaction"] = "uncomfortable"
+    else:
+        entity["pet_reaction"] = "comfortable"
     entity["workflowProcessed"] = True
 
-async def abort_brushing(entity: dict):
-    entity["status"] = "Brushing aborted"
+async def is_pet_uncomfortable(entity: dict) -> bool:
+    return entity.get("pet_reaction") == "uncomfortable"
+
+async def is_pet_comfortable(entity: dict) -> bool:
+    return entity.get("pet_reaction") == "comfortable"
+
+async def soothe_pet(entity: dict):
+    entity["soothed"] = True
     entity["workflowProcessed"] = True
 
-async def start_brushing_pet(entity: dict):
-    entity["brushing_started"] = True
+async def stop_brushing(entity: dict):
+    entity["status"] = "Brushing stopped due to pet discomfort"
     entity["workflowProcessed"] = True
 
-async def brush_pet(entity: dict):
-    if "brushing_started" in entity and entity["brushing_started"]:
-        entity["brushing_in_progress"] = True
-    entity["workflowProcessed"] = True
-
-async def finish_brushing(entity: dict):
-    entity["brushing_complete"] = True
+async def put_away_brush(entity: dict):
+    entity["brush"] = "put away"
+    entity["status"] = "Brushing finished"
     entity["workflowProcessed"] = True

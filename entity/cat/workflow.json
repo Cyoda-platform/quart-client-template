@@ -1,0 +1,124 @@
+```json
+{
+  "version": "1.0",
+  "description": "Workflow FSM for brushing a cat based on mood states",
+  "initial_state": "none",
+  "workflow_name": "cat_brushing_workflow",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_check_mood": {
+          "next": "check_mood",
+          "action": {
+            "name": "start_check_mood"
+          }
+        }
+      }
+    },
+    "check_mood": {
+      "transitions": {
+        "cat_is_calm": {
+          "next": "calm",
+          "action": {
+            "name": "handle_calm_mood"
+          }
+        },
+        "cat_is_playful": {
+          "next": "playful",
+          "action": {
+            "name": "handle_playful_mood"
+          }
+        },
+        "cat_is_agitated": {
+          "next": "agitated",
+          "action": {
+            "name": "handle_agitated_mood"
+          }
+        }
+      }
+    },
+    "calm": {
+      "transitions": {
+        "start_brushing": {
+          "next": "begin_brushing",
+          "action": {
+            "name": "start_brushing"
+          }
+        }
+      }
+    },
+    "playful": {
+      "transitions": {
+        "engage_play": {
+          "next": "play_with_cat",
+          "action": {
+            "name": "engage_play"
+          }
+        }
+      }
+    },
+    "agitated": {
+      "transitions": {
+        "wait_until_calm": {
+          "next": "wait",
+          "action": {
+            "name": "wait_until_calm"
+          }
+        }
+      }
+    },
+    "play_with_cat": {
+      "transitions": {
+        "cat_calms_down": {
+          "next": "calm",
+          "action": {
+            "name": "cat_calms_down"
+          }
+        }
+      }
+    },
+    "wait": {
+      "transitions": {
+        "cat_calms_down": {
+          "next": "calm",
+          "action": {
+            "name": "cat_calms_down"
+          }
+        }
+      }
+    },
+    "begin_brushing": {
+      "transitions": {
+        "continue_if_calm": {
+          "next": "continue_brushing",
+          "action": {
+            "name": "continue_brushing"
+          }
+        }
+      }
+    },
+    "continue_brushing": {
+      "transitions": {
+        "finish_brushing": {
+          "next": "finish",
+          "action": {
+            "name": "finish_brushing"
+          }
+        },
+        "stop_if_agitated": {
+          "next": "stop",
+          "action": {
+            "name": "stop_brushing"
+          }
+        }
+      }
+    },
+    "finish": {
+      "transitions": {}
+    },
+    "stop": {
+      "transitions": {}
+    }
+  }
+}
+```

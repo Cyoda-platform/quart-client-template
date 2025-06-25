@@ -6,8 +6,8 @@ from typing import Optional
 from uuid import uuid4
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -19,8 +19,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class SubscribeRequest:
@@ -128,7 +127,7 @@ async def process_catfact_send_job(entity: dict) -> dict:
 
     return entity
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     data_dict = {
@@ -151,7 +150,7 @@ async def subscribe(data: SubscribeRequest):
     logger.info(f"New subscriber: {data.email} (id={new_id})")
     return jsonify({"message": "Subscription successful", "subscriberId": new_id})
 
-@app.route("/subscribers/count", methods=["GET"])
+@routes_bp.route("/subscribers/count", methods=["GET"])
 async def get_subscriber_count():
     try:
         items = await entity_service.get_items(
@@ -165,7 +164,7 @@ async def get_subscriber_count():
     count = len(items) if items else 0
     return jsonify({"subscriberCount": count})
 
-@app.route("/fetch-and-send-catfact", methods=["POST"])
+@routes_bp.route("/fetch-and-send-catfact", methods=["POST"])
 async def fetch_and_send_catfact():
     try:
         job_id = await entity_service.add_item(
@@ -180,7 +179,7 @@ async def fetch_and_send_catfact():
 
     return jsonify({"message": "Cat fact send job started", "jobId": job_id})
 
-@app.route("/report/interactions", methods=["GET"])
+@routes_bp.route("/report/interactions", methods=["GET"])
 async def get_interactions_report():
     try:
         results = await entity_service.get_items(
@@ -219,6 +218,3 @@ async def fetch_cat_fact() -> Optional[str]:
         except (httpx.RequestError, httpx.HTTPStatusError) as e:
             logger.exception(f"Failed to fetch cat fact: {e}")
             return None
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

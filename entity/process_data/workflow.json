@@ -1,95 +1,92 @@
-```json
 {
-  "version": "1.0",
-  "description": "FSM workflow for processing data with external API integration",
-  "initial_state": "none",
-  "workflow_name": "data_processing_with_api_integration",
-  "states": {
-    "none": {
-      "transitions": {
-        "start_processing": {
-          "next": "prepare_data",
-          "action": {
-            "name": "start_processing"
-          }
-        }
-      }
-    },
-    "prepare_data": {
-      "transitions": {
-        "data_prepared": {
-          "next": "call_external_api",
-          "action": {
-            "name": "prepare_data"
-          }
-        }
-      }
-    },
-    "call_external_api": {
-      "transitions": {
-        "invoke_api": {
-          "next": "handle_api_response",
-          "action": {
-            "name": "call_external_api"
-          }
-        }
-      }
-    },
-    "handle_api_response": {
-      "transitions": {
-        "process_response": {
-          "next": "check_response_success",
-          "action": {
-            "name": "handle_api_response"
-          }
-        }
-      }
-    },
-    "check_response_success": {
-      "transitions": {
-        "response_success": {
-          "next": "finalize_processing",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "is_response_successful"
+    "description": "FSM workflow for processing data with external API integration",
+    "initial_state": "none",
+    "name": "data_processing_with_api_integration",
+    "states": {
+        "call_external_api": {
+            "transitions": {
+                "invoke_api": {
+                    "action": {
+                        "name": "call_external_api"
+                    },
+                    "next": "handle_api_response"
+                }
             }
-          }
         },
-        "response_failure": {
-          "next": "handle_api_error",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "is_response_failure"
+        "check_response_success": {
+            "transitions": {
+                "response_failure": {
+                    "condition": {
+                        "function": {
+                            "name": "is_response_failure"
+                        },
+                        "type": "function"
+                    },
+                    "next": "handle_api_error"
+                },
+                "response_success": {
+                    "condition": {
+                        "function": {
+                            "name": "is_response_successful"
+                        },
+                        "type": "function"
+                    },
+                    "next": "finalize_processing"
+                }
             }
-          }
+        },
+        "end": {
+            "transitions": {}
+        },
+        "finalize_processing": {
+            "transitions": {
+                "complete": {
+                    "action": {
+                        "name": "finalize_processing"
+                    },
+                    "next": "end"
+                }
+            }
+        },
+        "handle_api_error": {
+            "transitions": {
+                "retry_or_fail": {
+                    "action": {
+                        "name": "handle_api_error"
+                    },
+                    "next": "finalize_processing"
+                }
+            }
+        },
+        "handle_api_response": {
+            "transitions": {
+                "process_response": {
+                    "action": {
+                        "name": "handle_api_response"
+                    },
+                    "next": "check_response_success"
+                }
+            }
+        },
+        "none": {
+            "transitions": {
+                "start_processing": {
+                    "action": {
+                        "name": "start_processing"
+                    },
+                    "next": "prepare_data"
+                }
+            }
+        },
+        "prepare_data": {
+            "transitions": {
+                "data_prepared": {
+                    "action": {
+                        "name": "prepare_data"
+                    },
+                    "next": "call_external_api"
+                }
+            }
         }
-      }
-    },
-    "handle_api_error": {
-      "transitions": {
-        "retry_or_fail": {
-          "next": "finalize_processing",
-          "action": {
-            "name": "handle_api_error"
-          }
-        }
-      }
-    },
-    "finalize_processing": {
-      "transitions": {
-        "complete": {
-          "next": "end",
-          "action": {
-            "name": "finalize_processing"
-          }
-        }
-      }
-    },
-    "end": {
-      "transitions": {}
     }
-  }
 }
-```

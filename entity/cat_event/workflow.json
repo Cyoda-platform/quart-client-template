@@ -1,0 +1,31 @@
+{
+    "description": "FSM workflow for cat event processing",
+    "initial_state": "none",
+    "states": {
+        "none": {
+            "transitions": {
+                "transition_to_add_timestamp": {
+                    "action": {
+                        "name": "process_add_timestamp"
+                    },
+                    "next": "timestamp_added"
+                }
+            }
+        },
+        "notification_processed": {
+            "transitions": {}
+        },
+        "timestamp_added": {
+            "transitions": {
+                "transition_to_send_notification": {
+                    "action": {
+                        "name": "process_send_notification"
+                    },
+                    "next": "notification_processed"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "cat_event_workflow"
+}

@@ -5,11 +5,13 @@ from typing import Optional
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +19,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 # Local in-memory caches with asyncio.Lock for concurrency safety
 search_cache = {"data": None, "lock": asyncio.Lock()}
@@ -68,7 +67,7 @@ async def fetch_pet_details_from_petstore(pet_id: str):
             logger.exception(f"Error fetching pet details for id {pet_id}")
             return None
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearchRequest)
 async def search_pets(data: PetSearchRequest):
     pets = await fetch_pets_from_petstore(data.type, data.status)
@@ -76,7 +75,7 @@ async def search_pets(data: PetSearchRequest):
         search_cache["data"] = pets
     return jsonify({"pets": pets})
 
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def get_last_search():
     async with search_cache["lock"]:
         pets = search_cache["data"]
@@ -84,7 +83,7 @@ async def get_last_search():
         return jsonify({"pets": []})
     return jsonify({"pets": pets})
 
-@app.route("/pets/details", methods=["POST"])
+@routes_bp.route("/pets/details", methods=["POST"])
 @validate_request(PetDetailsRequest)
 async def pet_details(data: PetDetailsRequest):
     pet = await fetch_pet_details_from_petstore(data.id)
@@ -92,7 +91,7 @@ async def pet_details(data: PetDetailsRequest):
         return jsonify({"error": "Pet not found"}), 404
     return jsonify(pet)
 
-@app.route("/pets/favorites", methods=["GET"])
+@routes_bp.route("/pets/favorites", methods=["GET"])
 async def get_favorites():
     async with favorites_cache["lock"]:
         fav_ids = list(favorites_cache["data"])
@@ -112,7 +111,7 @@ async def get_favorites():
     pets = [p for p in pets if p is not None]
     return jsonify({"favorites": pets})
 
-@app.route("/pets/favorites", methods=["POST"])
+@routes_bp.route("/pets/favorites", methods=["POST"])
 @validate_request(FavoriteRequest)
 async def add_favorite(data: FavoriteRequest):
     pet = await fetch_pet_details_from_petstore(data.id)
@@ -149,7 +148,7 @@ async def process_pet(entity):
         logger.exception("Exception in process_pet workflow")
     return entity  # modifications done in place; return optional
 
-@app.route("/entity/pet", methods=["POST"])
+@routes_bp.route("/entity/pet", methods=["POST"])
 async def add_pet():
     try:
         data = await request.get_json()
@@ -164,7 +163,7 @@ async def add_pet():
         logger.exception("Failed to add pet")
         return jsonify({"error": "Failed to add pet"}), 500
 
-@app.route("/entity/pet/<string:id>", methods=["GET"])
+@routes_bp.route("/entity/pet/<string:id>", methods=["GET"])
 async def get_pet(id):
     try:
         pet = await entity_service.get_item(
@@ -180,7 +179,7 @@ async def get_pet(id):
         logger.exception("Failed to get pet")
         return jsonify({"error": "Failed to get pet"}), 500
 
-@app.route("/entity/pet", methods=["GET"])
+@routes_bp.route("/entity/pet", methods=["GET"])
 async def get_all_pets():
     try:
         pets = await entity_service.get_items(
@@ -193,7 +192,7 @@ async def get_all_pets():
         logger.exception("Failed to get pets")
         return jsonify({"error": "Failed to get pets"}), 500
 
-@app.route("/entity/pet/<string:id>", methods=["PUT"])
+@routes_bp.route("/entity/pet/<string:id>", methods=["PUT"])
 async def update_pet(id):
     try:
         data = await request.get_json()
@@ -211,7 +210,7 @@ async def update_pet(id):
         logger.exception("Failed to update pet")
         return jsonify({"error": "Failed to update pet"}), 500
 
-@app.route("/entity/pet/<string:id>", methods=["DELETE"])
+@routes_bp.route("/entity/pet/<string:id>", methods=["DELETE"])
 async def delete_pet(id):
     try:
         await entity_service.delete_item(
@@ -225,6 +224,3 @@ async def delete_pet(id):
     except Exception:
         logger.exception("Failed to delete pet")
         return jsonify({"error": "Failed to delete pet"}), 500
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

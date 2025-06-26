@@ -1,29 +1,3 @@
-Absolutely! Moving all async logic and side-effect tasks into the workflow function is a clean and robust design. This will keep the controller code simple, focusing only on receiving validated requests and returning responses, while all processing and side effects happen inside the `process_{entity_name}` workflow function.
-
----
-
-### What will be moved:
-
-- The call to the external API to fetch weather data.
-- The logic to update the entity with the results or failure status.
-- The fire-and-forget async task in the endpoint.
-
----
-
-### Key points:
-
-- The workflow function `process_weather_fetch_request` is invoked **before** the entity is persisted.
-- It can perform async operations.
-- It can read/add other entities of different models but **cannot** update/add/delete the same entity (to avoid recursion).
-- To update the current entity, modify its dictionary in-place.
-- We will move the entire async fetching and update logic into `process_weather_fetch_request`.
-- The controller will just call `add_item` with this workflow and return the `job_id` immediately.
-
----
-
-### Updated complete code with all async logic moved inside `process_weather_fetch_request`:
-
-```python
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 import logging
@@ -75,55 +49,57 @@ async def fetch_weather_from_api(latitude: float, longitude: float, parameters: 
             logger.exception(f"Error fetching weather data from external API: {e}")
             raise
 
-# Workflow function applied before persistence of the entity
 async def process_weather_fetch_request(entity: dict) -> dict:
-    """
-    This function is executed asynchronously before the entity is persisted.
-    It performs the actual weather API fetch and updates the entity state accordingly.
-    """
-    # Mark entity as processing and add timestamp
+    # Set initial processing state and timestamp
     entity['status'] = 'processing'
     entity['requestedAt'] = datetime.utcnow().isoformat() + "Z"
 
-    # Persist this intermediate state by returning the modified entity
-    # (The framework will persist it automatically after workflow returns)
+    # Validate required keys to prevent KeyError
+    try:
+        latitude = entity["latitude"]
+        longitude = entity["longitude"]
+        parameters = entity["parameters"]
+    except KeyError as e:
+        entity['status'] = 'failed'
+        entity['error'] = f"Missing required field: {e.args[0]}"
+        entity['completedAt'] = datetime.utcnow().isoformat() + "Z"
+        return entity
 
-    # Fetch weather data from external API
+    # Defensive validation of parameters type
+    if not isinstance(parameters, list) or not all(isinstance(p, str) for p in parameters):
+        entity['status'] = 'failed'
+        entity['error'] = "Parameter 'parameters' must be a list of strings."
+        entity['completedAt'] = datetime.utcnow().isoformat() + "Z"
+        return entity
+
+    # Optional dates validation if present
+    start_date = entity.get("start_date")
+    end_date = entity.get("end_date")
+    # Could add date format validation here if needed
+
     try:
         weather_data = await fetch_weather_from_api(
-            latitude=entity["latitude"],
-            longitude=entity["longitude"],
-            parameters=entity["parameters"],
-            start_date=entity.get("start_date"),
-            end_date=entity.get("end_date")
+            latitude=latitude,
+            longitude=longitude,
+            parameters=parameters,
+            start_date=start_date,
+            end_date=end_date
         )
-        # Update entity with completed status and data
         entity['status'] = 'completed'
         entity['data'] = weather_data
-        entity['location'] = {"latitude": entity["latitude"], "longitude": entity["longitude"]}
+        entity['location'] = {"latitude": latitude, "longitude": longitude}
         entity['completedAt'] = datetime.utcnow().isoformat() + "Z"
-
-        # Optionally, add or get other entities if needed here
-        # For example, you could add a log entity or supplementary data entity of a different model
-        # await entity_service.add_item(token=cyoda_auth_service, entity_model="other_entity_model", ...)
-
     except Exception as e:
-        # On failure, update status and error info
         entity['status'] = 'failed'
         entity['error'] = str(e)
         entity['completedAt'] = datetime.utcnow().isoformat() + "Z"
         logger.exception("Failed to fetch weather data in workflow")
 
-    # Return the modified entity (mandatory)
     return entity
 
 @app.route("/weather/fetch", methods=["POST"])
 @validate_request(WeatherFetchRequest)
 async def weather_fetch(data: WeatherFetchRequest):
-    """
-    Controller only adds the item with workflow and returns the job id immediately.
-    All processing is done in the workflow function before persistence.
-    """
     data_dict = data.__dict__
     try:
         job_id = await entity_service.add_item(
@@ -179,23 +155,3 @@ if __name__ == '__main__':
     import sys
     logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Summary of changes:
-- Removed all async processing from the `/weather/fetch` endpoint.
-- The endpoint **only** calls `entity_service.add_item` with the `workflow=process_weather_fetch_request`.
-- The `process_weather_fetch_request` workflow function:
-  - Sets initial entity state (`status: processing`).
-  - Calls external API asynchronously.
-  - Updates the entity dictionary in-place with results or failure info.
-  - Returns the updated entity to be persisted.
-- No fire-and-forget tasks or background tasks in the controller anymore.
-- All business logic and async tasks are moved inside the workflow function, as required.
-
----
-
-This approach makes your controllers extremely thin and your business logic centralized inside the `process_` workflow functions, which are guaranteed to run asynchronously before persistence.
-
-If you'd like, I can help you further modularize or add error handling/logging enhancements inside the workflow function too.

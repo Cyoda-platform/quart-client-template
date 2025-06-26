@@ -1,0 +1,48 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "end_date": "2024-06-02",
+                "latitude": 51.5074,
+                "longitude": -0.1278,
+                "parameters": [
+                    "temperature_2m",
+                    "precipitation",
+                    "windspeed_10m"
+                ],
+                "requestedAt": "2024-06-01T12:00:00Z",
+                "start_date": "2024-06-01",
+                "status": "processing"
+            },
+            "entity_name": "weather_fetch_request"
+        },
+        {
+            "entity_data_example": {
+                "completedAt": "2024-06-01T12:10:00Z",
+                "data": {
+                    "precipitation": {
+                        "2024-06-01T00:00:00Z": 0.0
+                    },
+                    "temperature_2m": {
+                        "2024-06-01T00:00:00Z": 15.0
+                    },
+                    "windspeed_10m": {
+                        "2024-06-01T00:00:00Z": 5.5
+                    }
+                },
+                "location": {
+                    "latitude": 51.5074,
+                    "longitude": -0.1278
+                },
+                "parameters": [
+                    "temperature_2m",
+                    "precipitation",
+                    "windspeed_10m"
+                ],
+                "request_id": "uuid-1234",
+                "status": "completed"
+            },
+            "entity_name": "weather_fetch_result"
+        }
+    ]
+}

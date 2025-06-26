@@ -1,71 +1,71 @@
 {
-    "description": "FSM workflow for weather_fetch entity",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
-        },
-        "failed": {
-            "transitions": {}
-        },
-        "fetching_data": {
-            "transitions": {
-                "fetch_data": {
-                    "action": {
-                        "name": "process_fetch_data"
-                    },
-                    "next": "filter_data"
-                }
-            }
-        },
-        "filter_data": {
-            "transitions": {
-                "filter_weather_data": {
-                    "action": {
-                        "name": "process_filter_data"
-                    },
-                    "next": "completed"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_validation": {
-                    "action": {
-                        "name": "process_validate_input"
-                    },
-                    "next": "validate_input"
-                }
-            }
-        },
-        "validate_input": {
-            "transitions": {
-                "input_invalid": {
-                    "action": {
-                        "name": "process_validate_input"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "process_validate_input"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                },
-                "input_valid": {
-                    "action": {
-                        "name": "process_weather_fetch"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "process_validate_input"
-                        },
-                        "type": "function"
-                    },
-                    "next": "fetching_data"
-                }
-            }
+  "description": "FSM workflow for weather_fetch entity",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_validation": {
+          "action": {
+            "name": "process_validate_input"
+          },
+          "next": "validate_input"
         }
+      }
     },
-    "workflow_name": "weather_fetch_workflow"
+    "validate_input": {
+      "transitions": {
+        "input_invalid": {
+          "action": {
+            "name": "process_validate_input"
+          },
+          "condition": {
+            "function": {
+              "name": "process_validate_input"
+            },
+            "type": "function"
+          },
+          "next": "failed"
+        },
+        "input_valid": {
+          "action": {
+            "name": "process_weather_fetch"
+          },
+          "condition": {
+            "function": {
+              "name": "process_validate_input"
+            },
+            "type": "function"
+          },
+          "next": "fetching_data"
+        }
+      }
+    },
+    "failed": {
+      "transitions": {}
+    },
+    "fetching_data": {
+      "transitions": {
+        "fetch_data": {
+          "action": {
+            "name": "process_fetch_data"
+          },
+          "next": "filter_data"
+        }
+      }
+    },
+    "filter_data": {
+      "transitions": {
+        "filter_weather_data": {
+          "action": {
+            "name": "process_filter_data"
+          },
+          "next": "completed"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "weather_fetch_workflow"
 }

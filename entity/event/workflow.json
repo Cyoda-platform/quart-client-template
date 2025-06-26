@@ -1,52 +1,52 @@
 {
-    "description": "FSM for cat event detection and notification workflow",
-    "initial_state": "none",
-    "states": {
-        "end": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "start_processing": {
-                    "action": {
-                        "name": "process_event"
-                    },
-                    "next": "process_event"
-                }
-            }
-        },
-        "notify": {
-            "transitions": {
-                "send_notification": {
-                    "action": {
-                        "name": "send_notification_entity"
-                    },
-                    "next": "end"
-                }
-            }
-        },
-        "process_event": {
-            "transitions": {
-                "detected_food_request": {
-                    "condition": {
-                        "function": {
-                            "name": "detected_is_true"
-                        },
-                        "type": "function"
-                    },
-                    "next": "notify"
-                },
-                "no_food_request": {
-                    "condition": {
-                        "function": {
-                            "name": "detected_is_false"
-                        },
-                        "type": "function"
-                    },
-                    "next": "end"
-                }
-            }
+  "description": "FSM for cat event detection and notification workflow",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_processing": {
+          "action": {
+            "name": "process_event"
+          },
+          "next": "process_event"
         }
+      }
     },
-    "workflow_name": "cat_event_notification_workflow"
+    "process_event": {
+      "transitions": {
+        "detected_food_request": {
+          "condition": {
+            "function": {
+              "name": "detected_is_true"
+            },
+            "type": "function"
+          },
+          "next": "notify"
+        },
+        "no_food_request": {
+          "condition": {
+            "function": {
+              "name": "detected_is_false"
+            },
+            "type": "function"
+          },
+          "next": "end"
+        }
+      }
+    },
+    "notify": {
+      "transitions": {
+        "send_notification": {
+          "action": {
+            "name": "send_notification_entity"
+          },
+          "next": "end"
+        }
+      }
+    },
+    "end": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "cat_event_notification_workflow"
 }

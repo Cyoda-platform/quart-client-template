@@ -1,72 +1,71 @@
 {
-  "version": "1.0",
-  "description": "FSM workflow for weather_fetch entity",
-  "initial_state": "none",
-  "workflow_name": "weather_fetch_workflow",
-  "states": {
-    "none": {
-      "transitions": {
-        "start_validation": {
-          "next": "validate_input",
-          "action": {
-            "name": "process_validate_input"
-          }
-        }
-      }
-    },
-    "validate_input": {
-      "transitions": {
-        "input_valid": {
-          "next": "fetching_data",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "process_validate_input"
-            }
-          },
-          "action": {
-            "name": "process_weather_fetch"  # orchestration stays here, but business logic split
-          }
+    "description": "FSM workflow for weather_fetch entity",
+    "initial_state": "none",
+    "states": {
+        "completed": {
+            "transitions": {}
         },
-        "input_invalid": {
-          "next": "failed",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "process_validate_input"
+        "failed": {
+            "transitions": {}
+        },
+        "fetching_data": {
+            "transitions": {
+                "fetch_data": {
+                    "action": {
+                        "name": "process_fetch_data"
+                    },
+                    "next": "filter_data"
+                }
             }
-          },
-          "action": {
-            "name": "process_validate_input"
-          }
+        },
+        "filter_data": {
+            "transitions": {
+                "filter_weather_data": {
+                    "action": {
+                        "name": "process_filter_data"
+                    },
+                    "next": "completed"
+                }
+            }
+        },
+        "none": {
+            "transitions": {
+                "start_validation": {
+                    "action": {
+                        "name": "process_validate_input"
+                    },
+                    "next": "validate_input"
+                }
+            }
+        },
+        "validate_input": {
+            "transitions": {
+                "input_invalid": {
+                    "action": {
+                        "name": "process_validate_input"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "process_validate_input"
+                        },
+                        "type": "function"
+                    },
+                    "next": "failed"
+                },
+                "input_valid": {
+                    "action": {
+                        "name": "process_weather_fetch"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "process_validate_input"
+                        },
+                        "type": "function"
+                    },
+                    "next": "fetching_data"
+                }
+            }
         }
-      }
     },
-    "fetching_data": {
-      "transitions": {
-        "fetch_data": {
-          "next": "filter_data",
-          "action": {
-            "name": "process_fetch_data"
-          }
-        }
-      }
-    },
-    "filter_data": {
-      "transitions": {
-        "filter_weather_data": {
-          "next": "completed",
-          "action": {
-            "name": "process_filter_data"
-          }
-        }
-      }
-    },
-    "completed": {
-      "transitions": {}
-    },
-    "failed": {
-      "transitions": {}
-    }
-  }
+    "workflow_name": "weather_fetch_workflow"
 }

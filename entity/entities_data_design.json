@@ -1,0 +1,27 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": 1,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "url1",
+                    "url2"
+                ],
+                "status": "available",
+                "tags": [
+                    "cute",
+                    "small"
+                ],
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "fact": "Cats sleep for 70% of their lives!"
+            },
+            "entity_name": "fun_fact"
+        }
+    ]
+}

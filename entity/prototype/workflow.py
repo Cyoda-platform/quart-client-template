@@ -4,6 +4,21 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+async def process_prototype(entity: Dict[str, Any]) -> None:
+    status = entity.get("status")
+    if status not in [None, "none", "queued"]:
+        return
+    entity["status"] = "queued" if status in [None, "none"] else "processing"
+    if entity["status"] == "processing":
+        entity["processingStartedAt"] = datetime.utcnow().isoformat()
+        await process_fetch_weather(entity)
+
+async def is_status_failed(entity: Dict[str, Any]) -> bool:
+    return entity.get("status") == "failed"
+
+async def is_status_completed(entity: Dict[str, Any]) -> bool:
+    return entity.get("status") == "completed"
+
 async def process_fetch_weather(entity: Dict[str, Any]) -> None:
     input_params = entity.get("input", {})
     latitude = input_params.get("latitude")
@@ -54,21 +69,3 @@ async def process_fetch_weather(entity: Dict[str, Any]) -> None:
         entity["result"] = None
         entity["errorMessage"] = str(e)
         entity["failedAt"] = datetime.utcnow().isoformat()
-
-async def process_prototype(entity: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Workflow orchestration function for the 'prototype' entity.
-    """
-    status = entity.get("status")
-    if status != "queued":
-        # No workflow steps needed if not queued
-        return entity
-
-    # Change status to processing
-    entity["status"] = "processing"
-    entity["processingStartedAt"] = datetime.utcnow().isoformat()
-
-    # Orchestrate workflow steps here
-    await process_fetch_weather(entity)
-
-    return entity

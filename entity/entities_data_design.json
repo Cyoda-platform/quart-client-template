@@ -1,0 +1,50 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "end_date": "2024-06-02",
+                "latitude": 52.52,
+                "longitude": 13.405,
+                "parameters": [
+                    "temperature_2m",
+                    "precipitation"
+                ],
+                "start_date": "2024-06-01"
+            },
+            "entity_name": "weather_fetch_request"
+        },
+        {
+            "entity_data_example": {
+                "data_id": "abc123",
+                "message": "Weather data fetched and stored",
+                "status": "success"
+            },
+            "entity_name": "weather_fetch_response"
+        },
+        {
+            "entity_data_example": {
+                "data_id": "abc123",
+                "latitude": 52.52,
+                "longitude": 13.405,
+                "parameters": {
+                    "precipitation": [
+                        0,
+                        0.5,
+                        1.2
+                    ],
+                    "temperature_2m": [
+                        22.5,
+                        23.1,
+                        21.8
+                    ]
+                },
+                "timestamps": [
+                    "2024-06-01T00:00",
+                    "2024-06-01T06:00",
+                    "2024-06-01T12:00"
+                ]
+            },
+            "entity_name": "weather_result_response"
+        }
+    ]
+}

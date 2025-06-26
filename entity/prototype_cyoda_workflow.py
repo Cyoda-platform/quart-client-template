@@ -1,6 +1,24 @@
-Certainly! I have updated the `process_cat_event` function to pass the new `workflow` parameter to `entity_service.add_item` as `workflow=process_cat_event` (the workflow function itself). Also, I ensured the workflow function name follows the underscore lowercase convention (`cat_event`).
+Got it! The right approach here is to move all the logic that can be done **before** persisting the entity — especially any async tasks, side effects like notifications, or modifications on the entity itself — into the workflow function `process_cat_event`.
 
-Here is the complete updated code with the required changes:
+### What needs to move into the workflow function:
+- Add the `timestamp` to the entity.
+- Fire the notification and manage the notifications cache.
+- Modify the entity if needed (e.g., you could add a flag or extra attribute if you want to persist notification info if relevant).
+
+### What must stay outside the workflow:
+- The actual call to `entity_service.add_item`.
+- The HTTP endpoint handler should just call the workflow-aware `add_item` and return the result.
+
+---
+
+### Important notes:
+- The workflow function **cannot** call `entity_service.add_item` for the same entity model (would cause recursion).
+- The workflow function **can** call `entity_service.add_item` for other entity models (to add supplementary data).
+- The workflow function is async and receives the entity (dict) which can be modified directly before persistence.
+
+---
+
+### Updated code with all async logic moved inside `process_cat_event` workflow function
 
 ```python
 import asyncio
@@ -49,46 +67,72 @@ async def send_notification(message: str) -> bool:
             logger.exception(f"Failed to send notification: {e}")
             return False
 
-async def process_cat_event(event_data: Dict[str, Any]) -> Dict[str, Any]:
-    event_data["timestamp"] = datetime.now(timezone.utc).isoformat()
-    try:
-        id = await entity_service.add_item(
-            token=cyoda_auth_service,
-            entity_model="cat_event",
-            entity_version=ENTITY_VERSION,
-            entity=event_data,
-            workflow=process_cat_event  # <-- Added workflow function here
-        )
-    except Exception as e:
-        logger.exception(e)
-        raise
+async def process_cat_event(entity: Dict[str, Any]) -> None:
+    """
+    Workflow function applied to 'cat_event' entity before persistence.
+    Modifies entity state, sends notifications, and adds supplementary data entities.
+    """
+    # Add timestamp to the entity
+    entity["timestamp"] = datetime.now(timezone.utc).isoformat()
 
-    notification_sent = False
-    notification_message = ""
+    # Check event type and intensity for notification
+    if entity.get("eventType") == "food_request" and entity.get("intensity", "").lower() == "dramatic":
+        message = "Emergency! A cat demands snacks"
+        notification_sent = await send_notification(message)
 
-    if event_data.get("eventType") == "food_request" and event_data.get("intensity", "").lower() == "dramatic":
-        notification_message = "Emergency! A cat demands snacks"
-        notification_sent = await send_notification(notification_message)
+        # Add notification record as supplementary entity (different entity_model)
         notification_record = {
-            "id": f"notif-{int(datetime.now().timestamp() * 1000)}",
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "message": notification_message,
+            "message": message,
         }
-        notifications_cache[notification_record["id"]] = notification_record
+        try:
+            # Add notification entity (different model to avoid recursion)
+            await entity_service.add_item(
+                token=cyoda_auth_service,
+                entity_model="notification",
+                entity_version=ENTITY_VERSION,
+                entity=notification_record,
+                workflow=None  # no workflow for notifications
+            )
+        except Exception:
+            logger.exception("Failed to add notification entity")
 
-    return {
-        "id": id,
-        "notificationSent": notification_sent,
-        "message": notification_message,
-        "eventProcessed": event_data,
-    }
+        # Optionally, add notification info to the current entity state
+        entity["notificationSent"] = notification_sent
+        entity["notificationMessage"] = message
+    else:
+        # No notification sent, clean fields just in case
+        entity["notificationSent"] = False
+        entity["notificationMessage"] = ""
 
 @app.route("/events/cat-demand", methods=["POST"])
 @validate_request(CatEvent)  # workaround: validation must go after route for POST due to quart-schema issue
 async def cat_demand_event(data: CatEvent):
     try:
-        result = await process_cat_event(data.__dict__)
-        return jsonify(result)
+        # Pass the workflow function as argument
+        entity_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="cat_event",
+            entity_version=ENTITY_VERSION,
+            entity=data.__dict__,
+            workflow=process_cat_event
+        )
+
+        # Fetch the persisted entity to include notification fields and timestamp in response
+        persisted_entity = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="cat_event",
+            entity_version=ENTITY_VERSION,
+            technical_id=entity_id
+        )
+
+        # Return the persisted entity plus its ID
+        response = {
+            "id": entity_id,
+            "eventProcessed": persisted_entity
+        }
+        return jsonify(response)
+
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
@@ -122,9 +166,25 @@ if __name__ == "__main__":
 
 ---
 
-**Summary of the update:**  
-- Added `workflow=process_cat_event` argument to the `entity_service.add_item` call inside the `process_cat_event` function.  
-- The workflow function `process_cat_event` matches the required naming convention for the entity `"cat_event"`.  
-- No other code changes were needed.
+### Explanation
 
-Let me know if you want me to help with anything else!
+- The **workflow function `process_cat_event`** is now responsible for:
+  - Adding the timestamp to the entity.
+  - Sending notification if conditions match.
+  - Adding a supplementary notification entity via `entity_service.add_item` (different model: `"notification"`).
+  - Modifying the original entity to include notification info (`notificationSent`, `notificationMessage`) which will be persisted.
+  
+- The **endpoint**:
+  - Calls `entity_service.add_item` passing `workflow=process_cat_event`.
+  - After persistence, fetches the saved entity (with any modifications done by the workflow) and returns it with the new ID.
+  - Keeps the controller lean and free from business logic.
+
+- The **notifications cache** from previous code is removed since supplementary notifications are now persisted as a separate entity.
+
+- The `send_notification` remains a helper function, used only inside the workflow function.
+
+---
+
+This approach fully complies with your requirements and makes controllers clean, pushing business logic and side effects to the workflow function.
+
+Let me know if you want me to help with any further enhancements!

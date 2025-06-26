@@ -1,30 +1,3 @@
-Understood! I will refactor your code to move all async logic from the endpoints into their respective async workflow functions named with the `process_{entity_name}` format (underscore lowercase). These workflows will be invoked just before persisting the entity, and will handle all asynchronous tasks such as querying pets, fetching data from other entities, and updating the entity state.
-
-### Key points:
-- Each endpoint will only prepare the validated data and call `entity_service.add_item` with the workflow function.
-- The workflow function will:
-  - Perform any async external API calls
-  - Query or add secondary entities if needed (but not modify the same entity model)
-  - Modify the entity's state directly (e.g. add attributes)
-- For GET endpoints, since they don’t add entities, I’ll keep them mostly as is, but if they fetch entities and augment data, I’ll keep that logic compact.
-
----
-
-### Entities in the current code and what can be moved:
-
-1. **petsearchrequest**  
-   - Move `query_pets` logic and pet results injection into `process_petsearchrequest`.
-
-2. **adoptpetrequest** (new entity model to be created for adoption requests)  
-   - Move adoption logic: find pet info (from searches or external API), add to cache, etc. into `process_adoptpetrequest`.
-
-3. The GET `/pets/search/<search_id>` and GET `/pets/adoptions/<adopter_name>` are read-only endpoints, they don't add or modify entities, so these remain mostly unchanged as they can't use workflow functions.
-
----
-
-### Updated full code with workflows for `petsearchrequest` and `adoptpetrequest`:
-
-```python
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -100,26 +73,16 @@ async def query_pets(type_: str = None, status: str = None, tags: list[str] = No
 
 # Workflow function for petsearchrequest entity
 async def process_petsearchrequest(entity: dict) -> dict:
-    """
-    Workflow function applied asynchronously before persisting a petsearchrequest.
-    Queries pets based on the filters and adds the resulting list under 'pets' key in the entity.
-    """
     pets = await query_pets(entity.get("type"), entity.get("status"), entity.get("tags"))
     entity["pets"] = pets
     return entity
 
 # Workflow function for adoptpetrequest entity
 async def process_adoptpetrequest(entity: dict) -> dict:
-    """
-    Workflow function applied asynchronously before persisting an adoptpetrequest.
-    Finds pet info from petsearchrequest entities or external API,
-    adds pet info to adoption cache for the adopter.
-    """
     pet_id = entity.get("petId")
     adopter_name = entity.get("adopterName")
     pet_info = None
 
-    # Try to find pet info from petsearchrequest entities
     try:
         all_searches = await entity_service.get_items(
             token=cyoda_auth_service,
@@ -129,7 +92,6 @@ async def process_adoptpetrequest(entity: dict) -> dict:
         for search in all_searches:
             pets = search.get("pets")
             if pets is None:
-                # fallback: query pets directly
                 pets = await query_pets(search.get("type"), search.get("status"), search.get("tags"))
             for pet in pets:
                 if str(pet.get("id")) == str(pet_id):
@@ -145,9 +107,7 @@ async def process_adoptpetrequest(entity: dict) -> dict:
     except Exception as e:
         logger.exception("Failed to find pet info from petsearchrequest entities: %s", e)
 
-    # fallback if pet_info not found
     if pet_info is None:
-        # Try to fetch pet info directly from external API
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.get(f"{PETSTORE_API_BASE}/pet/{pet_id}")
@@ -163,10 +123,8 @@ async def process_adoptpetrequest(entity: dict) -> dict:
             logger.warning("Failed to fetch pet info from external API: %s", e)
             pet_info = {"id": str(pet_id), "name": None, "type": None, "status": None}
 
-    # Add adoption to cache
     await cache.add_adoption(adopter_name, pet_info)
 
-    # Add adoption confirmation status into entity state (optional)
     entity["adoptionStatus"] = "confirmed"
     entity["petInfo"] = pet_info
 
@@ -236,8 +194,6 @@ async def adopt_pet(data: AdoptPetRequest):
             entity=data_dict,
             workflow=process_adoptpetrequest
         )
-        # Return confirmation with adoption status and pet info from workflow-modified entity
-        # entity_service.add_item returns only id, so return minimal confirmation here
         return jsonify({
             "adoptionId": id,
             "petId": data.petId,
@@ -258,24 +214,3 @@ async def get_adoptions(adopter_name):
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- **`process_petsearchrequest`**: Queries pets asynchronously and adds the list to the entity under `"pets"`. Now the endpoint just triggers entity creation.
-
-- **`process_adoptpetrequest`**:  
-  - Looks for pet info by scanning existing petsearchrequest entities or querying the external API.  
-  - Adds the adoption info to the async cache.  
-  - Updates entity with `"adoptionStatus"` and `"petInfo"`.  
-  The endpoint simply calls `add_item` with this workflow.
-
-- The GET endpoints remain unchanged since workflows only apply before persisting entities.
-
----
-
-This refactoring fully complies with your requirements to move all async and "fire and forget" logic into workflow functions, cleaning controllers and making the code more robust and maintainable.
-
-Let me know if you want me to further improve or add any other workflows!

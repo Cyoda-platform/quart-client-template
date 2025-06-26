@@ -1,0 +1,53 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "status": "string",
+                "tags": [
+                    "string"
+                ],
+                "type": "string"
+            },
+            "entity_name": "pet_search_request"
+        },
+        {
+            "entity_data_example": {
+                "pets": [
+                    {
+                        "id": 123,
+                        "name": "Fluffy",
+                        "status": "available",
+                        "tags": [
+                            "cute",
+                            "small"
+                        ],
+                        "type": "cat"
+                    }
+                ],
+                "searchId": "string"
+            },
+            "entity_name": "pet_search_result"
+        },
+        {
+            "entity_data_example": {
+                "adopterName": "John Doe",
+                "petId": "123"
+            },
+            "entity_name": "adopt_pet_request"
+        },
+        {
+            "entity_data_example": {
+                "adoptedPets": [
+                    {
+                        "id": 123,
+                        "name": "Fluffy",
+                        "status": "available",
+                        "type": "cat"
+                    }
+                ],
+                "adopterName": "John Doe"
+            },
+            "entity_name": "adoption_record"
+        }
+    ]
+}

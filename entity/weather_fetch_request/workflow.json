@@ -1,0 +1,84 @@
+{
+    "description": "Weather fetching FSM workflow",
+    "initial_state": "none",
+    "states": {
+        "completed": {
+            "transitions": {}
+        },
+        "failed": {
+            "transitions": {}
+        },
+        "fetching_weather_data": {
+            "transitions": {
+                "fetch_failed": {
+                    "action": {
+                        "name": "process_fetch_weather_data"
+                    },
+                    "next": "failed"
+                },
+                "fetch_success": {
+                    "action": {
+                        "name": "process_fetch_weather_data"
+                    },
+                    "next": "completed"
+                }
+            }
+        },
+        "none": {
+            "transitions": {
+                "start_process": {
+                    "action": {
+                        "name": "process_weather_fetch_request"
+                    },
+                    "next": "validating_required_fields"
+                }
+            }
+        },
+        "validating_parameters_type": {
+            "transitions": {
+                "invalid_parameters_type": {
+                    "condition": {
+                        "function": {
+                            "name": "process_validate_parameters_type"
+                        },
+                        "type": "function"
+                    },
+                    "next": "failed"
+                },
+                "parameters_type_valid": {
+                    "condition": {
+                        "function": {
+                            "name": "process_validate_parameters_type"
+                        },
+                        "type": "function"
+                    },
+                    "next": "fetching_weather_data"
+                }
+            }
+        },
+        "validating_required_fields": {
+            "transitions": {
+                "missing_required_field": {
+                    "condition": {
+                        "function": {
+                            "name": "process_validate_required_fields"
+                        },
+                        "type": "function"
+                    },
+                    "next": "failed"
+                },
+                "required_fields_valid": {
+                    "condition": {
+                        "function": {
+                            "name": "process_validate_required_fields"
+                        },
+                        "type": "function"
+                    },
+                    "next": "validating_parameters_type"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "weather_fetch_workflow"
+}

@@ -1,0 +1,31 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "completedAt": "2024-06-01T08:10:00Z",
+                "requestedAt": "2024-06-01T08:00:00Z",
+                "result": {
+                    "data": {
+                        "precipitation": [
+                            0.0,
+                            0.1
+                        ],
+                        "temperature_2m": [
+                            21.3,
+                            20.8
+                        ]
+                    },
+                    "date_range": {
+                        "end": "2024-06-02",
+                        "start": "2024-06-01"
+                    },
+                    "latitude": 52.52,
+                    "longitude": 13.41,
+                    "request_id": "abc123"
+                },
+                "status": "completed"
+            },
+            "entity_name": "weather_fetch"
+        }
+    ]
+}

@@ -1,0 +1,16 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "latitude": 52.52,
+                "longitude": 13.405,
+                "parameters": [
+                    "temperature_2m",
+                    "humidity_2m"
+                ],
+                "requestedAt": "2024-06-10T15:00:00Z"
+            },
+            "entity_name": "weather_fetch_request"
+        }
+    ]
+}

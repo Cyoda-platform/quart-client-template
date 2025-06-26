@@ -1,8 +1,5 @@
-from datetime import datetime, timezone
-
 async def process_add_timestamp(entity: dict):
     entity["timestamp"] = datetime.now(timezone.utc).isoformat()
-    entity["workflowProcessed"] = True
 
 async def process_send_notification(entity: dict):
     if entity.get("eventType") == "food_request" and entity.get("intensity", "").lower() == "dramatic":
@@ -29,7 +26,8 @@ async def process_send_notification(entity: dict):
     else:
         entity["notificationSent"] = False
         entity["notificationMessage"] = ""
-    entity["workflowProcessed"] = True
 
-async def condition_always_true(entity: dict) -> bool:
-    return True
+async def process_cat_event(entity: dict):
+    # Orchestration only
+    await process_add_timestamp(entity)
+    await process_send_notification(entity)

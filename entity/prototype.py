@@ -1,12 +1,12 @@
-```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import List, Dict
 
 import httpx
 from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,8 +14,15 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+@dataclass
+class Subscriber:
+    email: str
+
+@dataclass
+class SendRequest:
+    pass  # Empty dataclass for POST body; TODO: add fields if control params are needed
+
 # In-memory async-safe caches
-# We will protect these caches with asyncio.Lock for concurrency safety.
 class Cache:
     def __init__(self):
         self._subscribers: List[str] = []
@@ -57,14 +64,11 @@ class Cache:
 
 cache = Cache()
 
-# Email sending is mocked here - TODO: Replace with real email sending service integration
 async def send_email(to_email: str, cat_fact: str):
-    # Simulate email sending latency
     await asyncio.sleep(0.1)
     logger.info(f"Sent cat fact email to {to_email}")
-    # TODO: Integrate with real email service provider (SMTP, SendGrid, etc.)
+    # TODO: Integrate with real email service provider
 
-# Fetch cat fact from external real API (https://catfact.ninja/fact)
 async def fetch_cat_fact() -> str:
     url = "https://catfact.ninja/fact"
     async with httpx.AsyncClient() as client:
@@ -81,9 +85,9 @@ async def fetch_cat_fact() -> str:
             raise
 
 @app.route("/api/subscribers", methods=["POST"])
-async def subscribe():
-    data = await request.get_json(force=True)
-    email = data.get("email", "").strip().lower()
+@validate_request(Subscriber)  # Workaround: place validate_request last for POST due to quart-schema defect
+async def subscribe(data: Subscriber):
+    email = data.email.strip().lower()
     if not email or "@" not in email:
         return jsonify({"error": "Invalid or missing email"}), 400
 
@@ -100,7 +104,8 @@ async def list_subscribers():
     return jsonify({"subscribers": [{"email": e} for e in subscribers], "count": len(subscribers)}), 200
 
 @app.route("/api/catfact/send", methods=["POST"])
-async def send_cat_fact():
+@validate_request(SendRequest)  # Workaround: place validate_request last for POST due to quart-schema defect
+async def send_cat_fact(data: SendRequest):
     subscribers = await cache.get_subscribers()
     if not subscribers:
         return jsonify({"error": "No subscribers to send emails to"}), 400
@@ -110,11 +115,7 @@ async def send_cat_fact():
     except Exception:
         return jsonify({"error": "Failed to fetch cat fact"}), 500
 
-    # Fire and forget sending emails concurrently, but wait for all to finish here to report count
-    async def send_all_emails():
-        await asyncio.gather(*(send_email(email, cat_fact) for email in subscribers))
-
-    await send_all_emails()
+    await asyncio.gather(*(send_email(email, cat_fact) for email in subscribers))
 
     await cache.update_latest_fact(cat_fact)
     logger.info(f"Cat fact sent to {len(subscribers)} subscribers")
@@ -133,10 +134,8 @@ async def get_report():
     report = await cache.get_report()
     return jsonify(report), 200
 
-
 if __name__ == '__main__':
     import sys
-    import logging
 
     logging.basicConfig(
         format='[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
@@ -144,4 +143,3 @@ if __name__ == '__main__':
         stream=sys.stdout,
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

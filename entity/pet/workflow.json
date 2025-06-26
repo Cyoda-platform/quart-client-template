@@ -1,0 +1,38 @@
+{
+    "description": "Purrfect Pets FSM workflow",
+    "initial_state": "none",
+    "states": {
+        "adding_timestamp": {
+            "transitions": {
+                "timestamp_added": {
+                    "action": {
+                        "name": "enrich_description"
+                    },
+                    "next": "enriching_description"
+                }
+            }
+        },
+        "done": {
+            "transitions": {}
+        },
+        "enriching_description": {
+            "transitions": {
+                "enrichment_done": {
+                    "next": "done"
+                }
+            }
+        },
+        "none": {
+            "transitions": {
+                "start_processing": {
+                    "action": {
+                        "name": "add_processed_timestamp"
+                    },
+                    "next": "adding_timestamp"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "purrfect_pets_workflow"
+}

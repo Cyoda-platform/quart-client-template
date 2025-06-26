@@ -1,82 +1,82 @@
 {
-    "description": "Weekly Cat Fact Subscription FSM Workflow",
-    "initial_state": "none",
-    "states": {
-        "check_cat_fact": {
-            "transitions": {
-                "cat_fact_exists": {
-                    "condition": {
-                        "function": {
-                            "name": "cat_fact_exists_condition"
-                        },
-                        "type": "function"
-                    },
-                    "next": "send_cat_fact_email"
-                },
-                "cat_fact_missing": {
-                    "condition": {
-                        "function": {
-                            "name": "cat_fact_missing_condition"
-                        },
-                        "type": "function"
-                    },
-                    "next": "update_subscriber_count_cache"
-                }
-            }
-        },
-        "fetch_cat_fact": {
-            "transitions": {
-                "cat_fact_fetched": {
-                    "action": {
-                        "name": "process_fetch_cat_fact"
-                    },
-                    "next": "check_cat_fact"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "add_subscription_timestamp": {
-                    "action": {
-                        "name": "process_add_subscription_timestamp"
-                    },
-                    "next": "fetch_cat_fact"
-                }
-            }
-        },
-        "send_cat_fact_email": {
-            "transitions": {
-                "email_sent": {
-                    "action": {
-                        "name": "process_send_cat_fact_email"
-                    },
-                    "next": "update_caches"
-                }
-            }
-        },
-        "terminal": {
-            "transitions": {}
-        },
-        "update_caches": {
-            "transitions": {
-                "caches_updated": {
-                    "action": {
-                        "name": "process_update_caches"
-                    },
-                    "next": "update_subscriber_count_cache"
-                }
-            }
-        },
-        "update_subscriber_count_cache": {
-            "transitions": {
-                "subscriber_count_updated": {
-                    "action": {
-                        "name": "process_update_subscriber_count_cache"
-                    },
-                    "next": "terminal"
-                }
-            }
+  "description": "Weekly Cat Fact Subscription FSM Workflow",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "add_subscription_timestamp": {
+          "action": {
+            "name": "process_add_subscription_timestamp"
+          },
+          "next": "fetch_cat_fact"
         }
+      }
     },
-    "workflow_name": "subscriber_workflow"
+    "fetch_cat_fact": {
+      "transitions": {
+        "cat_fact_fetched": {
+          "action": {
+            "name": "process_fetch_cat_fact"
+          },
+          "next": "check_cat_fact"
+        }
+      }
+    },
+    "check_cat_fact": {
+      "transitions": {
+        "cat_fact_exists": {
+          "condition": {
+            "function": {
+              "name": "cat_fact_exists_condition"
+            },
+            "type": "function"
+          },
+          "next": "send_cat_fact_email"
+        },
+        "cat_fact_missing": {
+          "condition": {
+            "function": {
+              "name": "cat_fact_missing_condition"
+            },
+            "type": "function"
+          },
+          "next": "update_subscriber_count_cache"
+        }
+      }
+    },
+    "send_cat_fact_email": {
+      "transitions": {
+        "email_sent": {
+          "action": {
+            "name": "process_send_cat_fact_email"
+          },
+          "next": "update_caches"
+        }
+      }
+    },
+    "update_caches": {
+      "transitions": {
+        "caches_updated": {
+          "action": {
+            "name": "process_update_caches"
+          },
+          "next": "update_subscriber_count_cache"
+        }
+      }
+    },
+    "update_subscriber_count_cache": {
+      "transitions": {
+        "subscriber_count_updated": {
+          "action": {
+            "name": "process_update_subscriber_count_cache"
+          },
+          "next": "terminal"
+        }
+      }
+    },
+    "terminal": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "subscriber_workflow"
 }

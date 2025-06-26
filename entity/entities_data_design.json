@@ -1,0 +1,22 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "eventId": "evt12345",
+                "eventType": "food_request",
+                "message": "Emergency! A cat demands snacks",
+                "timestamp": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "event"
+        },
+        {
+            "entity_data_example": {
+                "catId": "cat123",
+                "eventType": "food_request",
+                "message": "Emergency! A cat demands snacks",
+                "timestamp": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "notification"
+        }
+    ]
+}

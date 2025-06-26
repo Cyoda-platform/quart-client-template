@@ -1,12 +1,12 @@
-```python
 import asyncio
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,7 +14,12 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory async-safe cache for events and notifications (simulate persistence)
+@dataclass
+class CatEvent:
+    catId: Optional[str] = None
+    eventType: str
+    intensity: str
+
 class AsyncCache:
     def __init__(self):
         self._storage = {}
@@ -35,10 +40,6 @@ class AsyncCache:
 events_cache = AsyncCache()
 notifications_cache = AsyncCache()
 
-# Notification service integration - example using a real API (e.g. Pushover, Twilio, etc.)
-# For this prototype, we'll use a placeholder HTTP POST to a public webhook (httpbin) to simulate sending.
-# TODO: Replace with real notification API integration (e.g., Twilio SMS, Pushover, Pushbullet).
-
 NOTIFICATION_WEBHOOK_URL = "https://httpbin.org/post"
 
 async def send_notification(message: str) -> bool:
@@ -54,25 +55,16 @@ async def send_notification(message: str) -> bool:
             return False
 
 async def process_cat_event(event_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Business logic to evaluate event and send notification if needed."""
-
-    # Timestamp event processing
     event_data["timestamp"] = datetime.now(timezone.utc).isoformat()
-
-    # Cache event (simulate persistence)
     event_id = f"event-{int(datetime.now().timestamp() * 1000)}"
     await events_cache.set(event_id, event_data)
 
     notification_sent = False
     notification_message = ""
 
-    # Detect key cat event: dramatic food request
-    if (event_data.get("eventType") == "food_request" and 
-        event_data.get("intensity", "").lower() == "dramatic"):
+    if event_data.get("eventType") == "food_request" and event_data.get("intensity", "").lower() == "dramatic":
         notification_message = "Emergency! A cat demands snacks"
         notification_sent = await send_notification(notification_message)
-
-        # Cache notification
         notification_id = f"notif-{int(datetime.now().timestamp() * 1000)}"
         notification_record = {
             "id": notification_id,
@@ -87,34 +79,22 @@ async def process_cat_event(event_data: Dict[str, Any]) -> Dict[str, Any]:
         "eventProcessed": event_data,
     }
 
-
 @app.route("/events/cat-demand", methods=["POST"])
-async def cat_demand_event():
+@validate_request(CatEvent)  # workaround: validation must go after route for POST due to quart-schema issue
+async def cat_demand_event(data: CatEvent):
     try:
-        data = await request.get_json(force=True)
-        if not data:
-            return jsonify({"error": "Invalid JSON body"}), 400
-
-        # Fire and forget processing task (optional pattern) - but here we await to return response immediately
-        # TODO: Consider decoupling notification sending for higher throughput with background tasks.
-        result = await process_cat_event(data)
-
+        result = await process_cat_event(data.__dict__)
         return jsonify(result)
-
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-
 if __name__ == "__main__":
     import sys
-    import logging.config
 
     logging.basicConfig(
         stream=sys.stdout,
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
-
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

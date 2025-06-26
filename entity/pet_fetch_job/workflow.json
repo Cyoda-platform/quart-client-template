@@ -1,87 +1,87 @@
 {
-    "description": "Pet fetch job workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "add_pets": {
-            "transitions": {
-                "add_pet": {
-                    "action": {
-                        "name": "process_add_pet"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "has_more_pets_to_add"
-                        },
-                        "type": "function"
-                    },
-                    "next": "add_pets"
-                },
-                "all_pets_added": {
-                    "condition": {
-                        "function": {
-                            "name": "no_more_pets_to_add"
-                        },
-                        "type": "function"
-                    },
-                    "next": "update_success"
-                }
-            }
-        },
-        "done": {
-            "transitions": {}
-        },
-        "fetch_pets": {
-            "transitions": {
-                "fetch_failure": {
-                    "condition": {
-                        "function": {
-                            "name": "fetch_failure_condition"
-                        },
-                        "type": "function"
-                    },
-                    "next": "handle_failure"
-                },
-                "fetch_success": {
-                    "condition": {
-                        "function": {
-                            "name": "fetch_success_condition"
-                        },
-                        "type": "function"
-                    },
-                    "next": "add_pets"
-                }
-            }
-        },
-        "handle_failure": {
-            "transitions": {
-                "update_failure_action": {
-                    "action": {
-                        "name": "process_update_job_failure"
-                    },
-                    "next": "done"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_fetch": {
-                    "action": {
-                        "name": "process_pet_fetch_job"
-                    },
-                    "next": "fetch_pets"
-                }
-            }
-        },
-        "update_success": {
-            "transitions": {
-                "update_success_action": {
-                    "action": {
-                        "name": "process_update_job_success"
-                    },
-                    "next": "done"
-                }
-            }
+  "description": "Pet fetch job workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_fetch": {
+          "action": {
+            "name": "process_pet_fetch_job"
+          },
+          "next": "fetch_pets"
         }
+      }
     },
-    "workflow_name": "pet_fetch_workflow"
+    "fetch_pets": {
+      "transitions": {
+        "fetch_failure": {
+          "condition": {
+            "function": {
+              "name": "fetch_failure_condition"
+            },
+            "type": "function"
+          },
+          "next": "handle_failure"
+        },
+        "fetch_success": {
+          "condition": {
+            "function": {
+              "name": "fetch_success_condition"
+            },
+            "type": "function"
+          },
+          "next": "add_pets"
+        }
+      }
+    },
+    "handle_failure": {
+      "transitions": {
+        "update_failure_action": {
+          "action": {
+            "name": "process_update_job_failure"
+          },
+          "next": "done"
+        }
+      }
+    },
+    "done": {
+      "transitions": {}
+    },
+    "add_pets": {
+      "transitions": {
+        "add_pet": {
+          "action": {
+            "name": "process_add_pet"
+          },
+          "condition": {
+            "function": {
+              "name": "has_more_pets_to_add"
+            },
+            "type": "function"
+          },
+          "next": "add_pets"
+        },
+        "all_pets_added": {
+          "condition": {
+            "function": {
+              "name": "no_more_pets_to_add"
+            },
+            "type": "function"
+          },
+          "next": "update_success"
+        }
+      }
+    },
+    "update_success": {
+      "transitions": {
+        "update_success_action": {
+          "action": {
+            "name": "process_update_job_success"
+          },
+          "next": "done"
+        }
+      }
+    }
+  },
+  "workflow_name": "pet_fetch_workflow"
 }

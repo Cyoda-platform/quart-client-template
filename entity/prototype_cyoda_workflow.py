@@ -1,26 +1,3 @@
-Got it! The right approach here is to move all the logic that can be done **before** persisting the entity — especially any async tasks, side effects like notifications, or modifications on the entity itself — into the workflow function `process_cat_event`.
-
-### What needs to move into the workflow function:
-- Add the `timestamp` to the entity.
-- Fire the notification and manage the notifications cache.
-- Modify the entity if needed (e.g., you could add a flag or extra attribute if you want to persist notification info if relevant).
-
-### What must stay outside the workflow:
-- The actual call to `entity_service.add_item`.
-- The HTTP endpoint handler should just call the workflow-aware `add_item` and return the result.
-
----
-
-### Important notes:
-- The workflow function **cannot** call `entity_service.add_item` for the same entity model (would cause recursion).
-- The workflow function **can** call `entity_service.add_item` for other entity models (to add supplementary data).
-- The workflow function is async and receives the entity (dict) which can be modified directly before persistence.
-
----
-
-### Updated code with all async logic moved inside `process_cat_event` workflow function
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -50,8 +27,6 @@ class CatEvent:
     catId: Optional[str] = None
     eventType: str
     intensity: str
-
-notifications_cache = {}
 
 NOTIFICATION_WEBHOOK_URL = "https://httpbin.org/post"
 
@@ -97,7 +72,7 @@ async def process_cat_event(entity: Dict[str, Any]) -> None:
         except Exception:
             logger.exception("Failed to add notification entity")
 
-        # Optionally, add notification info to the current entity state
+        # Add notification info to the current entity state to persist
         entity["notificationSent"] = notification_sent
         entity["notificationMessage"] = message
     else:
@@ -125,6 +100,10 @@ async def cat_demand_event(data: CatEvent):
             entity_version=ENTITY_VERSION,
             technical_id=entity_id
         )
+
+        if persisted_entity is None:
+            # Defensive: item should exist, but handle gracefully
+            return jsonify({"error": "Item not found after creation"}), 500
 
         # Return the persisted entity plus its ID
         response = {
@@ -162,29 +141,3 @@ if __name__ == "__main__":
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation
-
-- The **workflow function `process_cat_event`** is now responsible for:
-  - Adding the timestamp to the entity.
-  - Sending notification if conditions match.
-  - Adding a supplementary notification entity via `entity_service.add_item` (different model: `"notification"`).
-  - Modifying the original entity to include notification info (`notificationSent`, `notificationMessage`) which will be persisted.
-  
-- The **endpoint**:
-  - Calls `entity_service.add_item` passing `workflow=process_cat_event`.
-  - After persistence, fetches the saved entity (with any modifications done by the workflow) and returns it with the new ID.
-  - Keeps the controller lean and free from business logic.
-
-- The **notifications cache** from previous code is removed since supplementary notifications are now persisted as a separate entity.
-
-- The `send_notification` remains a helper function, used only inside the workflow function.
-
----
-
-This approach fully complies with your requirements and makes controllers clean, pushing business logic and side effects to the workflow function.
-
-Let me know if you want me to help with any further enhancements!

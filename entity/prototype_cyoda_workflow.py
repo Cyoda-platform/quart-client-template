@@ -1,0 +1,183 @@
+Certainly! I've updated the code to include the new `workflow` parameter for `entity_service.add_item`. The workflow function `process_weather_fetch_request` is implemented following your naming conventions (prefix `process_` + underscore lowercase entity name). This function takes the entity data as input, applies any desired state changes or processing before the entity is persisted, and returns the possibly modified entity.
+
+Here's the complete updated code:
+
+```python
+from dataclasses import dataclass
+from typing import List, Optional, Dict, Any
+import asyncio
+import logging
+from datetime import datetime
+
+import httpx
+from quart import Quart, request, jsonify
+from quart_schema import QuartSchema, validate_request
+
+from app_init.app_init import BeanFactory
+from common.config.config import ENTITY_VERSION
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+app = Quart(__name__)
+QuartSchema(app)
+
+@dataclass
+class WeatherFetchRequest:
+    latitude: float
+    longitude: float
+    parameters: List[str]
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+async def fetch_weather_from_api(latitude: float, longitude: float, parameters: list, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+    base_url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "hourly": ",".join(parameters)
+    }
+    if start_date:
+        params["start_date"] = start_date
+    if end_date:
+        params["end_date"] = end_date
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        try:
+            resp = await client.get(base_url, params=params)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            logger.exception(f"Error fetching weather data from external API: {e}")
+            raise
+
+async def process_entity(job_id: str, data: dict):
+    try:
+        weather_data = await fetch_weather_from_api(
+            latitude=data["latitude"],
+            longitude=data["longitude"],
+            parameters=data["parameters"],
+            start_date=data.get("start_date"),
+            end_date=data.get("end_date")
+        )
+        # Update the entity_service with the result of processing
+        # Prepare the data to update the entity with job_id
+        update_data = {
+            "status": "completed",
+            "data": weather_data,
+            "parameters": data["parameters"],
+            "location": {"latitude": data["latitude"], "longitude": data["longitude"]},
+            "completedAt": datetime.utcnow().isoformat() + "Z",
+        }
+        await entity_service.update_item(
+            token=cyoda_auth_service,
+            entity_model="weather_fetch_request",
+            entity_version=ENTITY_VERSION,
+            entity=update_data,
+            technical_id=job_id,
+            meta={}
+        )
+    except Exception as e:
+        fail_data = {
+            "status": "failed",
+            "error": str(e),
+            "completedAt": datetime.utcnow().isoformat() + "Z",
+        }
+        try:
+            await entity_service.update_item(
+                token=cyoda_auth_service,
+                entity_model="weather_fetch_request",
+                entity_version=ENTITY_VERSION,
+                entity=fail_data,
+                technical_id=job_id,
+                meta={}
+            )
+        except Exception as ex:
+            logger.exception(f"Failed to update failed status for job {job_id}: {ex}")
+        logger.exception(f"Failed processing job {job_id}")
+
+# Workflow function to be applied before persistence
+async def process_weather_fetch_request(entity: dict) -> dict:
+    # Example: Add a timestamp and set initial status (can be customized)
+    entity.setdefault("status", "processing")
+    entity.setdefault("requestedAt", datetime.utcnow().isoformat() + "Z")
+    # You can do additional async operations or modify entity here if needed
+    return entity
+
+@app.route("/weather/fetch", methods=["POST"])
+@validate_request(WeatherFetchRequest)
+async def weather_fetch(data: WeatherFetchRequest):
+    data_dict = data.__dict__
+    try:
+        job_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="weather_fetch_request",
+            entity_version=ENTITY_VERSION,
+            entity={
+                **data_dict
+            },
+            workflow=process_weather_fetch_request
+        )
+    except Exception as e:
+        logger.exception(f"Failed to add new weather fetch request: {e}")
+        return jsonify({"error": "Failed to create request"}), 500
+
+    # Fire and forget background processing
+    asyncio.create_task(process_entity(job_id, data_dict))
+    return jsonify({"request_id": job_id, "status": "processing"}), 202
+
+@app.route("/weather/result/<string:request_id>", methods=["GET"])
+async def weather_result(request_id):
+    try:
+        job = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="weather_fetch_request",
+            entity_version=ENTITY_VERSION,
+            technical_id=request_id
+        )
+    except Exception as e:
+        logger.exception(f"Failed to get job {request_id}: {e}")
+        return jsonify({"error": "Request ID not found"}), 404
+
+    if not job:
+        return jsonify({"error": "Request ID not found"}), 404
+
+    response = {
+        "request_id": request_id,
+        "status": job.get("status"),
+        "requestedAt": job.get("requestedAt"),
+    }
+    if job.get("status") == "completed":
+        response.update({
+            "location": job.get("location"),
+            "parameters": job.get("parameters"),
+            "data": job.get("data"),
+            "completedAt": job.get("completedAt"),
+        })
+    elif job.get("status") == "failed":
+        response.update({
+            "error": job.get("error"),
+            "completedAt": job.get("completedAt"),
+        })
+
+    return jsonify(response)
+
+if __name__ == '__main__':
+    import sys
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+```
+
+---
+
+### Explanation of changes:
+- Added `process_weather_fetch_request(entity: dict) -> dict` async workflow function.
+- This function is passed as the `workflow` argument to `entity_service.add_item` in the `/weather/fetch` route.
+- The workflow function modifies the entity before persistence (e.g., setting initial status and timestamps).
+- The rest of the code remains unchanged except for the call signature of `add_item`.
+
+Let me know if you want the workflow function to do any specific additional processing!

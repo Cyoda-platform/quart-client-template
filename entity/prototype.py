@@ -1,12 +1,13 @@
-```python
 import asyncio
 import logging
+import sys
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict
+from typing import Dict, List
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,11 +15,19 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+# Request dataclass for POST /weather/fetch
+@dataclass
+class WeatherFetchRequest:
+    latitude: float
+    longitude: float
+    parameters: List[str]
+    start_date: str
+    end_date: str
+
 # In-memory cache for prototype: job_id -> job data and results
 entity_job: Dict[str, Dict] = {}
 
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
-
 
 async def fetch_weather_data(latitude, longitude, parameters, start_date, end_date):
     params = {
@@ -38,32 +47,22 @@ async def fetch_weather_data(latitude, longitude, parameters, start_date, end_da
             logger.exception(f"Error while calling Open-Meteo API: {e}")
             raise
 
-
-async def process_entity(job_id: str, data: dict):
+async def process_entity(job_id: str, data: WeatherFetchRequest):
     try:
-        latitude = data["latitude"]
-        longitude = data["longitude"]
-        parameters = data["parameters"]
-        start_date = data["start_date"]
-        end_date = data["end_date"]
-
-        raw_weather = await fetch_weather_data(latitude, longitude, parameters, start_date, end_date)
-
-        # TODO: Add any additional processing/filtering here if needed
-        # For prototype, just store hourly data for requested parameters
-
+        raw_weather = await fetch_weather_data(
+            data.latitude, data.longitude, data.parameters, data.start_date, data.end_date
+        )
         hourly_data = raw_weather.get("hourly", {})
-        filtered_data = {param: hourly_data.get(param, []) for param in parameters}
-
+        filtered_data = {param: hourly_data.get(param, []) for param in data.parameters}
         entity_job[job_id].update(
             {
                 "status": "completed",
                 "result": {
                     "request_id": job_id,
-                    "latitude": latitude,
-                    "longitude": longitude,
+                    "latitude": data.latitude,
+                    "longitude": data.longitude,
                     "data": filtered_data,
-                    "date_range": {"start": start_date, "end": end_date},
+                    "date_range": {"start": data.start_date, "end": data.end_date},
                 },
                 "completedAt": datetime.utcnow().isoformat() + "Z",
             }
@@ -73,59 +72,34 @@ async def process_entity(job_id: str, data: dict):
         entity_job[job_id].update({"status": "failed", "error": str(e)})
         logger.exception(f"Job {job_id} failed")
 
-
 @app.route("/weather/fetch", methods=["POST"])
-async def weather_fetch():
-    try:
-        data = await request.get_json()
-        # Basic input keys validation (not full schema validation)
-        required_keys = {"latitude", "longitude", "parameters", "start_date", "end_date"}
-        if not data or not required_keys.issubset(data.keys()):
-            return jsonify({"status": "error", "message": "Missing required fields"}), 400
-
-        # Generate a simple unique job/request id
-        request_id = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
-
-        # Initialize job state
-        entity_job[request_id] = {
-            "status": "processing",
-            "requestedAt": datetime.utcnow().isoformat() + "Z",
+@validate_request(WeatherFetchRequest)  # workaround: validation last for POST due to quart-schema issue
+async def weather_fetch(data: WeatherFetchRequest):
+    request_id = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
+    entity_job[request_id] = {
+        "status": "processing",
+        "requestedAt": datetime.utcnow().isoformat() + "Z",
+    }
+    asyncio.create_task(process_entity(request_id, data))
+    return jsonify(
+        {
+            "status": "success",
+            "message": "Weather data fetch initiated",
+            "request_id": request_id,
         }
-
-        # Fire and forget processing task
-        asyncio.create_task(process_entity(request_id, data))
-
-        return jsonify(
-            {
-                "status": "success",
-                "message": "Weather data fetch initiated",
-                "request_id": request_id,
-            }
-        )
-    except Exception as e:
-        logger.exception(e)
-        return jsonify({"status": "error", "message": "Internal server error"}), 500
-
+    )
 
 @app.route("/weather/result/<request_id>", methods=["GET"])
 async def weather_result(request_id: str):
     job = entity_job.get(request_id)
     if not job:
         return jsonify({"status": "error", "message": "Request ID not found"}), 404
-
     if job["status"] == "processing":
         return jsonify({"status": "processing", "message": "Data is still being fetched"}), 202
-
     if job["status"] == "failed":
         return jsonify({"status": "failed", "message": job.get("error", "Unknown error")}), 500
-
-    # status == completed
     return jsonify(job["result"])
 
-
 if __name__ == "__main__":
-    import sys
-
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

@@ -21,11 +21,6 @@ class EventDetectRequest:
     input_type: str
     input_data: str
 
-@dataclass
-class SendNotificationRequest:
-    cat_id: str
-    message: str
-
 # In-memory mock persistence for notifications per cat_id
 notifications_store: Dict[str, List[Dict]] = {}
 entity_jobs: Dict[str, Dict] = {}
@@ -117,29 +112,11 @@ async def detect_event(data: EventDetectRequest):
         "requestedAt": datetime.utcnow().isoformat()
     }
 
-    asyncio.create_task(process_event_detection(event_id, cat_id, input_type, input_data))
-    return jsonify({"job_id": event_id, "status": "processing"}), 202
+    # Process event detection synchronously to return success after notification
+    await process_event_detection(event_id, cat_id, input_type, input_data)
 
-@app.route("/notifications/<cat_id>", methods=["GET"])
-async def get_notifications(cat_id):
-    cat_notifications = notifications_store.get(cat_id, [])
-    return jsonify({
-        "cat_id": cat_id,
-        "notifications": cat_notifications
-    })
-
-@app.route("/notifications/send", methods=["POST"])
-@validate_request(SendNotificationRequest)  # validation last for POST (workaround)
-async def send_notification(data: SendNotificationRequest):
-    cat_id = data.cat_id
-    message = data.message
-    timestamp = datetime.utcnow().isoformat()
-    notifications_store.setdefault(cat_id, []).append({
-        "timestamp": timestamp,
-        "message": message
-    })
-    logger.info(f"Manual notification stored for cat_id={cat_id}: {message}")
-    return jsonify({"status": "success", "details": "Notification stored"}), 200
+    # Always return success if event received and notification sent
+    return jsonify({"status": "success"}), 200
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

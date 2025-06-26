@@ -1,72 +1,72 @@
 {
-    "description": "Pet entity processing workflow",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
-        },
-        "enrich_data": {
-            "transitions": {
-                "finalize_processing": {
-                    "action": {
-                        "name": "process_finalize"
-                    },
-                    "next": "finalize"
-                }
-            }
-        },
-        "fetch_external_data": {
-            "transitions": {
-                "check_needs_enrich": {
-                    "action": {
-                        "name": "process_enrich_data"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "process_fetch_external_data_condition"
-                        },
-                        "type": "function"
-                    },
-                    "next": "enrich_data"
-                },
-                "skip_enrich": {
-                    "condition": {
-                        "function": {
-                            "name": "process_skip_enrich_condition"
-                        },
-                        "type": "function"
-                    },
-                    "next": "finalize"
-                }
-            }
-        },
-        "finalize": {
-            "transitions": {
-                "end": {
-                    "next": "completed"
-                }
-            }
-        },
-        "mark_processed": {
-            "transitions": {
-                "fetch_external_data": {
-                    "action": {
-                        "name": "process_fetch_external_data"
-                    },
-                    "next": "fetch_external_data"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_processing": {
-                    "action": {
-                        "name": "process_mark_processed"
-                    },
-                    "next": "mark_processed"
-                }
-            }
+  "description": "Pet entity processing workflow",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_processing": {
+          "action": {
+            "name": "process_mark_processed"
+          },
+          "next": "mark_processed"
         }
+      }
     },
-    "workflow_name": "pet_processing_workflow"
+    "mark_processed": {
+      "transitions": {
+        "fetch_external_data": {
+          "action": {
+            "name": "process_fetch_external_data"
+          },
+          "next": "fetch_external_data"
+        }
+      }
+    },
+    "fetch_external_data": {
+      "transitions": {
+        "check_needs_enrich": {
+          "action": {
+            "name": "process_enrich_data"
+          },
+          "condition": {
+            "function": {
+              "name": "process_fetch_external_data_condition"
+            },
+            "type": "function"
+          },
+          "next": "enrich_data"
+        },
+        "skip_enrich": {
+          "condition": {
+            "function": {
+              "name": "process_skip_enrich_condition"
+            },
+            "type": "function"
+          },
+          "next": "finalize"
+        }
+      }
+    },
+    "enrich_data": {
+      "transitions": {
+        "finalize_processing": {
+          "action": {
+            "name": "process_finalize"
+          },
+          "next": "finalize"
+        }
+      }
+    },
+    "finalize": {
+      "transitions": {
+        "end": {
+          "next": "completed"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "pet_processing_workflow"
 }

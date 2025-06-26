@@ -1,0 +1,51 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet_search_request"
+        },
+        {
+            "entity_data_example": {
+                "id": "123"
+            },
+            "entity_name": "pet_details_request"
+        },
+        {
+            "entity_data_example": {
+                "id": "123"
+            },
+            "entity_name": "favorite_request"
+        },
+        {
+            "entity_data_example": {
+                "description": "A friendly cat.",
+                "id": 123,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "http://example.com/photo1.jpg"
+                ],
+                "status": "available",
+                "tags": [
+                    {
+                        "id": 1,
+                        "name": "cute"
+                    }
+                ],
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "id": 123,
+                "name": "Fluffy",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "favorite_pet"
+        }
+    ]
+}

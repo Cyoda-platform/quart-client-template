@@ -36,6 +36,11 @@ async def evaluate_event(entity: dict):
         entity['notification_sent'] = False
         logger.info(f"No notification needed for event_type={event_type}, intensity={intensity}")
 
+async def condition_is_dramatic_food_request(entity: dict) -> bool:
+    return entity.get("event_type") == "food_request" and entity.get("intensity") == "dramatic"
+
+async def condition_is_not_dramatic_food_request(entity: dict) -> bool:
+    return not (entity.get("event_type") == "food_request" and entity.get("intensity") == "dramatic")
+
 async def process_product(entity: dict):
-    # Workflow orchestration only
     await evaluate_event(entity)

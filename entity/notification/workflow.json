@@ -1,0 +1,60 @@
+{
+    "description": "FSM for cat event detection and notification",
+    "initial_state": "none",
+    "states": {
+        "analyze_text": {
+            "transitions": {
+                "transition_to_notify": {
+                    "action": {
+                        "name": "analyze_text_for_food_request"
+                    },
+                    "next": "process_notification"
+                }
+            }
+        },
+        "completed": {
+            "transitions": {}
+        },
+        "no_event": {
+            "transitions": {
+                "transition_to_completed": {
+                    "next": "completed"
+                }
+            }
+        },
+        "none": {
+            "transitions": {
+                "transition_to_analyze": {
+                    "condition": {
+                        "function": {
+                            "name": "input_type_is_text"
+                        },
+                        "type": "function"
+                    },
+                    "next": "analyze_text"
+                },
+                "transition_to_no_event": {
+                    "condition": {
+                        "function": {
+                            "name": "input_type_is_not_text"
+                        },
+                        "type": "function"
+                    },
+                    "next": "no_event"
+                }
+            }
+        },
+        "process_notification": {
+            "transitions": {
+                "transition_to_completed": {
+                    "action": {
+                        "name": "process_notification"
+                    },
+                    "next": "completed"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "cat_event_detection_workflow"
+}

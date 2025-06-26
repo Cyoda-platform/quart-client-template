@@ -45,6 +45,5 @@
             }
         }
     },
-    "version": "1.0",
     "workflow_name": "cat_event_detection_workflow"
 }

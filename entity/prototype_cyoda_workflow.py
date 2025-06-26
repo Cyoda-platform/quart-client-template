@@ -1,24 +1,3 @@
-Understood! To better separate concerns and keep the endpoint handlers clean, we'll migrate all meaningful async processing logic into the workflow functions:
-
-- For the `event` entity, we'll move the logic that detects food requests and sends notifications into `process_event`. The endpoint will simply accept and pass the data to `entity_service.add_item` with the workflow.
-
-- For the `notification` entity, the workflow will remain simple, but if needed, you can add more processing.
-
-**Key points:**
-
-- Workflow functions are called asynchronously before persistence of the entity.
-
-- They can modify the entity data in-place.
-
-- They can add supplementary entities of different models, but **not** update/add/delete the same model to avoid infinite recursion.
-
-- Fire-and-forget async tasks (like sending notifications) are perfect candidates to migrate to workflow.
-
----
-
-### Updated Full Code
-
-```python
 from dataclasses import dataclass
 import asyncio
 import base64
@@ -100,9 +79,6 @@ async def detect_food_request_from_audio(audio_b64: str) -> bool:
             return False
 
 async def send_notification_entity(cat_id: str, event_type: str, message: str):
-    """
-    Helper to add a notification entity asynchronously.
-    """
     notification = {
         "cat_id": cat_id,
         "event_type": event_type,
@@ -115,19 +91,13 @@ async def send_notification_entity(cat_id: str, event_type: str, message: str):
             entity_model="notification",
             entity_version=ENTITY_VERSION,
             entity=notification,
-            workflow=process_notification  # Chain workflow for notification too
+            workflow=process_notification
         )
         logger.info("Notification entity added asynchronously.")
     except Exception:
         logger.exception("Failed to add notification entity asynchronously.")
 
-# Workflow function for event entity
 async def process_event(entity: dict) -> None:
-    """
-    This workflow function runs asynchronously before persisting an 'event' entity.
-    It detects if the event is a food request and sends notification entities accordingly.
-    """
-    # Add processed timestamp
     entity["processed_at"] = datetime.datetime.utcnow().isoformat() + "Z"
 
     input_type = entity.get("input_type")
@@ -135,11 +105,9 @@ async def process_event(entity: dict) -> None:
     cat_id = entity.get("cat_id")
 
     if not (cat_id and input_type and input_data):
-        # Missing data, can't process
         logger.warning("Event entity missing required fields for processing.")
         return
 
-    # Detect food request based on input_type
     detected = False
     try:
         if input_type == "text":
@@ -150,43 +118,28 @@ async def process_event(entity: dict) -> None:
         logger.exception("Failed to detect food request in process_event")
 
     if detected:
-        # Modify event entity state: mark event_type and message
         entity["event_type"] = "food_request"
         entity["message"] = "Emergency! A cat demands snacks"
-        # Fire-and-forget: add notification entity for this event
+        # Fire-and-forget notification creation
         asyncio.create_task(
             send_notification_entity(cat_id, entity["event_type"], entity["message"])
         )
     else:
-        # No event detected, clear event_type/message if set
         entity["event_type"] = None
         entity["message"] = None
 
-# Workflow function for notification entity
 async def process_notification(entity: dict) -> None:
-    """
-    Workflow function for notification entities.
-    Can enrich or modify notification before persistence.
-    """
-    # Add a timestamp if missing
     if "timestamp" not in entity:
         entity["timestamp"] = datetime.datetime.utcnow().isoformat() + "Z"
-    # Add default priority if missing
     entity.setdefault("priority", "normal")
-    # Further processing can be added here
 
 @app.route("/events/detect", methods=["POST"])
 @validate_request(DetectEventRequest)
 async def detect_event(data: DetectEventRequest):
-    """
-    Endpoint simply adds event entity with input data.
-    The detection and notification logic moved to workflow process_event.
-    """
     event = {
         "cat_id": data.cat_id,
         "input_type": data.input_type,
         "input_data": data.input_data,
-        # event_type and message will be set in workflow if detected
     }
     try:
         event_id = await entity_service.add_item(
@@ -232,10 +185,6 @@ async def get_events(cat_id):
 @app.route("/notifications/send", methods=["POST"])
 @validate_request(NotificationRequest)
 async def notifications_send(data: NotificationRequest):
-    """
-    Endpoint only creates a notification entity with the supplied data.
-    The workflow enriches the notification before persistence.
-    """
     notification = {
         "cat_id": data.cat_id,
         "event_type": data.event_type,
@@ -258,26 +207,3 @@ if __name__ == '__main__':
     import sys
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation of changes:
-
-- The `/events/detect` endpoint no longer performs detection itself; it just creates the basic event entity and passes it to `add_item` with `workflow=process_event`.
-
-- `process_event` inspects the `input_type` and `input_data` fields, performs detection (text or audio), and if a food request is detected:
-
-  - Modifies the `event` entity's `event_type` and `message` fields before persisting.
-
-  - Asynchronously creates a notification entity by calling `send_notification_entity` (which uses `entity_service.add_item` with `process_notification` workflow). This is done via `asyncio.create_task` to fire-and-forget without blocking persistence.
-
-- The notification endpoint `/notifications/send` simply adds notification using the workflow `process_notification`, which enriches the data.
-
-- `process_notification` adds timestamp and default priority if missing, making sure notifications are consistent.
-
----
-
-This design fully leverages the workflow system to handle business logic asynchronously before persistence, freeing endpoints from heavy logic and making code easier to maintain and test.
-
-If you want, I can also help with tests or further refactoring!

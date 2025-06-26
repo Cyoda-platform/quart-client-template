@@ -1,72 +1,72 @@
 {
-    "description": "Workflow for process_adoptpetrequest FSM",
-    "initial_state": "none",
-    "states": {
-        "add_adoption": {
-            "transitions": {
-                "adoption_added": {
-                    "action": {
-                        "name": "_add_adoption"
-                    },
-                    "next": "finalize"
-                }
-            }
-        },
-        "done": {
-            "transitions": {}
-        },
-        "fetch_pet_info_from_external_api": {
-            "transitions": {
-                "external_pet_info_fetched": {
-                    "action": {
-                        "name": "_fetch_pet_info_from_external_api"
-                    },
-                    "next": "add_adoption"
-                }
-            }
-        },
-        "fetch_pet_info_from_searches": {
-            "transitions": {
-                "pet_info_found": {
-                    "condition": {
-                        "function": {
-                            "name": "_pet_info_found_condition"
-                        },
-                        "type": "function"
-                    },
-                    "next": "add_adoption"
-                },
-                "pet_info_not_found": {
-                    "condition": {
-                        "function": {
-                            "name": "_pet_info_not_found_condition"
-                        },
-                        "type": "function"
-                    },
-                    "next": "fetch_pet_info_from_external_api"
-                }
-            }
-        },
-        "finalize": {
-            "transitions": {
-                "complete": {
-                    "action": {
-                        "name": "_finalize_entity"
-                    },
-                    "next": "done"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_fetch_pet_info": {
-                    "action": {
-                        "name": "_fetch_pet_info_from_searches"
-                    },
-                    "next": "fetch_pet_info_from_searches"
-                }
-            }
+  "description": "Workflow for process_adoptpetrequest FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_fetch_pet_info": {
+          "action": {
+            "name": "_fetch_pet_info_from_searches"
+          },
+          "next": "fetch_pet_info_from_searches"
         }
+      }
     },
-    "workflow_name": "process_adoptpetrequest_workflow"
+    "fetch_pet_info_from_searches": {
+      "transitions": {
+        "pet_info_found": {
+          "condition": {
+            "function": {
+              "name": "_pet_info_found_condition"
+            },
+            "type": "function"
+          },
+          "next": "add_adoption"
+        },
+        "pet_info_not_found": {
+          "condition": {
+            "function": {
+              "name": "_pet_info_not_found_condition"
+            },
+            "type": "function"
+          },
+          "next": "fetch_pet_info_from_external_api"
+        }
+      }
+    },
+    "add_adoption": {
+      "transitions": {
+        "adoption_added": {
+          "action": {
+            "name": "_add_adoption"
+          },
+          "next": "finalize"
+        }
+      }
+    },
+    "finalize": {
+      "transitions": {
+        "complete": {
+          "action": {
+            "name": "_finalize_entity"
+          },
+          "next": "done"
+        }
+      }
+    },
+    "done": {
+      "transitions": {}
+    },
+    "fetch_pet_info_from_external_api": {
+      "transitions": {
+        "external_pet_info_fetched": {
+          "action": {
+            "name": "_fetch_pet_info_from_external_api"
+          },
+          "next": "add_adoption"
+        }
+      }
+    }
+  },
+  "workflow_name": "process_adoptpetrequest_workflow"
 }

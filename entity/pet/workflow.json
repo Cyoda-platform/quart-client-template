@@ -1,37 +1,37 @@
 {
-    "description": "Purrfect Pets FSM workflow",
-    "initial_state": "none",
-    "states": {
-        "adding_timestamp": {
-            "transitions": {
-                "timestamp_added": {
-                    "action": {
-                        "name": "enrich_description"
-                    },
-                    "next": "enriching_description"
-                }
-            }
-        },
-        "done": {
-            "transitions": {}
-        },
-        "enriching_description": {
-            "transitions": {
-                "enrichment_done": {
-                    "next": "done"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_processing": {
-                    "action": {
-                        "name": "add_processed_timestamp"
-                    },
-                    "next": "adding_timestamp"
-                }
-            }
+  "description": "Purrfect Pets FSM workflow",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_processing": {
+          "action": {
+            "name": "add_processed_timestamp"
+          },
+          "next": "adding_timestamp"
         }
+      }
     },
-    "workflow_name": "purrfect_pets_workflow"
+    "adding_timestamp": {
+      "transitions": {
+        "timestamp_added": {
+          "action": {
+            "name": "enrich_description"
+          },
+          "next": "enriching_description"
+        }
+      }
+    },
+    "enriching_description": {
+      "transitions": {
+        "enrichment_done": {
+          "next": "done"
+        }
+      }
+    },
+    "done": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "purrfect_pets_workflow"
 }

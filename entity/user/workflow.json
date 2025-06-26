@@ -1,0 +1,53 @@
+{
+    "description": "Cat Event Detection FSM Workflow",
+    "initial_state": "none",
+    "states": {
+        "end": {
+            "transitions": {}
+        },
+        "evaluate_event": {
+            "transitions": {
+                "check_if_dramatic_food_request": {
+                    "action": {
+                        "name": "send_notification"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "is_dramatic_food_request"
+                        },
+                        "type": "function"
+                    },
+                    "next": "send_notification"
+                },
+                "skip_notification": {
+                    "condition": {
+                        "function": {
+                            "name": "is_not_dramatic_food_request"
+                        },
+                        "type": "function"
+                    },
+                    "next": "end"
+                }
+            }
+        },
+        "none": {
+            "transitions": {
+                "start_event_processing": {
+                    "action": {
+                        "name": "evaluate_event"
+                    },
+                    "next": "evaluate_event"
+                }
+            }
+        },
+        "send_notification": {
+            "transitions": {
+                "finish": {
+                    "next": "end"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "cat_event_detection_workflow"
+}

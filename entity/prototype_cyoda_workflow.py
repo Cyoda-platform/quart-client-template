@@ -1,19 +1,3 @@
-Understood! The goal is to move *all* asynchronous logic, including fetching weather data and updating the entity state, into the workflow function `process_weather_fetch` which is called *before* persisting the entity. This will clean up the controller, as the workflow function supports async code and can modify the entity state directly before saving it.
-
-### Key points:
-- The controller should only call `entity_service.add_item()` with the initial minimal entity data and the workflow function.
-- The `process_weather_fetch` function will:
-  - Fetch weather data asynchronously,
-  - Update the entity dict state (status, results, errors),
-  - Optionally add supplementary entities of other models (if needed),
-  - **Cannot** call `add/update/delete` on the same entity model (`weather_fetch`) to avoid recursion,
-  - But can modify the current entity dict directly, which will be persisted after `process_weather_fetch` completes.
-
----
-
-### Here is the fully refactored code with the described approach:
-
-```python
 import asyncio
 import logging
 import sys
@@ -21,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -66,11 +50,8 @@ async def process_weather_fetch(entity: dict):
     Workflow function applied before persisting 'weather_fetch' entity.
     Fetches weather data asynchronously, updates entity state with results or errors.
     """
-
     # Validate required input fields exist in entity
-    # They must be passed inside the initial 'entity' dict when add_item is called
     try:
-        # Essential input parameters expected inside entity
         latitude = entity["latitude"]
         longitude = entity["longitude"]
         parameters = entity["parameters"]
@@ -98,7 +79,6 @@ async def process_weather_fetch(entity: dict):
             "date_range": {"start": start_date, "end": end_date},
         }
         entity["completedAt"] = datetime.utcnow().isoformat() + "Z"
-        # Clear any previous error if present
         entity.pop("error", None)
     except Exception as e:
         logger.exception("Error fetching weather data in workflow")
@@ -106,12 +86,10 @@ async def process_weather_fetch(entity: dict):
         entity["error"] = str(e)
     return entity
 
-
 @app.route("/weather/fetch", methods=["POST"])
-@validate_request(WeatherFetchRequest)  # workaround: validation last for POST due to quart-schema issue
+@validate_request(WeatherFetchRequest)
 async def weather_fetch(data: WeatherFetchRequest):
     try:
-        # Pass all needed input fields inside the initial entity dict to the workflow
         initial_entity = {
             "latitude": data.latitude,
             "longitude": data.longitude,
@@ -120,7 +98,6 @@ async def weather_fetch(data: WeatherFetchRequest):
             "end_date": data.end_date,
         }
 
-        # Add item with workflow function that will fetch and update entity before persistence
         id_returned = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="weather_fetch",
@@ -139,7 +116,6 @@ async def weather_fetch(data: WeatherFetchRequest):
     except Exception as e:
         logger.exception(f"Failed to initiate weather fetch: {e}")
         return jsonify({"status": "error", "message": "Failed to initiate weather fetch"}), 500
-
 
 @app.route("/weather/result/<string:technical_id>", methods=["GET"])
 async def weather_result(technical_id: str):
@@ -162,37 +138,6 @@ async def weather_result(technical_id: str):
         logger.exception(f"Error retrieving job result for {technical_id}: {e}")
         return jsonify({"status": "error", "message": "Failed to retrieve data"}), 500
 
-
 if __name__ == "__main__":
     logging.basicConfig(stream=sys.stdout, level=logging.INFO)
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation of changes:
-
-- **All async logic moved into `process_weather_fetch` workflow function**:
-  - It reads input fields from the entity dict.
-  - Runs the HTTP request to Open-Meteo API asynchronously.
-  - Updates the entity state directly with `status`, `result` or `error`.
-- **The controller `/weather/fetch` endpoint:**
-  - Only passes the input data inside the initial entity dict,
-  - Calls `entity_service.add_item` with `workflow=process_weather_fetch`,
-  - Returns immediately without any background tasks.
-- **Removed the separate `process_entity` background task entirely**.
-- **The result endpoint `/weather/result/<id>` is unchanged**, reading the persisted entity state and returning results or error info.
-
----
-
-### Note about workflow function restrictions:
-
-- The workflow function **does not call `add_item/update_item/delete_item` on the same entity model** to avoid infinite recursion.
-- It modifies the entity dict directly.
-- It can add/get entities of other models if needed (not used here).
-
----
-
-This approach fully leverages the new workflow function feature, making the controller minimal and pushing all async business logic and state mutation into the workflow function.
-
-Let me know if you'd like me to further enhance or add examples for multi-entity workflows!

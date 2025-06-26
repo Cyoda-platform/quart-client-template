@@ -1,23 +1,3 @@
-Understood. Moving all the async logic from the controller into the `process_{entity_name}` workflow functions is the right design to keep controllers lean and delegate business logic to workflows. This also leverages the new `workflow` argument of `entity_service.add_item`.
-
----
-
-### What I will do:
-- Move any async logic currently in the endpoint (e.g., event detection, calling AI, notifications, job state updates) into a dedicated `process_event_detect` workflow function.
-- Update the `/events/detect` endpoint to just validate input and call `entity_service.add_item` with `workflow=process_event_detect`.
-- The workflow function will:
-  - Analyze input data (call AI)
-  - Set entity attributes (event detected, message, status)
-  - Add notifications entities if needed
-  - Manage entity_jobs states
-- Similarly, if there are any other async tasks, those will be moved into their respective `process_{entity_name}` functions.
-- The controller becomes a simple pass-through: validate -> call add_item with workflow -> return success immediately (fire-and-forget style).
-
----
-
-### Updated complete code example with your requirements applied:
-
-```python
 from dataclasses import dataclass
 import logging
 from datetime import datetime
@@ -40,11 +20,10 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory mock store for notifications and job status
 notifications_store: Dict[str, list] = {}
 entity_jobs: Dict[str, dict] = {}
 
-OPENAI_API_KEY = "your_openai_api_key_here"  # TODO: use env var in prod
+OPENAI_API_KEY = "your_openai_api_key_here"  # TODO: replace with environment variable in production
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
 @dataclass
@@ -52,10 +31,6 @@ class EventDetectRequest:
     cat_id: str
     input_type: str
     input_data: str
-
-# =================
-# Workflow for event_detect entity
-# =================
 
 async def analyze_text_for_food_request(text: str) -> bool:
     headers = {
@@ -92,18 +67,11 @@ async def analyze_text_for_food_request(text: str) -> bool:
             return False
 
 async def process_event_detect(entity: Dict[str, Any]) -> None:
-    """
-    Workflow function for 'event_detect' entity.
-    Performs event detection logic asynchronously before persistence.
-    """
-
-    # Extract needed fields from entity
     cat_id = entity.get("cat_id")
     input_type = entity.get("input_type")
     input_data = entity.get("input_data")
     event_id = entity.get("event_id") or f"{cat_id}-{datetime.utcnow().timestamp()}"
 
-    # Mark job as processing
     entity_jobs[event_id] = {
         "status": "processing",
         "requestedAt": datetime.utcnow().isoformat()
@@ -124,31 +92,27 @@ async def process_event_detect(entity: Dict[str, Any]) -> None:
             message = "Emergency! A cat demands snacks"
             timestamp = datetime.utcnow().isoformat()
 
-            # Add notification entity for this cat - using entity_service.add_item for a different model
             notification_entity = {
                 "cat_id": cat_id,
                 "timestamp": timestamp,
                 "message": message
             }
 
-            # Add notification asynchronously - different entity_model ("notification")
             await entity_service.add_item(
                 token=cyoda_auth_service,
                 entity_model="notification",
                 entity_version=ENTITY_VERSION,
                 entity=notification_entity,
-                workflow=None  # no workflow needed here
+                workflow=None
             )
 
             logger.info(f"Notification added for cat_id={cat_id}: {message}")
 
-        # Update current entity state before persistence
         entity["event_detected"] = event_detected
         entity["event_type"] = event_type
         entity["message"] = message
         entity["processed_at"] = datetime.utcnow().isoformat()
 
-        # Update job status
         entity_jobs[event_id]["status"] = "completed"
         entity_jobs[event_id]["result"] = {
             "event_detected": event_detected,
@@ -166,22 +130,17 @@ async def process_event_detect(entity: Dict[str, Any]) -> None:
             "error": str(e)
         }
 
-# =================
-# Generic route to add entities with workflow support
-# =================
+async def process_example_entity(entity: Dict[str, Any]) -> None:
+    entity['processed_at'] = datetime.utcnow().isoformat()
+    logger.info(f"Processed example_entity workflow: {entity}")
+
 @app.route("/entity/<string:entity_name>", methods=["POST"])
 async def add_entity(entity_name: str):
-    """
-    Generic endpoint to add an entity.
-    Expects JSON body with entity data.
-    Applies the workflow function process_{entity_name} if it exists.
-    """
     try:
         data = await request.get_json()
         if not isinstance(data, dict):
             return jsonify({"error": "Invalid JSON data, expected object"}), 400
 
-        # Add event_id for event_detect to track jobs (optional, but useful)
         if entity_name.lower() == "event_detect":
             data.setdefault("event_id", f"{data.get('cat_id', 'unknown')}-{datetime.utcnow().timestamp()}")
 
@@ -207,18 +166,9 @@ async def add_entity(entity_name: str):
         logger.exception(f"Error adding entity '{entity_name}': {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-# =================
-# Backwards compatibility route for /events/detect 
-# This just forwards data to entity_service.add_item with workflow=process_event_detect
-# =================
 @app.route("/events/detect", methods=["POST"])
 @validate_request(EventDetectRequest)
 async def detect_event(data: EventDetectRequest):
-    """
-    This endpoint now delegates all logic to the event_detect workflow.
-    The controller is lean, just calls add_item with workflow.
-    """
-
     entity_data = {
         "cat_id": data.cat_id,
         "input_type": data.input_type,
@@ -234,34 +184,7 @@ async def detect_event(data: EventDetectRequest):
         workflow=process_event_detect
     )
 
-    # Immediately return success; all async processing is done inside workflow
     return jsonify({"status": "success", "entity_id": entity_id}), 200
-
-# =================
-# Example additional workflow function for another entity
-# =================
-async def process_example_entity(entity: Dict[str, Any]) -> None:
-    # Example: add processed timestamp
-    entity['processed_at'] = datetime.utcnow().isoformat()
-    logger.info(f"Processed example_entity workflow: {entity}")
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Summary:
-
-- The `/events/detect` endpoint now simply wraps data into an entity and calls `entity_service.add_item` with `workflow=process_event_detect`.
-- The `process_event_detect` workflow function contains all async logic:
-  - Calls OpenAI API
-  - Adds notifications as separate entities (via `entity_service.add_item` with different model)
-  - Updates the entity state fields (`event_detected`, `message`, etc.)
-  - Updates `entity_jobs` for job tracking
-- The generic `/entity/<entity_name>` endpoint supports any entity with a workflow function named `process_{entity_name}`, or no-op workflow if none exists.
-- This approach cleans controllers and pushes business logic into workflows, which is exactly what you requested.
-
----
-
-If you want, I can help you move other existing async logic into workflow functions following this pattern. Just provide me with the current code snippets.

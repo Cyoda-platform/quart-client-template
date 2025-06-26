@@ -1,0 +1,53 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "cat_id": "string",
+                "input_data": "string or base64 encoded audio or sensor data",
+                "input_type": "text"
+            },
+            "entity_name": "event_detect_request"
+        },
+        {
+            "entity_data_example": {
+                "event_detected": true,
+                "event_type": "food_request",
+                "message": "Emergency! A cat demands snacks"
+            },
+            "entity_name": "event_detection_response"
+        },
+        {
+            "entity_data_example": {
+                "message": "Emergency! A cat demands snacks",
+                "timestamp": "2024-06-01T12:34:56Z"
+            },
+            "entity_name": "notification"
+        },
+        {
+            "entity_data_example": {
+                "cat_id": "string",
+                "notifications": [
+                    {
+                        "message": "Emergency! A cat demands snacks",
+                        "timestamp": "2024-06-01T12:34:56Z"
+                    }
+                ]
+            },
+            "entity_name": "notifications_response"
+        },
+        {
+            "entity_data_example": {
+                "cat_id": "string",
+                "message": "string"
+            },
+            "entity_name": "notification_send_request"
+        },
+        {
+            "entity_data_example": {
+                "details": "Notification sent successfully",
+                "status": "success"
+            },
+            "entity_name": "notification_send_response"
+        }
+    ]
+}

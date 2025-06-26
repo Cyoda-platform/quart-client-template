@@ -5,8 +5,8 @@ from typing import Optional
 from dataclasses import dataclass
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +18,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class FetchPetsRequest:
@@ -119,7 +118,7 @@ async def process_pet_fetch_job(entity: dict) -> dict:
             logger.exception(f"Failed to update failed job status for job {job_id}: {inner_e}")
     return entity
 
-@app.route("/pets/fetch", methods=["POST"])
+@routes_bp.route("/pets/fetch", methods=["POST"])
 @validate_request(FetchPetsRequest)
 async def pets_fetch(data: FetchPetsRequest):
     job_entity = {
@@ -138,7 +137,7 @@ async def pets_fetch(data: FetchPetsRequest):
     return jsonify({"message": "Pets fetch started", "jobId": job_id}), 202
 
 @validate_querystring(GetPetsQuery)
-@app.route("/pets", methods=["GET"])
+@routes_bp.route("/pets", methods=["GET"])
 async def pets_list():
     args = request.args
     type_filter = args.get("type")
@@ -198,7 +197,7 @@ async def pets_list():
     ]
     return jsonify(pets_simple)
 
-@app.route("/pets/<string:pet_id>", methods=["GET"])
+@routes_bp.route("/pets/<string:pet_id>", methods=["GET"])
 async def pet_detail(pet_id: str):
     try:
         pet = await entity_service.get_item(
@@ -223,18 +222,9 @@ async def pet_detail(pet_id: str):
     }
     return jsonify(pet_detail_response)
 
-@app.route("/fun/random-fact", methods=["POST"])
+@routes_bp.route("/fun/random-fact", methods=["POST"])
 @validate_request(FunFactRequest)
 async def fun_random_fact(data: FunFactRequest):
     import random
     fact = random.choice(FUN_PET_FACTS)
     return jsonify({"fact": fact})
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        stream=sys.stdout,
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

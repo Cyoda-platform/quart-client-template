@@ -1,26 +1,23 @@
-import asyncio
+from datetime import datetime, timezone
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
-
 from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class CatEvent:
@@ -80,7 +77,7 @@ async def process_cat_event(entity: Dict[str, Any]) -> None:
         entity["notificationSent"] = False
         entity["notificationMessage"] = ""
 
-@app.route("/events/cat-demand", methods=["POST"])
+@routes_bp.route("/events/cat-demand", methods=["POST"])
 @validate_request(CatEvent)  # workaround: validation must go after route for POST due to quart-schema issue
 async def cat_demand_event(data: CatEvent):
     try:
@@ -115,7 +112,7 @@ async def cat_demand_event(data: CatEvent):
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/events/cat-demand/<string:item_id>", methods=["GET"])
+@routes_bp.route("/events/cat-demand/<string:item_id>", methods=["GET"])
 async def get_cat_event(item_id: str):
     try:
         item = await entity_service.get_item(
@@ -130,13 +127,3 @@ async def get_cat_event(item_id: str):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
-
-if __name__ == "__main__":
-    import sys
-
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    )
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

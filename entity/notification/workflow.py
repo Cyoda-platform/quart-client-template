@@ -8,6 +8,12 @@ logger.setLevel(logging.INFO)
 OPENAI_API_KEY = "your_openai_api_key_here"  # TODO: replace with env var
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
+async def input_type_is_text(entity: dict) -> bool:
+    return entity.get('input_type') == "text"
+
+async def input_type_is_not_text(entity: dict) -> bool:
+    return entity.get('input_type') != "text"
+
 async def analyze_text_for_food_request(entity: dict):
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
@@ -25,7 +31,7 @@ async def analyze_text_for_food_request(entity: dict):
             },
             {
                 "role": "user",
-                "content": entity['input_data']
+                "content": entity.get('input_data', '')
             }
         ],
         "max_tokens": 5,
@@ -58,8 +64,7 @@ async def process_notification(entity: dict):
         entity['event_type'] = None
         entity['message'] = None
 
-async def None(entity: dict):
-    # Workflow orchestration only
+async def none(entity: dict):
     entity['status'] = "processing"
     if entity.get('input_type') == "text":
         await analyze_text_for_food_request(entity)

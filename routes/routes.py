@@ -1,11 +1,11 @@
- from dataclasses import dataclass
+from dataclasses import dataclass
 import asyncio
 import logging
 import uuid
 from datetime import datetime
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
@@ -16,8 +16,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class PetSearchRequest:
@@ -130,7 +129,7 @@ async def process_adoptpetrequest(entity: dict) -> dict:
 
     return entity
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(PetSearchRequest)
 async def pets_search(data: PetSearchRequest):
     data_dict = {
@@ -150,7 +149,7 @@ async def pets_search(data: PetSearchRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to add pet search request"}), 500
 
-@app.route("/pets/search/<search_id>", methods=["GET"])
+@routes_bp.route("/pets/search/<search_id>", methods=["GET"])
 async def get_search_results(search_id):
     try:
         result = await entity_service.get_item(
@@ -178,7 +177,7 @@ async def get_search_results(search_id):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve search results"}), 500
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptPetRequest)
 async def adopt_pet(data: AdoptPetRequest):
     data_dict = {
@@ -202,13 +201,10 @@ async def adopt_pet(data: AdoptPetRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to process adoption request"}), 500
 
-@app.route("/pets/adoptions/<adopter_name>", methods=["GET"])
+@routes_bp.route("/pets/adoptions/<adopter_name>", methods=["GET"])
 async def get_adoptions(adopter_name):
     adopted_pets = await cache.get_adoptions(adopter_name)
     return jsonify({
         "adopterName": adopter_name,
         "adoptedPets": adopted_pets
     })
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

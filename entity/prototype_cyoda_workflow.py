@@ -1,21 +1,3 @@
-Understood. The goal is to refactor the code so that all async logic related to the entity is moved into the workflow function `process_prototype`, which is executed before the entity is persisted, and to keep the controller (endpoint) as thin as possible.
-
-### Key points:
-- The workflow function `process_prototype` will:
-  - Check the entity status.
-  - If `queued`, fetch external weather data.
-  - Update the entity state accordingly (`status`, `result`, timestamps, etc).
-  - Persist supplementary entities if needed (different model).
-  - **Cannot** call `add/update/delete` on the same entity model ("prototype") to avoid recursion.
-- The controller will just create the initial entity with status `queued` and pass it to `add_item` with the workflow function.
-- We will remove the async background job and its invocation from the endpoint.
-- The endpoint to get the result remains untouched (just fetch entity).
-
----
-
-### Here is the fully refactored code:
-
-```python
 import asyncio
 import logging
 from datetime import datetime
@@ -79,6 +61,13 @@ async def process_prototype(entity: Dict[str, Any]) -> Dict[str, Any]:
     end_date = input_params.get("end_date")
     parameters = input_params.get("parameters", [])
     hourly = ",".join(parameters) if parameters else ""
+
+    # Validate essential parameters early to avoid unnecessary external calls
+    if latitude is None or longitude is None or not start_date or not end_date:
+        entity["status"] = "failed"
+        entity["errorMessage"] = "Missing required input parameters"
+        entity["failedAt"] = datetime.utcnow().isoformat()
+        return entity
 
     params = {
         "latitude": latitude,
@@ -170,22 +159,3 @@ async def get_weather_result(data_id: str):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation of the refactor:
-
-- `process_prototype` does **all** the async processing:
-  - Checks if entity status is `queued`.
-  - Changes status to `processing` and adds a timestamp.
-  - Calls external Open-Meteo API.
-  - On success, builds the result and updates entity status to `completed`.
-  - On failure, sets status `failed` and stores error message and timestamp.
-- The controller `/weather/fetch` just creates a new entity with status `queued` and passes `process_prototype` as workflow.
-- No separate background task or manual update calls needed.
-- The endpoint `/weather/result/<data_id>` remains simple and unchanged.
-
-This approach ensures all heavy logic and side effects are encapsulated in the workflow function, keeping controllers minimal and improving robustness and separation of concerns.
-
-Let me know if you'd like me to split `process_prototype` into smaller functions or handle supplementary entities!

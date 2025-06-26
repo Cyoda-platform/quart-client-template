@@ -1,0 +1,56 @@
+{
+    "description": "FSM workflow for weather data fetching prototype entity",
+    "initial_state": "none",
+    "states": {
+        "completed": {
+            "transitions": {}
+        },
+        "failed": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "start_fetch": {
+                    "action": {
+                        "name": "process_prototype"
+                    },
+                    "next": "queued"
+                }
+            }
+        },
+        "processing": {
+            "transitions": {
+                "finish_failure": {
+                    "condition": {
+                        "function": {
+                            "name": "is_status_failed"
+                        },
+                        "type": "function"
+                    },
+                    "next": "failed"
+                },
+                "finish_success": {
+                    "condition": {
+                        "function": {
+                            "name": "is_status_completed"
+                        },
+                        "type": "function"
+                    },
+                    "next": "completed"
+                }
+            }
+        },
+        "queued": {
+            "transitions": {
+                "start_processing": {
+                    "action": {
+                        "name": "process_prototype"
+                    },
+                    "next": "processing"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "prototype_workflow"
+}

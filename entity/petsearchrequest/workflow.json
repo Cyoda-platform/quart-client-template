@@ -1,0 +1,31 @@
+{
+    "description": "Workflow FSM for process_petsearchrequest entity",
+    "initial_state": "none",
+    "states": {
+        "done": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "start_query_pets": {
+                    "action": {
+                        "name": "_query_pets"
+                    },
+                    "next": "query_pets"
+                }
+            }
+        },
+        "query_pets": {
+            "transitions": {
+                "store_pets_and_finish": {
+                    "action": {
+                        "name": "process_petsearchrequest"
+                    },
+                    "next": "done"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "process_petsearchrequest_workflow"
+}

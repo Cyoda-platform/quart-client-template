@@ -1,0 +1,13 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "catId": "string",
+                "eventType": "food_request",
+                "intensity": "dramatic",
+                "timestamp": "2024-06-01T12:00:00Z"
+            },
+            "entity_name": "cat_event"
+        }
+    ]
+}

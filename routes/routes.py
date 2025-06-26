@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Dict, Any, Callable
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -17,8 +17,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 notifications_store: Dict[str, list] = {}
 entity_jobs: Dict[str, dict] = {}
@@ -133,7 +132,7 @@ async def process_example_entity(entity: Dict[str, Any]) -> None:
     entity['processed_at'] = datetime.utcnow().isoformat()
     logger.info(f"Processed example_entity workflow: {entity}")
 
-@app.route("/entity/<string:entity_name>", methods=["POST"])
+@routes_bp.route("/entity/<string:entity_name>", methods=["POST"])
 async def add_entity(entity_name: str):
     try:
         data = await request.get_json()
@@ -164,7 +163,7 @@ async def add_entity(entity_name: str):
         logger.exception(f"Error adding entity '{entity_name}': {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-@app.route("/events/detect", methods=["POST"])
+@routes_bp.route("/events/detect", methods=["POST"])
 @validate_request(EventDetectRequest)
 async def detect_event(data: EventDetectRequest):
     entity_data = {
@@ -182,6 +181,3 @@ async def detect_event(data: EventDetectRequest):
     )
 
     return jsonify({"status": "success", "entity_id": entity_id}), 200
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

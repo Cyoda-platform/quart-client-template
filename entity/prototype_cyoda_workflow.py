@@ -1,79 +1,3 @@
-Absolutely! Moving as much logic as possible into the `process_{entity_name}` workflow functions is a great approach to keep your endpoint controllers clean, maintainable, and focused on request/response handling only.
-
-Given the constraints:
-
-- Workflow function is async and runs before persistence of the entity.
-- It receives the entity data dict, and can mutate it.
-- It can get/add entities of different models, but **cannot** add/update/delete the same entity model (to avoid recursion).
-- It supports async operations and can replace fire-and-forget async tasks.
-
----
-
-### What logic can move into workflow functions?
-
-For this app, we have these async operations and logic inside endpoints related to the subscriber entity:
-
-1. **Adding timestamp or other attributes to the subscriber entity before save** (already moved).
-2. **Sending emails** — currently done in `/api/catfact/send` endpoint after fetching cat fact, iterating over subscribers, and sending emails asynchronously.
-3. **Fetching cat fact** — currently done in `/api/catfact/send`.
-4. **Updating latest cat fact and report caches** — done after sending emails.
-
----
-
-### Constraints & considerations:
-
-- The workflow function gets called only when adding (or updating if used) an entity.
-- It cannot update the same entity model inside workflow.
-- The `/api/catfact/send` endpoint triggers sending cat facts to *all* subscribers, which is not related to adding/updating a subscriber entity.
-- The subscriber workflow function only runs when a subscriber entity is added/updated.
-- So we **cannot** move the "send cat fact to all subscribers" logic into `process_subscriber` because:
-  - That logic is a bulk operation triggered by a specific endpoint.
-  - Workflow functions run per-entity, on the entity being added/updated.
-  - Workflow functions cannot add/update/delete the same entity model.
-
----
-
-### Therefore:
-
-- The subscriber workflow function should only include logic related to a single subscriber entity before persistence.
-- The `/api/catfact/send` endpoint should remain as is to orchestrate sending cat facts to all subscribers.
-- However, we **can** move the logic of sending an email to a single subscriber into the subscriber workflow function, but only if the subscriber is being added or updated. This means when a new subscriber is added, they immediately receive a cat fact.
-
-- Similarly, fetching the cat fact and updating the latest fact and report cache could be incorporated into the workflow function or triggered from the endpoint.
-
----
-
-### Proposed changes:
-
-1. **`process_subscriber` workflow function**:
-   - When a subscriber is added:
-     - Fetch a cat fact.
-     - Send an email with the cat fact to *this* subscriber.
-     - Update the latest fact and report caches.
-   - Add `subscribedAt` timestamp as before.
-
-2. `/api/subscribers` POST endpoint:
-   - Simply add the subscriber entity (with workflow applied).
-   - Return the new subscriber ID.
-
-3. `/api/catfact/send` endpoint:
-   - Will remain for sending cat facts to all subscribers on demand.
-   - It fetches cat fact, sends emails to all subscribers, updates caches.
-
----
-
-### This way:
-
-- The subscriber entity lifecycle triggers sending a welcome cat fact email asynchronously.
-- The bulk send endpoint remains as bulk operation.
-- Controllers are freed from async tasks related to subscriber addition.
-- Workflow function uses async calls and can add/get other entities if needed.
-
----
-
-### Updated complete code with these changes:
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -133,52 +57,70 @@ class Cache:
         async with self._lock:
             return dict(self._report)
 
+    async def update_subscriber_count(self, count: int):
+        async with self._lock:
+            self._report["subscriberCount"] = count
+
 cache = Cache()
 
 async def send_email(to_email: str, cat_fact: str):
-    # Simulate sending email asynchronously
-    await asyncio.sleep(0.1)
-    logger.info(f"Sent cat fact email to {to_email}")
-    # TODO: Integrate with real email service provider
+    # Simulate sending email asynchronously, handle errors silently to not interrupt flow
+    try:
+        await asyncio.sleep(0.1)
+        logger.info(f"Sent cat fact email to {to_email}")
+        # TODO: Integrate with real email service provider
+    except Exception as e:
+        logger.error(f"Error sending email to {to_email}: {e}")
 
 async def fetch_cat_fact() -> str:
     url = "https://catfact.ninja/fact"
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=10)
-        resp.raise_for_status()
-        data = resp.json()
-        fact = data.get("fact")
-        if not fact:
-            raise ValueError("No 'fact' field in response from Cat Fact API")
-        return fact
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(url, timeout=10)
+            resp.raise_for_status()
+            data = resp.json()
+            fact = data.get("fact")
+            if not fact:
+                raise ValueError("No 'fact' field in response from Cat Fact API")
+            return fact
+    except Exception as e:
+        logger.error(f"Failed to fetch cat fact: {e}")
+        raise
 
 # Workflow function applied to the entity asynchronously before persistence.
 # This function takes the entity data as the only argument.
 # You can change entity state inside this function.
 async def process_subscriber(entity_data: dict):
-    # Add subscribedAt timestamp
-    entity_data['subscribedAt'] = datetime.now(timezone.utc).isoformat()
+    # Add subscribedAt timestamp if not present
+    if 'subscribedAt' not in entity_data:
+        entity_data['subscribedAt'] = datetime.now(timezone.utc).isoformat()
 
     # Fetch a cat fact
     try:
         cat_fact = await fetch_cat_fact()
-    except Exception as e:
-        logger.error(f"Failed to fetch cat fact during subscriber workflow: {e}")
+    except Exception:
         cat_fact = None
 
     if cat_fact:
         # Send a cat fact email to this subscriber
-        try:
-            await send_email(entity_data['email'], cat_fact)
-            logger.info(f"Sent welcome cat fact email to new subscriber {entity_data['email']}")
-        except Exception as e:
-            logger.error(f"Failed to send welcome email to {entity_data['email']}: {e}")
+        await send_email(entity_data['email'], cat_fact)
 
         # Update latest fact and report caches
         try:
             await cache.update_latest_fact(cat_fact)
         except Exception as e:
             logger.error(f"Failed to update latest fact and report cache: {e}")
+
+    # Update subscriber count cache by querying current count asynchronously
+    try:
+        items = await entity_service.get_items(
+            token=cyoda_auth_service,
+            entity_model=entity_name,
+            entity_version=ENTITY_VERSION
+        )
+        await cache.update_subscriber_count(len(items))
+    except Exception as e:
+        logger.error(f"Failed to update subscriber count in cache: {e}")
 
 @app.route("/api/subscribers", methods=["POST"])
 @validate_request(Subscriber)  # Workaround: place validate_request last for POST due to quart-schema defect
@@ -223,7 +165,7 @@ async def subscribe(data: Subscriber):
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
             entity=data_dict,
-            workflow=process_subscriber  # workflow handles email sending and timestamp
+            workflow=process_subscriber  # workflow handles email sending, timestamp, and cache update
         )
     except Exception as e:
         logger.exception(e)
@@ -269,9 +211,27 @@ async def send_cat_fact(data: SendRequest):
     except Exception:
         return jsonify({"error": "Failed to fetch cat fact"}), 500
 
-    await asyncio.gather(*(send_email(email, cat_fact) for email in subscribers))
+    # Send emails concurrently, but protect against exceptions stopping others
+    async def safe_send(email):
+        try:
+            await send_email(email, cat_fact)
+        except Exception as e:
+            logger.error(f"Failed to send cat fact email to {email}: {e}")
 
-    await cache.update_latest_fact(cat_fact)
+    await asyncio.gather(*(safe_send(email) for email in subscribers))
+
+    # Update latest fact and report caches atomically
+    try:
+        await cache.update_latest_fact(cat_fact)
+    except Exception as e:
+        logger.error(f"Failed to update latest fact and report cache: {e}")
+
+    # Update subscriber count cache
+    try:
+        await cache.update_subscriber_count(len(subscribers))
+    except Exception as e:
+        logger.error(f"Failed to update subscriber count in cache: {e}")
+
     logger.info(f"Cat fact sent to {len(subscribers)} subscribers")
 
     return jsonify({"catFact": cat_fact, "emailsSent": len(subscribers)}), 200
@@ -297,35 +257,3 @@ if __name__ == '__main__':
         stream=sys.stdout,
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- The subscriber workflow now:
-  - Adds `subscribedAt` timestamp
-  - Fetches a cat fact
-  - Sends a welcome cat fact email to the new subscriber
-  - Updates the shared latest cat fact and report caches
-
-- The `/api/subscribers` POST endpoint only validates input, checks for duplicate, and calls `add_item` with the workflow.
-
-- The `/api/catfact/send` endpoint remains a bulk operation to send cat fact emails to *all* subscribers.
-
-- The cache and email sending logic are reused in both places.
-
----
-
-### Benefits:
-
-- Controllers freed of asynchronous email sending and external API calls for subscriber addition.
-- Improved separation of concerns.
-- Async workflow function replaces fire-and-forget and complex logic in controllers.
-- Keeps bulk cat fact sending endpoint intact and clear.
-
----
-
-If you want, I can help move the cat fact fetching and email sending logic for the bulk send into a workflow function for a separate entity (e.g., `catfact_send_job`) to further decouple logic, but for now this aligns perfectly with your instructions and constraints.
-
-Let me know if you want me to do that or if you want me to refactor further!

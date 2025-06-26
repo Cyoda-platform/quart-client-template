@@ -1,7 +1,33 @@
+from typing import Dict, Any
+
+async def process_weather_fetch_request(entity: Dict[str, Any]) -> None:
+    from datetime import datetime
+    import logging
+    logger = logging.getLogger(__name__)
+    entity["status"] = "processing"
+    entity["requestedAt"] = entity.get("requestedAt") or datetime.utcnow().isoformat() + "Z"
+
+    await process_validate_input(entity)
+    if entity.get("status") == "failed":
+        return
+
+    await process_fetch_data(entity)
+
+async def process_validate_input_failed(entity: Dict[str, Any]) -> bool:
+    return entity.get("status") == "failed"
+
+async def process_validate_input_passed(entity: Dict[str, Any]) -> bool:
+    return entity.get("status") != "failed"
+
+async def process_fetch_data_failed(entity: Dict[str, Any]) -> bool:
+    return entity.get("status") == "failed"
+
+async def process_fetch_data_success(entity: Dict[str, Any]) -> bool:
+    return entity.get("status") == "completed"
+
 from datetime import datetime
 import httpx
 import logging
-from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -62,13 +88,3 @@ async def process_validate_input(entity: Dict[str, Any]) -> None:
         entity["error"] = "Parameters must be a non-empty list of strings"
         logger.error("Invalid parameters in entity")
         return
-
-async def process_weather_fetch_request(entity: Dict[str, Any]) -> None:
-    entity["status"] = "processing"
-    entity["requestedAt"] = entity.get("requestedAt") or datetime.utcnow().isoformat() + "Z"
-
-    await process_validate_input(entity)
-    if entity.get("status") == "failed":
-        return
-
-    await process_fetch_data(entity)

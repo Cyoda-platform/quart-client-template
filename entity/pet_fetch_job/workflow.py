@@ -26,21 +26,28 @@ async def fetch_pets_from_petstore(type_: Optional[str], status: Optional[str]) 
             logger.exception(f"Error fetching pets from Petstore API: {e}")
             return []
 
-async def process_add_pet(pet_entity: dict):
-    # TODO: Implement logic to add pet entity (e.g., create or update in DB)
-    # Here just a placeholder for business logic
-    pass
+async def process_add_pet(entity: dict):
+    pets_to_add = entity.setdefault("pets_to_add", [])
+    if pets_to_add:
+        pet = pets_to_add.pop(0)
+        # Simulate adding pet (e.g., to DB)
+        added_pets = entity.setdefault("added_pets", [])
+        added_pets.append(pet)
+        entity["pets_to_add"] = pets_to_add
+    entity["workflowProcessed"] = True
 
-async def process_update_job_success(entity: dict, pets_count: int):
+async def process_update_job_success(entity: dict):
     entity["status"] = "completed"
     entity["completedAt"] = datetime.utcnow().isoformat()
-    entity["count"] = pets_count
+    entity["count"] = len(entity.get("added_pets", []))
+    entity["workflowProcessed"] = True
 
-async def process_update_job_failure(entity: dict, error_msg: str):
+async def process_update_job_failure(entity: dict):
     entity["status"] = "failed"
-    entity["error"] = error_msg
+    entity["error"] = entity.get("error", "Fetch failed")
+    entity["workflowProcessed"] = True
 
-async def process_pet_fetch_job(entity: dict) -> dict:
+async def process_pet_fetch_job(entity: dict):
     job_id = entity.get("id")
     type_ = entity.get("type")
     status_filter = entity.get("statusFilter")
@@ -50,19 +57,39 @@ async def process_pet_fetch_job(entity: dict) -> dict:
     try:
         pets = await fetch_pets_from_petstore(type_, status_filter)
         logger.info(f"Fetched {len(pets)} pets from external API for job {job_id}")
-
+        entity["pets_to_add"] = []
         for pet in pets:
             pet_data = pet.copy()
             pet_data.pop("id", None)
-            await process_add_pet(pet_data)
-
-        await process_update_job_success(entity, len(pets))
-        logger.info(f"Fetch job {job_id} completed successfully")
+            entity["pets_to_add"].append(pet_data)
+        entity["added_pets"] = []
+        entity["workflowProcessed"] = True
     except Exception as e:
         logger.exception(f"Fetch job {job_id} failed: {e}")
-        try:
-            await process_update_job_failure(entity, str(e))
-        except Exception as inner_e:
-            logger.exception(f"Failed to update failed job status for job {job_id}: {inner_e}")
+        entity["error"] = str(e)
+        entity["workflowProcessed"] = True
 
-    return entity
+async def fetch_failure_condition(entity: dict) -> bool:
+    return entity.get("error") is not None
+
+async def fetch_success_condition(entity: dict) -> bool:
+    return entity.get("error") is None and "pets_to_add" in entity
+
+async def has_more_pets_to_add(entity: dict) -> bool:
+    pets_to_add = entity.get("pets_to_add", [])
+    return len(pets_to_add) > 0
+
+async def no_more_pets_to_add(entity: dict) -> bool:
+    pets_to_add = entity.get("pets_to_add", [])
+    return len(pets_to_add) == 0
+
+async def process_update_job_failure(entity: dict):
+    entity["status"] = "failed"
+    entity["error"] = entity.get("error", "Unknown error")
+    entity["workflowProcessed"] = True
+
+async def process_update_job_success(entity: dict):
+    entity["status"] = "completed"
+    entity["completedAt"] = datetime.utcnow().isoformat()
+    entity["count"] = len(entity.get("added_pets", []))
+    entity["workflowProcessed"] = True

@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 PETSTORE_API_BASE = "https://petstore.swagger.io/v2"
 
-async def _query_pets(entity: dict) -> list[dict]:
+async def _query_pets(entity: dict):
     type_ = entity.get("type")
     status = entity.get("status")
     tags = entity.get("tags")
@@ -21,7 +21,7 @@ async def _query_pets(entity: dict) -> list[dict]:
             pets = resp.json()
         except Exception as e:
             logger.exception(f"Failed to fetch pets from external API: {e}")
-            return []
+            pets = []
     def pet_matches(pet: dict) -> bool:
         if type_ and pet.get("category", {}).get("name", "").lower() != type_.lower():
             return False
@@ -31,10 +31,9 @@ async def _query_pets(entity: dict) -> list[dict]:
                 return False
         return True
     filtered = [p for p in pets if pet_matches(p)]
-    return filtered
+    entity["pets"] = filtered
+    entity["workflowProcessed"] = True
 
-async def process_petsearchrequest(entity: dict) -> dict:
-    # Workflow orchestration only, no business logic here
-    pets = await _query_pets(entity)
-    entity["pets"] = pets
+async def process_petsearchrequest(entity: dict):
+    await _query_pets(entity)
     return entity

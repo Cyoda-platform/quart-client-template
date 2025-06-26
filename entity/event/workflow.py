@@ -46,3 +46,17 @@ async def process_event(entity: dict) -> None:
     else:
         entity["event_type"] = None
         entity["message"] = None
+
+async def detected_is_true(entity: dict) -> bool:
+    return entity.get("detected") is True
+
+async def detected_is_false(entity: dict) -> bool:
+    return entity.get("detected") is not True
+
+async def send_notification_entity(entity: dict) -> None:
+    cat_id = entity.get("cat_id")
+    event_type = entity.get("event_type")
+    message = entity.get("message")
+    if cat_id and event_type and message:
+        await send_notification_entity(cat_id, event_type, message)
+    entity["workflowProcessed"] = True

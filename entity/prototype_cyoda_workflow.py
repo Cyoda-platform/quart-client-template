@@ -1,92 +1,154 @@
-Understood. Your approach to refactor async logic from endpoints into dedicated workflow functions named `process_{entity_name}` is a good one. It will help in achieving separation of concerns, keep controllers thin, and make the codebase more maintainable and robust.
+from fastapi import FastAPI, Request, HTTPException
+from typing import Dict, Any
+import asyncio
 
-### Summary of your approach and constraints:
-- Move any async logic from endpoint handlers into `process_{entity_name}` functions.
-- These functions are invoked asynchronously before persisting the entity.
-- The workflow function takes the entity data as the only argument.
-- You can modify the entity state directly by updating its dictionary keys.
-- You can fetch and add secondary/supplementary/raw data entities of different models.
-- You **cannot** call `entity_service.add/update/delete` on the current entity inside the workflow.
-- The workflow supports async code, so all async tasks, including fire-and-forget, should be moved here.
-- This refactor is required and the correct approach.
+app = FastAPI()
 
----
+# Simulated in-memory entity storage
+entity_storage = {
+    'user': [],
+    'order': [],
+    'product': []
+}
 
-### General approach to refactor:
+# Simulated entity service with add, update, delete operations
+class EntityService:
+    async def add(self, entity_model: str, entity: Dict[str, Any]):
+        entity_storage[entity_model].append(entity)
 
-1. **Identify all async code inside controllers/endpoints that relate to entity processing.**  
-   This includes:
-   - Async calls that fetch or enrich entity data before saving.
-   - Fire and forget async tasks triggered after receiving data.
-   - Validation or enrichment that involves async calls.
+    async def update(self, entity_model: str, entity_id: Any, updated_entity: Dict[str, Any]):
+        for idx, ent in enumerate(entity_storage[entity_model]):
+            if ent.get('id') == entity_id:
+                entity_storage[entity_model][idx] = updated_entity
+                return
+        raise HTTPException(status_code=404, detail=f"{entity_model} not found")
 
-2. **Create a new `process_{entity_name}` function for each entity**  
-   - The function signature:  
-     ```python
-     async def process_{entity_name}(entity: dict):
-     ```
-   - Inside this function, move all async logic that modifies or enriches the entity before persistence.
-   - Modify the entity dict directly if needed.
+    async def delete(self, entity_model: str, entity_id: Any):
+        for idx, ent in enumerate(entity_storage[entity_model]):
+            if ent.get('id') == entity_id:
+                del entity_storage[entity_model][idx]
+                return
+        raise HTTPException(status_code=404, detail=f"{entity_model} not found")
 
-3. **Update the endpoints/controllers**  
-   - Remove the async logic moved to workflow functions.
-   - Call the workflow function asynchronously before calling persistence (`add`/`update`).
-   - Await the workflow function to complete before persisting.
+entity_service = EntityService()
 
-4. **Keep any calls to `entity_service.add/update/delete` outside the workflow function**  
-   - As per the requirement, do not call these inside workflow.
-   - The persistence call happens after the workflow function completes.
+# Simulated async functions representing external calls or fire and forget tasks
+async def async_fetch_profile(user_id):
+    await asyncio.sleep(0.1)  # simulate IO delay
+    return {"bio": "User bio for user_id " + str(user_id)}
 
----
+async def async_send_welcome_email(user_email):
+    await asyncio.sleep(0.1)  # simulate sending email
+    # fire and forget simulated by no return
 
-### Example
+async def async_calculate_order_totals(order):
+    await asyncio.sleep(0.1)  # simulate calculation
+    # example total calculation
+    order['total'] = sum(item.get('price', 0) * item.get('quantity', 1) for item in order.get('items', []))
 
-Suppose you have an entity `user` and an endpoint like this:
+async def async_fetch_product_details(product_id):
+    await asyncio.sleep(0.1)  # simulate product lookup
+    return {"name": f"Product {product_id}", "price": 10.0 * product_id}
 
-```python
-@router.post("/users")
-async def create_user(request: Request):
-    user_data = await request.json()
-    # Async enrichment before saving
-    user_data['profile'] = await async_fetch_profile(user_data['id'])
-    await entity_service.add('user', user_data)
-    return {"status": "created"}
-```
+# Workflow functions
 
-Refactor to:
-
-```python
 async def process_user(entity: dict):
-    # Move async enrichment here
-    entity['profile'] = await async_fetch_profile(entity['id'])
+    # Enrich user profile asynchronously before persistence
+    if 'id' in entity:
+        entity['profile'] = await async_fetch_profile(entity['id'])
+    # Fire and forget welcome email if new user (assumed no 'created' flag means new)
+    if not entity.get('created'):
+        # Cannot call entity_service inside workflow, so just trigger async task here (await to ensure execution)
+        await async_send_welcome_email(entity.get('email', ''))
+        entity['created'] = True  # mark as created to prevent repeat email
 
+async def process_order(entity: dict):
+    # Calculate totals asynchronously before persistence
+    await async_calculate_order_totals(entity)
+    # Enrich each item with product details
+    items = entity.get('items', [])
+    if items and isinstance(items, list):
+        for item in items:
+            product_id = item.get('product_id')
+            if product_id is not None:
+                product_details = await async_fetch_product_details(product_id)
+                # Add product name and price to item if not present
+                item.setdefault('name', product_details.get('name'))
+                item.setdefault('price', product_details.get('price'))
 
-@router.post("/users")
+async def process_product(entity: dict):
+    # No async logic currently for products, placeholder for extension
+    pass
+
+# Endpoints
+
+@app.post("/users")
 async def create_user(request: Request):
     user_data = await request.json()
+    # Validate minimal required fields
+    if 'id' not in user_data or 'email' not in user_data:
+        raise HTTPException(status_code=400, detail="User must have 'id' and 'email'")
+    # Call workflow function before persistence
     await process_user(user_data)
     await entity_service.add('user', user_data)
-    return {"status": "created"}
-```
+    return {"status": "user created", "user": user_data}
 
----
+@app.put("/users/{user_id}")
+async def update_user(user_id: int, request: Request):
+    user_data = await request.json()
+    user_data['id'] = user_id
+    # Call workflow function before persistence
+    await process_user(user_data)
+    await entity_service.update('user', user_id, user_data)
+    return {"status": "user updated", "user": user_data}
 
-### Checklist for your codebase
+@app.post("/orders")
+async def create_order(request: Request):
+    order_data = await request.json()
+    if 'id' not in order_data:
+        raise HTTPException(status_code=400, detail="Order must have 'id'")
+    if 'items' not in order_data or not isinstance(order_data['items'], list):
+        raise HTTPException(status_code=400, detail="Order must have 'items' as a list")
+    await process_order(order_data)
+    await entity_service.add('order', order_data)
+    return {"status": "order created", "order": order_data}
 
-- [ ] Identify all async enrichment or processing logic in controllers.
-- [ ] Create `process_{entity_name}` functions.
-- [ ] Move async logic into `process_{entity_name}`.
-- [ ] Modify entity dict in workflow function directly.
-- [ ] Remove async logic from controllers.
-- [ ] Call and await workflow function before persistence.
-- [ ] Avoid calling entity_service add/update/delete inside workflow.
-- [ ] Test that entity state updates as expected after workflow.
+@app.put("/orders/{order_id}")
+async def update_order(order_id: int, request: Request):
+    order_data = await request.json()
+    order_data['id'] = order_id
+    await process_order(order_data)
+    await entity_service.update('order', order_id, order_data)
+    return {"status": "order updated", "order": order_data}
 
----
+@app.post("/products")
+async def create_product(request: Request):
+    product_data = await request.json()
+    if 'id' not in product_data:
+        raise HTTPException(status_code=400, detail="Product must have 'id'")
+    await process_product(product_data)
+    await entity_service.add('product', product_data)
+    return {"status": "product created", "product": product_data}
 
-If you want, you can share specific code snippets/endpoints, and I can help convert them to this new workflow pattern. Otherwise, this guidance should help you refactor your codebase properly.
+@app.put("/products/{product_id}")
+async def update_product(product_id: int, request: Request):
+    product_data = await request.json()
+    product_data['id'] = product_id
+    await process_product(product_data)
+    await entity_service.update('product', product_id, product_data)
+    return {"status": "product updated", "product": product_data}
 
----
+@app.delete("/users/{user_id}")
+async def delete_user(user_id: int):
+    await entity_service.delete('user', user_id)
+    return {"status": "user deleted", "user_id": user_id}
 
-**In summary:**  
-Yes, it is the right approach and required. All async logic should be moved into `process_{entity_name}` workflow functions invoked before persistence. This will make controllers slimmer and code more robust. Let me know if you want me to assist with actual code refactoring.
+@app.delete("/orders/{order_id}")
+async def delete_order(order_id: int):
+    await entity_service.delete('order', order_id)
+    return {"status": "order deleted", "order_id": order_id}
+
+@app.delete("/products/{product_id}")
+async def delete_product(product_id: int):
+    await entity_service.delete('product', product_id)
+    return {"status": "product deleted", "product_id": product_id}

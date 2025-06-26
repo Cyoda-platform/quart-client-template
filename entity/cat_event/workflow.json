@@ -1,31 +1,31 @@
 {
-    "description": "FSM workflow for cat event processing",
-    "initial_state": "none",
-    "states": {
-        "none": {
-            "transitions": {
-                "transition_to_timestamp_added": {
-                    "action": {
-                        "name": "process_add_timestamp"
-                    },
-                    "next": "timestamp_added"
-                }
-            }
-        },
-        "notification_processed": {
-            "transitions": {}
-        },
-        "timestamp_added": {
-            "transitions": {
-                "transition_to_notification_processed": {
-                    "action": {
-                        "name": "process_send_notification"
-                    },
-                    "next": "notification_processed"
-                }
-            }
+  "description": "FSM workflow for cat event processing",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "transition_to_timestamp_added": {
+          "action": {
+            "name": "process_add_timestamp"
+          },
+          "next": "timestamp_added"
         }
+      }
     },
-    "version": "1.0",
-    "workflow_name": "cat_event_workflow"
+    "timestamp_added": {
+      "transitions": {
+        "transition_to_notification_processed": {
+          "action": {
+            "name": "process_send_notification"
+          },
+          "next": "notification_processed"
+        }
+      }
+    },
+    "notification_processed": {
+      "transitions": {}
+    }
+  },
+  "version": "1.0",
+  "workflow_name": "cat_event_workflow"
 }

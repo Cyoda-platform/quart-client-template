@@ -1,60 +1,3 @@
-Understood. The goal is to move all business logic, including async side-tasks like sending emails, fetching external data, or modifying entity state, into the workflow function(s) named `process_{entity_name}`. The endpoints thus become thin controllers that only validate and forward data, delegating heavy lifting to workflows.
-
-Key points:
-- Workflow function runs asynchronously before persistence.
-- It receives the entity dict and can modify it in place.
-- It can call entity_service on other entity models, but not on its own (to prevent recursion).
-- Fire-and-forget async operations belong inside the workflow.
-- This makes controllers cleaner and logic centralized.
-
----
-
-### What logic can be moved?
-
-1. **Subscribe endpoint**:
-   - Currently, it just calls `entity_service.add_item` with the workflow.
-   - The fetching of external data or sending emails is missing here but can be moved if needed.
-   - You can e.g. add enrichment of subscriber data, or initiate email sends in workflow.
-
-2. **Unsubscribe endpoint**:
-   - It does querying for subscriber, then deletes it.
-   - The deletion must remain in the controller because you can't delete the entity inside its own workflow before persistence (and unsubscribe is a delete action, not an add).
-   - So minimal logic here.
-
-3. **Sending weekly cat fact**:
-   - This is a separate async task sending emails to all subscribers.
-   - This cannot be triggered by the workflow (which only runs on add_item).
-   - So this remains as is.
-
-4. **Workflow `process_subscriber`**:
-   - Move any enrichment, side-effects or async tasks linked to subscriber creation here.
-   - For example, fetch a welcome cat fact, add it to subscriber entity, or send a welcome email.
-   - Any other async side effects related to this entity addition.
-
----
-
-### Implementation plan:
-
-- In `process_subscriber(entity_data)`:
-  - Add a welcome cat fact (fetched asynchronously).
-  - Add a `subscribed_at` timestamp.
-  - Send a welcome email asynchronously (fire and forget).
-  - Possibly add a `status` field.
-
-- In subscribe endpoint:
-  - Keep it minimal: just validate and call `add_item` with workflow.
-
-- In unsubscribe endpoint:
-  - Keep logic as is (lookup and delete).
-
-- Weekly fact sending:
-  - Keep as is.
-
----
-
-### Updated code with all async side-effects moved to workflow function `process_subscriber`
-
-```python
 import asyncio
 import logging
 from dataclasses import dataclass
@@ -62,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 import httpx
-from quart import Quart, jsonify, request
+from quart import Quart, jsonify
 from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
@@ -80,7 +23,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 entity_name = "subscriber"  # underscore lowercase entity name
 
-# Request schemas
 @dataclass
 class SubscribeRequest:
     email: str
@@ -112,12 +54,7 @@ async def send_email_stub(email: str, subject: str, body: str) -> bool:
     await asyncio.sleep(0.05)
     return True
 
-# Workflow function applied to the entity asynchronously before persistence
 async def process_subscriber(entity_data: dict) -> None:
-    """
-    This function is called before persisting the subscriber entity.
-    It modifies the entity data, enriches it asynchronously, and triggers async side effects.
-    """
     # Add subscription timestamp if not present
     if "subscribed_at" not in entity_data:
         entity_data["subscribed_at"] = datetime.utcnow().isoformat()
@@ -141,7 +78,6 @@ async def process_subscriber(entity_data: dict) -> None:
         except Exception:
             logger.exception("Failed to send welcome email")
 
-    # Schedule the fire-and-forget task
     asyncio.create_task(fire_and_forget_email())
 
 @app.route("/subscribe", methods=["POST"])
@@ -152,7 +88,6 @@ async def subscribe(data: SubscribeRequest):
     if "@" not in email or "." not in email:
         return jsonify(status="error", message="Invalid email format"), 400
 
-    # Prepare data object for entity_service
     entity_data = {"email": email, "name": name}
 
     try:
@@ -161,7 +96,7 @@ async def subscribe(data: SubscribeRequest):
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
             entity=entity_data,
-            workflow=process_subscriber  # pass the workflow function here
+            workflow=process_subscriber
         )
     except Exception as e:
         logger.exception(e)
@@ -174,7 +109,6 @@ async def subscribe(data: SubscribeRequest):
 async def unsubscribe(data: UnsubscribeRequest):
     email = data.email.strip().lower()
 
-    # We need to find the technical_id for the subscriber with this email
     condition = {
         "cyoda": {
             "type": "group",
@@ -294,24 +228,3 @@ if __name__ == '__main__':
         level=logging.INFO,
     )
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- **`process_subscriber`**:
-  - Adds `subscribed_at` timestamp and `status`.
-  - Fetches a welcome cat fact asynchronously.
-  - Updates entity data with the fact.
-  - Asynchronously sends a welcome email (fire and forget).
-- **Subscribe endpoint**:
-  - Only validates input and calls `add_item` with workflow.
-- **Unsubscribe endpoint**:
-  - Remains unchanged since it's a delete operation.
-- **Weekly fact sending**:
-  - Remains a separate async function triggered by endpoint, not suitable for workflow.
-
-This approach fully uses the workflow for async enrichment and side-effects on subscription, keeping controllers clean and robust.
-
-Let me know if you want me to move any other logic!

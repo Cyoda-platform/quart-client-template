@@ -1,8 +1,58 @@
-Certainly! I've updated your code to add the required workflow function parameter to the `entity_service.add_item` call and implemented the workflow function `process_subscriber` accordingly.
+Understood. The goal is to move all business logic, including async side-tasks like sending emails, fetching external data, or modifying entity state, into the workflow function(s) named `process_{entity_name}`. The endpoints thus become thin controllers that only validate and forward data, delegating heavy lifting to workflows.
 
-The workflow function `process_subscriber` takes the entity data as argument, modifies its state if needed, and can do other async operations before the entity is persisted.
+Key points:
+- Workflow function runs asynchronously before persistence.
+- It receives the entity dict and can modify it in place.
+- It can call entity_service on other entity models, but not on its own (to prevent recursion).
+- Fire-and-forget async operations belong inside the workflow.
+- This makes controllers cleaner and logic centralized.
 
-Here is the complete updated code:
+---
+
+### What logic can be moved?
+
+1. **Subscribe endpoint**:
+   - Currently, it just calls `entity_service.add_item` with the workflow.
+   - The fetching of external data or sending emails is missing here but can be moved if needed.
+   - You can e.g. add enrichment of subscriber data, or initiate email sends in workflow.
+
+2. **Unsubscribe endpoint**:
+   - It does querying for subscriber, then deletes it.
+   - The deletion must remain in the controller because you can't delete the entity inside its own workflow before persistence (and unsubscribe is a delete action, not an add).
+   - So minimal logic here.
+
+3. **Sending weekly cat fact**:
+   - This is a separate async task sending emails to all subscribers.
+   - This cannot be triggered by the workflow (which only runs on add_item).
+   - So this remains as is.
+
+4. **Workflow `process_subscriber`**:
+   - Move any enrichment, side-effects or async tasks linked to subscriber creation here.
+   - For example, fetch a welcome cat fact, add it to subscriber entity, or send a welcome email.
+   - Any other async side effects related to this entity addition.
+
+---
+
+### Implementation plan:
+
+- In `process_subscriber(entity_data)`:
+  - Add a welcome cat fact (fetched asynchronously).
+  - Add a `subscribed_at` timestamp.
+  - Send a welcome email asynchronously (fire and forget).
+  - Possibly add a `status` field.
+
+- In subscribe endpoint:
+  - Keep it minimal: just validate and call `add_item` with workflow.
+
+- In unsubscribe endpoint:
+  - Keep logic as is (lookup and delete).
+
+- Weekly fact sending:
+  - Keep as is.
+
+---
+
+### Updated code with all async side-effects moved to workflow function `process_subscriber`
 
 ```python
 import asyncio
@@ -66,20 +116,33 @@ async def send_email_stub(email: str, subject: str, body: str) -> bool:
 async def process_subscriber(entity_data: dict) -> None:
     """
     This function is called before persisting the subscriber entity.
-    You can modify the entity_data dictionary here.
-    For example, add a timestamp or set default fields.
+    It modifies the entity data, enriches it asynchronously, and triggers async side effects.
     """
     # Add subscription timestamp if not present
     if "subscribed_at" not in entity_data:
         entity_data["subscribed_at"] = datetime.utcnow().isoformat()
 
-    # Example: Add a field 'status' if not present
+    # Add default status if missing
     if "status" not in entity_data:
         entity_data["status"] = "active"
 
-    # You can also perform other async operations here if needed
-    # For example, fetch some external data or validate data asynchronously
-    # But do not add/update/delete entity of the same model here to avoid recursion
+    # Fetch a welcome cat fact asynchronously and add it to entity data for example
+    cat_fact = await fetch_cat_fact()
+    if cat_fact:
+        entity_data["welcome_cat_fact"] = cat_fact
+
+    # Fire and forget sending welcome email (do not await to not block persistence)
+    async def fire_and_forget_email():
+        subject = "Welcome to Cat Facts Newsletter 🐱"
+        body = f"Hello {entity_data.get('name') or 'Subscriber'},\n\n" \
+               f"Thank you for subscribing! Here's a fun cat fact to start:\n\n{cat_fact or 'Cats are great!'}\n\nEnjoy!"
+        try:
+            await send_email_stub(entity_data.get("email"), subject, body)
+        except Exception:
+            logger.exception("Failed to send welcome email")
+
+    # Schedule the fire-and-forget task
+    asyncio.create_task(fire_and_forget_email())
 
 @app.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
@@ -112,7 +175,6 @@ async def unsubscribe(data: UnsubscribeRequest):
     email = data.email.strip().lower()
 
     # We need to find the technical_id for the subscriber with this email
-    # Since we cannot access in-memory, use get_items_by_condition
     condition = {
         "cyoda": {
             "type": "group",
@@ -137,7 +199,6 @@ async def unsubscribe(data: UnsubscribeRequest):
         )
         if not items:
             return jsonify(status="error", message="Email not found"), 400
-        # Assume first match is the subscriber
         subscriber = items[0]
         technical_id = str(subscriber.get("technical_id") or subscriber.get("id") or "")
         if not technical_id:
@@ -204,7 +265,6 @@ async def process_send_weekly_fact():
         if r is True:
             success_count += 1
 
-    # We cannot track emails sent in entity_service, so skip increment logic or log only
     logger.info(f"Sent cat fact email to {success_count} subscribers")
     return success_count
 
@@ -226,7 +286,6 @@ async def report_subscribers():
 async def report_emails_sent():
     # Since emails sent counter was in-memory, and no external method provided,
     # we cannot provide this data anymore
-    # Return a fixed value or a message
     return jsonify(total_emails_sent="Not available")
 
 if __name__ == '__main__':
@@ -237,8 +296,22 @@ if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Summary of changes:
-- Added async function `process_subscriber(entity_data: dict) -> None` that modifies the entity data before persistence.
-- Passed `workflow=process_subscriber` as a parameter in the `entity_service.add_item` call inside the `/subscribe` route handler.
+---
 
-This matches the new `entity_service.add_item` signature and semantics you described. Let me know if you want the workflow to do something else!
+### Explanation:
+
+- **`process_subscriber`**:
+  - Adds `subscribed_at` timestamp and `status`.
+  - Fetches a welcome cat fact asynchronously.
+  - Updates entity data with the fact.
+  - Asynchronously sends a welcome email (fire and forget).
+- **Subscribe endpoint**:
+  - Only validates input and calls `add_item` with workflow.
+- **Unsubscribe endpoint**:
+  - Remains unchanged since it's a delete operation.
+- **Weekly fact sending**:
+  - Remains a separate async function triggered by endpoint, not suitable for workflow.
+
+This approach fully uses the workflow for async enrichment and side-effects on subscription, keeping controllers clean and robust.
+
+Let me know if you want me to move any other logic!

@@ -1,58 +1,58 @@
 {
-    "description": "Weather data fetch and alert evaluation workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
-        },
-        "evaluate_alerts": {
-            "transitions": {
-                "alerts_processed": {
-                    "action": {
-                        "name": "evaluate_alert_conditions"
-                    },
-                    "next": "completed"
-                }
-            }
-        },
-        "failed": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "start_processing": {
-                    "action": {
-                        "name": "process_weather_fetch_request"
-                    },
-                    "next": "processing"
-                }
-            }
-        },
-        "processing": {
-            "transitions": {
-                "complete_failure": {
-                    "condition": {
-                        "function": {
-                            "name": "status_is_failed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                },
-                "complete_success": {
-                    "action": {
-                        "name": "process_data"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "status_is_completed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "evaluate_alerts"
-                }
-            }
+  "description": "Weather data fetch and alert evaluation workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_processing": {
+          "action": {
+            "name": "process_weather_fetch_request"
+          },
+          "next": "processing"
         }
+      }
     },
-    "workflow_name": "weather_fetch_and_alert_workflow"
+    "processing": {
+      "transitions": {
+        "complete_failure": {
+          "condition": {
+            "function": {
+              "name": "status_is_failed"
+            },
+            "type": "function"
+          },
+          "next": "failed"
+        },
+        "complete_success": {
+          "action": {
+            "name": "process_data"
+          },
+          "condition": {
+            "function": {
+              "name": "status_is_completed"
+            },
+            "type": "function"
+          },
+          "next": "evaluate_alerts"
+        }
+      }
+    },
+    "failed": {
+      "transitions": {}
+    },
+    "evaluate_alerts": {
+      "transitions": {
+        "alerts_processed": {
+          "action": {
+            "name": "evaluate_alert_conditions"
+          },
+          "next": "completed"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "weather_fetch_and_alert_workflow"
 }

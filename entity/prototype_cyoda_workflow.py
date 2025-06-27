@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Dict, Any, Callable
 
 import httpx
-from quart import Blueprint, jsonify, request
-from quart_schema import validate_request
+from quart import Quart, jsonify, request
+from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -17,7 +17,8 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-routes_bp = Blueprint('routes', __name__)
+app = Quart(__name__)
+QuartSchema(app)
 
 notifications_store: Dict[str, list] = {}
 entity_jobs: Dict[str, dict] = {}
@@ -101,7 +102,8 @@ async def process_event_detect(entity: Dict[str, Any]) -> None:
                 token=cyoda_auth_service,
                 entity_model="notification",
                 entity_version=ENTITY_VERSION,
-                entity=notification_entity
+                entity=notification_entity,
+                workflow=None
             )
 
             logger.info(f"Notification added for cat_id={cat_id}: {message}")
@@ -132,7 +134,7 @@ async def process_example_entity(entity: Dict[str, Any]) -> None:
     entity['processed_at'] = datetime.utcnow().isoformat()
     logger.info(f"Processed example_entity workflow: {entity}")
 
-@routes_bp.route("/entity/<string:entity_name>", methods=["POST"])
+@app.route("/entity/<string:entity_name>", methods=["POST"])
 async def add_entity(entity_name: str):
     try:
         data = await request.get_json()
@@ -154,7 +156,8 @@ async def add_entity(entity_name: str):
             token=cyoda_auth_service,
             entity_model=entity_name.lower(),
             entity_version=ENTITY_VERSION,
-            entity=data
+            entity=data,
+            workflow=workflow_func
         )
 
         return jsonify({"status": "success", "entity_id": entity_id}), 201
@@ -163,7 +166,7 @@ async def add_entity(entity_name: str):
         logger.exception(f"Error adding entity '{entity_name}': {e}")
         return jsonify({"error": "Internal server error"}), 500
 
-@routes_bp.route("/events/detect", methods=["POST"])
+@app.route("/events/detect", methods=["POST"])
 @validate_request(EventDetectRequest)
 async def detect_event(data: EventDetectRequest):
     entity_data = {
@@ -177,7 +180,11 @@ async def detect_event(data: EventDetectRequest):
         token=cyoda_auth_service,
         entity_model="event_detect",
         entity_version=ENTITY_VERSION,
-        entity=entity_data
+        entity=entity_data,
+        workflow=process_event_detect
     )
 
     return jsonify({"status": "success", "entity_id": entity_id}), 200
+
+if __name__ == '__main__':
+    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

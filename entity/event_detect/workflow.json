@@ -1,0 +1,82 @@
+{
+  "description": "FSM for cat event detection and notification",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_processing": {
+          "action": {
+            "name": "process_event_detect"
+          },
+          "next": "detect_event"
+        }
+      }
+    },
+    "detect_event": {
+      "transitions": {
+        "input_type_is_text": {
+          "condition": {
+            "function": {
+              "name": "input_type_is_text"
+            },
+            "type": "function"
+          },
+          "next": "analyze_text"
+        },
+        "input_type_not_text": {
+          "condition": {
+            "function": {
+              "name": "input_type_is_not_text"
+            },
+            "type": "function"
+          },
+          "next": "unsupported_input_type"
+        }
+      }
+    },
+    "analyze_text": {
+      "transitions": {
+        "analyze_text_for_food_request": {
+          "action": {
+            "name": "analyze_text_for_food_request"
+          },
+          "next": "create_notification"
+        }
+      }
+    },
+    "create_notification": {
+      "transitions": {
+        "create_notification_action": {
+          "action": {
+            "name": "create_notification"
+          },
+          "next": "finalize"
+        }
+      }
+    },
+    "finalize": {
+      "transitions": {
+        "complete": {
+          "action": {
+            "name": "finalize_entity"
+          },
+          "next": "done"
+        }
+      }
+    },
+    "done": {
+      "transitions": {}
+    },
+    "unsupported_input_type": {
+      "transitions": {
+        "mark_event_not_detected": {
+          "action": {
+            "name": "mark_event_not_detected"
+          },
+          "next": "create_notification"
+        }
+      }
+    }
+  },
+  "workflow_name": "cat_event_detection_workflow"
+}

@@ -1,64 +1,64 @@
 {
-    "description": "FSM workflow for Subscription History entity recording subscription changes, email sends, and user interactions",
-    "initial_state": "none",
-    "states": {
-        "email_sent": {
-            "transitions": {
-                "transition_to_none": {
-                    "next": "none"
-                }
-            }
+  "description": "FSM workflow for Subscription History entity recording subscription changes, email sends, and user interactions",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "record_email_sent": {
+          "action": {
+            "name": "record_email_sent_action"
+          },
+          "next": "email_sent"
         },
-        "interaction_recorded": {
-            "transitions": {
-                "transition_to_none": {
-                    "next": "none"
-                }
-            }
+        "record_interaction": {
+          "action": {
+            "name": "record_interaction_action"
+          },
+          "next": "interaction_recorded"
         },
-        "none": {
-            "transitions": {
-                "record_email_sent": {
-                    "action": {
-                        "name": "record_email_sent_action"
-                    },
-                    "next": "email_sent"
-                },
-                "record_interaction": {
-                    "action": {
-                        "name": "record_interaction_action"
-                    },
-                    "next": "interaction_recorded"
-                },
-                "record_subscribe": {
-                    "action": {
-                        "name": "record_subscribe_action"
-                    },
-                    "next": "subscribed"
-                },
-                "record_unsubscribe": {
-                    "action": {
-                        "name": "record_unsubscribe_action"
-                    },
-                    "next": "unsubscribed"
-                }
-            }
+        "record_subscribe": {
+          "action": {
+            "name": "record_subscribe_action"
+          },
+          "next": "subscribed"
         },
-        "subscribed": {
-            "transitions": {
-                "transition_to_none": {
-                    "next": "none"
-                }
-            }
-        },
-        "unsubscribed": {
-            "transitions": {
-                "transition_to_none": {
-                    "next": "none"
-                }
-            }
+        "record_unsubscribe": {
+          "action": {
+            "name": "record_unsubscribe_action"
+          },
+          "next": "unsubscribed"
         }
+      }
     },
-    "version": "1.0",
-    "workflow_name": "subscription_history_workflow"
+    "email_sent": {
+      "transitions": {
+        "transition_to_none": {
+          "next": "none"
+        }
+      }
+    },
+    "interaction_recorded": {
+      "transitions": {
+        "transition_to_none": {
+          "next": "none"
+        }
+      }
+    },
+    "subscribed": {
+      "transitions": {
+        "transition_to_none": {
+          "next": "none"
+        }
+      }
+    },
+    "unsubscribed": {
+      "transitions": {
+        "transition_to_none": {
+          "next": "none"
+        }
+      }
+    }
+  },
+  "version": "1.0",
+  "workflow_name": "subscription_history_workflow"
 }

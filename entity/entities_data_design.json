@@ -1,0 +1,11 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com",
+                "name": "Optional Name"
+            },
+            "entity_name": "subscriber"
+        }
+    ]
+}

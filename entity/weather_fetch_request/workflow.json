@@ -1,48 +1,48 @@
 {
-    "description": "Weather data fetch workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
-        },
-        "failed": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "start_processing": {
-                    "action": {
-                        "name": "process_weather_fetch_request"
-                    },
-                    "next": "processing"
-                }
-            }
-        },
-        "processing": {
-            "transitions": {
-                "complete_failure": {
-                    "condition": {
-                        "function": {
-                            "name": "status_is_failed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                },
-                "complete_success": {
-                    "action": {
-                        "name": "process_data"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "status_is_completed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "completed"
-                }
-            }
+  "description": "Weather data fetch workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_processing": {
+          "action": {
+            "name": "process_weather_fetch_request"
+          },
+          "next": "processing"
         }
+      }
     },
-    "workflow_name": "weather_fetch_workflow"
+    "processing": {
+      "transitions": {
+        "complete_failure": {
+          "condition": {
+            "function": {
+              "name": "status_is_failed"
+            },
+            "type": "function"
+          },
+          "next": "failed"
+        },
+        "complete_success": {
+          "action": {
+            "name": "process_data"
+          },
+          "condition": {
+            "function": {
+              "name": "status_is_completed"
+            },
+            "type": "function"
+          },
+          "next": "completed"
+        }
+      }
+    },
+    "failed": {
+      "transitions": {}
+    },
+    "completed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "weather_fetch_workflow"
 }

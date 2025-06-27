@@ -26,17 +26,23 @@ async def fetch_weather_data(entity: dict):
             logger.exception(f"Failed to fetch weather data: {e}")
             raise
 
-async def process_data(entity: dict, raw_data: dict):
+async def process_data(entity: dict):
+    raw_data = entity.get("raw_data")
+    if not raw_data:
+        entity["status"] = "failed"
+        entity["error"] = "No raw data to process"
+        return
     hourly = raw_data.get("hourly", {})
     processed = {"dates": hourly.get("time", [])}
     for param in entity["parameters"]:
         processed[param] = hourly.get(param, [])
     entity["data"] = processed
+    entity["workflowProcessed"] = True
 
 async def process_entity(technical_id: str, entity: dict):
     try:
         raw_data = await fetch_weather_data(entity)
-        await process_data(entity, raw_data)
+        entity["raw_data"] = raw_data
         entity["status"] = "completed"
         entity["completedAt"] = datetime.utcnow().isoformat()
         logger.info(f"Job {technical_id} completed successfully.")
@@ -51,3 +57,10 @@ async def process_weather_fetch_request(entity: dict):
     if "technical_id" not in entity or not entity["technical_id"]:
         entity["technical_id"] = str(uuid.uuid4())
     asyncio.create_task(process_entity(entity["technical_id"], entity.copy()))
+    entity["workflowProcessed"] = True
+
+async def status_is_failed(entity: dict) -> bool:
+    return entity.get("status") == "failed"
+
+async def status_is_completed(entity: dict) -> bool:
+    return entity.get("status") == "completed"

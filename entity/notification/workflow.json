@@ -1,43 +1,40 @@
-```json
 {
-  "version": "1.0",
-  "description": "Notification workflow FSM setting OPENAI_API_KEY to test",
-  "initial_state": "none",
-  "workflow_name": "notification_workflow",
-  "states": {
-    "none": {
-      "transitions": {
-        "start_notification": {
-          "next": "set_api_key",
-          "action": {
-            "name": "start_notification"
-          }
+    "description": "Notification workflow FSM setting OPENAI_API_KEY to test",
+    "initial_state": "none",
+    "states": {
+        "end": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "start_notification": {
+                    "action": {
+                        "name": "start_notification"
+                    },
+                    "next": "set_api_key"
+                }
+            }
+        },
+        "notification_sent": {
+            "transitions": {
+                "complete_workflow": {
+                    "action": {
+                        "name": "complete_notification_workflow"
+                    },
+                    "next": "end"
+                }
+            }
+        },
+        "set_api_key": {
+            "transitions": {
+                "set_openai_api_key": {
+                    "action": {
+                        "name": "set_openai_api_key_to_test"
+                    },
+                    "next": "notification_sent"
+                }
+            }
         }
-      }
     },
-    "set_api_key": {
-      "transitions": {
-        "set_openai_api_key": {
-          "next": "notification_sent",
-          "action": {
-            "name": "set_openai_api_key_to_test"
-          }
-        }
-      }
-    },
-    "notification_sent": {
-      "transitions": {
-        "complete_workflow": {
-          "next": "end",
-          "action": {
-            "name": "complete_notification_workflow"
-          }
-        }
-      }
-    },
-    "end": {
-      "transitions": {}
-    }
-  }
+    "workflow_name": "notification_workflow"
 }
-```

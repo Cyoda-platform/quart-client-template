@@ -6,11 +6,13 @@ from dataclasses import dataclass
 import uuid
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -18,9 +20,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class WeatherFetchRequest:
@@ -92,7 +91,7 @@ async def process_entity(job_id: str, data: dict):
             logger.exception(f"Failed to update failed status for job {job_id}")
         logger.exception(f"Job {job_id} failed.")
 
-@app.route("/weather/fetch", methods=["POST"])
+@routes_bp.route("/weather/fetch", methods=["POST"])
 @validate_request(WeatherFetchRequest)
 async def weather_fetch(data: WeatherFetchRequest):
     try:
@@ -107,7 +106,7 @@ async def weather_fetch(data: WeatherFetchRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to add item"}), 500
 
-@app.route("/weather/result/<string:request_id>", methods=["GET"])
+@routes_bp.route("/weather/result/<string:request_id>", methods=["GET"])
 async def weather_result(request_id):
     try:
         job = await entity_service.get_item(
@@ -139,6 +138,3 @@ async def weather_result(request_id):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve item"}), 500
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

@@ -1,0 +1,47 @@
+{
+    "subscription_history": [
+        {
+            "action": "subscribe",
+            "details": {
+                "cat_fact_sent": null,
+                "new_status": "active",
+                "previous_status": "none"
+            },
+            "id": "1",
+            "timestamp": "2023-10-01T12:00:00Z",
+            "user_email": "user1@example.com"
+        },
+        {
+            "action": "send_email",
+            "details": {
+                "cat_fact_sent": "Cats sleep 70% of their lives.",
+                "status": "success"
+            },
+            "id": "2",
+            "timestamp": "2023-10-08T12:00:00Z",
+            "user_email": "user1@example.com"
+        },
+        {
+            "action": "subscribe",
+            "details": {
+                "cat_fact_sent": null,
+                "new_status": "active",
+                "previous_status": "none"
+            },
+            "id": "3",
+            "timestamp": "2023-10-02T15:30:00Z",
+            "user_email": "user2@example.com"
+        },
+        {
+            "action": "unsubscribe",
+            "details": {
+                "cat_fact_sent": null,
+                "new_status": "none",
+                "previous_status": "active"
+            },
+            "id": "4",
+            "timestamp": "2023-10-09T09:00:00Z",
+            "user_email": "user1@example.com"
+        }
+    ]
+}

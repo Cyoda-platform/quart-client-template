@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import Optional
 
 import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,8 +14,7 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -80,7 +79,7 @@ async def process_subscriber(entity_data: dict) -> None:
 
     asyncio.create_task(fire_and_forget_email())
 
-@app.route("/subscribe", methods=["POST"])
+@routes_bp.route("/subscribe", methods=["POST"])
 @validate_request(SubscribeRequest)
 async def subscribe(data: SubscribeRequest):
     email = data.email.strip().lower()
@@ -103,7 +102,7 @@ async def subscribe(data: SubscribeRequest):
 
     return jsonify(status="success", id=str(id), message="Subscription started")
 
-@app.route("/unsubscribe", methods=["POST"])
+@routes_bp.route("/unsubscribe", methods=["POST"])
 @validate_request(UnsubscribeRequest)
 async def unsubscribe(data: UnsubscribeRequest):
     email = data.email.strip().lower()
@@ -162,7 +161,7 @@ async def get_all_subscribers():
         logger.exception(e)
         return []
 
-@app.route("/send-weekly-fact", methods=["POST"])
+@routes_bp.route("/send-weekly-fact", methods=["POST"])
 async def send_weekly_fact():
     asyncio.create_task(process_send_weekly_fact())
     return jsonify(status="success", message="Weekly cat fact sending started")
@@ -201,7 +200,7 @@ async def process_send_weekly_fact():
     logger.info(f"Sent cat fact email to {success_count} subscribers")
     return success_count
 
-@app.route("/report/subscribers", methods=["GET"])
+@routes_bp.route("/report/subscribers", methods=["GET"])
 async def report_subscribers():
     try:
         items = await entity_service.get_items(
@@ -215,15 +214,8 @@ async def report_subscribers():
         total = 0
     return jsonify(total_subscribers=total)
 
-@app.route("/report/emails-sent", methods=["GET"])
+@routes_bp.route("/report/emails-sent", methods=["GET"])
 async def report_emails_sent():
     # Since emails sent counter was in-memory, and no external method provided,
     # we cannot provide this data anymore
     return jsonify(total_emails_sent="Not available")
-
-if __name__ == '__main__':
-    logging.basicConfig(
-        format='%(asctime)s %(levelname)s %(name)s: %(message)s',
-        level=logging.INFO,
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

@@ -4,6 +4,7 @@ async def start_preparation(entity: dict):
 
 async def finish_grooming(entity: dict):
     entity["grooming_done"] = True
+    entity["grooming_complete"] = True
     entity["workflowProcessed"] = True
 
 async def is_health_ok(entity: dict) -> bool:

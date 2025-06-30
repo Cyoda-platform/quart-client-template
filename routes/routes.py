@@ -1,17 +1,17 @@
 import logging
 import datetime
-from quart import Quart, request, jsonify
+from quart import Blueprint, request, jsonify
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
-
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
+routes_bp = Blueprint('routes', __name__)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 entity_name = "prototype"  # entity name in underscore lowercase
 
@@ -56,7 +56,7 @@ async def process_prototype(entity):
     return entity
 
 
-@app.route('/prototypes', methods=['POST'])
+@routes_bp.route('/prototypes', methods=['POST'])
 async def create_prototype():
     try:
         data = await request.get_json()
@@ -76,7 +76,7 @@ async def create_prototype():
         return jsonify({"error": "Failed to create prototype"}), 500
 
 
-@app.route('/prototypes/<string:id>', methods=['GET'])
+@routes_bp.route('/prototypes/<string:id>', methods=['GET'])
 async def get_prototype(id):
     try:
         item = await entity_service.get_item(
@@ -93,7 +93,7 @@ async def get_prototype(id):
         return jsonify({"error": "Failed to get prototype"}), 500
 
 
-@app.route('/prototypes', methods=['GET'])
+@routes_bp.route('/prototypes', methods=['GET'])
 async def get_prototypes():
     try:
         items = await entity_service.get_items(
@@ -107,7 +107,7 @@ async def get_prototypes():
         return jsonify({"error": "Failed to get prototypes"}), 500
 
 
-@app.route('/prototypes/<string:id>', methods=['PUT'])
+@routes_bp.route('/prototypes/<string:id>', methods=['PUT'])
 async def update_prototype(id):
     try:
         data = await request.get_json()
@@ -129,7 +129,7 @@ async def update_prototype(id):
         return jsonify({"error": "Failed to update prototype"}), 500
 
 
-@app.route('/prototypes/<string:id>', methods=['DELETE'])
+@routes_bp.route('/prototypes/<string:id>', methods=['DELETE'])
 async def delete_prototype(id):
     try:
         await entity_service.delete_item(
@@ -145,7 +145,7 @@ async def delete_prototype(id):
         return jsonify({"error": "Failed to delete prototype"}), 500
 
 
-@app.route('/prototypes/search', methods=['POST'])
+@routes_bp.route('/prototypes/search', methods=['POST'])
 async def search_prototypes():
     try:
         condition = await request.get_json()

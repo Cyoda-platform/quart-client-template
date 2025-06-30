@@ -1,40 +1,40 @@
 {
-    "description": "FSM workflow for process_prototype entity processing",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
-        },
-        "enrich": {
-            "transitions": {
-                "enrich_complete": {
-                    "action": {
-                        "name": "enrich_prototype"
-                    },
-                    "next": "log_creation"
-                }
-            }
-        },
-        "log_creation": {
-            "transitions": {
-                "log_complete": {
-                    "action": {
-                        "name": "log_prototype_creation"
-                    },
-                    "next": "completed"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_processing": {
-                    "action": {
-                        "name": "process_prototype"
-                    },
-                    "next": "enrich"
-                }
-            }
+  "description": "FSM workflow for process_prototype entity processing",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_processing": {
+          "action": {
+            "name": "process_prototype"
+          },
+          "next": "enrich"
         }
+      }
     },
-    "workflow_name": "process_prototype_workflow"
+    "enrich": {
+      "transitions": {
+        "enrich_complete": {
+          "action": {
+            "name": "enrich_prototype"
+          },
+          "next": "log_creation"
+        }
+      }
+    },
+    "log_creation": {
+      "transitions": {
+        "log_complete": {
+          "action": {
+            "name": "log_prototype_creation"
+          },
+          "next": "completed"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "process_prototype_workflow"
 }

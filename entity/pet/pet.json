@@ -1,0 +1,14 @@
+{
+    "pet": {
+        "adoption_date": "2020-05-15",
+        "age": 3,
+        "breed": "Golden Retriever",
+        "color": "Golden",
+        "id": 1,
+        "name": "Buddy",
+        "owner_id": 101,
+        "species": "Dog",
+        "vaccinated": true,
+        "weight": 70
+    }
+}

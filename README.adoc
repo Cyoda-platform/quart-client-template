@@ -86,6 +86,27 @@ The primary module for business logic development. Key files include:
 
 Entities should be defined using the following structure:
 
+- **adding new entity/editing existing entity**:
+[source]
+----
+entity/$entity_name/$entity_name.json
+----
+
+Define entity data model
+
+Example:
+
+[source]
+----
+{
+    "attribute": "value",
+    "my_quality": "quality_value"
+}
+----
+
+
+- **adding new entity workflow configuration/editing existing entity workflow configuration**:
+
 [source]
 ----
 entity/$entity_name/workflow.json
@@ -93,38 +114,89 @@ entity/$entity_name/workflow.json
 
 This file defines the workflow configuration using a finite-state machine (FSM) model, which specifies states and transitions between them.
 
+Construct workflow JSON using a typical FSM model.
+The FSM json should consist of an ordered dictionary of states. Each state has a dictionary of transitions. Each transition has a next attribute, which identifies the next state.
+Each transition may have an action (will map directly to a function).
+Action names/condition functions should be the same as functions names in the workflow.py code.
+Ideally, there should be one action per transition. If user doesn't specify, derive from transition name.
+Always start from an initial state 'none'.
+Avoid loops.
+If we have multiple transitions from one state we need a condition for each transition to decide which to use.
+
 Example:
 
 [source]
 ----
 {
-    "description": "Workflow to process and manage data through various states.",
-    "name": "generic_data_processing_workflow",
-    "transitions": [
-        {
-            "automated": true,
-            "description": "Begin processing the data and compute the initial status.",
-            "end_state": "Status_computed",
-            "end_state_description": "The status has been successfully computed.",
-            "name": "start_processing",
-            "processes": {
-                "externalized_processors": [
-                    {
-                        "description": "Processor that computes the status based on input data.",
-                        "name": "process_compute_status"
-                    }
-                ],
-                "schedule_transition_processors": []
-            },
-            "start_state": "None",
-            "start_state_description": "Initial state before processing begins."
+  "version": "1.0",
+  "description": "Template FSM with structured states, transitions, actions, and conditions",
+  "initial_state": "state_initial",
+  "workflow_name": "template_workflow",
+  "states": {
+    "state_initial": {
+      "transitions": {
+        "transition_to_01": {
+          "next": "state_01"
         }
-    ]
+      }
+    },
+    "state_01": {
+      "transitions": {
+        "transition_to_02": {
+          "next": "state_02",
+          "action": {
+            "name": "example_function_name"
+          }
+        }
+      }
+    },
+    "state_02": {
+      "transitions": {
+        "transition_with_condition_simple": {
+          "next": "state_condition_check_01",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "example_function_name_returns_bool"
+            }
+          }
+        }
+      }
+    },
+    "state_condition_check_01": {
+      "transitions": {
+        "transition_with_condition_group": {
+          "next": "state_terminal",
+          "condition": {
+            "type": "group",
+            "name": "condition_group_gamma",
+            "operator": "AND",
+            "parameters": [
+              {
+                "jsonPath": "sampleFieldA",
+                "operatorType": "equals (disregard case)",
+                "value": "template_value_01",
+                "type": "simple"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
 }
 ----
 
+Available operator values:,
+AND, OR, NOT
+Available operatorType values:",
+EQUALS, NOT_EQUAL, IEQUALS, INOT_EQUAL, IS_NULL, NOT_NULL, GREATER_THAN, GREATER_OR_EQUAL, LESS_THAN, LESS_OR_EQUAL,
+ICONTAINS, ISTARTS_WITH, IENDS_WITH, INOT_CONTAINS, INOT_STARTS_WITH, INOT_ENDS_WITH, MATCHES_PATTERN, BETWEEN, BETWEEN_INCLUSIVE
+
+- **adding new workflow processors code/editing existing workflow processors code**:
+
 The logic for processing workflows is implemented in entity/$entity_name/workflow.py:
-Each function name matches externalized_processors processor name.
+Each function name matches action/processor or criteria function name.
 
 [source]
 ----
@@ -133,6 +205,19 @@ async def process_compute_status(entity: dict):
     entity["final_result"] = final_result
     entity["workflowProcessed"] = True
 ----
+
+Example for condition functions:
+
+[source]
+----
+async def function_name(entity: dict) -> bool:
+    return True
+----
+
+Please make sure all action functions and condition functions for the newly generated workflow are implemented in the code.
+Generate new action functions and condition functions if necessary and remove any 'orphan' functions.
+Processes should take only one argument entity.
+
 
 === 4. helm/
 
@@ -198,13 +283,13 @@ from common.config.config import ENTITY_VERSION
     "operator": "AND",
     "conditions": [
       {
-        "jsonPath": "my_attribute",
+        "jsonPath": "$.my_attribute",
         "operatorType": "EQUALS",
         "value": false,
         "type": "simple"
       },
       {
-        "jsonPath": "my_attribute",
+        "jsonPath": "$.my_attribute",
         "operatorType": "GREATER_THAN",
         "value": 1,
         "type": "simple"

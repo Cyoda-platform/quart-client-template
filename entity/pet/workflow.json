@@ -1,0 +1,98 @@
+```json
+{
+  "version": "1.0",
+  "description": "Workflow to prepare pet for an exhibition using a finite-state machine",
+  "initial_state": "none",
+  "workflow_name": "prepare_pet_for_exhibition",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_preparation": {
+          "next": "grooming",
+          "action": {
+            "name": "start_preparation"
+          }
+        }
+      }
+    },
+    "grooming": {
+      "transitions": {
+        "finish_grooming": {
+          "next": "health_check",
+          "action": {
+            "name": "finish_grooming"
+          }
+        }
+      }
+    },
+    "health_check": {
+      "transitions": {
+        "health_ok": {
+          "next": "training",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_health_ok"
+            }
+          },
+          "action": {
+            "name": "approve_health_check"
+          }
+        },
+        "health_not_ok": {
+          "next": "veterinary_care",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "is_health_not_ok"
+            }
+          },
+          "action": {
+            "name": "schedule_veterinary_care"
+          }
+        }
+      }
+    },
+    "veterinary_care": {
+      "transitions": {
+        "care_complete": {
+          "next": "training",
+          "action": {
+            "name": "finish_veterinary_care"
+          }
+        }
+      }
+    },
+    "training": {
+      "transitions": {
+        "training_complete": {
+          "next": "exhibition_ready",
+          "action": {
+            "name": "complete_training"
+          }
+        }
+      }
+    },
+    "exhibition_ready": {
+      "transitions": {
+        "start_exhibition": {
+          "next": "exhibition",
+          "action": {
+            "name": "start_exhibition"
+          }
+        }
+      }
+    },
+    "exhibition": {
+      "transitions": {
+        "exhibition_done": {
+          "next": "none",
+          "action": {
+            "name": "finish_exhibition"
+          }
+        }
+      }
+    }
+  }
+}
+```

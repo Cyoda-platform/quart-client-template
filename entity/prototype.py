@@ -1,12 +1,11 @@
-```python
 import asyncio
 import logging
 from datetime import datetime
 from typing import Dict
-
+from dataclasses import dataclass
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request  # validate_querystring not needed for current GET routes
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,8 +13,12 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
+@dataclass
+class EntityRequest:
+    job_id: str
+    user_id: int
+
 # In-memory async-safe cache for entity jobs keyed by job_id
-# (simulate persistence, no global keyword)
 class EntityJobCache:
     def __init__(self):
         self._lock = asyncio.Lock()
@@ -36,8 +39,6 @@ class EntityJobCache:
 
 entity_job_cache = EntityJobCache()
 
-
-# Example external API call: Fetch user data from https://jsonplaceholder.typicode.com/users/{id}
 async def fetch_user_data(user_id: int) -> Dict:
     url = f"https://jsonplaceholder.typicode.com/users/{user_id}"
     async with httpx.AsyncClient() as client:
@@ -45,102 +46,50 @@ async def fetch_user_data(user_id: int) -> Dict:
         response.raise_for_status()
         return response.json()
 
-
-# Example external API call: Fetch some posts related to user from https://jsonplaceholder.typicode.com/posts?userId={id}
 async def fetch_user_posts(user_id: int) -> Dict:
-    url = f"https://jsonplaceholder.typicode.com/posts"
+    url = "https://jsonplaceholder.typicode.com/posts"
     params = {"userId": user_id}
     async with httpx.AsyncClient() as client:
         response = await client.get(url, params=params)
         response.raise_for_status()
         return response.json()
 
-
-# Core processing function simulating an entity workflow triggered by an event
 async def process_entity(entity_job_cache: EntityJobCache, job_id: str, data: Dict):
     try:
         logger.info(f"Processing entity job {job_id} with data: {data}")
-
         user_id = data.get("user_id")
         if not user_id:
             raise ValueError("Missing required field 'user_id' in data")
-
-        # Step 1: Fetch user info from external API
         user_info = await fetch_user_data(user_id)
-
-        # Step 2: Fetch user posts from external API
         user_posts = await fetch_user_posts(user_id)
-
         # TODO: Add more complex workflow steps or calculations here if specified
-
-        # Simulate workflow completion by updating cache
         result = {
             "user": user_info,
             "posts": user_posts,
             "processedAt": datetime.utcnow().isoformat() + "Z",
         }
-
         await entity_job_cache.set(job_id, {"status": "completed", "result": result, "requestedAt": data.get("requestedAt")})
-
         logger.info(f"Entity job {job_id} completed successfully")
-
     except Exception as e:
         logger.exception(f"Error processing entity job {job_id}: {e}")
         await entity_job_cache.set(job_id, {"status": "failed", "error": str(e), "requestedAt": data.get("requestedAt")})
 
-
 @app.route("/entity/<string:job_id>", methods=["GET"])
 async def get_entity_job_status(job_id):
-    """API to get status/result of entity job by job_id"""
     job = await entity_job_cache.get(job_id)
     if not job:
         return jsonify({"error": "Job not found"}), 404
     return jsonify(job)
 
-
 @app.route("/entity", methods=["POST"])
-async def create_entity_job():
-    """
-    API to create a new entity job.
-    Expected JSON body: { "job_id": str, "user_id": int }
-    """
-    data = await request.get_json()
-
-    job_id = data.get("job_id")
-    if not job_id:
-        return jsonify({"error": "Missing 'job_id'"}), 400
-
-    user_id = data.get("user_id")
-    if not isinstance(user_id, int):
-        return jsonify({"error": "'user_id' must be an integer"}), 400
-
+@validate_request(EntityRequest)  # validation last for POST (workaround for quart-schema issue)
+async def create_entity_job(data: EntityRequest):
+    job_id = data.job_id
+    user_id = data.user_id
     requested_at = datetime.utcnow().isoformat() + "Z"
-
-    # Initialize job status as processing
     await entity_job_cache.set(job_id, {"status": "processing", "requestedAt": requested_at})
-
-    # Fire and forget the processing task
     asyncio.create_task(process_entity(entity_job_cache, job_id, {"user_id": user_id, "requestedAt": requested_at}))
-
     return jsonify({"job_id": job_id, "status": "processing", "requestedAt": requested_at}), 202
-
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
----
-
-### Explanation and compliance with your request:
-
-- **Framework & API**: Uses Quart with `QuartSchema(app)` line included (no @validate_request).
-- **Async HTTP client**: Uses `httpx.AsyncClient` for real external API calls.
-- **Prototype nature**: Simple in-memory async cache simulates persistence, no external DB or global state.
-- **Entity & workflow**: The `process_entity` function represents the entity workflow triggered by the POST event.
-- **Event-driven design**: Job processing is launched asynchronously with `asyncio.create_task`.
-- **Logging**: Uses proper logging with exception capture.
-- **External APIs**: Real public APIs (jsonplaceholder) used for demonstration.
-- **Entry point**: Matches your specification.
-- **TODO comments**: Indicated for future workflow extensions or missing requirements.
-- **Data dynamic**: No schema validation applied to requests.
-
-If you want me to help extend or tweak this prototype further, or if you want me to generate tests or documentation, just let me know!

@@ -1,0 +1,29 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": "cat",
+                "id": 123,
+                "name": "fluffy",
+                "photoUrls": [
+                    "url1",
+                    "url2"
+                ],
+                "status": "available",
+                "tags": [
+                    "cute",
+                    "playful"
+                ]
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "added_at": "2024-06-01T12:00:00Z",
+                "pet_id": "123",
+                "user_id": "default_user"
+            },
+            "entity_name": "favorite"
+        }
+    ]
+}

@@ -1,0 +1,57 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "category": "cat",
+                "id": 123,
+                "name": "fluffy",
+                "status": "available",
+                "tags": [
+                    "cute",
+                    "playful"
+                ]
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "category": "cat",
+                "status": "available"
+            },
+            "entity_name": "filter"
+        },
+        {
+            "entity_data_example": {
+                "filter": {
+                    "category": "cat",
+                    "status": "available"
+                }
+            },
+            "entity_name": "fetch_pets_request"
+        },
+        {
+            "entity_data_example": {
+                "category": "cat",
+                "name": "fluffy",
+                "status": "available",
+                "tags": [
+                    "cute",
+                    "playful"
+                ]
+            },
+            "entity_name": "add_pet_request"
+        },
+        {
+            "entity_data_example": {
+                "category": "cat",
+                "name": "whiskers",
+                "status": "pending",
+                "tags": [
+                    "friendly",
+                    "small"
+                ]
+            },
+            "entity_name": "update_pet_request"
+        }
+    ]
+}

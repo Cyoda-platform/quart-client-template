@@ -1,45 +1,45 @@
 {
-    "description": "Purrfect Pets search workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "none": {
-            "transitions": {
-                "start_search": {
-                    "action": {
-                        "name": "process_pet"
-                    },
-                    "next": "search_pending"
-                }
-            }
-        },
-        "search_completed": {
-            "transitions": {}
-        },
-        "search_failed": {
-            "transitions": {}
-        },
-        "search_pending": {
-            "transitions": {
-                "complete_search": {
-                    "condition": {
-                        "function": {
-                            "name": "is_search_completed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "search_completed"
-                },
-                "fail_search": {
-                    "condition": {
-                        "function": {
-                            "name": "is_search_failed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "search_failed"
-                }
-            }
+  "description": "Purrfect Pets search workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_search": {
+          "action": {
+            "name": "process_pet"
+          },
+          "next": "search_pending"
         }
+      }
     },
-    "workflow_name": "purrfect_pets_search_workflow"
+    "search_pending": {
+      "transitions": {
+        "complete_search": {
+          "condition": {
+            "function": {
+              "name": "is_search_completed"
+            },
+            "type": "function"
+          },
+          "next": "search_completed"
+        },
+        "fail_search": {
+          "condition": {
+            "function": {
+              "name": "is_search_failed"
+            },
+            "type": "function"
+          },
+          "next": "search_failed"
+        }
+      }
+    },
+    "search_completed": {
+      "transitions": {}
+    },
+    "search_failed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "purrfect_pets_search_workflow"
 }

@@ -13,7 +13,7 @@
                                 "jsonPath": "resetRequested",
                                 "operatorType": "EQUALS",
                                 "type": "simple",
-                                "value": true
+                                "value": "true"
                             }
                         ],
                         "type": "group"
@@ -43,7 +43,7 @@
                                 "jsonPath": "resetRequested",
                                 "operatorType": "EQUALS",
                                 "type": "simple",
-                                "value": true
+                                "value": "true"
                             }
                         ],
                         "type": "group"

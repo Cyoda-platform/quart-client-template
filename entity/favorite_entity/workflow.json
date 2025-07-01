@@ -1,80 +1,46 @@
 {
-  "description": "Purrfect Pets Search Workflow FSM",
-  "initial_state": "none",
-  "states": {
-    "none": {
-      "transitions": {
-        "start_search": {
-          "action": {
-            "name": "process_pet_search_request"
-          },
-          "next": "searching_pets"
-        }
-      }
-    },
-    "searching_pets": {
-      "transitions": {
-        "transition_failure": {
-          "condition": {
-            "function": {
-              "name": "is_search_failed"
-            },
-            "type": "function"
-          },
-          "next": "error"
+    "description": "Favorites management workflow FSM",
+    "initial_state": "none",
+    "states": {
+        "error": {
+            "transitions": {}
         },
-        "transition_success": {
-          "condition": {
-            "function": {
-              "name": "is_search_successful"
-            },
-            "type": "function"
-          },
-          "next": "results_ready"
+        "favorite_updated": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "start_favorite_processing": {
+                    "action": {
+                        "name": "process_favorite_entity"
+                    },
+                    "next": "processing_favorite"
+                }
+            }
+        },
+        "processing_favorite": {
+            "transitions": {
+                "favorite_failure_transition": {
+                    "condition": {
+                        "function": {
+                            "name": "is_favorite_failed"
+                        },
+                        "type": "function"
+                    },
+                    "next": "error"
+                },
+                "favorite_success_transition": {
+                    "condition": {
+                        "function": {
+                            "name": "is_favorite_successful"
+                        },
+                        "type": "function"
+                    },
+                    "next": "favorite_updated"
+                }
+            }
         }
-      }
     },
-    "error": {
-      "transitions": {
-        "transition_to_none": {
-          "condition": {
-            "name": "reset_condition",
-            "operator": "AND",
-            "parameters": [
-              {
-                "jsonPath": "resetRequested",
-                "operatorType": "EQUALS",
-                "type": "simple",
-                "value": "true"
-              }
-            ],
-            "type": "group"
-          },
-          "next": "none"
-        }
-      }
-    },
-    "results_ready": {
-      "transitions": {
-        "transition_to_none": {
-          "condition": {
-            "name": "reset_condition",
-            "operator": "AND",
-            "parameters": [
-              {
-                "jsonPath": "resetRequested",
-                "operatorType": "EQUALS",
-                "type": "simple",
-                "value": "true"
-              }
-            ],
-            "type": "group"
-          },
-          "next": "none"
-        }
-      }
-    }
-  },
-  "version": "1.0",
-  "workflow_name": "purrfect_pets_search_workflow"
+    "version": "1.0",
+    "workflow_name": "favorite_management_workflow"
 }

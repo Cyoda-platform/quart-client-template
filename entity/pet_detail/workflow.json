@@ -1,79 +1,76 @@
-```json
 {
-  "version": "1.0",
-  "description": "Pet Detail Processing FSM Workflow",
-  "initial_state": "none",
-  "workflow_name": "pet_detail_processing_workflow",
-  "states": {
-    "none": {
-      "transitions": {
-        "start_processing_transition": {
-          "next": "queued",
-          "action": {
-            "name": "action_start_processing"
-          }
-        }
-      }
-    },
-    "queued": {
-      "transitions": {
-        "start_background_processing": {
-          "next": "processing",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "cond_is_queued"
-            }
-          }
+    "description": "Pet Detail Processing FSM Workflow",
+    "initial_state": "none",
+    "states": {
+        "done": {
+            "transitions": {}
         },
-        "fail_transition_from_queued": {
-          "next": "error",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "cond_has_error"
-            }
-          },
-          "action": {
-            "name": "action_update_status_error"
-          }
-        }
-      }
-    },
-    "processing": {
-      "transitions": {
-        "processing_success": {
-          "next": "done",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "cond_is_processing"
-            }
-          },
-          "action": {
-            "name": "action_update_status_done"
-          }
+        "error": {
+            "transitions": {}
         },
-        "processing_failure": {
-          "next": "error",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "cond_has_error"
+        "none": {
+            "transitions": {
+                "start_processing_transition": {
+                    "action": {
+                        "name": "action_start_processing"
+                    },
+                    "next": "queued"
+                }
             }
-          },
-          "action": {
-            "name": "action_update_status_error"
-          }
+        },
+        "processing": {
+            "transitions": {
+                "processing_failure": {
+                    "action": {
+                        "name": "action_update_status_error"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "cond_has_error"
+                        },
+                        "type": "function"
+                    },
+                    "next": "error"
+                },
+                "processing_success": {
+                    "action": {
+                        "name": "action_update_status_done"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "cond_is_processing"
+                        },
+                        "type": "function"
+                    },
+                    "next": "done"
+                }
+            }
+        },
+        "queued": {
+            "transitions": {
+                "fail_transition_from_queued": {
+                    "action": {
+                        "name": "action_update_status_error"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "cond_has_error"
+                        },
+                        "type": "function"
+                    },
+                    "next": "error"
+                },
+                "start_background_processing": {
+                    "condition": {
+                        "function": {
+                            "name": "cond_is_queued"
+                        },
+                        "type": "function"
+                    },
+                    "next": "processing"
+                }
+            }
         }
-      }
     },
-    "done": {
-      "transitions": {}
-    },
-    "error": {
-      "transitions": {}
-    }
-  }
+    "workflow_name": "pet_detail_processing_workflow"
 }
-```

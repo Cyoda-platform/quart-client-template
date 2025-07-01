@@ -1,64 +1,64 @@
 {
-    "description": "Purrfect Pets FSM workflow with states, transitions, actions and conditions",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "to_normalized": {
-                    "action": {
-                        "name": "normalize_pet"
-                    },
-                    "next": "normalized"
-                }
-            }
-        },
-        "normalized": {
-            "transitions": {
-                "to_completed_invalid_name": {
-                    "condition": {
-                        "function": {
-                            "name": "not_validate_pet_has_name"
-                        },
-                        "type": "function"
-                    },
-                    "next": "completed"
-                },
-                "to_validated_name": {
-                    "condition": {
-                        "function": {
-                            "name": "validate_pet_has_name"
-                        },
-                        "type": "function"
-                    },
-                    "next": "validated"
-                }
-            }
-        },
-        "validated": {
-            "transitions": {
-                "to_completed_invalid_status": {
-                    "condition": {
-                        "function": {
-                            "name": "not_validate_pet_status"
-                        },
-                        "type": "function"
-                    },
-                    "next": "completed"
-                },
-                "to_completed_valid_status": {
-                    "condition": {
-                        "function": {
-                            "name": "validate_pet_status"
-                        },
-                        "type": "function"
-                    },
-                    "next": "completed"
-                }
-            }
+  "description": "Purrfect Pets FSM workflow with states, transitions, actions and conditions",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "to_normalized": {
+          "action": {
+            "name": "normalize_pet"
+          },
+          "next": "normalized"
         }
+      }
     },
-    "workflow_name": "purrfect_pets_workflow"
+    "normalized": {
+      "transitions": {
+        "to_completed_invalid_name": {
+          "condition": {
+            "function": {
+              "name": "not_validate_pet_has_name"
+            },
+            "type": "function"
+          },
+          "next": "completed"
+        },
+        "to_validated_name": {
+          "condition": {
+            "function": {
+              "name": "validate_pet_has_name"
+            },
+            "type": "function"
+          },
+          "next": "validated"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    },
+    "validated": {
+      "transitions": {
+        "to_completed_invalid_status": {
+          "condition": {
+            "function": {
+              "name": "not_validate_pet_status"
+            },
+            "type": "function"
+          },
+          "next": "completed"
+        },
+        "to_completed_valid_status": {
+          "condition": {
+            "function": {
+              "name": "validate_pet_status"
+            },
+            "type": "function"
+          },
+          "next": "completed"
+        }
+      }
+    }
+  },
+  "workflow_name": "purrfect_pets_workflow"
 }

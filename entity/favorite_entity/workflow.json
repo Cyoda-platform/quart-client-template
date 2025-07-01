@@ -1,45 +1,45 @@
 {
-    "description": "Favorites management workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "error": {
-            "transitions": {}
-        },
-        "favorite_updated": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "start_favorite_processing": {
-                    "action": {
-                        "name": "process_favorite_entity"
-                    },
-                    "next": "processing_favorite"
-                }
-            }
-        },
-        "processing_favorite": {
-            "transitions": {
-                "favorite_failure_transition": {
-                    "condition": {
-                        "function": {
-                            "name": "is_favorite_failed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "error"
-                },
-                "favorite_success_transition": {
-                    "condition": {
-                        "function": {
-                            "name": "is_favorite_successful"
-                        },
-                        "type": "function"
-                    },
-                    "next": "favorite_updated"
-                }
-            }
+  "description": "Favorites management workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_favorite_processing": {
+          "action": {
+            "name": "process_favorite_entity"
+          },
+          "next": "processing_favorite"
         }
+      }
     },
-    "workflow_name": "favorite_management_workflow"
+    "processing_favorite": {
+      "transitions": {
+        "favorite_failure_transition": {
+          "condition": {
+            "function": {
+              "name": "is_favorite_failed"
+            },
+            "type": "function"
+          },
+          "next": "error"
+        },
+        "favorite_success_transition": {
+          "condition": {
+            "function": {
+              "name": "is_favorite_successful"
+            },
+            "type": "function"
+          },
+          "next": "favorite_updated"
+        }
+      }
+    },
+    "error": {
+      "transitions": {}
+    },
+    "favorite_updated": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "favorite_management_workflow"
 }

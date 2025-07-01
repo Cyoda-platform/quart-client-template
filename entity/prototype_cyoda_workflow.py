@@ -1,21 +1,41 @@
-Certainly! I'll update the code to add the required workflow function parameter to the `entity_service.add_item` call(s) and implement the workflow function following your instructions:
+Got it! To fully comply with your requirements, I'll refactor the code so that all async logic related to the entity is moved into the workflow function(s) named `process_{entity_name}`. This means:
 
-- The workflow function name should be `process_{entity_name}`, where `{entity_name}` is underscore lowercase.
-- It should be an async function that takes the entity data as the only argument.
-- It can modify the entity state and call other entities, but not add/update/delete the same entity model (to avoid infinite recursion).
-
-From your reference code, the only place where `entity_service.add_item` might logically be used is in the pet adoption flow, where adoption data is persisted. Currently, the adoption persistence is done in an in-memory cache only.
-
-I will:
-
-1. Implement a workflow function named `process_pet_adoption` (assuming entity_name = `pet_adoption` in underscore lowercase).
-2. Update the `/pets/adopt` endpoint to persist the adoption entity via `entity_service.add_item`, passing the workflow function.
-3. Remove the in-memory cache usage for adoption persistence or keep it if you want to keep cache as well. (I'll keep it for compatibility but mark it as secondary.)
-4. Return the complete updated code.
+- The endpoint handlers will primarily handle request validation and response formatting.
+- All async calls that fetch or process data **related to the entity** before persistence should be moved to the workflow function.
+- The workflow function will:
+  - Modify the entity data directly (e.g., add fields).
+  - Do any async calls as needed.
+  - Add/get secondary entities for other entity models as necessary.
+- The endpoint will simply call `entity_service.add_item` with the workflow function and return the results after persistence.
 
 ---
 
-### Updated Complete Code with Workflow Function and usage of `entity_service.add_item`:
+### What async logic to move?
+
+From the previous code, the main async logic in `/pets/adopt` endpoint before persistence is:
+
+- Fetching the pet info from Petstore.
+- Validating pet availability.
+- Checking if already adopted in cache (can be moved to a supplementary entity check).
+- Adding adoptionDate and message (already in workflow).
+- Updating the cache (could be done as a supplementary entity).
+
+For `/pets/search` and `/pets/fun-facts`, these endpoints do not persist entities, so the workflow function pattern is not applicable.
+
+---
+
+### Approach:
+
+- Move the pet fetch + validation + cache check into `process_pet_adoption`.
+- The `entity` passed to workflow will initially contain minimal data (only the pet id).
+- The workflow will enrich the entity by fetching pet data and validating.
+- If invalid (e.g. pet not available or already adopted), raise an exception to abort persistence.
+- The workflow function can also add a supplementary entity for cache or adopt a different model like `pet_adoption_cache` if needed (just as an example).
+- The endpoint's job is simplified to calling `add_item` with minimal data and workflow, then returning success or error.
+
+---
+
+### Here is the **fully refactored** code with all async logic moved to workflow:
 
 ```python
 from dataclasses import dataclass
@@ -42,8 +62,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 app = Quart(__name__)
 QuartSchema(app)
 
-# Workaround: due to quart-schema defect, place @validate_request after @app.route for POST endpoints
-
 @dataclass
 class SearchPets:
     type: Optional[str] = None
@@ -52,14 +70,17 @@ class SearchPets:
 
 @dataclass
 class AdoptPet:
-    petid: str  # changed to string, lowercase id field
+    petid: str
 
 @dataclass
 class FunFactsRequest:
     type: Optional[str] = None
     name: Optional[str] = None
 
-# In-memory cache for adopted pets to simulate persistence where entity_service is not used
+PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
+
+# In-memory cache for adopted pets (used only for read in endpoint)
+# We keep it for quick access, but persistence is via entity_service
 class Cache:
     def __init__(self):
         self.adopted_pets: Dict[str, Dict] = {}
@@ -67,11 +88,7 @@ class Cache:
 
 cache = Cache()
 
-PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
-
-async def fetch_pets_from_petstore(
-    type_: Optional[str] = None, status: Optional[str] = None, name: Optional[str] = None
-) -> List[Dict]:
+async def fetch_pets_from_petstore(type_: Optional[str] = None, status: Optional[str] = None, name: Optional[str] = None) -> List[Dict]:
     async with httpx.AsyncClient(timeout=10.0) as client:
         if status:
             try:
@@ -111,29 +128,10 @@ def generate_fun_description(pet: Dict) -> str:
     name = pet.get("name", "Your new friend")
     return jokes.get(pet_type, f"{name} is as awesome as any pet you can imagine!")
 
-# Workflow function for pet adoption entity
-async def process_pet_adoption(entity_data: dict):
-    """
-    Workflow function applied before persisting 'pet_adoption' entity.
-    Modify entity state or add related entities here.
-    """
-    # Add adoption date if not present
-    if "adoptionDate" not in entity_data:
-        entity_data["adoptionDate"] = datetime.utcnow().isoformat() + "Z"
-    # Add a congratulatory message if not present
-    if "message" not in entity_data and "name" in entity_data:
-        entity_data["message"] = f"Congratulations on adopting {entity_data['name']}! 🎉🐾"
-    # You could add logic here to add/get other entities if needed
-    # But do NOT add/update/delete 'pet_adoption' entity here to avoid recursion
-
 @app.route("/pets/search", methods=["POST"])
 @validate_request(SearchPets)
 async def pets_search(data: SearchPets):
-    type_ = data.type
-    status = data.status
-    name = data.name
-
-    pets_raw = await fetch_pets_from_petstore(type_, status, name)
+    pets_raw = await fetch_pets_from_petstore(data.type, data.status, data.name)
     pets = []
     for p in pets_raw:
         pets.append(
@@ -151,40 +149,12 @@ async def pets_search(data: SearchPets):
 @app.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptPet)
 async def pets_adopt(data: AdoptPet):
-    pet_id = str(data.petid)  # ensure string id
-
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        try:
-            r = await client.get(f"{PETSTORE_BASE_URL}/pet/{pet_id}")
-            r.raise_for_status()
-            pet = r.json()
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
-                return jsonify({"success": False, "message": "Pet not found"}), 404
-            logger.exception(e)
-            return jsonify({"success": False, "message": "Error fetching pet info"}), 500
-        except Exception as e:
-            logger.exception(e)
-            return jsonify({"success": False, "message": "Error fetching pet info"}), 500
-
-    if pet.get("status") != "available":
-        return jsonify({"success": False, "message": "Pet is not available for adoption"}), 400
-
-    # Check if already adopted via cache (optional, can be replaced by entity_service query if exists)
-    async with cache.lock:
-        if pet_id in cache.adopted_pets:
-            return jsonify({"success": False, "message": "Pet already adopted"}), 400
-
-    # Prepare entity data for persistence
+    # Minimal entity data: just id, workflow will enrich and validate
     adoption_entity_data = {
-        "id": pet_id,
-        "name": pet.get("name"),
-        "type": pet.get("category", {}).get("name"),
-        # adoptionDate and message will be added in workflow function
+        "id": str(data.petid),
     }
 
     try:
-        # Persist adoption entity with workflow function
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="pet_adoption",
@@ -193,19 +163,11 @@ async def pets_adopt(data: AdoptPet):
             workflow=process_pet_adoption,
         )
     except Exception as e:
-        logger.exception(f"Error persisting pet adoption entity: {e}")
-        return jsonify({"success": False, "message": "Error saving adoption info"}), 500
+        # Assume workflow raised an Exception in case of validation error or fetch error
+        logger.exception(f"Adoption failed: {e}")
+        return jsonify({"success": False, "message": str(e)}), 400
 
-    # Update cache for quick access (optional)
-    async with cache.lock:
-        # Add adoptionDate and message from workflow to cache
-        if "adoptionDate" not in adoption_entity_data:
-            adoption_entity_data["adoptionDate"] = datetime.utcnow().isoformat() + "Z"
-        if "message" not in adoption_entity_data:
-            adoption_entity_data["message"] = f"Congratulations on adopting {adoption_entity_data['name']}! 🎉🐾"
-        cache.adopted_pets[pet_id] = adoption_entity_data
-
-    return jsonify({"success": True, "message": f"Pet {pet.get('name')} adopted successfully!", "entityId": entity_id})
+    return jsonify({"success": True, "message": f"Pet adopted successfully!", "entityId": entity_id})
 
 @app.route("/pets/adopted", methods=["GET"])
 async def pets_adopted():
@@ -233,17 +195,91 @@ async def pets_fun_facts(data: FunFactsRequest):
         fact = "Pets make life pawsome! 🐾😺🐶"
 
     return jsonify({"fact": fact})
+
+# Workflow function moved async logic here
+async def process_pet_adoption(entity: dict):
+    """
+    Workflow for 'pet_adoption' entity.
+    - Validate pet exists and is available.
+    - Check if already adopted.
+    - Enrich entity with pet details and adoption info.
+    - Update in-memory cache as supplementary (example of secondary entity).
+    """
+    pet_id = entity.get("id")
+    if not pet_id:
+        raise ValueError("Pet ID is required for adoption.")
+
+    # Fetch pet info from petstore
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            r = await client.get(f"{PETSTORE_BASE_URL}/pet/{pet_id}")
+            r.raise_for_status()
+            pet = r.json()
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                raise ValueError("Pet not found.")
+            logger.exception(f"HTTP error fetching pet {pet_id}: {e}")
+            raise RuntimeError("Error fetching pet info.")
+        except Exception as e:
+            logger.exception(f"Error fetching pet {pet_id}: {e}")
+            raise RuntimeError("Error fetching pet info.")
+
+    if pet.get("status") != "available":
+        raise ValueError("Pet is not available for adoption.")
+
+    # Check in-memory cache if already adopted
+    # This is an example of querying a secondary entity to prevent duplicates
+    async with cache.lock:
+        if pet_id in cache.adopted_pets:
+            raise ValueError("Pet already adopted.")
+
+    # Enrich entity with pet details
+    entity["name"] = pet.get("name")
+    entity["type"] = pet.get("category", {}).get("name")
+    entity["adoptionDate"] = datetime.utcnow().isoformat() + "Z"
+    entity["message"] = f"Congratulations on adopting {entity['name']}! 🎉🐾"
+
+    # Update in-memory cache as a secondary/supplementary entity
+    # This simulates adding/updating another entity_model different from 'pet_adoption'
+    async with cache.lock:
+        cache.adopted_pets[pet_id] = {
+            "id": pet_id,
+            "name": entity["name"],
+            "type": entity["type"],
+            "adoptionDate": entity["adoptionDate"],
+            "message": entity["message"],
+        }
+
+    # If you want, you can also add a secondary raw entity via entity_service.add_item here
+    # as long as entity_model != 'pet_adoption' to avoid recursion:
+    # e.g.
+    # await entity_service.add_item(
+    #     token=cyoda_auth_service,
+    #     entity_model="pet_adoption_log",
+    #     entity_version=ENTITY_VERSION,
+    #     entity={
+    #         "pet_id": pet_id,
+    #         "adopted_at": entity["adoptionDate"],
+    #         "notes": "Adoption logged successfully",
+    #     },
+    # )
+
 ```
 
 ---
 
-### Explanation of changes:
+### Summary of refactor:
 
-- Added async `process_pet_adoption(entity_data: dict)` workflow function.
-- This function adds `adoptionDate` and `message` fields if missing.
-- Updated `/pets/adopt` handler to call `entity_service.add_item` with `workflow=process_pet_adoption`.
-- Preserved cache usage for adopted pets, but now cache is updated after successful persistence.
-- Added error handling around `entity_service.add_item`.
-- Returned the `entityId` from persistence in the adoption success response.
+- **Endpoint `/pets/adopt`**: only passes minimal entity data (pet id) to `add_item` and returns result.
+- **Workflow `process_pet_adoption`**:
+  - Fetches pet details asynchronously.
+  - Validates pet availability and duplicate adoption.
+  - Enriches the entity with additional attributes.
+  - Updates in-memory cache as a secondary storage example.
+  - Can add other secondary entities (commented example).
+- All async logic related to pet adoption entity moved inside the workflow.
+- Endpoint is now clean, robust, and only responsible for input-output.
 
-Let me know if you want me to remove the in-memory cache entirely or change anything else!
+---
+
+If you want me to do the same for other endpoints or entity models, or convert the cache to a persistent secondary entity, just say!

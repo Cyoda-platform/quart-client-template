@@ -1,26 +1,34 @@
-from dataclasses import dataclass
-import asyncio
+from datetime import datetime, timezone
 import logging
-from datetime import datetime
-from typing import Dict, List, Optional
-
-import httpx
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, request, abort, jsonify
+from quart_schema import validate, validate_request
 
 from app_init.app_init import BeanFactory
 
-from common.config.config import ENTITY_VERSION
-
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+FINAL_STATES = {'FAILURE', 'SUCCESS', 'CANCELLED', 'CANCELLED_BY_USER', 'UNKNOWN', 'FINISHED'}
+PROCESSING_STATE = 'PROCESSING'
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+# PETSTORE_BASE_URL and Cache class moved as is from original for context
+PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
+
+import asyncio
+from typing import Dict, List, Optional
+import httpx
+from dataclasses import dataclass
+
+class Cache:
+    def __init__(self):
+        self.adopted_pets: Dict[str, Dict] = {}
+        self.lock = asyncio.Lock()
+
+cache = Cache()
 
 @dataclass
 class SearchPets:
@@ -36,17 +44,6 @@ class AdoptPet:
 class FunFactsRequest:
     type: Optional[str] = None
     name: Optional[str] = None
-
-PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
-
-# In-memory cache for adopted pets (used only for read in endpoint)
-# We keep it for quick access, but persistence is via entity_service
-class Cache:
-    def __init__(self):
-        self.adopted_pets: Dict[str, Dict] = {}
-        self.lock = asyncio.Lock()
-
-cache = Cache()
 
 async def fetch_pets_from_petstore(type_: Optional[str] = None, status: Optional[str] = None, name: Optional[str] = None) -> List[Dict]:
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -88,7 +85,7 @@ def generate_fun_description(pet: Dict) -> str:
     name = pet.get("name", "Your new friend")
     return jokes.get(pet_type, f"{name} is as awesome as any pet you can imagine!")
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchPets)
 async def pets_search(data: SearchPets):
     pets_raw = await fetch_pets_from_petstore(data.type, data.status, data.name)
@@ -106,10 +103,9 @@ async def pets_search(data: SearchPets):
         )
     return jsonify({"pets": pets})
 
-@app.route("/pets/adopt", methods=["POST"])
+@routes_bp.route("/pets/adopt", methods=["POST"])
 @validate_request(AdoptPet)
 async def pets_adopt(data: AdoptPet):
-    # Minimal entity data: just id, workflow will enrich and validate
     adoption_entity_data = {
         "id": str(data.petid),
     }
@@ -118,23 +114,22 @@ async def pets_adopt(data: AdoptPet):
         entity_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="pet_adoption",
-            entity_version=ENTITY_VERSION,
+            entity_version=entity_service.ENTITY_VERSION if hasattr(entity_service, 'ENTITY_VERSION') else None,
             entity=adoption_entity_data
         )
     except Exception as e:
-        # Assume workflow raised an Exception in case of validation error or fetch error
         logger.exception(f"Adoption failed: {e}")
         return jsonify({"success": False, "message": str(e)}), 400
 
     return jsonify({"success": True, "message": f"Pet adopted successfully!", "entityId": entity_id})
 
-@app.route("/pets/adopted", methods=["GET"])
+@routes_bp.route("/pets/adopted", methods=["GET"])
 async def pets_adopted():
     async with cache.lock:
         adopted_list = list(cache.adopted_pets.values())
     return jsonify({"adoptedPets": adopted_list})
 
-@app.route("/pets/fun-facts", methods=["POST"])
+@routes_bp.route("/pets/fun-facts", methods=["POST"])
 @validate_request(FunFactsRequest)
 async def pets_fun_facts(data: FunFactsRequest):
     type_ = data.type.lower() if data.type else None
@@ -154,5 +149,3 @@ async def pets_fun_facts(data: FunFactsRequest):
         fact = "Pets make life pawsome! "
 
     return jsonify({"fact": fact})
-
-# Workflow function removed from this version

@@ -1,0 +1,43 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "id": 123,
+                "name": "Fluffy",
+                "photoUrls": [
+                    "http://example.com/photo1.jpg",
+                    "http://example.com/photo2.jpg"
+                ],
+                "status": "available",
+                "type": "dog"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "petId": 123
+            },
+            "entity_name": "favorites_add_request"
+        },
+        {
+            "entity_data_example": {
+                "favoriteCount": 5,
+                "message": "Pet added to favorites"
+            },
+            "entity_name": "favorites_add_response"
+        },
+        {
+            "entity_data_example": {
+                "petId": 123
+            },
+            "entity_name": "favorites_remove_request"
+        },
+        {
+            "entity_data_example": {
+                "favoriteCount": 4,
+                "message": "Pet removed from favorites"
+            },
+            "entity_name": "favorites_remove_response"
+        }
+    ]
+}

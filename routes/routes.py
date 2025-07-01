@@ -5,8 +5,8 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
 
@@ -161,7 +160,7 @@ async def process_pet_search_request(entity: Dict[str, Any]) -> Dict[str, Any]:
 
     return entity
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def pets_search(data: SearchRequest):
     entity_data = {
@@ -179,7 +178,7 @@ async def pets_search(data: SearchRequest):
 
     return jsonify({"searchRequestId": entity_id})
 
-@app.route("/favorites/add", methods=["POST"])
+@routes_bp.route("/favorites/add", methods=["POST"])
 @validate_request(PetIdRequest)
 async def favorites_add(data: PetIdRequest):
     user_id = "dummy_user"
@@ -200,7 +199,7 @@ async def favorites_add(data: PetIdRequest):
 
     return jsonify({"message": "Pet added to favorites", "favoriteCount": entity_data.get("favoriteCount", 0)})
 
-@app.route("/favorites/remove", methods=["POST"])
+@routes_bp.route("/favorites/remove", methods=["POST"])
 @validate_request(PetIdRequest)
 async def favorites_remove(data: PetIdRequest):
     user_id = "dummy_user"
@@ -221,7 +220,7 @@ async def favorites_remove(data: PetIdRequest):
 
     return jsonify({"message": "Pet removed from favorites", "favoriteCount": entity_data.get("favoriteCount", 0)})
 
-@app.route("/favorites", methods=["GET"])
+@routes_bp.route("/favorites", methods=["GET"])
 async def favorites_get():
     user_id = "dummy_user"
     favorite_entity_model = "favorite_record"
@@ -263,7 +262,7 @@ async def favorites_get():
 
     return jsonify({"favorites": [pet_to_response_obj(p) for p in pets]})
 
-@app.route("/pet", methods=["POST"])
+@routes_bp.route("/pet", methods=["POST"])
 async def add_pet():
     data = await request.get_json()
     if not data:
@@ -277,6 +276,3 @@ async def add_pet():
         entity=data
     )
     return jsonify({"message": "Pet entity added", "entityId": entity_id})
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

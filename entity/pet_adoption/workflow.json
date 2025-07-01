@@ -1,0 +1,116 @@
+{
+    "description": "Workflow FSM for pet adoption entity",
+    "initial_state": "none",
+    "states": {
+        "check_already_adopted": {
+            "transitions": {
+                "already_adopted": {
+                    "condition": {
+                        "function": {
+                            "name": "condition_pet_already_adopted"
+                        },
+                        "type": "function"
+                    },
+                    "next": "failed"
+                },
+                "not_adopted": {
+                    "next": "enrich_entity"
+                }
+            }
+        },
+        "check_availability": {
+            "transitions": {
+                "pet_available": {
+                    "condition": {
+                        "function": {
+                            "name": "condition_pet_available"
+                        },
+                        "type": "function"
+                    },
+                    "next": "check_already_adopted"
+                },
+                "pet_not_available": {
+                    "condition": {
+                        "function": {
+                            "name": "condition_pet_not_available"
+                        },
+                        "type": "function"
+                    },
+                    "next": "failed"
+                }
+            }
+        },
+        "completed": {
+            "transitions": {}
+        },
+        "enrich_entity": {
+            "transitions": {
+                "enrich_and_persist": {
+                    "action": {
+                        "name": "enrich_entity_with_pet_data"
+                    },
+                    "next": "persist_adoption"
+                }
+            }
+        },
+        "failed": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "check_pet_id_present": {
+                    "condition": {
+                        "function": {
+                            "name": "condition_pet_id_present"
+                        },
+                        "type": "function"
+                    },
+                    "next": "validate_pet_exists"
+                },
+                "fail_missing_pet_id": {
+                    "condition": {
+                        "function": {
+                            "name": "condition_pet_id_absent"
+                        },
+                        "type": "function"
+                    },
+                    "next": "failed"
+                }
+            }
+        },
+        "persist_adoption": {
+            "transitions": {
+                "persist_success": {
+                    "action": {
+                        "name": "persist_adoption"
+                    },
+                    "next": "completed"
+                }
+            }
+        },
+        "validate_pet_exists": {
+            "transitions": {
+                "pet_exists": {
+                    "condition": {
+                        "function": {
+                            "name": "condition_pet_exists"
+                        },
+                        "type": "function"
+                    },
+                    "next": "check_availability"
+                },
+                "pet_not_found": {
+                    "condition": {
+                        "function": {
+                            "name": "condition_pet_not_exists"
+                        },
+                        "type": "function"
+                    },
+                    "next": "failed"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "pet_adoption_workflow"
+}

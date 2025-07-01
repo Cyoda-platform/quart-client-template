@@ -24,8 +24,9 @@ class DetailRequest:
     petId: int
 
 # In-memory cache for search and detail results
-app.state.search_cache = {}
-app.state.detail_cache = {}
+# Changed from app.state to app attributes for Quart compatibility
+app.search_cache = {}
+app.detail_cache = {}
 
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
@@ -63,7 +64,7 @@ async def fetch_pet_detail_from_petstore(pet_id: int) -> dict:
             return {}
 
 async def process_search(search_id: str, type_: str, status: str):
-    app.state.search_cache[search_id]["status"] = "processing"
+    app.search_cache[search_id]["status"] = "processing"
     try:
         pets = await fetch_pets_from_petstore(type_, status)
         results = []
@@ -74,14 +75,14 @@ async def process_search(search_id: str, type_: str, status: str):
                 "type": pet.get("category", {}).get("name") if pet.get("category") else None,
                 "status": pet.get("status")
             })
-        app.state.search_cache[search_id]["results"] = results
-        app.state.search_cache[search_id]["status"] = "done"
+        app.search_cache[search_id]["results"] = results
+        app.search_cache[search_id]["status"] = "done"
     except Exception as e:
         logger.exception(f"Error processing search {search_id}: {e}")
-        app.state.search_cache[search_id]["status"] = "error"
+        app.search_cache[search_id]["status"] = "error"
 
 async def process_detail(detail_id: str, pet_id: int):
-    app.state.detail_cache[detail_id]["status"] = "processing"
+    app.detail_cache[detail_id]["status"] = "processing"
     try:
         pet = await fetch_pet_detail_from_petstore(pet_id)
         description = pet.get("description") or "No description available."  # TODO: placeholder
@@ -92,17 +93,17 @@ async def process_detail(detail_id: str, pet_id: int):
             "status": pet.get("status"),
             "description": description,
         }
-        app.state.detail_cache[detail_id]["detail"] = pet_processed
-        app.state.detail_cache[detail_id]["status"] = "done"
+        app.detail_cache[detail_id]["detail"] = pet_processed
+        app.detail_cache[detail_id]["status"] = "done"
     except Exception as e:
         logger.exception(f"Error processing detail {detail_id}: {e}")
-        app.state.detail_cache[detail_id]["status"] = "error"
+        app.detail_cache[detail_id]["status"] = "error"
 
 @app.route("/pets/search", methods=["POST"])
 @validate_request(SearchRequest)  # issue workaround: validation last for POST
 async def pets_search(data: SearchRequest):
     search_id = generate_id()
-    app.state.search_cache[search_id] = {
+    app.search_cache[search_id] = {
         "status": "pending",
         "requestedAt": datetime.utcnow(),
         "results": None,
@@ -112,7 +113,7 @@ async def pets_search(data: SearchRequest):
 
 @app.route("/pets/search/<string:search_id>", methods=["GET"])
 async def get_search_results(search_id):
-    cache = app.state.search_cache.get(search_id)
+    cache = app.search_cache.get(search_id)
     if not cache:
         return jsonify({"error": "searchId not found"}), 404
     if cache["status"] != "done":
@@ -123,7 +124,7 @@ async def get_search_results(search_id):
 @validate_request(DetailRequest)  # issue workaround: validation last for POST
 async def pets_details(data: DetailRequest):
     detail_id = generate_id()
-    app.state.detail_cache[detail_id] = {
+    app.detail_cache[detail_id] = {
         "status": "pending",
         "requestedAt": datetime.utcnow(),
         "detail": None,
@@ -133,7 +134,7 @@ async def pets_details(data: DetailRequest):
 
 @app.route("/pets/details/<string:detail_id>", methods=["GET"])
 async def get_pet_detail(detail_id):
-    cache = app.state.detail_cache.get(detail_id)
+    cache = app.detail_cache.get(detail_id)
     if not cache:
         return jsonify({"error": "detailId not found"}), 404
     if cache["status"] != "done":

@@ -1,80 +1,80 @@
 {
-    "description": "Purrfect Pets Search Workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "error": {
-            "transitions": {
-                "transition_to_none": {
-                    "condition": {
-                        "name": "reset_condition",
-                        "operator": "AND",
-                        "parameters": [
-                            {
-                                "jsonPath": "resetRequested",
-                                "operatorType": "EQUALS",
-                                "type": "simple",
-                                "value": "true"
-                            }
-                        ],
-                        "type": "group"
-                    },
-                    "next": "none"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_search": {
-                    "action": {
-                        "name": "process_pet_search_request"
-                    },
-                    "next": "searching_pets"
-                }
-            }
-        },
-        "results_ready": {
-            "transitions": {
-                "transition_to_none": {
-                    "condition": {
-                        "name": "reset_condition",
-                        "operator": "AND",
-                        "parameters": [
-                            {
-                                "jsonPath": "resetRequested",
-                                "operatorType": "EQUALS",
-                                "type": "simple",
-                                "value": "true"
-                            }
-                        ],
-                        "type": "group"
-                    },
-                    "next": "none"
-                }
-            }
-        },
-        "searching_pets": {
-            "transitions": {
-                "transition_failure": {
-                    "condition": {
-                        "function": {
-                            "name": "is_search_failed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "error"
-                },
-                "transition_success": {
-                    "condition": {
-                        "function": {
-                            "name": "is_search_successful"
-                        },
-                        "type": "function"
-                    },
-                    "next": "results_ready"
-                }
-            }
+  "description": "Purrfect Pets Search Workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_search": {
+          "action": {
+            "name": "process_pet_search_request"
+          },
+          "next": "searching_pets"
         }
+      }
     },
-    "version": "1.0",
-    "workflow_name": "purrfect_pets_search_workflow"
+    "searching_pets": {
+      "transitions": {
+        "transition_failure": {
+          "condition": {
+            "function": {
+              "name": "is_search_failed"
+            },
+            "type": "function"
+          },
+          "next": "error"
+        },
+        "transition_success": {
+          "condition": {
+            "function": {
+              "name": "is_search_successful"
+            },
+            "type": "function"
+          },
+          "next": "results_ready"
+        }
+      }
+    },
+    "error": {
+      "transitions": {
+        "transition_to_none": {
+          "condition": {
+            "name": "reset_condition",
+            "operator": "AND",
+            "parameters": [
+              {
+                "jsonPath": "resetRequested",
+                "operatorType": "EQUALS",
+                "type": "simple",
+                "value": "true"
+              }
+            ],
+            "type": "group"
+          },
+          "next": "none"
+        }
+      }
+    },
+    "results_ready": {
+      "transitions": {
+        "transition_to_none": {
+          "condition": {
+            "name": "reset_condition",
+            "operator": "AND",
+            "parameters": [
+              {
+                "jsonPath": "resetRequested",
+                "operatorType": "EQUALS",
+                "type": "simple",
+                "value": "true"
+              }
+            ],
+            "type": "group"
+          },
+          "next": "none"
+        }
+      }
+    }
+  },
+  "version": "1.0",
+  "workflow_name": "purrfect_pets_search_workflow"
 }

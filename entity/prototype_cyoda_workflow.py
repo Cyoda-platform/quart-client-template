@@ -1,43 +1,3 @@
-Got it! To fully comply with your requirements, I'll refactor the code so that all async logic related to the entity is moved into the workflow function(s) named `process_{entity_name}`. This means:
-
-- The endpoint handlers will primarily handle request validation and response formatting.
-- All async calls that fetch or process data **related to the entity** before persistence should be moved to the workflow function.
-- The workflow function will:
-  - Modify the entity data directly (e.g., add fields).
-  - Do any async calls as needed.
-  - Add/get secondary entities for other entity models as necessary.
-- The endpoint will simply call `entity_service.add_item` with the workflow function and return the results after persistence.
-
----
-
-### What async logic to move?
-
-From the previous code, the main async logic in `/pets/adopt` endpoint before persistence is:
-
-- Fetching the pet info from Petstore.
-- Validating pet availability.
-- Checking if already adopted in cache (can be moved to a supplementary entity check).
-- Adding adoptionDate and message (already in workflow).
-- Updating the cache (could be done as a supplementary entity).
-
-For `/pets/search` and `/pets/fun-facts`, these endpoints do not persist entities, so the workflow function pattern is not applicable.
-
----
-
-### Approach:
-
-- Move the pet fetch + validation + cache check into `process_pet_adoption`.
-- The `entity` passed to workflow will initially contain minimal data (only the pet id).
-- The workflow will enrich the entity by fetching pet data and validating.
-- If invalid (e.g. pet not available or already adopted), raise an exception to abort persistence.
-- The workflow function can also add a supplementary entity for cache or adopt a different model like `pet_adoption_cache` if needed (just as an example).
-- The endpoint's job is simplified to calling `add_item` with minimal data and workflow, then returning success or error.
-
----
-
-### Here is the **fully refactored** code with all async logic moved to workflow:
-
-```python
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -45,8 +5,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
 
@@ -249,37 +209,3 @@ async def process_pet_adoption(entity: dict):
             "adoptionDate": entity["adoptionDate"],
             "message": entity["message"],
         }
-
-    # If you want, you can also add a secondary raw entity via entity_service.add_item here
-    # as long as entity_model != 'pet_adoption' to avoid recursion:
-    # e.g.
-    # await entity_service.add_item(
-    #     token=cyoda_auth_service,
-    #     entity_model="pet_adoption_log",
-    #     entity_version=ENTITY_VERSION,
-    #     entity={
-    #         "pet_id": pet_id,
-    #         "adopted_at": entity["adoptionDate"],
-    #         "notes": "Adoption logged successfully",
-    #     },
-    # )
-
-```
-
----
-
-### Summary of refactor:
-
-- **Endpoint `/pets/adopt`**: only passes minimal entity data (pet id) to `add_item` and returns result.
-- **Workflow `process_pet_adoption`**:
-  - Fetches pet details asynchronously.
-  - Validates pet availability and duplicate adoption.
-  - Enriches the entity with additional attributes.
-  - Updates in-memory cache as a secondary storage example.
-  - Can add other secondary entities (commented example).
-- All async logic related to pet adoption entity moved inside the workflow.
-- Endpoint is now clean, robust, and only responsible for input-output.
-
----
-
-If you want me to do the same for other endpoints or entity models, or convert the cache to a persistent secondary entity, just say!

@@ -1,0 +1,88 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "name": "string (optional, partial or full pet name)",
+                "status": "string (optional, e.g. available, pending, sold)",
+                "type": "string (optional, e.g. cat, dog)"
+            },
+            "entity_name": "search_pets"
+        },
+        {
+            "entity_data_example": {
+                "petid": "string (pet identifier)"
+            },
+            "entity_name": "adopt_pet"
+        },
+        {
+            "entity_data_example": {
+                "name": "string (optional)",
+                "type": "string (optional)"
+            },
+            "entity_name": "fun_facts_request"
+        },
+        {
+            "entity_data_example": {
+                "description": "Did you know cats can make over 100 vocal sounds? Purrhaps it\u2019s true!",
+                "id": 123,
+                "imageUrl": "https://example.com/images/fluffy.jpg",
+                "name": "Fluffy",
+                "status": "available",
+                "type": "cat"
+            },
+            "entity_name": "pet"
+        },
+        {
+            "entity_data_example": {
+                "adoptionDate": "2024-06-01T12:00:00Z",
+                "id": 123,
+                "message": "Congratulations on adopting Fluffy! \ud83c\udf89\ud83d\udc3e",
+                "name": "Fluffy",
+                "type": "cat"
+            },
+            "entity_name": "adopted_pet"
+        },
+        {
+            "entity_data_example": {
+                "pets": [
+                    {
+                        "description": "Did you know cats can make over 100 vocal sounds? Purrhaps it\u2019s true!",
+                        "id": 123,
+                        "imageUrl": "https://example.com/images/fluffy.jpg",
+                        "name": "Fluffy",
+                        "status": "available",
+                        "type": "cat"
+                    }
+                ]
+            },
+            "entity_name": "search_pets_response"
+        },
+        {
+            "entity_data_example": {
+                "message": "Pet Fluffy adopted successfully!",
+                "success": true
+            },
+            "entity_name": "adopt_pet_response"
+        },
+        {
+            "entity_data_example": {
+                "adoptedPets": [
+                    {
+                        "adoptionDate": "2024-06-01T12:00:00Z",
+                        "id": 123,
+                        "message": "Congratulations on adopting Fluffy! \ud83c\udf89\ud83d\udc3e",
+                        "name": "Fluffy",
+                        "type": "cat"
+                    }
+                ]
+            },
+            "entity_name": "pets_adopted_response"
+        },
+        {
+            "entity_data_example": {
+                "fact": "Did you know cats can make over 100 vocal sounds? Purrhaps it\u2019s true!"
+            },
+            "entity_name": "fun_facts_response"
+        }
+    ]
+}

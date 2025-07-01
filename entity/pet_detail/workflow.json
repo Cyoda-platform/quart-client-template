@@ -1,0 +1,79 @@
+```json
+{
+  "version": "1.0",
+  "description": "Pet Detail Processing FSM Workflow",
+  "initial_state": "none",
+  "workflow_name": "pet_detail_processing_workflow",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_processing_transition": {
+          "next": "queued",
+          "action": {
+            "name": "action_start_processing"
+          }
+        }
+      }
+    },
+    "queued": {
+      "transitions": {
+        "start_background_processing": {
+          "next": "processing",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "cond_is_queued"
+            }
+          }
+        },
+        "fail_transition_from_queued": {
+          "next": "error",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "cond_has_error"
+            }
+          },
+          "action": {
+            "name": "action_update_status_error"
+          }
+        }
+      }
+    },
+    "processing": {
+      "transitions": {
+        "processing_success": {
+          "next": "done",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "cond_is_processing"
+            }
+          },
+          "action": {
+            "name": "action_update_status_done"
+          }
+        },
+        "processing_failure": {
+          "next": "error",
+          "condition": {
+            "type": "function",
+            "function": {
+              "name": "cond_has_error"
+            }
+          },
+          "action": {
+            "name": "action_update_status_error"
+          }
+        }
+      }
+    },
+    "done": {
+      "transitions": {}
+    },
+    "error": {
+      "transitions": {}
+    }
+  }
+}
+```

@@ -2,35 +2,16 @@
     "entities": [
         {
             "entity_data_example": {
-                "status": "string",
-                "type": "string"
+                "id": 123,
+                "name": "Fluffy",
+                "status": "available",
+                "type": "dog"
             },
-            "entity_name": "pet_search"
-        },
-        {
-            "entity_data_example": {
-                "results": [
-                    {
-                        "id": 123,
-                        "name": "Fluffy",
-                        "status": "available",
-                        "type": "dog"
-                    }
-                ],
-                "searchId": "string"
-            },
-            "entity_name": "pet_search_result"
-        },
-        {
-            "entity_data_example": {
-                "petId": 123
-            },
-            "entity_name": "pet_detail_request"
+            "entity_name": "pet"
         },
         {
             "entity_data_example": {
                 "description": "Friendly dog who loves to play.",
-                "detailId": "string",
                 "id": 123,
                 "name": "Fluffy",
                 "status": "available",

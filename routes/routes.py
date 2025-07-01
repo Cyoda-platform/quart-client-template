@@ -1,12 +1,11 @@
- from dataclasses import dataclass
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
 import uuid
 
-from quart import Quart, jsonify
-from quart_schema import QuartSchema, validate_request
-import httpx
+from quart import Blueprint, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -18,8 +17,7 @@ factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 @dataclass
 class SearchRequest:
@@ -36,6 +34,7 @@ def generate_id() -> str:
     return str(uuid.uuid4())
 
 async def fetch_pets_from_petstore(status: str):
+    import httpx
     url = f"{PETSTORE_BASE_URL}/pet/findByStatus"
     params = {"status": status}
     async with httpx.AsyncClient() as client:
@@ -44,6 +43,7 @@ async def fetch_pets_from_petstore(status: str):
         return response.json()
 
 async def fetch_pet_detail_from_petstore(pet_id: int):
+    import httpx
     url = f"{PETSTORE_BASE_URL}/pet/{pet_id}"
     async with httpx.AsyncClient() as client:
         response = await client.get(url, timeout=10)
@@ -51,13 +51,6 @@ async def fetch_pet_detail_from_petstore(pet_id: int):
         return response.json()
 
 async def process_pet(entity: dict):
-    """
-    Workflow for pet search entity:
-    - Generate searchId
-    - Store it in entity to persist
-    - Add a secondary entity 'pet_search_result' to hold results & status
-    - Fire off background search task that updates this secondary entity
-    """
     search_id = generate_id()
     entity["searchId"] = search_id
 
@@ -68,7 +61,6 @@ async def process_pet(entity: dict):
         "createdAt": datetime.utcnow().isoformat() + "Z"
     }
 
-    # Add 'pet_search_result' entity (different entity_model)
     try:
         await entity_service.add_item(
             token=cyoda_auth_service,
@@ -79,7 +71,6 @@ async def process_pet(entity: dict):
     except Exception as e:
         logger.exception(f"Failed to add pet_search_result entity for searchId={search_id}: {e}")
 
-    # Fire and forget background task to fetch pets and update pet_search_result entity
     asyncio.create_task(_background_process_pet_search(search_id, entity.get("type"), entity.get("status")))
 
     return entity
@@ -126,13 +117,6 @@ async def _background_process_pet_search(search_id: str, type_: str = None, stat
             pass
 
 async def process_pet_detail(entity: dict):
-    """
-    Workflow for pet detail entity:
-    - Generate detailId
-    - Store in entity to persist
-    - Add secondary entity 'pet_detail_result' to hold detail & status
-    - Fire off background detail fetch task that updates the secondary entity
-    """
     detail_id = generate_id()
     entity["detailId"] = detail_id
     pet_id = entity.get("petId")
@@ -195,13 +179,12 @@ async def _background_process_pet_detail(detail_id: str, pet_id: int):
         except Exception:
             pass
 
-@app.route("/pets/search", methods=["POST"])
+@routes_bp.route("/pets/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def pets_search(data: SearchRequest):
     entity_name = "pet"
     data_dict = data.__dict__
     try:
-        # add_item returns technical_id but searchId is inside entity dict
         await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
@@ -213,7 +196,7 @@ async def pets_search(data: SearchRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to add search item"}), 500
 
-@app.route("/pets/search/<string:search_id>", methods=["GET"])
+@routes_bp.route("/pets/search/<string:search_id>", methods=["GET"])
 async def get_search_results(search_id):
     entity_name = "pet_search_result"
     try:
@@ -230,7 +213,7 @@ async def get_search_results(search_id):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve search results"}), 500
 
-@app.route("/pets/details", methods=["POST"])
+@routes_bp.route("/pets/details", methods=["POST"])
 @validate_request(DetailRequest)
 async def pets_details(data: DetailRequest):
     entity_name = "pet_detail"
@@ -247,7 +230,7 @@ async def pets_details(data: DetailRequest):
         logger.exception(e)
         return jsonify({"error": "Failed to add detail item"}), 500
 
-@app.route("/pets/details/<string:detail_id>", methods=["GET"])
+@routes_bp.route("/pets/details/<string:detail_id>", methods=["GET"])
 async def get_pet_detail(detail_id):
     entity_name = "pet_detail_result"
     try:
@@ -263,8 +246,3 @@ async def get_pet_detail(detail_id):
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pet detail"}), 500
-
-if __name__ == '__main__':
-    import logging as _logging
-    _logging.basicConfig(level=_logging.INFO)
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

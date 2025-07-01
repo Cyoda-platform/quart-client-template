@@ -1,55 +1,3 @@
-Understood! To follow the best practice of moving all asynchronous and supplementary logic out of the controller endpoints and into the workflow functions (named `process_{entity_name}`), I'll update your code as follows:
-
-- Move any async calls that process or enrich the entity before persistence into the workflow function.
-- For example, in `/favorites/add` currently you just add the `added_at` timestamp in the workflow, but you might want to enrich or validate the entity more.
-- For `/favorites/remove` and `/favorites` (list), those are more retrieval or deletion endpoints, so workflow functions don't apply since you are not adding entities there.
-- However, if you had any other async logic on entity creation, it should be moved to workflow.
-- In your current code, the only place you add entities is `/favorites/add`, so I’ll move all possible async enrichment or external calls that can be done during entity creation into `process_favorite`.
-
-**Note:** You cannot call `add/update/delete` on the same entity inside the workflow (to avoid recursion). But you can fetch or add other entities.
-
----
-
-### What can be moved into `process_favorite`?
-
-Looking at your current `/favorites/add` endpoint:
-
-```python
-favorite_data = {
-    "user_id": user_id,
-    "pet_id": pet_id,
-    "added_at": datetime.utcnow().isoformat(),
-}
-new_id = await entity_service.add_item(
-    token=cyoda_auth_service,
-    entity_model="favorite",
-    entity_version=ENTITY_VERSION,
-    entity=favorite_data,
-    workflow=process_favorite,
-)
-```
-
-Currently, the only enrichment is adding `"added_at"`. We can move that timestamp addition into `process_favorite`.
-
-If you want to enrich the favorite entity with pet info (e.g., pet name or category), you can fetch pet data from the Petstore API inside `process_favorite` and add that data to the entity before persistence.
-
-This kind of enrichment would be good for search or display purposes.
-
----
-
-### Final plan:
-
-- Remove timestamp addition from endpoint.
-- Add `added_at` timestamp inside `process_favorite`.
-- Enrich the favorite entity with pet name and category by fetching from Petstore API inside `process_favorite`.
-- Keep `/favorites/remove` and `/favorites` endpoints as is, since these are not entity creation.
-- Keep `process_favorite` async to allow HTTP fetches.
-
----
-
-### Updated complete code:
-
-```python
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -197,7 +145,6 @@ async def process_favorite(entity_data: dict):
         except Exception as e:
             logger.exception(f"Exception during fetching pet info for pet_id {pet_id}: {e}")
 
-    # You can add more enrichment or validation here
     return entity_data
 
 @app.route("/favorites/add", methods=["POST"])
@@ -208,7 +155,6 @@ async def favorites_add(data: PetIdRequest):
     favorite_data = {
         "user_id": user_id,
         "pet_id": pet_id,
-        # removed added_at here - it's now set in workflow
     }
     try:
         new_id = await entity_service.add_item(
@@ -331,20 +277,3 @@ async def favorites_list():
 
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation and benefits:
-- **`process_favorite` workflow function** now:
-  - Adds `added_at` timestamp.
-  - Fetches pet info from external Petstore API and adds `pet_name` and `pet_category` fields to the entity before persistence.
-- The `/favorites/add` endpoint is simplified and only prepares minimal data, workflow handles the enrichment.
-- This separation improves maintainability and robustness:
-  - Controllers are thin, only handling request/response.
-  - Async enrichment logic is in workflow where it belongs.
-- You can extend workflow functions easily for other entity models similarly.
-
----
-
-If you want, I can help you create workflow functions for other entities similarly or handle other async tasks this way. Let me know!

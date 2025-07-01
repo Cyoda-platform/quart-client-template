@@ -1,6 +1,59 @@
-Certainly! I've updated your code to include a workflow function parameter in the `entity_service.add_item` calls, and implemented the required workflow function with the prefix `process_` followed by the entity name in underscore lowercase format (`process_pet`). This function demonstrates a simple example where you could manipulate or enrich the entity before it's persisted.
+Understood. The goal is to **move all async business logic from the endpoint handlers into the workflow function** `process_pet`, so that the controller simply receives validated data and calls `entity_service.add_item` with minimal logic. The workflow function will contain all side effects, async calls, enrichment, filtering, etc. This ensures controllers are thin, logic is centralized, and async tasks are properly encapsulated.
 
-Here is the complete updated code with the workflow function and usage:
+---
+
+## What can be moved into `process_pet`?
+
+Looking at the example `/pets/search` endpoint, the main logic is:
+
+- Call external Petstore API to get pets by status.
+- Filter pets by `type` (client-side).
+- Transform the data.
+- Persist each pet by calling `add_item` (currently done in the controller).
+- Return the saved IDs.
+
+Since the workflow function receives **one entity at a time**, and cannot add/update/delete the same entity model (to prevent recursion), we need to adjust the approach:
+
+- The controller will receive the search parameters.
+- The controller will create a **single "search request" entity** with the parameters.
+- The workflow function `process_petsearch` (or similar) will run the async logic:
+  - Call external API with the parameters.
+  - Filter and transform results.
+  - Save each pet via `entity_service.add_item` with `workflow=process_pet`.
+- The controller returns immediately the search request id (or some acknowledgment).
+- The actual pet entities are saved asynchronously inside the workflow.
+
+This is a typical async "fire and forget" pattern.
+
+---
+
+## Proposed changes:
+
+1. Create new entity model `petsearch` with workflow `process_petsearch` to perform the search logic and save pets.
+
+2. Controller `/pets/search` will just add an entity of model `petsearch` with the search params, workflow runs and persists pets.
+
+3. Workflow `process_pet` will handle any enrichment of pet entities before saving.
+
+4. `/pets/fun-fact` endpoint does not persist entity, so no workflow needed.
+
+5. `/pets` and `/pets/<id>` GET endpoints remain as is, just fetch from `entity_service`.
+
+---
+
+## Implementation details:
+
+- Add workflow function `process_petsearch` that takes `entity` containing `type` and `status`.
+- In `process_petsearch`:
+  - Call external Petstore API with `status`.
+  - Filter by `type` if provided.
+  - For each pet:
+    - Create a pet entity and call `entity_service.add_item` with `workflow=process_pet`.
+- The controller `/pets/search` just calls `add_item` for model `petsearch` with the search params and workflow `process_petsearch`.
+
+---
+
+## Complete refactored code
 
 ```python
 import asyncio
@@ -11,7 +64,7 @@ from typing import Optional
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart_schema import QuartSchema, validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -37,32 +90,22 @@ async def process_pet(entity):
     Modify the entity as needed. For example, add a timestamp or default values.
     Note: Cannot add/update/delete 'pet' entity inside this function to avoid recursion.
     """
-    # Example: Add/update a field before saving
+    # Example enrichment: Add processing timestamp
     entity["processed_at"] = datetime.utcnow().isoformat()
-    # You can add/get other entities with different entity_model here if needed.
+    # Additional enrichment or side effects can be added here
     return entity
 
-# workaround: validate_request must be placed after @app.route for POST due to quart-schema defect
-@app.route("/pets/search", methods=["POST"])
-@validate_request(PetSearch)
-async def pets_search(data: PetSearch):
+async def process_petsearch(entity):
     """
-    POST /pets/search
-    Accepts optional filters: type, status
-    Fetches pets from Petstore API filtered by status (Petstore API supports status filter)
-    Since Petstore API does not support type filtering natively, filter client-side.
-    Instead of caching locally, store the search result via entity_service as 'pet' entity.
+    Workflow function applied to the 'petsearch' entity asynchronously before persistence.
+    Performs the Petstore API call, filtering, and saves pets asynchronously using entity_service.
     """
-    try:
-        pet_type = data.type
-        status = data.status
+    pet_type = entity.get("type")
+    status = entity.get("status") or "available"
 
+    try:
         async with httpx.AsyncClient() as client:
-            params = {}
-            if status:
-                params["status"] = status
-            else:
-                params["status"] = "available"
+            params = {"status": status}
             resp = await client.get(f"{PETSTORE_BASE_URL}/pet/findByStatus", params=params)
             resp.raise_for_status()
             pets_raw = resp.json()
@@ -72,40 +115,68 @@ async def pets_search(data: PetSearch):
         else:
             pets_filtered = pets_raw
 
-        pets = []
-        for p in pets_filtered:
-            pets.append({
-                "id": p.get("id"),
-                "name": p.get("name"),
-                "type": p.get("category", {}).get("name", None),
-                "status": p.get("status"),
-                "photoUrls": p.get("photoUrls", []),
-            })
-
-        # Store pets list in entity_service as separate items (one by one)
-        # Because add_item returns only id and does not return saved data, we add all and respond with ids
-        saved_ids = []
-        for pet in pets:
-            pet_data = pet.copy()
-            pet_data["id"] = str(pet_data.get("id"))  # convert id to string technical_id
+        # Save each pet entity asynchronously via entity_service.add_item
+        # We do not await each call in a loop to speed things up, but gather all.
+        async def save_pet(pet):
+            pet_data = {
+                "id": str(pet.get("id")),
+                "name": pet.get("name"),
+                "type": pet.get("category", {}).get("name", None),
+                "status": pet.get("status"),
+                "photoUrls": pet.get("photoUrls", []),
+            }
             try:
-                new_id = await entity_service.add_item(
+                # Call add_item with workflow=process_pet
+                await entity_service.add_item(
                     token=cyoda_auth_service,
                     entity_model="pet",
                     entity_version=ENTITY_VERSION,
                     entity=pet_data,
-                    workflow=process_pet  # Added workflow function
+                    workflow=process_pet,
                 )
-                saved_ids.append(new_id)
             except Exception as e:
-                logger.exception(e)
-                # skip failed to save pet
+                logger.exception(f"Failed to save pet {pet_data.get('id')}: {e}")
 
-        return jsonify({"saved_ids": saved_ids})
+        await asyncio.gather(*(save_pet(p) for p in pets_filtered))
+
+    except Exception as e:
+        logger.exception(f"Failed to process petsearch entity: {e}")
+
+    # You can modify the petsearch entity state if needed, e.g. mark completed timestamp
+    entity["processed_at"] = datetime.utcnow().isoformat()
+    return entity
+
+
+# --- Controllers ---
+
+# workaround: validate_request must be placed after @app.route for POST due to quart-schema defect
+@app.route("/pets/search", methods=["POST"])
+@validate_request(PetSearch)
+async def pets_search(data: PetSearch):
+    """
+    POST /pets/search
+    Accepts optional filters: type, status
+    Instead of doing the search here, we just create a 'petsearch' entity with these params.
+    The workflow function 'process_petsearch' will execute the actual search and save pets.
+    """
+    try:
+        search_data = {
+            "type": data.type,
+            "status": data.status,
+        }
+        search_id = await entity_service.add_item(
+            token=cyoda_auth_service,
+            entity_model="petsearch",
+            entity_version=ENTITY_VERSION,
+            entity=search_data,
+            workflow=process_petsearch,
+        )
+        return jsonify({"search_id": search_id, "message": "Pet search request accepted and processing."})
 
     except Exception as e:
         logger.exception(e)
-        return jsonify({"error": "Failed to fetch pets"}), 500
+        return jsonify({"error": "Failed to initiate pet search"}), 500
+
 
 # POST /pets/fun-fact has no body, so no validation needed
 @app.route("/pets/fun-fact", methods=["POST"])
@@ -164,9 +235,18 @@ if __name__ == '__main__':
 
 ---
 
-### Summary of changes:
-- Added async function `process_pet(entity)` which takes the entity dict, modifies it (adds `processed_at` timestamp), and returns it.
-- Updated all calls to `entity_service.add_item` for the `"pet"` entity to pass `workflow=process_pet`.
-- The rest of the code remains unchanged.
+## Explanation:
 
-This approach ensures the workflow function is applied before the entity is persisted, as per the new API contract. Let me know if you want the workflow function to do more complex processing!
+- **`process_petsearch`** is the new async workflow function that executes the entire pet search logic asynchronously when a `petsearch` entity is added.
+- The `/pets/search` endpoint now only creates a `petsearch` entity with input parameters and returns immediately.
+- `process_petsearch` calls the external Petstore API, filters, and saves each pet entity using `entity_service.add_item` with `workflow=process_pet`.
+- `process_pet` enriches each pet entity before persistence.
+- This design removes all external calls and data processing from the controller and moves it into workflow functions.
+- This also respects the rule that workflow functions cannot add/update/delete entities of their own model (to avoid recursion).
+- GET endpoints remain thin and unchanged.
+
+---
+
+If you have other async logic or endpoints, you can apply the same pattern: create a dedicated workflow function named `process_{entity_name}`, move all async logic there, keep controller minimal.
+
+Let me know if you want me to refactor any other parts or add detailed comments!

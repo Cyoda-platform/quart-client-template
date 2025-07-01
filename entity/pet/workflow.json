@@ -1,83 +1,83 @@
 {
-    "description": "Pet Search Workflow FSM based on Cyoda design",
-    "initial_state": "none",
-    "states": {
-        "done": {
-            "transitions": {}
-        },
-        "error": {
-            "transitions": {}
-        },
-        "initialized": {
-            "transitions": {
-                "queue_search": {
-                    "condition": {
-                        "function": {
-                            "name": "is_pet_search_result_status_queued"
-                        },
-                        "type": "function"
-                    },
-                    "next": "queued"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "init_search": {
-                    "action": {
-                        "name": "create_pet_search_result_entity"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_search_id_generated"
-                        },
-                        "type": "function"
-                    },
-                    "next": "initialized"
-                }
-            }
-        },
-        "processing": {
-            "transitions": {
-                "complete_error": {
-                    "action": {
-                        "name": "handle_search_error"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_pet_search_result_status_error"
-                        },
-                        "type": "function"
-                    },
-                    "next": "error"
-                },
-                "complete_success": {
-                    "condition": {
-                        "function": {
-                            "name": "is_pet_search_result_status_done"
-                        },
-                        "type": "function"
-                    },
-                    "next": "done"
-                }
-            }
-        },
-        "queued": {
-            "transitions": {
-                "start_processing": {
-                    "action": {
-                        "name": "start_background_pet_search"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_pet_search_result_status_queued"
-                        },
-                        "type": "function"
-                    },
-                    "next": "processing"
-                }
-            }
+  "description": "Pet Search Workflow FSM based on Cyoda design",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "init_search": {
+          "action": {
+            "name": "create_pet_search_result_entity"
+          },
+          "condition": {
+            "function": {
+              "name": "is_search_id_generated"
+            },
+            "type": "function"
+          },
+          "next": "initialized"
         }
+      }
     },
-    "workflow_name": "pet_search_workflow"
+    "initialized": {
+      "transitions": {
+        "queue_search": {
+          "condition": {
+            "function": {
+              "name": "is_pet_search_result_status_queued"
+            },
+            "type": "function"
+          },
+          "next": "queued"
+        }
+      }
+    },
+    "queued": {
+      "transitions": {
+        "start_processing": {
+          "action": {
+            "name": "start_background_pet_search"
+          },
+          "condition": {
+            "function": {
+              "name": "is_pet_search_result_status_queued"
+            },
+            "type": "function"
+          },
+          "next": "processing"
+        }
+      }
+    },
+    "processing": {
+      "transitions": {
+        "complete_error": {
+          "action": {
+            "name": "handle_search_error"
+          },
+          "condition": {
+            "function": {
+              "name": "is_pet_search_result_status_error"
+            },
+            "type": "function"
+          },
+          "next": "error"
+        },
+        "complete_success": {
+          "condition": {
+            "function": {
+              "name": "is_pet_search_result_status_done"
+            },
+            "type": "function"
+          },
+          "next": "done"
+        }
+      }
+    },
+    "error": {
+      "transitions": {}
+    },
+    "done": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "pet_search_workflow"
 }

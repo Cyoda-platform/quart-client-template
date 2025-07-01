@@ -8,11 +8,13 @@ PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
 async def _add_timestamp(entity: dict):
     if "added_at" not in entity:
         entity["added_at"] = datetime.utcnow().isoformat()
+    entity["workflowProcessed"] = True
 
 async def _enrich_with_pet_info(entity: dict):
     pet_id = entity.get("pet_id")
     if not pet_id:
         logger.warning("Favorite entity missing pet_id, skipping enrichment")
+        entity["workflowProcessed"] = True
         return
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
@@ -26,8 +28,17 @@ async def _enrich_with_pet_info(entity: dict):
                 logger.warning(f"Failed to fetch pet info for pet_id {pet_id}, status: {resp.status_code}")
         except Exception as e:
             logger.exception(f"Exception during fetching pet info for pet_id {pet_id}: {e}")
+    entity["workflowProcessed"] = True
+
+async def start_add_timestamp(entity: dict):
+    await _add_timestamp(entity)
+
+async def enrich_pet_info(entity: dict):
+    await _enrich_with_pet_info(entity)
+
+async def condition_always_true(entity: dict) -> bool:
+    return True
 
 async def process_favorite(entity: dict):
-    # Workflow orchestration only - no business logic here
     await _add_timestamp(entity)
     await _enrich_with_pet_info(entity)

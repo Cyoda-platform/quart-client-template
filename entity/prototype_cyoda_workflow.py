@@ -1,6 +1,40 @@
-Certainly! I've updated the code to add the `workflow` parameter to `entity_service.add_item` calls, and implemented the required workflow functions with the appropriate `process_` prefix and underscore-lowercase entity names (`process_pet` and `process_pet_detail`). These functions will be passed as the `workflow` argument and applied to the entity data asynchronously before persistence.
+Absolutely, moving all async and business logic from the route handlers into the workflow functions is the ideal approach here. It keeps controllers clean and focuses all entity-specific logic inside the workflows that are called right before persisting. This aligns perfectly with the new `workflow` feature, keeping controllers thin and delegating data enrichment, background processing, and related entity creation into workflows.
 
-Here is the complete updated code:
+---
+
+## What to move?
+
+- The calls to external APIs (`fetch_pets_from_petstore` and `fetch_pet_detail_from_petstore`) should be moved inside the workflow functions.
+- The creation and management of cache entries (`app.search_cache` and `app.detail_cache`) should also be moved there.
+- The background tasks (`process_search` and `process_detail`) should be wrapped or fully handled inside the workflows.
+- The routes will now simply call `add_item` with the entity data and the workflow function. They return the ID immediately.
+- The workflows can create and add supplementary entities of other models via `entity_service.add_item` (except for the current entity_model to avoid recursion).
+
+---
+
+## Important constraints and notes:
+
+- **We must not call `entity_service.add_item` on the same entity_model inside its own workflow**, else infinite recursion.
+- We **can** call `entity_service.add_item` on *other* entity_models inside workflows.
+- We can modify the entity data dict directly, to update the entity before persistence.
+- The workflow is async, so all async calls inside are supported.
+- The workflows run inside the `add_item` call, so their changes persist with the entity.
+- We should still keep the helper functions (`fetch_pets_from_petstore`, etc.) separate and reusable.
+
+---
+
+## Approach:
+
+- For example, when adding a `pet` entity (the search request), the workflow will:
+  - Generate a `searchId` and store it in the entity.
+  - Create a secondary entity (say `"pet_search_result"`) to hold results asynchronously.
+  - Fire off the background task to fetch results and update the secondary entity.
+- Similarly for `pet_detail`.
+- The route handlers simply call `add_item` with minimal logic.
+
+---
+
+# Here is the fully refactored and updated code:
 
 ```python
 from dataclasses import dataclass
@@ -35,78 +69,76 @@ class SearchRequest:
 class DetailRequest:
     petId: int
 
-app.search_cache = {}
-app.detail_cache = {}
-
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
+
 
 def generate_id() -> str:
     return str(uuid.uuid4())
 
-async def fetch_pets_from_petstore(type_: str = None, status: str = None) -> list:
-    query_params = {}
-    if status:
-        query_params["status"] = status
-    if not status:
-        query_params["status"] = "available"
-    url = f"{PETSTORE_BASE_URL}/pet/findByStatus"
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(url, params=query_params, timeout=10)
-            response.raise_for_status()
-            pets = response.json()
-            if type_:
-                return [pet for pet in pets if pet.get("category", {}).get("name", "").lower() == type_.lower()]
-            return pets
-        except Exception as e:
-            logger.exception(f"Failed fetching pets from Petstore: {e}")
-            return []
 
-async def fetch_pet_detail_from_petstore(pet_id: int) -> dict:
+async def fetch_pets_from_petstore(status: str):
+    url = f"{PETSTORE_BASE_URL}/pet/findByStatus"
+    params = {"status": status}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        return response.json()
+
+
+async def fetch_pet_detail_from_petstore(pet_id: int):
     url = f"{PETSTORE_BASE_URL}/pet/{pet_id}"
     async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(url, timeout=10)
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            logger.exception(f"Failed fetching pet detail for id {pet_id}: {e}")
-            return {}
+        response = await client.get(url, timeout=10)
+        response.raise_for_status()
+        return response.json()
 
-# Workflow function for 'pet' entity
-async def process_pet(entity_data: dict):
-    # entity_data is the dict passed to add_item
-    # Generate a unique searchId and initialize cache
+
+# Workflow function for 'pet' entity (search requests)
+async def process_pet(entity: dict):
+    """
+    Workflow for pet search entity:
+    - Generate searchId
+    - Store it in entity to persist
+    - Add a secondary entity 'pet_search_result' to hold results & status
+    - Fire off background search task that updates this secondary entity
+    """
+
     search_id = generate_id()
-    app.search_cache[search_id] = {
-        "status": "queued",
-        "results": []
-    }
-    # Start background processing asynchronously, do not await here
-    asyncio.create_task(process_search(search_id, entity_data.get("type"), entity_data.get("status")))
-    # Add the generated searchId into the entity_data so it can be persisted with it
-    entity_data["searchId"] = search_id
-    return entity_data
+    entity["searchId"] = search_id
 
-# Workflow function for 'pet_detail' entity
-async def process_pet_detail(entity_data: dict):
-    # entity_data is the dict passed to add_item
-    detail_id = generate_id()
-    app.detail_cache[detail_id] = {
+    # Create secondary entity to hold search results & status
+    search_result_entity = {
+        "searchId": search_id,
         "status": "queued",
-        "detail": {}
+        "results": [],
+        "createdAt": datetime.utcnow().isoformat() + "Z"
     }
-    pet_id = entity_data.get("petId")
-    # Start background processing asynchronously, do not await here
-    asyncio.create_task(process_detail(detail_id, pet_id))
-    # Add the generated detailId into the entity_data so it can be persisted with it
-    entity_data["detailId"] = detail_id
-    return entity_data
 
-async def process_search(search_id: str, type_: str, status: str):
-    app.search_cache[search_id]["status"] = "processing"
+    # Add 'pet_search_result' entity (different entity_model)
+    await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="pet_search_result",
+        entity_version=ENTITY_VERSION,
+        entity=search_result_entity,
+        # No workflow here to avoid recursion
+    )
+
+    # Fire and forget background task to fetch pets and update pet_search_result entity
+    asyncio.create_task(_background_process_pet_search(search_id, entity.get("type"), entity.get("status")))
+
+    # entity is modified with searchId; persisted automatically after this
+    return entity
+
+
+async def _background_process_pet_search(search_id: str, type_: str = None, status: str = None):
     try:
-        pets = await fetch_pets_from_petstore(type_, status)
+        status_query = status if status else "available"
+        pets = await fetch_pets_from_petstore(status_query)
+
+        # Filter by type if provided
+        if type_:
+            pets = [pet for pet in pets if pet.get("category", {}).get("name", "").lower() == type_.lower()]
+
         results = []
         for pet in pets:
             results.append({
@@ -115,17 +147,77 @@ async def process_search(search_id: str, type_: str, status: str):
                 "type": pet.get("category", {}).get("name") if pet.get("category") else None,
                 "status": pet.get("status")
             })
-        app.search_cache[search_id]["results"] = results
-        app.search_cache[search_id]["status"] = "done"
-    except Exception as e:
-        logger.exception(f"Error processing search {search_id}: {e}")
-        app.search_cache[search_id]["status"] = "error"
 
-async def process_detail(detail_id: str, pet_id: int):
-    app.detail_cache[detail_id]["status"] = "processing"
+        # Update pet_search_result entity status and results
+        # Note: We can update this secondary entity using entity_service.update_item or add_item with same ID (depends on your API).
+        # Assume entity_service.update_item exists:
+        await entity_service.update_item(
+            token=cyoda_auth_service,
+            entity_model="pet_search_result",
+            entity_version=ENTITY_VERSION,
+            technical_id=search_id,
+            entity={
+                "status": "done",
+                "results": results,
+                "updatedAt": datetime.utcnow().isoformat() + "Z"
+            }
+        )
+    except Exception as e:
+        logger.exception(f"Error in background pet search processing for searchId={search_id}: {e}")
+        # Mark failed status
+        try:
+            await entity_service.update_item(
+                token=cyoda_auth_service,
+                entity_model="pet_search_result",
+                entity_version=ENTITY_VERSION,
+                technical_id=search_id,
+                entity={"status": "error", "updatedAt": datetime.utcnow().isoformat() + "Z"}
+            )
+        except Exception:
+            pass
+
+
+# Workflow function for 'pet_detail' entity (detail requests)
+async def process_pet_detail(entity: dict):
+    """
+    Workflow for pet detail entity:
+    - Generate detailId
+    - Store in entity to persist
+    - Add secondary entity 'pet_detail_result' to hold detail & status
+    - Fire off background detail fetch task that updates the secondary entity
+    """
+
+    detail_id = generate_id()
+    entity["detailId"] = detail_id
+    pet_id = entity.get("petId")
+
+    # Create secondary entity to hold pet detail & status
+    detail_result_entity = {
+        "detailId": detail_id,
+        "status": "queued",
+        "detail": {},
+        "createdAt": datetime.utcnow().isoformat() + "Z"
+    }
+
+    # Add 'pet_detail_result' entity (different entity_model)
+    await entity_service.add_item(
+        token=cyoda_auth_service,
+        entity_model="pet_detail_result",
+        entity_version=ENTITY_VERSION,
+        entity=detail_result_entity,
+    )
+
+    # Fire and forget background task to fetch pet detail and update pet_detail_result
+    asyncio.create_task(_background_process_pet_detail(detail_id, pet_id))
+
+    return entity
+
+
+async def _background_process_pet_detail(detail_id: str, pet_id: int):
     try:
         pet = await fetch_pet_detail_from_petstore(pet_id)
         description = pet.get("description") or "No description available."
+
         pet_processed = {
             "id": pet.get("id"),
             "name": pet.get("name"),
@@ -133,11 +225,33 @@ async def process_detail(detail_id: str, pet_id: int):
             "status": pet.get("status"),
             "description": description,
         }
-        app.detail_cache[detail_id]["detail"] = pet_processed
-        app.detail_cache[detail_id]["status"] = "done"
+
+        await entity_service.update_item(
+            token=cyoda_auth_service,
+            entity_model="pet_detail_result",
+            entity_version=ENTITY_VERSION,
+            technical_id=detail_id,
+            entity={
+                "status": "done",
+                "detail": pet_processed,
+                "updatedAt": datetime.utcnow().isoformat() + "Z"
+            }
+        )
     except Exception as e:
-        logger.exception(f"Error processing detail {detail_id}: {e}")
-        app.detail_cache[detail_id]["status"] = "error"
+        logger.exception(f"Error in background pet detail processing for detailId={detail_id}: {e}")
+        try:
+            await entity_service.update_item(
+                token=cyoda_auth_service,
+                entity_model="pet_detail_result",
+                entity_version=ENTITY_VERSION,
+                technical_id=detail_id,
+                entity={"status": "error", "updatedAt": datetime.utcnow().isoformat() + "Z"}
+            )
+        except Exception:
+            pass
+
+
+# ----------- ROUTES ---------------
 
 @app.route("/pets/search", methods=["POST"])
 @validate_request(SearchRequest)
@@ -150,29 +264,32 @@ async def pets_search(data: SearchRequest):
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
             entity=data_dict,
-            workflow=process_pet  # Added workflow function here
+            workflow=process_pet  # workflow handles all logic
         )
-        return jsonify({"searchId": str(id_)})
+        return jsonify({"searchId": str(data_dict.get("searchId"))})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to add search item"}), 500
 
+
 @app.route("/pets/search/<string:search_id>", methods=["GET"])
 async def get_search_results(search_id):
-    entity_name = "pet"
+    # This returns the secondary entity with results & status
+    entity_name = "pet_search_result"
     try:
         item = await entity_service.get_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
-            technical_id=search_id
+            technical_id=search_id,
         )
         if not item:
             return jsonify({"error": "searchId not found"}), 404
-        return jsonify({"searchId": search_id, "results": item})
+        return jsonify({"searchId": search_id, **item})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve search results"}), 500
+
 
 @app.route("/pets/details", methods=["POST"])
 @validate_request(DetailRequest)
@@ -185,22 +302,24 @@ async def pets_details(data: DetailRequest):
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
             entity=data_dict,
-            workflow=process_pet_detail  # Added workflow function here
+            workflow=process_pet_detail  # workflow handles all logic
         )
-        return jsonify({"detailId": str(id_)})
+        return jsonify({"detailId": str(data_dict.get("detailId"))})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to add detail item"}), 500
 
+
 @app.route("/pets/details/<string:detail_id>", methods=["GET"])
 async def get_pet_detail(detail_id):
-    entity_name = "pet_detail"
+    # Return the secondary pet_detail_result entity with detail & status
+    entity_name = "pet_detail_result"
     try:
         item = await entity_service.get_item(
             token=cyoda_auth_service,
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
-            technical_id=detail_id
+            technical_id=detail_id,
         )
         if not item:
             return jsonify({"error": "detailId not found"}), 404
@@ -209,16 +328,28 @@ async def get_pet_detail(detail_id):
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve pet detail"}), 500
 
+
 if __name__ == '__main__':
     import logging as _logging
     _logging.basicConfig(level=_logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
 ```
 
-### Explanation of changes:
-- Added `process_pet` and `process_pet_detail` async functions as workflows.
-- These functions mutate the entity data by adding the generated IDs (`searchId` or `detailId`) and start background processing tasks.
-- In the calls to `entity_service.add_item` for `"pet"` and `"pet_detail"` entities, the `workflow` argument is now provided with the respective workflow function.
-- This matches the new expected signature of `add_item` and ensures the entity is processed before persistence.
+---
 
-Let me know if you need any further adjustments!
+# Summary of changes:
+
+- **All async external fetch and background logic moved into `process_pet` and `process_pet_detail` workflows.**
+- Workflows generate unique IDs, mutate the main entity with those IDs, and create secondary entities (`pet_search_result` and `pet_detail_result`) to hold asynchronous results and statuses.
+- Background async tasks run in fire-and-forget mode inside the workflow.
+- Routes are now very thin: just validate input and call `add_item` with the workflow function.
+- The retrieval routes (`GET /pets/search/<id>` and `GET /pets/details/<id>`) return the secondary entities with status and results.
+- Added timestamps (`createdAt`, `updatedAt`) for clarity in secondary entities.
+- Error handling and logging kept inside background tasks.
+- No recursion risk since workflows do not add/update/delete entities of the same model they're processing.
+
+---
+
+This approach fully embraces the new `workflow` feature and makes your code robust, maintainable, and clean. Controllers handle request/response only; workflows handle business logic and async side effects.
+
+If you want, I can help you test or further improve this!

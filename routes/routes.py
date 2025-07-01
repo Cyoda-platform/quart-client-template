@@ -2,11 +2,11 @@ from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Optional
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +14,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class QueryPetsRequest:
@@ -35,7 +34,6 @@ class PetIdRequest:
     pet_id: str  # id is now string per requirements
 
 PET_ENTITY_NAME = "pet"
-
 PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
 
 async def fetch_pets_from_petstore(
@@ -99,7 +97,7 @@ async def fetch_pets_from_petstore(
 
     return {"pets": result_pets, "total_count": total_count}
 
-@app.route("/pets/query", methods=["POST"])
+@routes_bp.route("/pets/query", methods=["POST"])
 @validate_request(QueryPetsRequest)
 async def pets_query(data: QueryPetsRequest):
     filters = {}
@@ -147,7 +145,7 @@ async def process_favorite(entity_data: dict):
 
     return entity_data
 
-@app.route("/favorites/add", methods=["POST"])
+@routes_bp.route("/favorites/add", methods=["POST"])
 @validate_request(PetIdRequest)
 async def favorites_add(data: PetIdRequest):
     pet_id = str(data.pet_id)
@@ -169,7 +167,7 @@ async def favorites_add(data: PetIdRequest):
         logger.exception(e)
         return jsonify({"success": False, "message": "Failed to add favorite."}), 500
 
-@app.route("/favorites/remove", methods=["POST"])
+@routes_bp.route("/favorites/remove", methods=["POST"])
 @validate_request(PetIdRequest)
 async def favorites_remove(data: PetIdRequest):
     pet_id = str(data.pet_id)
@@ -218,7 +216,7 @@ async def favorites_remove(data: PetIdRequest):
         logger.exception(e)
         return jsonify({"success": False, "message": "Failed to remove favorite."}), 500
 
-@app.route("/favorites", methods=["GET"])
+@routes_bp.route("/favorites", methods=["GET"])
 async def favorites_list():
     user_id = get_user_id()
     condition = {
@@ -273,6 +271,3 @@ async def favorites_list():
         favorites_pets = [pet for pet in pet_details_results if pet is not None]
 
     return jsonify({"favorites": favorites_pets})
-
-if __name__ == "__main__":
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

@@ -1,45 +1,45 @@
 {
-    "description": "Pet Entity Enrichment Workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "enriched": {
-            "transitions": {}
-        },
-        "enriching_pet": {
-            "transitions": {
-                "enrichment_failure_transition": {
-                    "condition": {
-                        "function": {
-                            "name": "is_enrichment_failed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "error"
-                },
-                "enrichment_success_transition": {
-                    "condition": {
-                        "function": {
-                            "name": "is_enrichment_successful"
-                        },
-                        "type": "function"
-                    },
-                    "next": "enriched"
-                }
-            }
-        },
-        "error": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "start_enrichment": {
-                    "action": {
-                        "name": "process_pet_entity"
-                    },
-                    "next": "enriching_pet"
-                }
-            }
+  "description": "Pet Entity Enrichment Workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_enrichment": {
+          "action": {
+            "name": "process_pet_entity"
+          },
+          "next": "enriching_pet"
         }
+      }
     },
-    "workflow_name": "pet_entity_enrichment_workflow"
+    "enriching_pet": {
+      "transitions": {
+        "enrichment_failure_transition": {
+          "condition": {
+            "function": {
+              "name": "is_enrichment_failed"
+            },
+            "type": "function"
+          },
+          "next": "error"
+        },
+        "enrichment_success_transition": {
+          "condition": {
+            "function": {
+              "name": "is_enrichment_successful"
+            },
+            "type": "function"
+          },
+          "next": "enriched"
+        }
+      }
+    },
+    "error": {
+      "transitions": {}
+    },
+    "enriched": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "pet_entity_enrichment_workflow"
 }

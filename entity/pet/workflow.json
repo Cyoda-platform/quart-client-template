@@ -1,86 +1,83 @@
-```json
 {
-  "version": "1.0",
-  "description": "Pet Search Workflow FSM based on Cyoda design",
-  "initial_state": "none",
-  "workflow_name": "pet_search_workflow",
-  "states": {
-    "none": {
-      "transitions": {
-        "init_search": {
-          "next": "initialized",
-          "action": {
-            "name": "create_pet_search_result_entity"
-          },
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "is_search_id_generated"
-            }
-          }
-        }
-      }
-    },
-    "initialized": {
-      "transitions": {
-        "queue_search": {
-          "next": "queued",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "is_pet_search_result_status_queued"
-            }
-          }
-        }
-      }
-    },
-    "queued": {
-      "transitions": {
-        "start_processing": {
-          "next": "processing",
-          "action": {
-            "name": "start_background_pet_search"
-          },
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "is_pet_search_result_status_queued"
-            }
-          }
-        }
-      }
-    },
-    "processing": {
-      "transitions": {
-        "complete_success": {
-          "next": "done",
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "is_pet_search_result_status_done"
-            }
-          }
+    "description": "Pet Search Workflow FSM based on Cyoda design",
+    "initial_state": "none",
+    "states": {
+        "done": {
+            "transitions": {}
         },
-        "complete_error": {
-          "next": "error",
-          "action": {
-            "name": "handle_search_error"
-          },
-          "condition": {
-            "type": "function",
-            "function": {
-              "name": "is_pet_search_result_status_error"
+        "error": {
+            "transitions": {}
+        },
+        "initialized": {
+            "transitions": {
+                "queue_search": {
+                    "condition": {
+                        "function": {
+                            "name": "is_pet_search_result_status_queued"
+                        },
+                        "type": "function"
+                    },
+                    "next": "queued"
+                }
             }
-          }
+        },
+        "none": {
+            "transitions": {
+                "init_search": {
+                    "action": {
+                        "name": "create_pet_search_result_entity"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "is_search_id_generated"
+                        },
+                        "type": "function"
+                    },
+                    "next": "initialized"
+                }
+            }
+        },
+        "processing": {
+            "transitions": {
+                "complete_error": {
+                    "action": {
+                        "name": "handle_search_error"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "is_pet_search_result_status_error"
+                        },
+                        "type": "function"
+                    },
+                    "next": "error"
+                },
+                "complete_success": {
+                    "condition": {
+                        "function": {
+                            "name": "is_pet_search_result_status_done"
+                        },
+                        "type": "function"
+                    },
+                    "next": "done"
+                }
+            }
+        },
+        "queued": {
+            "transitions": {
+                "start_processing": {
+                    "action": {
+                        "name": "start_background_pet_search"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "is_pet_search_result_status_queued"
+                        },
+                        "type": "function"
+                    },
+                    "next": "processing"
+                }
+            }
         }
-      }
     },
-    "done": {
-      "transitions": {}
-    },
-    "error": {
-      "transitions": {}
-    }
-  }
+    "workflow_name": "pet_search_workflow"
 }
-```

@@ -1,30 +1,30 @@
 {
-    "description": "FSM workflow for favorite entity enrichment and timestamping",
-    "initial_state": "none",
-    "states": {
-        "enrichment_done": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "start_add_timestamp": {
-                    "action": {
-                        "name": "_add_timestamp"
-                    },
-                    "next": "timestamp_added"
-                }
-            }
-        },
-        "timestamp_added": {
-            "transitions": {
-                "enrich_pet_info": {
-                    "action": {
-                        "name": "_enrich_with_pet_info"
-                    },
-                    "next": "enrichment_done"
-                }
-            }
+  "description": "FSM workflow for favorite entity enrichment and timestamping",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_add_timestamp": {
+          "action": {
+            "name": "_add_timestamp"
+          },
+          "next": "timestamp_added"
         }
+      }
     },
-    "workflow_name": "favorite_workflow"
+    "timestamp_added": {
+      "transitions": {
+        "enrich_pet_info": {
+          "action": {
+            "name": "_enrich_with_pet_info"
+          },
+          "next": "enrichment_done"
+        }
+      }
+    },
+    "enrichment_done": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "favorite_workflow"
 }

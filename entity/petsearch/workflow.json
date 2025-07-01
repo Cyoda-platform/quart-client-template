@@ -1,42 +1,42 @@
 {
-    "description": "Purrfect Pets petsearch entity workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
+  "description": "Purrfect Pets petsearch entity workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "skip_processing_if_already_done": {
+          "condition": {
+            "function": {
+              "name": "not_needs_processing"
+            },
+            "type": "function"
+          },
+          "next": "completed"
         },
-        "none": {
-            "transitions": {
-                "skip_processing_if_already_done": {
-                    "condition": {
-                        "function": {
-                            "name": "not_needs_processing"
-                        },
-                        "type": "function"
-                    },
-                    "next": "completed"
-                },
-                "start_processing_if_needed": {
-                    "condition": {
-                        "function": {
-                            "name": "needs_processing"
-                        },
-                        "type": "function"
-                    },
-                    "next": "processing"
-                }
-            }
-        },
-        "processing": {
-            "transitions": {
-                "process_petsearch_action": {
-                    "action": {
-                        "name": "process_petsearch"
-                    },
-                    "next": "completed"
-                }
-            }
+        "start_processing_if_needed": {
+          "condition": {
+            "function": {
+              "name": "needs_processing"
+            },
+            "type": "function"
+          },
+          "next": "processing"
         }
+      }
     },
-    "workflow_name": "petsearch_workflow"
+    "completed": {
+      "transitions": {}
+    },
+    "processing": {
+      "transitions": {
+        "process_petsearch_action": {
+          "action": {
+            "name": "process_petsearch"
+          },
+          "next": "completed"
+        }
+      }
+    }
+  },
+  "workflow_name": "petsearch_workflow"
 }

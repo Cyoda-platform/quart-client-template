@@ -1,70 +1,70 @@
 {
-    "description": "Pet Detail Processing FSM",
-    "initial_state": "none",
-    "states": {
-        "done": {
-            "transitions": {}
-        },
-        "error": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "create_entity": {
-                    "action": {
-                        "name": "create_entity"
-                    },
-                    "next": "pending"
-                }
-            }
-        },
-        "pending": {
-            "transitions": {
-                "fail_from_pending": {
-                    "condition": {
-                        "function": {
-                            "name": "can_fail"
-                        },
-                        "type": "function"
-                    },
-                    "next": "error"
-                },
-                "start_processing": {
-                    "action": {
-                        "name": "start_processing"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "can_start_processing"
-                        },
-                        "type": "function"
-                    },
-                    "next": "processing"
-                }
-            }
-        },
-        "processing": {
-            "transitions": {
-                "fail_from_processing": {
-                    "condition": {
-                        "function": {
-                            "name": "can_fail"
-                        },
-                        "type": "function"
-                    },
-                    "next": "error"
-                },
-                "finish_processing": {
-                    "condition": {
-                        "function": {
-                            "name": "can_finish"
-                        },
-                        "type": "function"
-                    },
-                    "next": "done"
-                }
-            }
+  "description": "Pet Detail Processing FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "create_entity": {
+          "action": {
+            "name": "create_entity"
+          },
+          "next": "pending"
         }
+      }
     },
-    "workflow_name": "pet_detail_workflow"
+    "pending": {
+      "transitions": {
+        "fail_from_pending": {
+          "condition": {
+            "function": {
+              "name": "can_fail"
+            },
+            "type": "function"
+          },
+          "next": "error"
+        },
+        "start_processing": {
+          "action": {
+            "name": "start_processing"
+          },
+          "condition": {
+            "function": {
+              "name": "can_start_processing"
+            },
+            "type": "function"
+          },
+          "next": "processing"
+        }
+      }
+    },
+    "error": {
+      "transitions": {}
+    },
+    "processing": {
+      "transitions": {
+        "fail_from_processing": {
+          "condition": {
+            "function": {
+              "name": "can_fail"
+            },
+            "type": "function"
+          },
+          "next": "error"
+        },
+        "finish_processing": {
+          "condition": {
+            "function": {
+              "name": "can_finish"
+            },
+            "type": "function"
+          },
+          "next": "done"
+        }
+      }
+    },
+    "done": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "pet_detail_workflow"
 }

@@ -1,19 +1,13 @@
 from typing import Dict, Any
 import logging
 import httpx
-from common.config.config import ENTITY_VERSION
-from app_init.app_init import BeanFactory
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
 PETSTORE_BASE_URL = "https://petstore3.swagger.io/api/v3"
 
-async def process_pet_search_request(entity: Dict[str, Any]) -> Dict[str, Any]:
+async def process_pet_entity(entity: Dict[str, Any]) -> Dict[str, Any]:
     pet_type = entity.get("type")
     status = entity.get("status", "available")
 
@@ -26,10 +20,9 @@ async def process_pet_search_request(entity: Dict[str, Any]) -> Dict[str, Any]:
             r.raise_for_status()
             pets = r.json()
         except Exception as e:
-            logger.error(f"Failed to fetch pets in search workflow: {e}")
+            logger.error(f"Failed to fetch pets in enrichment workflow: {e}")
             logger.exception(e)
-            pets = []
-            entity["search_success"] = False
+            entity["enrichment_success"] = False
             entity["results"] = []
             return entity
 
@@ -46,11 +39,11 @@ async def process_pet_search_request(entity: Dict[str, Any]) -> Dict[str, Any]:
         }
         for p in pets
     ]
-    entity["search_success"] = True
+    entity["enrichment_success"] = True
     return entity
 
-async def is_search_successful(entity: Dict[str, Any]) -> bool:
-    return entity.get("search_success") is True
+async def is_enrichment_successful(entity: Dict[str, Any]) -> bool:
+    return entity.get("enrichment_success") is True
 
-async def is_search_failed(entity: Dict[str, Any]) -> bool:
-    return entity.get("search_success") is False
+async def is_enrichment_failed(entity: Dict[str, Any]) -> bool:
+    return entity.get("enrichment_success") is False

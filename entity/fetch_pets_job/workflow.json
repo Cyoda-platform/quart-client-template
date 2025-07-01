@@ -1,97 +1,97 @@
 {
-    "description": "Fetch-and-Process Pets Workflow",
-    "initial_state": "none",
-    "states": {
-        "add_pets": {
-            "transitions": {
-                "add_failed": {
-                    "next": "failed"
-                },
-                "add_success": {
-                    "action": {
-                        "name": "action_add_pets"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "condition_add_success"
-                        },
-                        "type": "function"
-                    },
-                    "next": "complete"
-                }
-            }
-        },
-        "complete": {
-            "transitions": {
-                "end": {
-                    "action": {
-                        "name": "action_mark_complete"
-                    },
-                    "next": "terminal"
-                }
-            }
-        },
-        "failed": {
-            "transitions": {
-                "end": {
-                    "action": {
-                        "name": "action_mark_failed"
-                    },
-                    "next": "terminal"
-                }
-            }
-        },
-        "fetch_pets": {
-            "transitions": {
-                "fetch_failed": {
-                    "next": "failed"
-                },
-                "fetch_success": {
-                    "action": {
-                        "name": "action_fetch_pets"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "condition_fetch_success"
-                        },
-                        "type": "function"
-                    },
-                    "next": "add_pets"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "validate_filter_transition": {
-                    "next": "validate_filter"
-                }
-            }
-        },
-        "terminal": {
-            "transitions": {}
-        },
-        "validate_filter": {
-            "transitions": {
-                "invalid_filter": {
-                    "condition": {
-                        "function": {
-                            "name": "condition_valid_filter"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                },
-                "valid_filter": {
-                    "condition": {
-                        "function": {
-                            "name": "condition_valid_filter"
-                        },
-                        "type": "function"
-                    },
-                    "next": "fetch_pets"
-                }
-            }
+  "description": "Fetch-and-Process Pets Workflow",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "validate_filter_transition": {
+          "next": "validate_filter"
         }
+      }
     },
-    "workflow_name": "fetch_and_process_pets"
+    "validate_filter": {
+      "transitions": {
+        "invalid_filter": {
+          "condition": {
+            "function": {
+              "name": "condition_valid_filter"
+            },
+            "type": "function"
+          },
+          "next": "failed"
+        },
+        "valid_filter": {
+          "condition": {
+            "function": {
+              "name": "condition_valid_filter"
+            },
+            "type": "function"
+          },
+          "next": "fetch_pets"
+        }
+      }
+    },
+    "failed": {
+      "transitions": {
+        "end": {
+          "action": {
+            "name": "action_mark_failed"
+          },
+          "next": "terminal"
+        }
+      }
+    },
+    "terminal": {
+      "transitions": {}
+    },
+    "fetch_pets": {
+      "transitions": {
+        "fetch_failed": {
+          "next": "failed"
+        },
+        "fetch_success": {
+          "action": {
+            "name": "action_fetch_pets"
+          },
+          "condition": {
+            "function": {
+              "name": "condition_fetch_success"
+            },
+            "type": "function"
+          },
+          "next": "add_pets"
+        }
+      }
+    },
+    "add_pets": {
+      "transitions": {
+        "add_failed": {
+          "next": "failed"
+        },
+        "add_success": {
+          "action": {
+            "name": "action_add_pets"
+          },
+          "condition": {
+            "function": {
+              "name": "condition_add_success"
+            },
+            "type": "function"
+          },
+          "next": "complete"
+        }
+      }
+    },
+    "complete": {
+      "transitions": {
+        "end": {
+          "action": {
+            "name": "action_mark_complete"
+          },
+          "next": "terminal"
+        }
+      }
+    }
+  },
+  "workflow_name": "fetch_and_process_pets"
 }

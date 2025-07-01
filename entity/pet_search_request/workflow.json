@@ -1,45 +1,46 @@
 {
-  "description": "Purrfect Pets Search Workflow FSM",
-  "initial_state": "none",
-  "states": {
-    "none": {
-      "transitions": {
-        "start_search": {
-          "action": {
-            "name": "process_pet_search_request"
-          },
-          "next": "searching_pets"
-        }
-      }
-    },
-    "searching_pets": {
-      "transitions": {
-        "search_failure_transition": {
-          "condition": {
-            "function": {
-              "name": "is_search_failed"
-            },
-            "type": "function"
-          },
-          "next": "error"
+    "description": "Pet Enrichment Workflow FSM",
+    "initial_state": "none",
+    "states": {
+        "enriched": {
+            "transitions": {}
         },
-        "search_success_transition": {
-          "condition": {
-            "function": {
-              "name": "is_search_successful"
-            },
-            "type": "function"
-          },
-          "next": "results_ready"
+        "enriching_pet": {
+            "transitions": {
+                "enrichment_failure_transition": {
+                    "condition": {
+                        "function": {
+                            "name": "is_enrichment_failed"
+                        },
+                        "type": "function"
+                    },
+                    "next": "error"
+                },
+                "enrichment_success_transition": {
+                    "condition": {
+                        "function": {
+                            "name": "is_enrichment_successful"
+                        },
+                        "type": "function"
+                    },
+                    "next": "enriched"
+                }
+            }
+        },
+        "error": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "start_enrichment": {
+                    "action": {
+                        "name": "process_pet_entity"
+                    },
+                    "next": "enriching_pet"
+                }
+            }
         }
-      }
     },
-    "error": {
-      "transitions": {}
-    },
-    "results_ready": {
-      "transitions": {}
-    }
-  },
-  "workflow_name": "purrfect_pets_search_workflow"
+    "version": "1.0",
+    "workflow_name": "pet_enrichment_workflow"
 }

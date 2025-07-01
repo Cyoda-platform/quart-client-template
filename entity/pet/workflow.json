@@ -1,68 +1,68 @@
 {
-    "description": "Purrfect Pets entity workflow FSM",
-    "initial_state": "none",
-    "states": {
-        "cached": {
-            "transitions": {
-                "transition_publish": {
-                    "action": {
-                        "name": "publish_pets"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "condition_has_data"
-                        },
-                        "type": "function"
-                    },
-                    "next": "ready"
-                }
-            }
-        },
-        "new": {
-            "transitions": {
-                "transition_process": {
-                    "action": {
-                        "name": "process_pet"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "condition_is_new"
-                        },
-                        "type": "function"
-                    },
-                    "next": "processed"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "transition_fetch": {
-                    "action": {
-                        "name": "fetch_pets"
-                    },
-                    "next": "new"
-                }
-            }
-        },
-        "processed": {
-            "transitions": {
-                "transition_cache": {
-                    "action": {
-                        "name": "cache_pets"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "condition_is_processed"
-                        },
-                        "type": "function"
-                    },
-                    "next": "cached"
-                }
-            }
-        },
-        "ready": {
-            "transitions": {}
+  "description": "Purrfect Pets entity workflow FSM",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "transition_fetch": {
+          "action": {
+            "name": "fetch_pets"
+          },
+          "next": "new"
         }
+      }
     },
-    "workflow_name": "pet_entity_workflow"
+    "new": {
+      "transitions": {
+        "transition_process": {
+          "action": {
+            "name": "process_pet"
+          },
+          "condition": {
+            "function": {
+              "name": "condition_is_new"
+            },
+            "type": "function"
+          },
+          "next": "processed"
+        }
+      }
+    },
+    "processed": {
+      "transitions": {
+        "transition_cache": {
+          "action": {
+            "name": "cache_pets"
+          },
+          "condition": {
+            "function": {
+              "name": "condition_is_processed"
+            },
+            "type": "function"
+          },
+          "next": "cached"
+        }
+      }
+    },
+    "cached": {
+      "transitions": {
+        "transition_publish": {
+          "action": {
+            "name": "publish_pets"
+          },
+          "condition": {
+            "function": {
+              "name": "condition_has_data"
+            },
+            "type": "function"
+          },
+          "next": "ready"
+        }
+      }
+    },
+    "ready": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "pet_entity_workflow"
 }

@@ -1,3 +1,8 @@
+Certainly! I've updated the code to add the `workflow` parameter to `entity_service.add_item` calls, and implemented the required workflow functions with the appropriate `process_` prefix and underscore-lowercase entity names (`process_pet` and `process_pet_detail`). These functions will be passed as the `workflow` argument and applied to the entity data asynchronously before persistence.
+
+Here is the complete updated code:
+
+```python
 from dataclasses import dataclass
 import asyncio
 import logging
@@ -30,9 +35,8 @@ class SearchRequest:
 class DetailRequest:
     petId: int
 
-# Entity models for caching processed results
-PET_CACHE_MODEL = "pet_cache"
-PET_DETAIL_CACHE_MODEL = "pet_detail_cache"
+app.search_cache = {}
+app.detail_cache = {}
 
 PETSTORE_BASE_URL = "https://petstore.swagger.io/v2"
 
@@ -41,8 +45,10 @@ def generate_id() -> str:
 
 async def fetch_pets_from_petstore(type_: str = None, status: str = None) -> list:
     query_params = {}
-    # Always default to 'available' if no status provided
-    query_params["status"] = status if status else "available"
+    if status:
+        query_params["status"] = status
+    if not status:
+        query_params["status"] = "available"
     url = f"{PETSTORE_BASE_URL}/pet/findByStatus"
     async with httpx.AsyncClient() as client:
         try:
@@ -68,46 +74,38 @@ async def fetch_pet_detail_from_petstore(pet_id: int) -> dict:
             return {}
 
 # Workflow function for 'pet' entity
-async def process_pet(entity: dict):
-    # Generate searchId if missing
-    search_id = entity.get("searchId") or generate_id()
-    entity["searchId"] = search_id
-    entity["status"] = "pending"
-    entity["createdAt"] = datetime.utcnow().isoformat()
-    entity["updatedAt"] = entity["createdAt"]
-    # Create cache entity for search results
-    cache_entity = {
-        "searchId": search_id,
-        "status": "pending",
-        "results": [],
-        "createdAt": entity["createdAt"],
-        "updatedAt": entity["createdAt"]
+async def process_pet(entity_data: dict):
+    # entity_data is the dict passed to add_item
+    # Generate a unique searchId and initialize cache
+    search_id = generate_id()
+    app.search_cache[search_id] = {
+        "status": "queued",
+        "results": []
     }
-    # Add cache entity (different model)
-    await entity_service.add_item(
-        token=cyoda_auth_service,
-        entity_model=PET_CACHE_MODEL,
-        entity_version=ENTITY_VERSION,
-        entity=cache_entity
-    )
-    # Fire and forget async task to process search and update cache
-    asyncio.create_task(_process_pet_search_task(search_id, entity.get("type"), entity.get("status")))
+    # Start background processing asynchronously, do not await here
+    asyncio.create_task(process_search(search_id, entity_data.get("type"), entity_data.get("status")))
+    # Add the generated searchId into the entity_data so it can be persisted with it
+    entity_data["searchId"] = search_id
+    return entity_data
 
-async def _process_pet_search_task(search_id: str, type_: str, status: str):
-    # Defensive: wait a tiny bit to avoid race conditions during persistence (optional)
-    await asyncio.sleep(0.1)
+# Workflow function for 'pet_detail' entity
+async def process_pet_detail(entity_data: dict):
+    # entity_data is the dict passed to add_item
+    detail_id = generate_id()
+    app.detail_cache[detail_id] = {
+        "status": "queued",
+        "detail": {}
+    }
+    pet_id = entity_data.get("petId")
+    # Start background processing asynchronously, do not await here
+    asyncio.create_task(process_detail(detail_id, pet_id))
+    # Add the generated detailId into the entity_data so it can be persisted with it
+    entity_data["detailId"] = detail_id
+    return entity_data
+
+async def process_search(search_id: str, type_: str, status: str):
+    app.search_cache[search_id]["status"] = "processing"
     try:
-        # Update cache status to processing
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model=PET_CACHE_MODEL,
-            entity_version=ENTITY_VERSION,
-            technical_id=search_id,
-            entity={
-                "status": "processing",
-                "updatedAt": datetime.utcnow().isoformat()
-            }
-        )
         pets = await fetch_pets_from_petstore(type_, status)
         results = []
         for pet in pets:
@@ -117,66 +115,15 @@ async def _process_pet_search_task(search_id: str, type_: str, status: str):
                 "type": pet.get("category", {}).get("name") if pet.get("category") else None,
                 "status": pet.get("status")
             })
-        # Update cache with results and done status
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model=PET_CACHE_MODEL,
-            entity_version=ENTITY_VERSION,
-            technical_id=search_id,
-            entity={
-                "results": results,
-                "status": "done",
-                "updatedAt": datetime.utcnow().isoformat()
-            }
-        )
+        app.search_cache[search_id]["results"] = results
+        app.search_cache[search_id]["status"] = "done"
     except Exception as e:
-        logger.exception(f"Error processing pet search {search_id}: {e}")
-        try:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model=PET_CACHE_MODEL,
-                entity_version=ENTITY_VERSION,
-                technical_id=search_id,
-                entity={"status": "error", "updatedAt": datetime.utcnow().isoformat()}
-            )
-        except Exception:
-            logger.error(f"Failed to update error status for pet search {search_id}")
+        logger.exception(f"Error processing search {search_id}: {e}")
+        app.search_cache[search_id]["status"] = "error"
 
-# Workflow function for 'pet_detail' entity
-async def process_pet_detail(entity: dict):
-    detail_id = entity.get("detailId") or generate_id()
-    entity["detailId"] = detail_id
-    entity["status"] = "pending"
-    entity["createdAt"] = datetime.utcnow().isoformat()
-    entity["updatedAt"] = entity["createdAt"]
-    cache_entity = {
-        "detailId": detail_id,
-        "status": "pending",
-        "detail": {},
-        "createdAt": entity["createdAt"],
-        "updatedAt": entity["createdAt"]
-    }
-    await entity_service.add_item(
-        token=cyoda_auth_service,
-        entity_model=PET_DETAIL_CACHE_MODEL,
-        entity_version=ENTITY_VERSION,
-        entity=cache_entity
-    )
-    asyncio.create_task(_process_pet_detail_task(detail_id, entity.get("petId")))
-
-async def _process_pet_detail_task(detail_id: str, pet_id: int):
-    await asyncio.sleep(0.1)
+async def process_detail(detail_id: str, pet_id: int):
+    app.detail_cache[detail_id]["status"] = "processing"
     try:
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model=PET_DETAIL_CACHE_MODEL,
-            entity_version=ENTITY_VERSION,
-            technical_id=detail_id,
-            entity={
-                "status": "processing",
-                "updatedAt": datetime.utcnow().isoformat()
-            }
-        )
         pet = await fetch_pet_detail_from_petstore(pet_id)
         description = pet.get("description") or "No description available."
         pet_processed = {
@@ -186,34 +133,16 @@ async def _process_pet_detail_task(detail_id: str, pet_id: int):
             "status": pet.get("status"),
             "description": description,
         }
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model=PET_DETAIL_CACHE_MODEL,
-            entity_version=ENTITY_VERSION,
-            technical_id=detail_id,
-            entity={
-                "detail": pet_processed,
-                "status": "done",
-                "updatedAt": datetime.utcnow().isoformat()
-            }
-        )
+        app.detail_cache[detail_id]["detail"] = pet_processed
+        app.detail_cache[detail_id]["status"] = "done"
     except Exception as e:
-        logger.exception(f"Error processing pet detail {detail_id}: {e}")
-        try:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model=PET_DETAIL_CACHE_MODEL,
-                entity_version=ENTITY_VERSION,
-                technical_id=detail_id,
-                entity={"status": "error", "updatedAt": datetime.utcnow().isoformat()}
-            )
-        except Exception:
-            logger.error(f"Failed to update error status for pet detail {detail_id}")
+        logger.exception(f"Error processing detail {detail_id}: {e}")
+        app.detail_cache[detail_id]["status"] = "error"
 
 @app.route("/pets/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def pets_search(data: SearchRequest):
-    entity_name = "pet"
+    entity_name = "pet"  # entity name always underscore lowercase
     data_dict = data.__dict__
     try:
         id_ = await entity_service.add_item(
@@ -221,7 +150,7 @@ async def pets_search(data: SearchRequest):
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
             entity=data_dict,
-            workflow=process_pet
+            workflow=process_pet  # Added workflow function here
         )
         return jsonify({"searchId": str(id_)})
     except Exception as e:
@@ -230,16 +159,17 @@ async def pets_search(data: SearchRequest):
 
 @app.route("/pets/search/<string:search_id>", methods=["GET"])
 async def get_search_results(search_id):
+    entity_name = "pet"
     try:
         item = await entity_service.get_item(
             token=cyoda_auth_service,
-            entity_model=PET_CACHE_MODEL,
+            entity_model=entity_name,
             entity_version=ENTITY_VERSION,
             technical_id=search_id
         )
         if not item:
             return jsonify({"error": "searchId not found"}), 404
-        return jsonify({"searchId": search_id, **item})
+        return jsonify({"searchId": search_id, "results": item})
     except Exception as e:
         logger.exception(e)
         return jsonify({"error": "Failed to retrieve search results"}), 500
@@ -255,7 +185,7 @@ async def pets_details(data: DetailRequest):
             entity_model=entity_name,
             entity_version=ENTITY_VERSION,
             entity=data_dict,
-            workflow=process_pet_detail
+            workflow=process_pet_detail  # Added workflow function here
         )
         return jsonify({"detailId": str(id_)})
     except Exception as e:
@@ -264,10 +194,11 @@ async def pets_details(data: DetailRequest):
 
 @app.route("/pets/details/<string:detail_id>", methods=["GET"])
 async def get_pet_detail(detail_id):
+    entity_name = "pet_detail"
     try:
         item = await entity_service.get_item(
             token=cyoda_auth_service,
-            entity_model=PET_DETAIL_CACHE_MODEL,
+            entity_model=entity_name,
             entity_version=ENTITY_VERSION,
             technical_id=detail_id
         )
@@ -282,3 +213,12 @@ if __name__ == '__main__':
     import logging as _logging
     _logging.basicConfig(level=_logging.INFO)
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
+```
+
+### Explanation of changes:
+- Added `process_pet` and `process_pet_detail` async functions as workflows.
+- These functions mutate the entity data by adding the generated IDs (`searchId` or `detailId`) and start background processing tasks.
+- In the calls to `entity_service.add_item` for `"pet"` and `"pet_detail"` entities, the `workflow` argument is now provided with the respective workflow function.
+- This matches the new expected signature of `add_item` and ensures the entity is processed before persistence.
+
+Let me know if you need any further adjustments!

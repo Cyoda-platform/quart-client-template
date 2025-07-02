@@ -1,0 +1,38 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "analysis_type": "summary",
+                "csv_url": "https://example.com/data.csv",
+                "error": null,
+                "job_id": "20240601123045000000",
+                "last_processed_at": "2024-06-01T12:00:00Z",
+                "requestedAt": "2024-06-01T12:00:00Z",
+                "result": {
+                    "columns": [
+                        "col1",
+                        "col2",
+                        "col3"
+                    ],
+                    "rows_processed": 123,
+                    "statistics": {
+                        "col1": {
+                            "count": 123,
+                            "mean": 10.5
+                        },
+                        "col2": {
+                            "count": 123,
+                            "unique": 5
+                        }
+                    }
+                },
+                "status": "completed",
+                "subscribers": [
+                    "email1@example.com",
+                    "email2@example.com"
+                ]
+            },
+            "entity_name": "entity_job"
+        }
+    ]
+}

@@ -6,18 +6,16 @@ from typing import Dict, Any
 
 import httpx
 import pandas as pd
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request
 
-import json
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -33,13 +31,11 @@ async def download_csv(url: str) -> pd.DataFrame:
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
         response.raise_for_status()
-        # Use StringIO to read CSV from string content
         from io import StringIO
         df = pd.read_csv(StringIO(response.text))
         return df
 
 def analyze_data(df: pd.DataFrame, analysis_type: str) -> Dict[str, Any]:
-    # Defensive: if df empty, return empty summary
     if df.empty:
         return {
             "rows_processed": 0,
@@ -65,23 +61,21 @@ def analyze_data(df: pd.DataFrame, analysis_type: str) -> Dict[str, Any]:
     return result
 
 async def send_email_report(subscribers: list[str], report: Dict[str, Any]) -> None:
-    # TODO: Replace with real email sending logic (SMTP / email API)
     if not subscribers:
         logger.warning("No subscribers specified for email report")
         return
     try:
         logger.info(f"Sending report email to subscribers: {subscribers}")
         logger.info(f"Report summary: Rows processed: {report.get('rows_processed')}, Columns: {report.get('columns')}")
-        await asyncio.sleep(1)  # simulate sending email delay
+        await asyncio.sleep(1)
     except Exception as e:
         logger.error(f"Failed to send email report: {e}")
 
-@app.route("/api/process-data", methods=["POST"])
+@routes_bp.route("/api/process-data", methods=["POST"])
 @validate_request(ProcessDataRequest)
 async def process_data(data: ProcessDataRequest):
     job_id = datetime.utcnow().strftime("%Y%m%d%H%M%S%f")
 
-    # Initial entity with status processing and input data
     entity = {
         "job_id": job_id,
         "status": "processing",
@@ -92,14 +86,13 @@ async def process_data(data: ProcessDataRequest):
     }
 
     try:
-        # Pass workflow function which will run all async logic before persistence
         technical_id = await entity_service.add_item(
             token=cyoda_auth_service,
             entity_model="entity_job",
             entity_version=ENTITY_VERSION,
             entity=entity
         )
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to add entity_job to entity_service")
         return jsonify({"status": "error", "message": "Could not initiate processing"}), 500
 
@@ -109,7 +102,7 @@ async def process_data(data: ProcessDataRequest):
         "job_id": job_id,
     }), 202
 
-@app.route("/api/results", methods=["GET"])
+@routes_bp.route("/api/results", methods=["GET"])
 async def get_results():
     try:
         items = await entity_service.get_items(
@@ -117,7 +110,7 @@ async def get_results():
             entity_model="entity_job",
             entity_version=ENTITY_VERSION,
         )
-    except Exception as e:
+    except Exception:
         logger.exception("Failed to get items from entity_service")
         return jsonify({"status": "error", "message": "Failed to get results"}), 500
 
@@ -143,6 +136,3 @@ async def get_results():
         "error": latest_job.get("error"),
     }
     return jsonify(response)
-
-if __name__ == '__main__':
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

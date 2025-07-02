@@ -1,103 +1,103 @@
 {
-    "description": "FSM for CSV data processing, analysis, email report sending",
-    "initial_state": "none",
-    "states": {
-        "analyze_data": {
-            "transitions": {
-                "analysis_complete": {
-                    "action": {
-                        "name": "analyze"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "condition_analysis_done"
-                        },
-                        "type": "function"
-                    },
-                    "next": "send_report"
-                },
-                "analysis_failed": {
-                    "next": "fail"
-                }
-            }
+  "description": "FSM for CSV data processing, analysis, email report sending",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "check_csv_url": {
+          "condition": {
+            "function": {
+              "name": "condition_csv_url_present"
+            },
+            "type": "function"
+          },
+          "next": "download_data"
         },
-        "complete": {
-            "transitions": {
-                "mark_complete": {
-                    "action": {
-                        "name": "mark_completed"
-                    },
-                    "next": "end"
-                }
-            }
-        },
-        "download_data": {
-            "transitions": {
-                "download_complete": {
-                    "action": {
-                        "name": "download_data"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "condition_data_downloaded"
-                        },
-                        "type": "function"
-                    },
-                    "next": "analyze_data"
-                },
-                "download_failed": {
-                    "next": "fail"
-                }
-            }
-        },
-        "end": {
-            "transitions": {}
-        },
-        "fail": {
-            "transitions": {
-                "mark_failed": {
-                    "action": {
-                        "name": "mark_failed"
-                    },
-                    "next": "end"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "check_csv_url": {
-                    "condition": {
-                        "function": {
-                            "name": "condition_csv_url_present"
-                        },
-                        "type": "function"
-                    },
-                    "next": "download_data"
-                },
-                "fail_missing_csv_url": {
-                    "condition": {
-                        "function": {
-                            "name": "condition_csv_url_missing"
-                        },
-                        "type": "function"
-                    },
-                    "next": "fail"
-                }
-            }
-        },
-        "send_report": {
-            "transitions": {
-                "report_failed": {
-                    "next": "fail"
-                },
-                "report_sent": {
-                    "action": {
-                        "name": "send_report"
-                    },
-                    "next": "complete"
-                }
-            }
+        "fail_missing_csv_url": {
+          "condition": {
+            "function": {
+              "name": "condition_csv_url_missing"
+            },
+            "type": "function"
+          },
+          "next": "fail"
         }
+      }
     },
-    "workflow_name": "csv_data_processing_workflow"
+    "download_data": {
+      "transitions": {
+        "download_complete": {
+          "action": {
+            "name": "download_data"
+          },
+          "condition": {
+            "function": {
+              "name": "condition_data_downloaded"
+            },
+            "type": "function"
+          },
+          "next": "analyze_data"
+        },
+        "download_failed": {
+          "next": "fail"
+        }
+      }
+    },
+    "analyze_data": {
+      "transitions": {
+        "analysis_complete": {
+          "action": {
+            "name": "analyze"
+          },
+          "condition": {
+            "function": {
+              "name": "condition_analysis_done"
+            },
+            "type": "function"
+          },
+          "next": "send_report"
+        },
+        "analysis_failed": {
+          "next": "fail"
+        }
+      }
+    },
+    "send_report": {
+      "transitions": {
+        "report_failed": {
+          "next": "fail"
+        },
+        "report_sent": {
+          "action": {
+            "name": "send_report"
+          },
+          "next": "complete"
+        }
+      }
+    },
+    "fail": {
+      "transitions": {
+        "mark_failed": {
+          "action": {
+            "name": "mark_failed"
+          },
+          "next": "end"
+        }
+      }
+    },
+    "end": {
+      "transitions": {}
+    },
+    "complete": {
+      "transitions": {
+        "mark_complete": {
+          "action": {
+            "name": "mark_completed"
+          },
+          "next": "end"
+        }
+      }
+    }
+  },
+  "workflow_name": "csv_data_processing_workflow"
 }

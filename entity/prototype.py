@@ -1,4 +1,4 @@
-```python
+from dataclasses import dataclass
 import asyncio
 import logging
 from datetime import datetime
@@ -6,8 +6,8 @@ from typing import Dict, Any
 
 import httpx
 import pandas as pd
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart import Quart, jsonify
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -26,12 +26,10 @@ async def download_csv(url: str) -> pd.DataFrame:
     async with httpx.AsyncClient() as client:
         response = await client.get(url)
         response.raise_for_status()
-        # Load CSV content into pandas DataFrame
         df = pd.read_csv(pd.compat.StringIO(response.text))
         return df
 
 def analyze_data(df: pd.DataFrame, analysis_type: str) -> Dict[str, Any]:
-    # TODO: Extend analysis types if needed
     if analysis_type == "summary":
         desc = df.describe(include='all').to_dict()
         result = {
@@ -40,7 +38,6 @@ def analyze_data(df: pd.DataFrame, analysis_type: str) -> Dict[str, Any]:
             "statistics": desc,
         }
     else:
-        # Default fallback: basic summary
         desc = df.describe(include='all').to_dict()
         result = {
             "rows_processed": len(df),
@@ -51,10 +48,9 @@ def analyze_data(df: pd.DataFrame, analysis_type: str) -> Dict[str, Any]:
     return result
 
 async def send_email_report(subscribers: list[str], report: Dict[str, Any]) -> None:
-    # TODO: Replace this placeholder with real email sending logic (SMTP / email API)
+    # TODO: Replace with real email sending logic (SMTP / email API)
     logger.info(f"Sending report email to subscribers: {subscribers}")
     logger.info(f"Report summary: Rows processed: {report.get('rows_processed')}, Columns: {report.get('columns')}")
-    # Simulate sending delay
     await asyncio.sleep(1)
 
 async def process_entity(job_id: str, csv_url: str, subscribers: list[str], analysis_type: str):
@@ -77,15 +73,18 @@ async def process_entity(job_id: str, csv_url: str, subscribers: list[str], anal
         entity_jobs[job_id].update({"status": "failed", "error": str(e)})
         logger.exception(f"Job {job_id}: Failed with exception")
 
-@app.route("/api/process-data", methods=["POST"])
-async def process_data():
-    data = await request.get_json()
-    csv_url = data.get("csv_url")
-    subscribers = data.get("subscribers")
-    analysis_type = data.get("analysis_type", "summary")
+@dataclass
+class ProcessDataRequest:
+    csv_url: str
+    subscribers: list[str]
+    analysis_type: str
 
-    if not csv_url or not subscribers or not isinstance(subscribers, list):
-        return jsonify({"error": "Missing or invalid parameters: 'csv_url' and 'subscribers' are required."}), 400
+@app.route("/api/process-data", methods=["POST"])
+@validate_request(ProcessDataRequest)  # Workaround: validate_request placed after @app.route for POST due to quart-schema defect
+async def process_data(data: ProcessDataRequest):
+    csv_url = data.csv_url
+    subscribers = data.subscribers
+    analysis_type = data.analysis_type
 
     job_id = generate_job_id()
     entity_jobs[job_id] = {
@@ -93,7 +92,6 @@ async def process_data():
         "requestedAt": datetime.utcnow().isoformat() + "Z",
     }
 
-    # Fire and forget processing task
     asyncio.create_task(process_entity(job_id, csv_url, subscribers, analysis_type))
 
     return jsonify({
@@ -104,11 +102,9 @@ async def process_data():
 
 @app.route("/api/results", methods=["GET"])
 async def get_results():
-    # Return the latest completed job result or status
     if not entity_jobs:
         return jsonify({"status": "no_jobs", "message": "No processing jobs found."})
 
-    # Find last job by requestedAt descending
     latest_job_id, latest_job = max(entity_jobs.items(), key=lambda item: item[1].get("requestedAt", ""))
     response = {
         "job_id": latest_job_id,
@@ -121,4 +117,3 @@ async def get_results():
 
 if __name__ == '__main__':
     app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)
-```

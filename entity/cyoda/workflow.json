@@ -1,0 +1,34 @@
+{
+    "description": "FSM workflow for processing entity with enrichment",
+    "initial_state": "none",
+    "states": {
+        "completed": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "start_processing": {
+                    "condition": {
+                        "function": {
+                            "name": "can_process"
+                        },
+                        "type": "function"
+                    },
+                    "next": "processing"
+                }
+            }
+        },
+        "processing": {
+            "transitions": {
+                "finish_processing": {
+                    "action": {
+                        "name": "process_cyoda"
+                    },
+                    "next": "completed"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "entity_processing_workflow"
+}

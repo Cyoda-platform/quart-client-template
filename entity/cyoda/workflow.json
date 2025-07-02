@@ -1,33 +1,33 @@
 {
-    "description": "FSM workflow for processing entity with enrichment",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "start_processing": {
-                    "condition": {
-                        "function": {
-                            "name": "can_process"
-                        },
-                        "type": "function"
-                    },
-                    "next": "processing"
-                }
-            }
-        },
-        "processing": {
-            "transitions": {
-                "finish_processing": {
-                    "action": {
-                        "name": "process_cyoda"
-                    },
-                    "next": "completed"
-                }
-            }
+  "description": "FSM workflow for processing entity with enrichment",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_processing": {
+          "condition": {
+            "function": {
+              "name": "can_process"
+            },
+            "type": "function"
+          },
+          "next": "processing"
         }
+      }
     },
-    "workflow_name": "entity_processing_workflow"
+    "processing": {
+      "transitions": {
+        "finish_processing": {
+          "action": {
+            "name": "process_cyoda"
+          },
+          "next": "completed"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "entity_processing_workflow"
 }

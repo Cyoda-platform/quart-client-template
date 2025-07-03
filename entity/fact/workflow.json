@@ -1,111 +1,111 @@
 {
-    "description": "FSM workflow for weekly cat fact processing",
-    "initial_state": "none",
-    "states": {
-        "add_sent_date": {
-            "transitions": {
-                "sent_date_added": {
-                    "action": {
-                        "name": "add_sent_date"
-                    },
-                    "next": "retrieve_subscribers"
-                }
-            }
-        },
-        "check_fact_missing": {
-            "transitions": {
-                "fact_missing": {
-                    "condition": {
-                        "function": {
-                            "name": "is_fact_missing"
-                        },
-                        "type": "function"
-                    },
-                    "next": "fetch_cat_fact"
-                },
-                "fact_present": {
-                    "condition": {
-                        "function": {
-                            "name": "not_is_fact_missing"
-                        },
-                        "type": "function"
-                    },
-                    "next": "check_sent_date_missing"
-                }
-            }
-        },
-        "check_sent_date_missing": {
-            "transitions": {
-                "sent_date_missing": {
-                    "condition": {
-                        "function": {
-                            "name": "is_sent_date_missing"
-                        },
-                        "type": "function"
-                    },
-                    "next": "add_sent_date"
-                },
-                "sent_date_present": {
-                    "condition": {
-                        "function": {
-                            "name": "not_is_sent_date_missing"
-                        },
-                        "type": "function"
-                    },
-                    "next": "retrieve_subscribers"
-                }
-            }
-        },
-        "fetch_cat_fact": {
-            "transitions": {
-                "fact_fetched": {
-                    "action": {
-                        "name": "fetch_cat_fact"
-                    },
-                    "next": "check_sent_date_missing"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "start_fact_check": {
-                    "next": "check_fact_missing"
-                }
-            }
-        },
-        "retrieve_subscribers": {
-            "transitions": {
-                "subscribers_retrieved": {
-                    "action": {
-                        "name": "retrieve_subscribers"
-                    },
-                    "next": "send_emails"
-                }
-            }
-        },
-        "send_emails": {
-            "transitions": {
-                "emails_sent": {
-                    "action": {
-                        "name": "send_emails_to_subscribers"
-                    },
-                    "next": "update_emails_sent_count"
-                }
-            }
-        },
-        "terminal": {
-            "transitions": {}
-        },
-        "update_emails_sent_count": {
-            "transitions": {
-                "update_done": {
-                    "action": {
-                        "name": "update_emails_sent_count"
-                    },
-                    "next": "terminal"
-                }
-            }
+  "description": "FSM workflow for weekly cat fact processing",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "start_fact_check": {
+          "next": "check_fact_missing"
         }
+      }
     },
-    "workflow_name": "cat_fact_workflow"
+    "check_fact_missing": {
+      "transitions": {
+        "fact_missing": {
+          "condition": {
+            "function": {
+              "name": "is_fact_missing"
+            },
+            "type": "function"
+          },
+          "next": "fetch_cat_fact"
+        },
+        "fact_present": {
+          "condition": {
+            "function": {
+              "name": "not_is_fact_missing"
+            },
+            "type": "function"
+          },
+          "next": "check_sent_date_missing"
+        }
+      }
+    },
+    "fetch_cat_fact": {
+      "transitions": {
+        "fact_fetched": {
+          "action": {
+            "name": "fetch_cat_fact"
+          },
+          "next": "check_sent_date_missing"
+        }
+      }
+    },
+    "check_sent_date_missing": {
+      "transitions": {
+        "sent_date_missing": {
+          "condition": {
+            "function": {
+              "name": "is_sent_date_missing"
+            },
+            "type": "function"
+          },
+          "next": "add_sent_date"
+        },
+        "sent_date_present": {
+          "condition": {
+            "function": {
+              "name": "not_is_sent_date_missing"
+            },
+            "type": "function"
+          },
+          "next": "retrieve_subscribers"
+        }
+      }
+    },
+    "add_sent_date": {
+      "transitions": {
+        "sent_date_added": {
+          "action": {
+            "name": "add_sent_date"
+          },
+          "next": "retrieve_subscribers"
+        }
+      }
+    },
+    "retrieve_subscribers": {
+      "transitions": {
+        "subscribers_retrieved": {
+          "action": {
+            "name": "retrieve_subscribers"
+          },
+          "next": "send_emails"
+        }
+      }
+    },
+    "send_emails": {
+      "transitions": {
+        "emails_sent": {
+          "action": {
+            "name": "send_emails_to_subscribers"
+          },
+          "next": "update_emails_sent_count"
+        }
+      }
+    },
+    "update_emails_sent_count": {
+      "transitions": {
+        "update_done": {
+          "action": {
+            "name": "update_emails_sent_count"
+          },
+          "next": "terminal"
+        }
+      }
+    },
+    "terminal": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "cat_fact_workflow"
 }

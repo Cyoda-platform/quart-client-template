@@ -5,21 +5,20 @@ from datetime import datetime
 from typing import Dict, Any
 
 import httpx
-from quart import Quart, jsonify, request
-from quart_schema import QuartSchema, validate_request, validate_querystring
+from quart import Blueprint, jsonify, request
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
 
-factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
-entity_service = factory.get_services()['entity_service']
-cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-app = Quart(__name__)
-QuartSchema(app)
+routes_bp = Blueprint('routes', __name__)
+
+factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
+entity_service = factory.get_services()['entity_service']
+cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 @dataclass
 class WorkflowTriggerRequest:
@@ -51,27 +50,22 @@ async def fetch_external_data(name: str) -> Dict[str, Any]:
             return {"error": "Failed to fetch external data"}
 
 async def process_entity(entity: dict) -> dict:
-    # Initialize mandatory fields for new entity
     if "current_state" not in entity:
         entity["current_state"] = "Created"
     if "created_at" not in entity:
         entity["created_at"] = datetime.utcnow().isoformat()
-    # Ensure 'data' field exists as dict
     if "data" not in entity or not isinstance(entity["data"], dict):
         entity["data"] = {}
     return entity
 
 async def process_entity_workflow_trigger(entity: dict) -> dict:
-    # Extract and remove workflow trigger info
     trigger = entity.pop('_workflow_trigger', None)
     if not trigger:
-        # No trigger, do nothing
         return entity
 
     event = trigger.get("event")
     payload = trigger.get("payload", {})
 
-    # Use or initialize current_state
     current_state = entity.get("current_state", "Created")
 
     try:
@@ -84,7 +78,6 @@ async def process_entity_workflow_trigger(entity: dict) -> dict:
 
             entity["current_state"] = "Processing"
 
-            # Fetch external data asynchronously
             external_result = await fetch_external_data(name.strip())
 
             if "error" in external_result:
@@ -95,7 +88,6 @@ async def process_entity_workflow_trigger(entity: dict) -> dict:
                 entity["data"] = external_result
 
         else:
-            # Unsupported event
             entity["current_state"] = "Failed"
             entity["data"] = {"error": f"Unsupported event '{event}'"}
 
@@ -106,7 +98,7 @@ async def process_entity_workflow_trigger(entity: dict) -> dict:
 
     return entity
 
-@app.route("/api/entity", methods=["POST"])
+@routes_bp.route("/api/entity", methods=["POST"])
 @validate_request(NewEntityRequest)
 async def add_entity(data: NewEntityRequest):
     try:
@@ -124,7 +116,7 @@ async def add_entity(data: NewEntityRequest):
         logger.exception(f"Failed to add entity: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
-@app.route("/api/entity/<string:entity_id>/workflow/trigger", methods=["POST"])
+@routes_bp.route("/api/entity/<string:entity_id>/workflow/trigger", methods=["POST"])
 @validate_request(WorkflowTriggerRequest)
 async def trigger_workflow(data: WorkflowTriggerRequest, entity_id):
     try:
@@ -137,7 +129,6 @@ async def trigger_workflow(data: WorkflowTriggerRequest, entity_id):
         if not entity:
             return jsonify({"status": "error", "message": "Entity not found"}), 404
 
-        # Add workflow trigger info to entity
         entity['_workflow_trigger'] = {
             "event": data.event,
             "payload": data.payload
@@ -170,7 +161,7 @@ async def trigger_workflow(data: WorkflowTriggerRequest, entity_id):
         logger.exception(f"Failed to trigger workflow for entity {entity_id}: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
-@app.route("/api/entity/<string:entity_id>/state", methods=["GET"])
+@routes_bp.route("/api/entity/<string:entity_id>/state", methods=["GET"])
 async def get_entity_state(entity_id):
     try:
         entity = await entity_service.get_item(
@@ -191,8 +182,8 @@ async def get_entity_state(entity_id):
         logger.exception(f"Failed to get entity state for {entity_id}: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
+@routes_bp.route("/api/entity/list", methods=["GET"])
 @validate_querystring(ListQuery)
-@app.route("/api/entity/list", methods=["GET"])
 async def list_entities():
     try:
         state_filter = request.args.get("state")
@@ -221,13 +212,3 @@ async def list_entities():
     except Exception as e:
         logger.exception(f"Failed to list entities: {e}")
         return jsonify({"status": "error", "message": "Internal server error"}), 500
-
-if __name__ == '__main__':
-    import sys
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s %(levelname)s [%(name)s] %(message)s',
-        stream=sys.stdout,
-    )
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

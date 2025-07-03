@@ -1,0 +1,43 @@
+{
+    "description": "FSM for entity initialization workflow",
+    "initial_state": "none",
+    "states": {
+        "created": {
+            "transitions": {
+                "complete_initialization": {
+                    "next": "initialized"
+                }
+            }
+        },
+        "initialized": {
+            "transitions": {}
+        },
+        "none": {
+            "transitions": {
+                "initialize_transition": {
+                    "action": {
+                        "name": "initialize_entity"
+                    },
+                    "condition": {
+                        "function": {
+                            "name": "is_entity_uninitialized"
+                        },
+                        "type": "function"
+                    },
+                    "next": "created"
+                },
+                "skip_initialization": {
+                    "condition": {
+                        "function": {
+                            "name": "is_entity_initialized"
+                        },
+                        "type": "function"
+                    },
+                    "next": "initialized"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "entity_initialization_workflow"
+}

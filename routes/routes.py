@@ -4,9 +4,8 @@ import logging
 from datetime import datetime, timezone
 import uuid
 
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request, validate_querystring
-import httpx
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request, validate_querystring
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
@@ -14,12 +13,11 @@ from common.config.config import ENTITY_VERSION
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+routes_bp = Blueprint('routes', __name__)
+
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
 cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class SignupRequest:
@@ -64,6 +62,7 @@ async def process_fact(entity: dict) -> dict:
     if not entity.get("fact"):
         url = "https://catfact.ninja/fact"
         try:
+            import httpx
             async with httpx.AsyncClient() as client:
                 resp = await client.get(url, timeout=10)
                 resp.raise_for_status()
@@ -111,7 +110,7 @@ async def process_fact(entity: dict) -> dict:
 
     return entity
 
-@app.route("/api/signup", methods=["POST"])
+@routes_bp.route("/api/signup", methods=["POST"])
 @validate_request(SignupRequest)
 async def signup(data: SignupRequest):
     email = data.email
@@ -161,8 +160,8 @@ async def signup(data: SignupRequest):
     logger.info(f"New subscriber added: {email}")
     return jsonify({"message": "Subscription successful", "subscriberId": subscriber_id})
 
+@routes_bp.route("/api/subscribers", methods=["GET"])
 @validate_querystring(SubscriberQuery)
-@app.route("/api/subscribers", methods=["GET"])
 async def get_subscribers():
     args = SubscriberQuery(**request.args)
     try:
@@ -184,7 +183,7 @@ async def get_subscribers():
     ]
     return jsonify({"totalSubscribers": len(subscribers_raw), "subscribers": subs_list})
 
-@app.route("/api/facts/sendWeekly", methods=["POST"])
+@routes_bp.route("/api/facts/sendWeekly", methods=["POST"])
 async def send_weekly_fact():
     fact_data = {}
     try:
@@ -203,7 +202,7 @@ async def send_weekly_fact():
         "factId": fact_id
     })
 
-@app.route("/api/facts/reports", methods=["GET"])
+@routes_bp.route("/api/facts/reports", methods=["GET"])
 async def get_facts_reports():
     try:
         facts_raw = await entity_service.get_items(
@@ -226,8 +225,3 @@ async def get_facts_reports():
             "linksClicked": fact.get("linksClicked")
         })
     return jsonify({"facts": facts_list})
-
-if __name__ == '__main__':
-    import sys
-    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    app.run(use_reloader=False, debug=True, host='0.0.0.0', port=8000, threaded=True)

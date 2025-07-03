@@ -5,11 +5,13 @@ import logging
 from datetime import datetime
 
 import httpx
-from quart import Quart, request, jsonify
-from quart_schema import QuartSchema, validate_request
+from quart import Blueprint, request, jsonify
+from quart_schema import validate_request
 
 from app_init.app_init import BeanFactory
 from common.config.config import ENTITY_VERSION
+
+routes_bp = Blueprint('routes', __name__)
 
 factory = BeanFactory(config={'CHAT_REPOSITORY': 'cyoda'})
 entity_service = factory.get_services()['entity_service']
@@ -17,9 +19,6 @@ cyoda_auth_service = factory.get_services()["cyoda_auth_service"]
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-
-app = Quart(__name__)
-QuartSchema(app)
 
 @dataclass
 class Filters:
@@ -110,7 +109,7 @@ async def calculate_recommendations(user_id: str, limit: int) -> List[Dict[str, 
     sorted_cand = sorted(candidates, key=lambda b: search_count.get(b["book_id"], 0), reverse=True)
     return sorted_cand[:limit]
 
-@app.route("/api/books/search", methods=["POST"])
+@routes_bp.route("/api/books/search", methods=["POST"])
 @validate_request(SearchRequest)
 async def search_books(data: SearchRequest):
     if not data.query:
@@ -149,7 +148,7 @@ async def search_books(data: SearchRequest):
         "page_size": data.page_size
     })
 
-@app.route("/api/books/<string:book_id>", methods=["GET"])
+@routes_bp.route("/api/books/<string:book_id>", methods=["GET"])
 async def get_book_details(book_id):
     try:
         item = await entity_service.get_item(
@@ -165,17 +164,17 @@ async def get_book_details(book_id):
         logger.exception(e)
         return jsonify({"error": "Internal Server Error"}), 500
 
-@app.route("/api/users/<string:user_id>/search-history", methods=["GET"])
+@routes_bp.route("/api/users/<string:user_id>/search-history", methods=["GET"])
 async def get_search_history(user_id):
     return jsonify({"user_id": user_id, "search_history": user_search_history.get(user_id, [])})
 
-@app.route("/api/users/<string:user_id>/recommendations", methods=["POST"])
+@routes_bp.route("/api/users/<string:user_id>/recommendations", methods=["POST"])
 @validate_request(RecommendationRequest)
 async def get_recommendations(user_id, data: RecommendationRequest):
     recs = await calculate_recommendations(user_id, data.limit)
     return jsonify({"user_id": user_id, "recommendations": recs})
 
-@app.route("/api/reports/weekly", methods=["GET"])
+@routes_bp.route("/api/reports/weekly", methods=["GET"])
 async def get_weekly_report():
     most = sorted(search_count.items(), key=lambda x: x[1], reverse=True)[:10]
     most_list = [{"book_id": bid, "title": book_cache[bid]["title"], "search_count": cnt} for bid, cnt in most if bid in book_cache]
@@ -225,7 +224,7 @@ async def process_book(entity: Dict[str, Any]) -> None:
     if entity["book_id"] not in search_count:
         search_count[entity["book_id"]] = 0
 
-@app.route("/api/ingestion/daily", methods=["POST"])
+@routes_bp.route("/api/ingestion/daily", methods=["POST"])
 async def trigger_daily_ingestion():
     """
     Fetch raw book data from Open Library and add them to entity service with workflow enrichment.
@@ -263,9 +262,3 @@ async def trigger_daily_ingestion():
 
     asyncio.create_task(ingestion_task())
     return jsonify({"status": "processing", "message": "Daily ingestion started"}), 202
-
-
-if __name__ == "__main__":
-    import sys
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", stream=sys.stdout)
-    app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)

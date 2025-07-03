@@ -1,0 +1,53 @@
+{
+    "description": "Book entity processing FSM: enrichment and caching workflow",
+    "initial_state": "none",
+    "states": {
+        "caching": {
+            "transitions": {
+                "update_cache": {
+                    "action": {
+                        "name": "update_cache"
+                    },
+                    "next": "completed"
+                }
+            }
+        },
+        "completed": {
+            "transitions": {}
+        },
+        "enriching": {
+            "transitions": {
+                "enrichment_done": {
+                    "action": {
+                        "name": "enrich_book"
+                    },
+                    "next": "caching"
+                }
+            }
+        },
+        "none": {
+            "transitions": {
+                "skip_enrichment": {
+                    "condition": {
+                        "function": {
+                            "name": "condition_no_enrichment_needed"
+                        },
+                        "type": "function"
+                    },
+                    "next": "caching"
+                },
+                "start_enrichment_if_needed": {
+                    "condition": {
+                        "function": {
+                            "name": "condition_need_enrichment"
+                        },
+                        "type": "function"
+                    },
+                    "next": "enriching"
+                }
+            }
+        }
+    },
+    "version": "1.0",
+    "workflow_name": "book_processing_workflow"
+}

@@ -1,90 +1,90 @@
 {
-    "description": "FSM Workflow for WeatherAlert entity managing user-specified alert conditions",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
+  "description": "FSM Workflow for WeatherAlert entity managing user-specified alert conditions",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "fail_invalid_input": {
+          "condition": {
+            "function": {
+              "name": "isNotValidAlertInput"
+            },
+            "type": "function"
+          },
+          "next": "failed"
         },
-        "evaluating_conditions": {
-            "transitions": {
-                "conditions_met": {
-                    "action": {
-                        "name": "setAlertTriggered"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "areConditionsMet"
-                        },
-                        "type": "function"
-                    },
-                    "next": "triggered"
-                },
-                "conditions_not_met": {
-                    "action": {
-                        "name": "setAlertNotTriggered"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "areConditionsNotMet"
-                        },
-                        "type": "function"
-                    },
-                    "next": "not_triggered"
-                }
-            }
-        },
-        "failed": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "fail_invalid_input": {
-                    "condition": {
-                        "function": {
-                            "name": "isNotValidAlertInput"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                },
-                "validate_alert_input": {
-                    "condition": {
-                        "function": {
-                            "name": "isValidAlertInput"
-                        },
-                        "type": "function"
-                    },
-                    "next": "validation"
-                }
-            }
-        },
-        "not_triggered": {
-            "transitions": {
-                "complete_without_notification": {
-                    "next": "completed"
-                }
-            }
-        },
-        "triggered": {
-            "transitions": {
-                "notify_user": {
-                    "action": {
-                        "name": "notifyUser"
-                    },
-                    "next": "completed"
-                }
-            }
-        },
-        "validation": {
-            "transitions": {
-                "evaluate_conditions": {
-                    "action": {
-                        "name": "evaluateAlertConditions"
-                    },
-                    "next": "evaluating_conditions"
-                }
-            }
+        "validate_alert_input": {
+          "condition": {
+            "function": {
+              "name": "isValidAlertInput"
+            },
+            "type": "function"
+          },
+          "next": "validation"
         }
+      }
     },
-    "workflow_name": "weather_alert_workflow"
+    "failed": {
+      "transitions": {}
+    },
+    "validation": {
+      "transitions": {
+        "evaluate_conditions": {
+          "action": {
+            "name": "evaluateAlertConditions"
+          },
+          "next": "evaluating_conditions"
+        }
+      }
+    },
+    "evaluating_conditions": {
+      "transitions": {
+        "conditions_met": {
+          "action": {
+            "name": "setAlertTriggered"
+          },
+          "condition": {
+            "function": {
+              "name": "areConditionsMet"
+            },
+            "type": "function"
+          },
+          "next": "triggered"
+        },
+        "conditions_not_met": {
+          "action": {
+            "name": "setAlertNotTriggered"
+          },
+          "condition": {
+            "function": {
+              "name": "areConditionsNotMet"
+            },
+            "type": "function"
+          },
+          "next": "not_triggered"
+        }
+      }
+    },
+    "triggered": {
+      "transitions": {
+        "notify_user": {
+          "action": {
+            "name": "notifyUser"
+          },
+          "next": "completed"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    },
+    "not_triggered": {
+      "transitions": {
+        "complete_without_notification": {
+          "next": "completed"
+        }
+      }
+    }
+  },
+  "workflow_name": "weather_alert_workflow"
 }

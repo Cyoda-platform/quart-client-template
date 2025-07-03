@@ -1,8 +1,41 @@
-Certainly! I've updated your code to add the workflow function parameter to the `entity_service.add_item` call and implemented a sample workflow function `process_entity` following your instructions (prefix `process_` + underscore lowercase entity name).
+Understood. The goal is to move all async logic that currently resides in the endpoints or is triggered as background tasks (like `process_workflow` or external API calls) into the workflow function(s) `process_entity` (or any other entity workflow functions) that are executed *before* persistence by the `entity_service.add_item` or `update_item` calls.
 
-Since your current code does not have a place where `entity_service.add_item` is actually called, I created a new POST endpoint `/api/entity` to demonstrate adding a new entity with this new workflow parameter. You can adapt this pattern wherever you add entities.
+### Key points:
 
-Here's the complete updated `entity/prototype_cyoda.py`:
+- Workflow functions are async and can perform arbitrary async operations.
+- They receive the entity dict, and can modify fields directly (like `entity['current_state'] = 'Processing'`).
+- They can call `entity_service` for other different entity models, but **cannot add/update/delete the same entity model** to avoid recursion.
+- Workflow functions replace fire-and-forget tasks and offload logic from controllers.
+
+---
+
+### Current async logic to move into workflow functions:
+
+1. The external API call to `agify.io` for "predict_age" event and updating entity state.
+2. The state transitions inside `process_workflow` (e.g. `Created` -> `Processing` -> `Completed` or `Failed`).
+3. Setting timestamps and initializing `current_state` from the previous `process_entity`.
+4. Possibly pagination and filtering logic stays in controller (not related to entity processing).
+5. The trigger endpoint `/api/entity/<id>/workflow/trigger` currently calls `process_workflow` asynchronously in background — this should be refactored to update the entity with the workflow function instead.
+
+---
+
+### Proposed approach:
+
+- Define 2 workflow functions:
+  - `process_entity` — handles initial creation, sets timestamps and default state.
+  - `process_entity_workflow_event` — handles the workflow event, called when triggering workflows, modifies entity state based on event & payload.
+  
+- The trigger endpoint `/api/entity/<id>/workflow/trigger` will:
+  - Fetch entity
+  - Modify entity to include event & payload in a special field (e.g. `entity['_workflow_trigger'] = {...}`)
+  - Call `entity_service.update_item` with `workflow=process_entity_workflow_event`
+  - The `process_entity_workflow_event` function will read this trigger, perform async operations (like API calls), update entity state and clean up the trigger field.
+  
+- The initial POST `/api/entity` will use `workflow=process_entity`.
+
+---
+
+### Complete updated code implementing this approach:
 
 ```python
 import asyncio
@@ -56,76 +89,70 @@ async def fetch_external_data(name: str) -> Dict[str, Any]:
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            logger.exception(e)
+            logger.exception(f"Failed to fetch external data for name={name}: {e}")
             return {"error": "Failed to fetch external data"}
 
-async def process_workflow(entity_id: str, event: str, payload: dict):
-    try:
-        entity = await entity_service.get_item(
-            token=cyoda_auth_service,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            technical_id=entity_id
-        )
-        current_state = entity.get("current_state", "Created") if entity else "Created"
-        new_state = "Processing"
-        result = {}
-
-        if event == "predict_age" and "name" in payload:
-            external_result = await fetch_external_data(payload["name"])
-            if "error" not in external_result:
-                result = external_result
-                new_state = "Completed"
-            else:
-                new_state = "Failed"
-                result = {"error": "External API failure"}
-        else:
-            new_state = "Failed"
-            result = {"error": "Unsupported event or missing payload"}  # TODO: extend for more events
-
-        updated_entity = {"current_state": new_state, "data": result}
-        await entity_service.update_item(
-            token=cyoda_auth_service,
-            entity_model="entity",
-            entity_version=ENTITY_VERSION,
-            entity=updated_entity,
-            technical_id=entity_id,
-            meta={}
-        )
-        logger.info(f"Entity {entity_id} updated to state {new_state}")
-
-    except Exception as e:
-        logger.exception(e)
-        failed_entity = {"current_state": "Failed", "data": {"error": str(e)}}
-        try:
-            await entity_service.update_item(
-                token=cyoda_auth_service,
-                entity_model="entity",
-                entity_version=ENTITY_VERSION,
-                entity=failed_entity,
-                technical_id=entity_id,
-                meta={}
-            )
-        except Exception as inner_e:
-            logger.exception(inner_e)
-
-
-# New workflow function following the required naming convention: process_entity
+# Workflow function for initial entity creation
 async def process_entity(entity: dict) -> dict:
     """
-    Workflow function to process the entity asynchronously before persistence.
-    You can modify entity state here or enrich the entity data.
+    Workflow function to process the entity asynchronously before persistence on creation.
+    - Initialize current_state and created_at timestamp.
     """
-    # Example: initialize current_state if not present
     if "current_state" not in entity:
         entity["current_state"] = "Created"
+    if "created_at" not in entity:
+        entity["created_at"] = datetime.utcnow().isoformat()
+    # Could initialize other default fields here
+    return entity
 
-    # Example: add timestamp
-    entity["created_at"] = datetime.utcnow().isoformat()
+# Workflow function to process workflow triggers, called before update persistence
+async def process_entity_workflow_trigger(entity: dict) -> dict:
+    """
+    Workflow function invoked before persistence when a workflow event is triggered.
+    Expects the entity to contain a special '_workflow_trigger' key with:
+      { "event": str, "payload": dict }
+    This function processes the event, updates entity state & data accordingly.
+    """
+    trigger = entity.pop('_workflow_trigger', None)
+    if not trigger:
+        # No workflow trigger found, no change
+        return entity
 
-    # Potentially fetch external data or enrich entity here, but avoid recursive add/update/delete of same entity_model
-    # For demonstration, just sleep shortly to simulate async work
-    await asyncio.sleep(0.01)
+    event = trigger.get("event")
+    payload = trigger.get("payload", {})
+
+    # Initialize or keep current_state
+    current_state = entity.get("current_state", "Created")
+
+    try:
+        if event == "predict_age":
+            name = payload.get("name")
+            if not name:
+                entity["current_state"] = "Failed"
+                entity["data"] = {"error": "Missing 'name' in payload for predict_age event"}
+                return entity
+
+            entity["current_state"] = "Processing"
+
+            # Fetch external data asynchronously
+            external_result = await fetch_external_data(name)
+
+            if "error" in external_result:
+                entity["current_state"] = "Failed"
+                entity["data"] = external_result
+            else:
+                entity["current_state"] = "Completed"
+                entity["data"] = external_result
+
+        else:
+            # Unsupported event
+            entity["current_state"] = "Failed"
+            entity["data"] = {"error": f"Unsupported event '{event}'"}
+
+    except Exception as e:
+        logger.exception(f"Error processing workflow event '{event}': {e}")
+        entity["current_state"] = "Failed"
+        entity["data"] = {"error": str(e)}
 
     return entity
 
@@ -143,39 +170,70 @@ async def add_entity(data: NewEntityRequest):
             entity_model="entity",
             entity_version=ENTITY_VERSION,
             entity=entity_data,
-            workflow=process_entity  # New workflow function parameter
+            workflow=process_entity  # Workflow for initial creation
         )
         return jsonify({"status": "success", "entity_id": entity_id}), 201
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Failed to add entity: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/api/entity/<string:entity_id>/workflow/trigger", methods=["POST"])
-@validate_request(WorkflowTriggerRequest)  # validation last for POST (workaround issue)
+@validate_request(WorkflowTriggerRequest)
 async def trigger_workflow(data: WorkflowTriggerRequest, entity_id):
-    requested_at = datetime.utcnow().isoformat()
-    job_id = f"{entity_id}-{requested_at}"
-    entity_jobs[job_id] = {"status": "processing", "requestedAt": requested_at}
+    """
+    Endpoint to trigger a workflow event on existing entity.
+    Instead of launching background tasks, store event in entity and update entity with workflow function
+    that will process event and update state before persistence.
+    """
+    try:
+        # Fetch current entity
+        entity = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="entity",
+            entity_version=ENTITY_VERSION,
+            technical_id=entity_id
+        )
+        if not entity:
+            return jsonify({"status": "error", "message": "Entity not found"}), 404
 
-    asyncio.create_task(process_workflow(entity_id, data.event, data.payload))
+        # Inject workflow trigger info into entity
+        entity['_workflow_trigger'] = {
+            "event": data.event,
+            "payload": data.payload
+        }
 
-    # Retrieve current_state and result from entity_service
-    entity = await entity_service.get_item(
-        token=cyoda_auth_service,
-        entity_model="entity",
-        entity_version=ENTITY_VERSION,
-        technical_id=entity_id
-    )
-    current_state = entity.get("current_state", "Created") if entity else "Created"
-    result = entity.get("data", {}) if entity else {}
+        # Update entity with workflow function handling event processing
+        await entity_service.update_item(
+            token=cyoda_auth_service,
+            entity_model="entity",
+            entity_version=ENTITY_VERSION,
+            entity=entity,
+            technical_id=entity_id,
+            workflow=process_entity_workflow_trigger
+        )
 
-    return jsonify({
-        "status": "accepted",
-        "job_id": job_id,
-        "workflow_state": current_state,
-        "result": result
-    }), 202
+        # After update, fetch updated entity for response
+        updated_entity = await entity_service.get_item(
+            token=cyoda_auth_service,
+            entity_model="entity",
+            entity_version=ENTITY_VERSION,
+            technical_id=entity_id
+        )
+        current_state = updated_entity.get("current_state", "Created")
+        result = updated_entity.get("data", {})
+
+        return jsonify({
+            "status": "accepted",
+            "entity_id": entity_id,
+            "workflow_state": current_state,
+            "result": result
+        }), 202
+
+    except Exception as e:
+        logger.exception(f"Failed to trigger workflow for entity {entity_id}: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @app.route("/api/entity/<string:entity_id>/state", methods=["GET"])
 async def get_entity_state(entity_id):
@@ -194,7 +252,8 @@ async def get_entity_state(entity_id):
         "data": entity.get("data", {})
     })
 
-@validate_querystring(ListQuery)  # validation first for GET (workaround issue)
+
+@validate_querystring(ListQuery)
 @app.route("/api/entity/list", methods=["GET"])
 async def list_entities():
     state_filter = request.args.get("state")
@@ -208,7 +267,7 @@ async def list_entities():
             entity_version=ENTITY_VERSION
         )
     except Exception as e:
-        logger.exception(e)
+        logger.exception(f"Failed to retrieve entities: {e}")
         return jsonify({"status": "error", "message": "Failed to retrieve entities"}), 500
 
     filtered = []
@@ -226,6 +285,7 @@ async def list_entities():
 
     return jsonify({"entities": filtered})
 
+
 if __name__ == '__main__':
     import sys
 
@@ -239,12 +299,17 @@ if __name__ == '__main__':
 
 ---
 
-### Explanation of changes:
-- Added the new async workflow function `process_entity(entity: dict) -> dict` which matches the required naming pattern `process_{entity_name}` in underscore lowercase. It modifies the entity before persistence.
-- Added a new POST `/api/entity` endpoint to demonstrate usage of `entity_service.add_item` with the new `workflow` parameter.
-- The `workflow` parameter is passed as `workflow=process_entity` when calling `add_item`.
-- This function can be adapted or more workflows can be created for other entity models accordingly.
+### Summary of changes:
 
-If you already have code that calls `entity_service.add_item`, just add the `workflow` parameter with the corresponding `process_{entity_name}` function.
+- **Moved all async logic related to workflow events into `process_entity_workflow_trigger`** workflow function.
+- **Removed fire-and-forget background task from `/workflow/trigger` endpoint**. Now the workflow event processing happens inside the `entity_service.update_item` call with the workflow function.
+- **Kept `process_entity` for initial entity creation** to set default `current_state` and timestamps.
+- **Controllers are now very slim**: they just call add/update with appropriate workflow functions. No business or async logic inside controllers.
+- **Avoid infinite recursion** by modifying the entity dict directly inside the workflow function and never calling add/update/delete on the same entity model inside the workflow function.
+- **Workflow functions are async and can perform external API calls or any async I/O needed**.
 
-Let me know if you want me to update a specific existing call of `add_item` instead!
+---
+
+This approach makes your service architecture cleaner, workflow logic reusable, and controllers simple. You can add more workflow functions for other entity models or events similarly.
+
+If you want me to help move more complex logic or extend the workflows, just ask!

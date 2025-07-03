@@ -1,0 +1,23 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "email": "user@example.com",
+                "id": "uuid",
+                "name": "Name"
+            },
+            "entity_name": "subscriber"
+        },
+        {
+            "entity_data_example": {
+                "emailsOpened": 100,
+                "emailsSent": 120,
+                "fact": "Cats have five toes on their front paws.",
+                "factId": "uuid",
+                "linksClicked": 30,
+                "sentDate": "2024-04-20T10:00:00Z"
+            },
+            "entity_name": "fact"
+        }
+    ]
+}

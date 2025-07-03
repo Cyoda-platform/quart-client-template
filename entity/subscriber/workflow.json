@@ -1,46 +1,46 @@
 {
-    "description": "Subscriber onboarding workflow with processing and activation states",
-    "initial_state": "none",
-    "states": {
-        "active": {
-            "transitions": {}
-        },
-        "new": {
-            "transitions": {
-                "process_new_subscriber": {
-                    "action": {
-                        "name": "process_subscriber"
-                    },
-                    "next": "processed"
-                }
-            }
-        },
-        "none": {
-            "transitions": {
-                "new_subscriber_detected": {
-                    "condition": {
-                        "function": {
-                            "name": "is_new_subscriber"
-                        },
-                        "type": "function"
-                    },
-                    "next": "new"
-                }
-            }
-        },
-        "processed": {
-            "transitions": {
-                "activate_processed_subscriber": {
-                    "condition": {
-                        "function": {
-                            "name": "has_createdAt"
-                        },
-                        "type": "function"
-                    },
-                    "next": "active"
-                }
-            }
+  "description": "Subscriber onboarding workflow with processing and activation states",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "new_subscriber_detected": {
+          "condition": {
+            "function": {
+              "name": "is_new_subscriber"
+            },
+            "type": "function"
+          },
+          "next": "new"
         }
+      }
     },
-    "workflow_name": "subscriber_onboarding_workflow"
+    "new": {
+      "transitions": {
+        "process_new_subscriber": {
+          "action": {
+            "name": "process_subscriber"
+          },
+          "next": "processed"
+        }
+      }
+    },
+    "processed": {
+      "transitions": {
+        "activate_processed_subscriber": {
+          "condition": {
+            "function": {
+              "name": "has_createdAt"
+            },
+            "type": "function"
+          },
+          "next": "active"
+        }
+      }
+    },
+    "active": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "subscriber_onboarding_workflow"
 }

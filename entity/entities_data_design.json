@@ -1,0 +1,114 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "author": "John Doe",
+                "book_id": "OL123M",
+                "cover_image": "https://covers.openlibrary.org/b/id/12345-M.jpg",
+                "description": "An example description of the book.",
+                "genre": "Fiction",
+                "publication_year": 2020,
+                "title": "Example Book Title"
+            },
+            "entity_name": "book"
+        },
+        {
+            "entity_data_example": {
+                "filters": {
+                    "author": "Andrew Ng",
+                    "genre": "Science",
+                    "publication_year": 2017
+                },
+                "page": 1,
+                "page_size": 20,
+                "query": "machine learning"
+            },
+            "entity_name": "search_request"
+        },
+        {
+            "entity_data_example": {
+                "page": 1,
+                "page_size": 20,
+                "results": [
+                    {
+                        "author": "John Doe",
+                        "book_id": "OL123M",
+                        "cover_image": "https://covers.openlibrary.org/b/id/12345-M.jpg",
+                        "genre": "Fiction",
+                        "publication_year": 2020,
+                        "title": "Example Book Title"
+                    }
+                ],
+                "total_results": 100
+            },
+            "entity_name": "search_response"
+        },
+        {
+            "entity_data_example": {
+                "search_history": [
+                    {
+                        "filters": {
+                            "author": "Andrew Ng",
+                            "genre": "Science",
+                            "publication_year": 2017
+                        },
+                        "query": "machine learning",
+                        "timestamp": "2024-06-01T12:00:00Z"
+                    }
+                ],
+                "user_id": "user_001"
+            },
+            "entity_name": "user_search_history"
+        },
+        {
+            "entity_data_example": {
+                "limit": 10
+            },
+            "entity_name": "recommendation_request"
+        },
+        {
+            "entity_data_example": {
+                "recommendations": [
+                    {
+                        "author": "John Doe",
+                        "book_id": "OL123M",
+                        "cover_image": "https://covers.openlibrary.org/b/id/12345-M.jpg",
+                        "title": "Example Book Title"
+                    }
+                ],
+                "user_id": "user_001"
+            },
+            "entity_name": "recommendation_response"
+        },
+        {
+            "entity_data_example": {
+                "most_searched_books": [
+                    {
+                        "book_id": "OL123M",
+                        "search_count": 50,
+                        "title": "Example Book Title"
+                    }
+                ],
+                "report_date": "2024-06-01T00:00:00Z",
+                "user_preferences_summary": {
+                    "top_authors": [
+                        "John Doe",
+                        "Jane Smith"
+                    ],
+                    "top_genres": [
+                        "Fiction",
+                        "Science"
+                    ]
+                }
+            },
+            "entity_name": "weekly_report"
+        },
+        {
+            "entity_data_example": {
+                "message": "Daily ingestion started",
+                "status": "processing"
+            },
+            "entity_name": "ingestion_response"
+        }
+    ]
+}

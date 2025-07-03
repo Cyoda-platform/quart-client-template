@@ -1,0 +1,15 @@
+{
+    "entities": [
+        {
+            "entity_data_example": {
+                "current_state": "Completed",
+                "data": {
+                    "age": 30,
+                    "name": "Alice"
+                },
+                "entity_id": "12345"
+            },
+            "entity_name": "entity"
+        }
+    ]
+}

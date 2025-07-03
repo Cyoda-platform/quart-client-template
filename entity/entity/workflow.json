@@ -1,42 +1,42 @@
 {
-    "description": "FSM for entity initialization workflow",
-    "initial_state": "none",
-    "states": {
-        "created": {
-            "transitions": {
-                "complete_initialization": {
-                    "next": "initialized"
-                }
-            }
+  "description": "FSM for entity initialization workflow",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "initialize_transition": {
+          "action": {
+            "name": "initialize_entity"
+          },
+          "condition": {
+            "function": {
+              "name": "is_entity_uninitialized"
+            },
+            "type": "function"
+          },
+          "next": "created"
         },
-        "initialized": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "initialize_transition": {
-                    "action": {
-                        "name": "initialize_entity"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "is_entity_uninitialized"
-                        },
-                        "type": "function"
-                    },
-                    "next": "created"
-                },
-                "skip_initialization": {
-                    "condition": {
-                        "function": {
-                            "name": "is_entity_initialized"
-                        },
-                        "type": "function"
-                    },
-                    "next": "initialized"
-                }
-            }
+        "skip_initialization": {
+          "condition": {
+            "function": {
+              "name": "is_entity_initialized"
+            },
+            "type": "function"
+          },
+          "next": "initialized"
         }
+      }
     },
-    "workflow_name": "entity_initialization_workflow"
+    "created": {
+      "transitions": {
+        "complete_initialization": {
+          "next": "initialized"
+        }
+      }
+    },
+    "initialized": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "entity_initialization_workflow"
 }

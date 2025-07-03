@@ -107,6 +107,5 @@
             }
         }
     },
-    "version": "1.0",
     "workflow_name": "cat_fact_workflow"
 }

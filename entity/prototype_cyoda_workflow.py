@@ -1,57 +1,3 @@
-Understood. To fully comply with the requirement and move all async logic from the endpoints into the workflow functions (`process_{entity_name}`), we need to:
-
-- Identify all entity creation/update points.
-- Move all async tasks and data enrichment logic into the workflow function applied before persistence.
-- Keep controllers (endpoints) slim, only passing validated data to the service.
-
-Given the current code, the main place where entities are persisted is in `/api/ingestion/daily`. Other endpoints mostly read data or return cached data.
-
-**Approach:**
-
-- Move the ingestion logic that fetches and normalizes books into the `process_book` workflow function.
-- The `process_book` function will:
-  - Enrich the entity with additional data.
-  - Possibly fetch supplementary data as needed.
-  - Update caches or add supplementary entities of different models if required.
-- The ingestion endpoint will just fetch raw data and add entities with the workflow.
-
-**Note**: We cannot call `entity_service.add_item` for entity model `"book"` inside `process_book` as it will cause infinite recursion. But we can call it for other entity models if needed.
-
----
-
-### What belongs in `process_book`?
-
-- Add timestamps or processed flags.
-- Possibly enrich the entity further by fetching details (description, genre) from other sources.
-- Update local caches like `book_cache` and `search_count` (these are not persisted entities but in-memory caches for this app, so can be updated inside workflow).
-- If there are supplementary entities (e.g., authors or genres modeled separately), add them here via `entity_service.add_item` for those models.
-
----
-
-### What can be moved out?
-
-- All HTTP calls to external APIs related to enrichment can be moved into the workflow.
-- The ingestion endpoint will simply call `entity_service.add_item` with minimal raw normalized data and workflow.
-
----
-
-### Final plan
-
-- Modify the ingestion endpoint:
-  - Fetch raw data from Open Library.
-  - Normalize minimally (basic info).
-  - For each entity, call `entity_service.add_item` with `workflow=process_book`.
-- `process_book` will:
-  - Add `processed_at` timestamp.
-  - Fetch description or other enrichment asynchronously.
-  - Update in-memory caches (`book_cache`, `search_count`).
-- All other endpoints remain slim (mostly reads).
-
----
-
-# Updated complete code reflecting this design:
-
-```python
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, List
 import asyncio
@@ -136,7 +82,7 @@ async def fetch_work_description(work_key: str) -> Optional[str]:
             logger.warning(f"Failed to fetch description for {work_key}: {e}")
     return None
 
-def filter_books(books: List[Dict[str, Any]], genre: str, author: str, publication_year: int) -> List[Dict[str, Any]]:
+def filter_books(books: List[Dict[str, Any]], genre: Optional[str], author: Optional[str], publication_year: Optional[int]) -> List[Dict[str, Any]]:
     filtered = []
     for book in books:
         if genre and book.get("genre") and genre.lower() != book.get("genre", "").lower():
@@ -324,22 +270,3 @@ if __name__ == "__main__":
     import sys
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", stream=sys.stdout)
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```
-
----
-
-### Explanation:
-
-- The ingestion endpoint `/api/ingestion/daily` now only fetches raw data and calls `entity_service.add_item` with the minimal normalized entity plus the workflow function `process_book`.
-- The `process_book` function enriches the entity asynchronously by fetching descriptions, adds a `processed_at` timestamp, and updates in-memory caches.
-- All in-memory cache updates and async enrichment happen inside the workflow, keeping the endpoint controller minimal.
-- Other endpoints use these caches for fast queries.
-- This approach fully respects the constraints:
-  - Workflow modifies the entity in-place before persistence.
-  - No recursive calls to add/update/delete the same entity_model in workflow.
-  - Async tasks moved to workflow.
-- This makes the code more robust, maintainable, and controllers free from excessive async logic.
-
----
-
-If you want me to move any other logic into workflows for other entity models or do further refinements, just ask.

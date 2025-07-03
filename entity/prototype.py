@@ -1,12 +1,13 @@
-```python
 import asyncio
 import logging
 import uuid
 from datetime import datetime
+from dataclasses import dataclass
+from typing import Dict, Any
 
 import httpx
 from quart import Quart, jsonify, request
-from quart_schema import QuartSchema
+from quart_schema import QuartSchema, validate_request
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,20 +15,29 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 QuartSchema(app)
 
-# In-memory caches for entities and processing results
-entity_store = {}
-result_store = {}
+# Request schemas
+@dataclass
+class EntityRequest:
+    entityType: str
+    attributes: Dict[str, Any]
 
-# Simulated external data source URL (public API for demo)
+@dataclass
+class ProcessRequest:
+    entityId: str
+    inputData: Dict[str, Any]
+
+# In-memory caches for entities and processing results
+entity_store: Dict[str, Dict[str, Any]] = {}
+result_store: Dict[str, Dict[str, Any]] = {}
+
 EXTERNAL_API_URL = "https://jsonplaceholder.typicode.com/todos/1"  # Example external API
 
-
 @app.route("/entity", methods=["POST"])
-async def create_entity():
+@validate_request(EntityRequest)  # Workaround: POST validation placed after route due to quart-schema defect
+async def create_entity(data: EntityRequest):
     try:
-        data = await request.get_json()
-        entity_type = data.get("entityType")
-        attributes = data.get("attributes", {})
+        entity_type = data.entityType
+        attributes = data.attributes
 
         if not entity_type:
             return jsonify({"error": "entityType is required"}), 400
@@ -40,7 +50,7 @@ async def create_entity():
             "status": "workflow triggered",
         }
 
-        # Fire and forget example workflow (could be expanded later)
+        # Fire and forget example workflow
         await asyncio.create_task(dummy_workflow(entity_id))
 
         return jsonify({"entityId": entity_id, "status": "workflow triggered"}), 200
@@ -49,13 +59,12 @@ async def create_entity():
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/process", methods=["POST"])
-async def process_data():
+@validate_request(ProcessRequest)  # Workaround: POST validation placed after route due to quart-schema defect
+async def process_data(data: ProcessRequest):
     try:
-        data = await request.get_json()
-        entity_id = data.get("entityId")
-        input_data = data.get("inputData", {})
+        entity_id = data.entityId
+        input_data = data.inputData
 
         if not entity_id or entity_id not in entity_store:
             return jsonify({"error": "Invalid or missing entityId"}), 400
@@ -73,7 +82,6 @@ async def process_data():
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-
 @app.route("/results/<result_id>", methods=["GET"])
 async def get_results(result_id):
     try:
@@ -81,8 +89,6 @@ async def get_results(result_id):
             return jsonify({"error": "Result not found"}), 404
 
         result = result_store[result_id]
-
-        # If processing is not done yet, inform user
         if result.get("status") != "completed":
             return jsonify({"resultId": result_id, "status": result.get("status")}), 202
 
@@ -92,54 +98,42 @@ async def get_results(result_id):
         logger.exception(e)
         return jsonify({"error": "Internal server error"}), 500
 
-
 async def dummy_workflow(entity_id: str):
     """Example placeholder workflow triggered on entity creation."""
     try:
         # TODO: Implement real workflow logic and state transitions here
         logger.info(f"Workflow started for entity {entity_id}")
-        await asyncio.sleep(1)  # simulate work
+        await asyncio.sleep(1)
         logger.info(f"Workflow completed for entity {entity_id}")
     except Exception as e:
         logger.exception(e)
 
-
 async def process_entity(result_id: str, entity_id: str, input_data: dict):
-    """
-    Business logic that:
-    - Calls an external API
-    - Performs simple calculation / transformation
-    - Stores results in result_store
-    """
+    """Business logic calling an external API and performing simple calculation."""
     try:
         async with httpx.AsyncClient() as client:
-            # Call external real API
             response = await client.get(EXTERNAL_API_URL)
             response.raise_for_status()
             external_data = response.json()
 
-        # TODO: Replace below sample calculation with your real business logic
+        # TODO: Replace sample calculation with real business logic
         calculated_value = len(input_data) + len(external_data)
 
-        result_store[result_id].update(
-            {
-                "status": "completed",
-                "completedAt": datetime.utcnow().isoformat(),
-                "data": {
-                    "entityId": entity_id,
-                    "inputSummary": input_data,
-                    "externalDataSample": external_data,
-                    "calculatedValue": calculated_value,
-                },
-            }
-        )
+        result_store[result_id].update({
+            "status": "completed",
+            "completedAt": datetime.utcnow().isoformat(),
+            "data": {
+                "entityId": entity_id,
+                "inputSummary": input_data,
+                "externalDataSample": external_data,
+                "calculatedValue": calculated_value,
+            },
+        })
         logger.info(f"Processing completed for result {result_id}")
 
     except Exception as e:
         logger.exception(e)
         result_store[result_id].update({"status": "failed", "error": str(e)})
 
-
 if __name__ == "__main__":
     app.run(use_reloader=False, debug=True, host="0.0.0.0", port=8000, threaded=True)
-```

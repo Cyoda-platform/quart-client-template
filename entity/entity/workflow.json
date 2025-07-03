@@ -1,85 +1,85 @@
 {
-    "description": "FSM workflow for predict_age event with conditions and actions",
-    "initial_state": "none",
-    "states": {
-        "completed": {
-            "transitions": {}
+  "description": "FSM workflow for predict_age event with conditions and actions",
+  "initial_state": "none",
+  "states": {
+    "none": {
+      "transitions": {
+        "trigger_predict_age": {
+          "condition": {
+            "function": {
+              "name": "is_valid_event"
+            },
+            "type": "function"
+          },
+          "next": "created"
         },
-        "created": {
-            "transitions": {
-                "invalid_name": {
-                    "condition": {
-                        "function": {
-                            "name": "is_invalid_name"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                },
-                "validate_name": {
-                    "condition": {
-                        "function": {
-                            "name": "is_valid_name"
-                        },
-                        "type": "function"
-                    },
-                    "next": "processing"
-                }
-            }
-        },
-        "failed": {
-            "transitions": {}
-        },
-        "none": {
-            "transitions": {
-                "trigger_predict_age": {
-                    "condition": {
-                        "function": {
-                            "name": "is_valid_event"
-                        },
-                        "type": "function"
-                    },
-                    "next": "created"
-                },
-                "trigger_unsupported_event": {
-                    "condition": {
-                        "function": {
-                            "name": "is_unsupported_event"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                }
-            }
-        },
-        "processing": {
-            "transitions": {
-                "external_data_failure": {
-                    "action": {
-                        "name": "fail_workflow"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "external_data_failure"
-                        },
-                        "type": "function"
-                    },
-                    "next": "failed"
-                },
-                "external_data_success": {
-                    "action": {
-                        "name": "finish_processing"
-                    },
-                    "condition": {
-                        "function": {
-                            "name": "external_data_success"
-                        },
-                        "type": "function"
-                    },
-                    "next": "completed"
-                }
-            }
+        "trigger_unsupported_event": {
+          "condition": {
+            "function": {
+              "name": "is_unsupported_event"
+            },
+            "type": "function"
+          },
+          "next": "failed"
         }
+      }
     },
-    "workflow_name": "predict_age_workflow"
+    "created": {
+      "transitions": {
+        "invalid_name": {
+          "condition": {
+            "function": {
+              "name": "is_invalid_name"
+            },
+            "type": "function"
+          },
+          "next": "failed"
+        },
+        "validate_name": {
+          "condition": {
+            "function": {
+              "name": "is_valid_name"
+            },
+            "type": "function"
+          },
+          "next": "processing"
+        }
+      }
+    },
+    "failed": {
+      "transitions": {}
+    },
+    "processing": {
+      "transitions": {
+        "external_data_failure": {
+          "action": {
+            "name": "fail_workflow"
+          },
+          "condition": {
+            "function": {
+              "name": "external_data_failure"
+            },
+            "type": "function"
+          },
+          "next": "failed"
+        },
+        "external_data_success": {
+          "action": {
+            "name": "finish_processing"
+          },
+          "condition": {
+            "function": {
+              "name": "external_data_success"
+            },
+            "type": "function"
+          },
+          "next": "completed"
+        }
+      }
+    },
+    "completed": {
+      "transitions": {}
+    }
+  },
+  "workflow_name": "predict_age_workflow"
 }

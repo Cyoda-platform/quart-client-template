@@ -8,7 +8,7 @@ and workflow transitions for downloading pet data from Petstore API.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
@@ -220,17 +220,18 @@ async def get_pet_transitions(entity_id: str) -> ResponseReturnValue:
             entity_version=str(Pet.ENTITY_VERSION),
         )
 
-        return jsonify(
-            {
-                "entity_id": entity_id,
-                "available_transitions": transitions,
-            }
-        ), 200
+        return (
+            jsonify(
+                {
+                    "entity_id": entity_id,
+                    "available_transitions": transitions,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        logger.exception(
-            "Error getting transitions for Pet %s: %s", entity_id, str(e)
-        )
+        logger.exception("Error getting transitions for Pet %s: %s", entity_id, str(e))
         return jsonify({"error": str(e)}), 500
 
 
@@ -265,17 +266,17 @@ async def trigger_pet_transition(entity_id: str) -> ResponseReturnValue:
             entity_id,
         )
 
-        return jsonify(
-            {
-                "id": response.metadata.id,
-                "message": "Transition executed successfully",
-                "newState": response.metadata.state,
-            }
-        ), 200
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "message": "Transition executed successfully",
+                    "newState": response.metadata.state,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
-        logger.exception(
-            "Error executing transition on Pet %s: %s", entity_id, str(e)
-        )
+        logger.exception("Error executing transition on Pet %s: %s", entity_id, str(e))
         return jsonify({"error": str(e)}), 500
-

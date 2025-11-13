@@ -80,9 +80,7 @@ class Pet(CyodaEntity):
         if v is not None:
             allowed_statuses = ["available", "pending", "sold"]
             if v not in allowed_statuses:
-                raise ValueError(
-                    f"Status must be one of: {allowed_statuses}"
-                )
+                raise ValueError(f"Status must be one of: {allowed_statuses}")
         return v
 
     def update_timestamp(self) -> None:
@@ -102,4 +100,3 @@ class Pet(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

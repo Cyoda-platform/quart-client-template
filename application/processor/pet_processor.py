@@ -55,9 +55,7 @@ class PetDownloadProcessor(CyodaProcessor):
             # Update timestamp
             pet.update_timestamp()
 
-            self.logger.info(
-                f"Pet {pet.technical_id} downloaded successfully"
-            )
+            self.logger.info(f"Pet {pet.technical_id} downloaded successfully")
 
             return pet
 
@@ -86,17 +84,13 @@ class PetDownloadProcessor(CyodaProcessor):
                     pet.category = data.get("category")
                     pet.photo_urls = data.get("photoUrls")
                     pet.tags = data.get("tags")
-                    self.logger.info(
-                        f"Fetched pet {pet.pet_id} from API"
-                    )
+                    self.logger.info(f"Fetched pet {pet.pet_id} from API")
                 else:
                     self.logger.warning(
                         f"Failed to fetch pet {pet.pet_id}: HTTP {response.status_code}"
                     )
         except Exception as e:
-            self.logger.error(
-                f"Error fetching pet from API: {str(e)}"
-            )
+            self.logger.error(f"Error fetching pet from API: {str(e)}")
             raise
 
 
@@ -136,9 +130,7 @@ class PetProcessProcessor(CyodaProcessor):
             processed_data = self._create_processed_data(pet)
             pet.set_processed_data(processed_data)
 
-            self.logger.info(
-                f"Pet {pet.technical_id} processed successfully"
-            )
+            self.logger.info(f"Pet {pet.technical_id} processed successfully")
 
             return pet
 
@@ -171,4 +163,3 @@ class PetProcessProcessor(CyodaProcessor):
             processed_data["category_name"] = pet.category.get("name", "Unknown")
 
         return processed_data
-

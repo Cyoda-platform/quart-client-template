@@ -5,9 +5,9 @@ Handles downloading and processing pet data from the Swagger Petstore API.
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-import aiohttp
+import httpx
 
 from application.entity.pet import Pet
 from common.entity.entity_casting import cast_entity
@@ -76,23 +76,23 @@ class PetDownloadProcessor(CyodaProcessor):
         """
         try:
             url = f"{self.PETSTORE_API_BASE}/pet/{pet.pet_id}"
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        data = await response.json()
-                        # Update pet with API data
-                        pet.name = data.get("name", pet.name)
-                        pet.status = data.get("status", pet.status)
-                        pet.category = data.get("category")
-                        pet.photo_urls = data.get("photoUrls")
-                        pet.tags = data.get("tags")
-                        self.logger.info(
-                            f"Fetched pet {pet.pet_id} from API"
-                        )
-                    else:
-                        self.logger.warning(
-                            f"Failed to fetch pet {pet.pet_id}: HTTP {response.status}"
-                        )
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url)
+                if response.status_code == 200:
+                    data = response.json()
+                    # Update pet with API data
+                    pet.name = data.get("name", pet.name)
+                    pet.status = data.get("status", pet.status)
+                    pet.category = data.get("category")
+                    pet.photo_urls = data.get("photoUrls")
+                    pet.tags = data.get("tags")
+                    self.logger.info(
+                        f"Fetched pet {pet.pet_id} from API"
+                    )
+                else:
+                    self.logger.warning(
+                        f"Failed to fetch pet {pet.pet_id}: HTTP {response.status_code}"
+                    )
         except Exception as e:
             self.logger.error(
                 f"Error fetching pet from API: {str(e)}"

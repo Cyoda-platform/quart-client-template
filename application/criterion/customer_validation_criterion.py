@@ -85,13 +85,15 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
 
         if len(customer.customer_id) < 3:
             self.logger.warning(
-                f"Customer {customer.technical_id} has customer_id too short: '{customer.customer_id}'"
+                f"Customer {customer.technical_id} has customer_id too short: "
+                f"'{customer.customer_id}'"
             )
             return False
 
         if len(customer.customer_id) > 50:
             self.logger.warning(
-                f"Customer {customer.technical_id} has customer_id too long: '{customer.customer_id}'"
+                f"Customer {customer.technical_id} has customer_id too long: "
+                f"'{customer.customer_id}'"
             )
             return False
 
@@ -105,13 +107,15 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
 
         if len(customer.name) < 2:
             self.logger.warning(
-                f"Customer {customer.technical_id} has name too short: '{customer.name}'"
+                f"Customer {customer.technical_id} has name too short: "
+                f"'{customer.name}'"
             )
             return False
 
         if len(customer.name) > 100:
             self.logger.warning(
-                f"Customer {customer.technical_id} has name too long: '{customer.name}'"
+                f"Customer {customer.technical_id} has name too long: "
+                f"'{customer.name}'"
             )
             return False
 
@@ -127,13 +131,15 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
         email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(email_pattern, customer.email.strip()):
             self.logger.warning(
-                f"Customer {customer.technical_id} has invalid email format: '{customer.email}'"
+                f"Customer {customer.technical_id} has invalid email format: "
+                f"'{customer.email}'"
             )
             return False
 
         if len(customer.email) > 255:
             self.logger.warning(
-                f"Customer {customer.technical_id} has email too long: '{customer.email}'"
+                f"Customer {customer.technical_id} has email too long: "
+                f"'{customer.email}'"
             )
             return False
 
@@ -151,19 +157,22 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
         # Check if it contains only digits after cleaning
         if not cleaned_phone.isdigit():
             self.logger.warning(
-                f"Customer {customer.technical_id} has invalid phone format: '{customer.phone}'"
+                f"Customer {customer.technical_id} has invalid phone format: "
+                f"'{customer.phone}'"
             )
             return False
 
         if len(cleaned_phone) < 10:
             self.logger.warning(
-                f"Customer {customer.technical_id} has phone too short: '{customer.phone}'"
+                f"Customer {customer.technical_id} has phone too short: "
+                f"'{customer.phone}'"
             )
             return False
 
         if len(cleaned_phone) > 15:
             self.logger.warning(
-                f"Customer {customer.technical_id} has phone too long: '{customer.phone}'"
+                f"Customer {customer.technical_id} has phone too long: "
+                f"'{customer.phone}'"
             )
             return False
 
@@ -188,7 +197,8 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
                 # Business customers should have more formal names (at least first and last name)
                 if len(customer.name.split()) < 2:
                     self.logger.warning(
-                        f"Customer {customer.technical_id} with business email should have full name: '{customer.name}'"
+                        f"Customer {customer.technical_id} with business email "
+                        f"should have full name: '{customer.name}'"
                     )
                     return False
 

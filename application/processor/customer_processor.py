@@ -11,9 +11,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.customer.version_1.customer import Customer
 from services.services import get_entity_service
 
 
@@ -60,9 +60,7 @@ class CustomerProcessor(CyodaProcessor):
             await self._perform_customer_processing(customer)
 
             # Log processing completion
-            self.logger.info(
-                f"Customer {customer.technical_id} processed successfully"
-            )
+            self.logger.info(f"Customer {customer.technical_id} processed successfully")
 
             return customer
 
@@ -135,14 +133,18 @@ class CustomerProcessor(CyodaProcessor):
             Customer type: INDIVIDUAL, BUSINESS, or PREMIUM
         """
         # Simple business logic for customer type determination
-        email_domain = customer.email.split('@')[1].lower() if '@' in customer.email else ""
-        
+        email_domain = (
+            customer.email.split("@")[1].lower() if "@" in customer.email else ""
+        )
+
         # Business domains (simplified list)
-        business_domains = ['company.com', 'corp.com', 'business.com', 'enterprise.com']
-        
+        business_domains = ["company.com", "corp.com", "business.com", "enterprise.com"]
+
         if any(domain in email_domain for domain in business_domains):
             return "BUSINESS"
-        elif customer.name.count(' ') >= 2:  # Multiple names might indicate premium customer
+        elif (
+            customer.name.count(" ") >= 2
+        ):  # Multiple names might indicate premium customer
             return "PREMIUM"
         else:
             return "INDIVIDUAL"
@@ -158,25 +160,30 @@ class CustomerProcessor(CyodaProcessor):
             Contact score from 0-100
         """
         score = 0
-        
+
         # Base score for having required fields
         score += 40  # Base score for having all required fields
-        
+
         # Email quality score
-        if '@' in customer.email and '.' in customer.email.split('@')[1]:
+        if "@" in customer.email and "." in customer.email.split("@")[1]:
             score += 20
-        
+
         # Phone quality score
-        cleaned_phone = customer.phone.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
+        cleaned_phone = (
+            customer.phone.replace(" ", "")
+            .replace("-", "")
+            .replace("(", "")
+            .replace(")", "")
+        )
         if len(cleaned_phone) >= 10:
             score += 20
-        
+
         # Name quality score
         if len(customer.name.split()) >= 2:  # First and last name
             score += 10
-        
+
         # Customer ID quality score
         if len(customer.customer_id) >= 5:  # Meaningful customer ID
             score += 10
-        
+
         return min(score, 100)  # Cap at 100

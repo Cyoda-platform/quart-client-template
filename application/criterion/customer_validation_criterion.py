@@ -8,9 +8,9 @@ proceed to the processing stage. Ensures data quality and business rule complian
 import re
 from typing import Any
 
+from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.customer.version_1.customer import Customer
 
 
 class CustomerValidationCriterion(CyodaCriteriaChecker):
@@ -100,9 +100,7 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
     def _validate_name(self, customer: Customer) -> bool:
         """Validate name field"""
         if not customer.name or len(customer.name.strip()) == 0:
-            self.logger.warning(
-                f"Customer {customer.technical_id} has empty name"
-            )
+            self.logger.warning(f"Customer {customer.technical_id} has empty name")
             return False
 
         if len(customer.name) < 2:
@@ -122,13 +120,11 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
     def _validate_email(self, customer: Customer) -> bool:
         """Validate email field"""
         if not customer.email or len(customer.email.strip()) == 0:
-            self.logger.warning(
-                f"Customer {customer.technical_id} has empty email"
-            )
+            self.logger.warning(f"Customer {customer.technical_id} has empty email")
             return False
 
         # Basic email validation using regex
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(email_pattern, customer.email.strip()):
             self.logger.warning(
                 f"Customer {customer.technical_id} has invalid email format: '{customer.email}'"
@@ -146,13 +142,11 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
     def _validate_phone(self, customer: Customer) -> bool:
         """Validate phone field"""
         if not customer.phone or len(customer.phone.strip()) == 0:
-            self.logger.warning(
-                f"Customer {customer.technical_id} has empty phone"
-            )
+            self.logger.warning(f"Customer {customer.technical_id} has empty phone")
             return False
 
         # Remove common phone number separators for validation
-        cleaned_phone = re.sub(r'[\s\-\(\)\+\.]', '', customer.phone.strip())
+        cleaned_phone = re.sub(r"[\s\-\(\)\+\.]", "", customer.phone.strip())
 
         # Check if it contains only digits after cleaning
         if not cleaned_phone.isdigit():
@@ -179,10 +173,17 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
         """Validate business logic rules"""
         # Example business rule: email domain validation for business customers
         if customer.email:
-            email_domain = customer.email.split('@')[1].lower() if '@' in customer.email else ""
-            
+            email_domain = (
+                customer.email.split("@")[1].lower() if "@" in customer.email else ""
+            )
+
             # Business domains should have proper business email format
-            business_domains = ['company.com', 'corp.com', 'business.com', 'enterprise.com']
+            business_domains = [
+                "company.com",
+                "corp.com",
+                "business.com",
+                "enterprise.com",
+            ]
             if any(domain in email_domain for domain in business_domains):
                 # Business customers should have more formal names (at least first and last name)
                 if len(customer.name.split()) < 2:

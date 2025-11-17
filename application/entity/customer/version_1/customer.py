@@ -7,9 +7,9 @@ Represents a customer with basic contact information including
 id, name, email, and phone fields as requested.
 """
 
+import re
 from datetime import datetime, timezone
 from typing import Any, ClassVar, Dict, Optional
-import re
 
 from pydantic import ConfigDict, Field, field_validator
 
@@ -19,7 +19,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Customer(CyodaEntity):
     """
     Customer entity represents a customer with basic contact information.
-    
+
     Inherits from CyodaEntity to get common fields like entity_id, state, etc.
     The state field manages workflow states: initial_state -> created -> validated -> processed -> completed
     """
@@ -97,12 +97,12 @@ class Customer(CyodaEntity):
         """Validate email field"""
         if not v or len(v.strip()) == 0:
             raise ValueError("Email must be non-empty")
-        
+
         # Basic email validation using regex
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(email_pattern, v.strip()):
             raise ValueError("Email must be a valid email address")
-        
+
         if len(v) > 255:
             raise ValueError("Email must be at most 255 characters long")
         return v.strip().lower()
@@ -113,19 +113,21 @@ class Customer(CyodaEntity):
         """Validate phone field"""
         if not v or len(v.strip()) == 0:
             raise ValueError("Phone must be non-empty")
-        
+
         # Remove common phone number separators for validation
-        cleaned_phone = re.sub(r'[\s\-\(\)\+\.]', '', v.strip())
-        
+        cleaned_phone = re.sub(r"[\s\-\(\)\+\.]", "", v.strip())
+
         # Check if it contains only digits after cleaning
         if not cleaned_phone.isdigit():
-            raise ValueError("Phone must contain only digits and common separators (spaces, dashes, parentheses, plus)")
-        
+            raise ValueError(
+                "Phone must contain only digits and common separators (spaces, dashes, parentheses, plus)"
+            )
+
         if len(cleaned_phone) < 10:
             raise ValueError("Phone must be at least 10 digits long")
         if len(cleaned_phone) > 15:
             raise ValueError("Phone must be at most 15 digits long")
-        
+
         return v.strip()
 
     def update_timestamp(self) -> None:

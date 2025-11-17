@@ -8,14 +8,12 @@ and workflow transitions following the thin proxy pattern.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import Any, Dict, Optional
 
 from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 
 from application.entity.customer.version_1.customer import Customer
-from common.exception import is_not_found
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
 

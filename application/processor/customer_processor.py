@@ -104,12 +104,11 @@ class CustomerProcessor(CyodaProcessor):
         Args:
             customer: The processed Customer
         """
-        entity_service = get_entity_service()
-
         try:
             # Example: Log customer processing for audit trail
             self.logger.info(
-                f"Customer processing completed for {customer.name} ({customer.customer_id})"
+                f"Customer processing completed for {customer.name} "
+                f"({customer.customer_id})"
             )
 
             # Additional customer-specific processing could be added here
@@ -117,7 +116,8 @@ class CustomerProcessor(CyodaProcessor):
 
         except Exception as e:
             self.logger.error(
-                f"Failed to complete customer processing for Customer {customer.technical_id}: {str(e)}"
+                f"Failed to complete customer processing for Customer "
+                f"{customer.technical_id}: {str(e)}"
             )
             # Continue processing even if auxiliary operations fail
             pass

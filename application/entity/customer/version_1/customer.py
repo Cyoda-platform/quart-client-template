@@ -21,7 +21,8 @@ class Customer(CyodaEntity):
     Customer entity represents a customer with basic contact information.
 
     Inherits from CyodaEntity to get common fields like entity_id, state, etc.
-    The state field manages workflow states: initial_state -> created -> validated -> processed -> completed
+    The state field manages workflow states:
+    initial_state -> created -> validated -> processed -> completed
     """
 
     # Entity constants
@@ -47,7 +48,7 @@ class Customer(CyodaEntity):
         .isoformat()
         .replace("+00:00", "Z"),
         alias="createdAt",
-        description="Timestamp when the customer was created (ISO 8601 format)",
+        description="Timestamp when the customer was created (ISO 8601)",
     )
     updated_at: Optional[str] = Field(
         default=None,

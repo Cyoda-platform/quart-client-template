@@ -206,7 +206,8 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
         if customer.is_active:
             if not customer.email or not customer.phone:
                 self.logger.warning(
-                    f"Customer {customer.technical_id} is active but missing contact information"
+                    f"Customer {customer.technical_id} is active but missing "
+                    f"contact information"
                 )
                 return False
 

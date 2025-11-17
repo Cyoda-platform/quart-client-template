@@ -1,0 +1,1 @@
+{"name": "OrderProcessing", "steps": ["validate order", "charge payment", "send confirmation"]}

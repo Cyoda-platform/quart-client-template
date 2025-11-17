@@ -1,0 +1,1 @@
+{"workflow_name": "Validate Customer", "steps": [{"action": "validateEmail", "field": "email"}, {"action": "validatePhone", "field": "phone"}]}

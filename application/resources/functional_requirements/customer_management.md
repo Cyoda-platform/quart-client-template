@@ -1,0 +1,3 @@
+# Customer Management System Requirements
+
+The Customer Management System (CMS) should provide a comprehensive solution for managing customer data effectively. It must allow users to create, read, update, and delete customer profiles while ensuring data integrity and security. The system should include validation for essential fields such as email and phone to maintain accurate records. Users should be able to search and filter customers based on various criteria, such as name or status. Additionally, the CMS should generate reports on customer interactions and transactions to provide insights into customer behavior and trends. The system should be user-friendly and accessible, allowing multiple users to interact with the database without compromising performance.

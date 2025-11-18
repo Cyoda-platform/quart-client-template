@@ -11,6 +11,7 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from .routes.customers import customers_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ QuartSchema(
             "description": "ExampleEntity management endpoints",
         },
         {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "customers", "description": "Customer management endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -109,6 +111,10 @@ async def shutdown() -> None:
             _background_task = None
 
     logger.info("Application shutdown complete")
+
+
+# Register blueprints
+app.register_blueprint(customers_bp)
 
 
 # Middleware to add CORS headers to every response

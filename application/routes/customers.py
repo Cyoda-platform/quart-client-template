@@ -30,13 +30,13 @@ from services.services import get_entity_service
 from ..entity.customer.version_1.customer import Customer
 from ..models.customer_models import (
     CountResponse,
-    DeleteResponse,
-    ErrorResponse,
     CustomerListResponse,
     CustomerQueryParams,
     CustomerResponse,
     CustomerSearchResponse,
     CustomerUpdateQueryParams,
+    DeleteResponse,
+    ErrorResponse,
     ExistsResponse,
     SearchRequest,
     TransitionRequest,
@@ -65,9 +65,7 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
 
-customers_bp = Blueprint(
-    "customers", __name__, url_prefix="/api/customers"
-)
+customers_bp = Blueprint("customers", __name__, url_prefix="/api/customers")
 
 
 # ---- Routes -----------------------------------------------------------------
@@ -214,7 +212,10 @@ async def list_customers(
         end = start + query_args.limit
         paginated_entities = entity_list[start:end]
 
-        return jsonify({"customers": paginated_entities, "total": len(entity_list)}), 200
+        return (
+            jsonify({"customers": paginated_entities, "total": len(entity_list)}),
+            200,
+        )
 
     except Exception as e:  # pragma: no cover
         logger.exception("Error listing Customers: %s", str(e))
@@ -267,9 +268,7 @@ async def update_customer(
         return jsonify(_to_entity_dict(response.data)), 200
 
     except ValueError as e:
-        logger.warning(
-            "Validation error updating Customer %s: %s", entity_id, str(e)
-        )
+        logger.warning("Validation error updating Customer %s: %s", entity_id, str(e))
         return jsonify({"error": str(e), "code": "VALIDATION_ERROR"}), 400
     except Exception as e:  # pragma: no cover
         logger.exception("Error updating Customer %s: %s", entity_id, str(e))
@@ -376,9 +375,7 @@ async def check_exists(entity_id: str) -> ResponseReturnValue:
         return response.model_dump(), 200
 
     except Exception as e:
-        logger.exception(
-            "Error checking Customer existence %s: %s", entity_id, str(e)
-        )
+        logger.exception("Error checking Customer existence %s: %s", entity_id, str(e))
         return {"error": str(e)}, 500
 
 
@@ -485,9 +482,7 @@ async def search_entities(data: SearchRequest) -> ResponseReturnValue:
 @customers_bp.route("/find-all", methods=["GET"])
 @tag(["customers"])
 @operation_id("find_all_customers")
-@validate(
-    responses={200: (CustomerListResponse, None), 500: (ErrorResponse, None)}
-)
+@validate(responses={200: (CustomerListResponse, None), 500: (ErrorResponse, None)})
 async def find_all_entities() -> ResponseReturnValue:
     """Find all Customers without filtering"""
     try:

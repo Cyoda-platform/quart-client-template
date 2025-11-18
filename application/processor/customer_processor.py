@@ -11,9 +11,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.customer.version_1.customer import Customer
 from services.services import get_entity_service
 
 
@@ -63,9 +63,7 @@ class CustomerProcessor(CyodaProcessor):
             customer.update_timestamp()
 
             # Log processing completion
-            self.logger.info(
-                f"Customer {customer.technical_id} processed successfully"
-            )
+            self.logger.info(f"Customer {customer.technical_id} processed successfully")
 
             return customer
 
@@ -121,7 +119,9 @@ class CustomerProcessor(CyodaProcessor):
             # Set customer as active if not already
             if not customer.is_active:
                 customer.is_active = True
-                self.logger.info(f"Customer {customer.technical_id} status set to active")
+                self.logger.info(
+                    f"Customer {customer.technical_id} status set to active"
+                )
 
             # Additional activation logic could be added here
             # For example: sending welcome emails, creating accounts, etc.

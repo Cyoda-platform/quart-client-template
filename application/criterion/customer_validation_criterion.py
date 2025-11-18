@@ -8,9 +8,9 @@ proceed to the activation stage as specified in customer management requirements
 import re
 from typing import Any
 
+from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.customer.version_1.customer import Customer
 
 
 class CustomerValidationCriterion(CyodaCriteriaChecker):
@@ -94,9 +94,7 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
     def _validate_email(self, customer: Customer) -> bool:
         """Validate customer email field"""
         if not customer.email:
-            self.logger.warning(
-                f"Customer {customer.technical_id} has missing email"
-            )
+            self.logger.warning(f"Customer {customer.technical_id} has missing email")
             return False
 
         # Basic email validation (Pydantic EmailStr already validates format)
@@ -118,8 +116,8 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
             return False
 
         # Remove common phone formatting characters
-        phone_clean = re.sub(r'[^\d+]', '', customer.phone)
-        
+        phone_clean = re.sub(r"[^\d+]", "", customer.phone)
+
         if len(phone_clean) < 10:
             self.logger.warning(
                 f"Customer {customer.technical_id} phone number too short: '{customer.phone}'"
@@ -143,9 +141,7 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
             return False
 
         if not customer.city or len(customer.city.strip()) == 0:
-            self.logger.warning(
-                f"Customer {customer.technical_id} has missing city"
-            )
+            self.logger.warning(f"Customer {customer.technical_id} has missing city")
             return False
 
         if not customer.postal_code or len(customer.postal_code.strip()) == 0:
@@ -155,9 +151,7 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
             return False
 
         if not customer.country or len(customer.country.strip()) == 0:
-            self.logger.warning(
-                f"Customer {customer.technical_id} has missing country"
-            )
+            self.logger.warning(f"Customer {customer.technical_id} has missing country")
             return False
 
         return True
@@ -185,7 +179,9 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
         # Corporate customers should have business-appropriate email domains
         if customer.customer_type == "CORPORATE":
             email_str = str(customer.email)
-            if email_str.endswith(('@gmail.com', '@yahoo.com', '@hotmail.com', '@outlook.com')):
+            if email_str.endswith(
+                ("@gmail.com", "@yahoo.com", "@hotmail.com", "@outlook.com")
+            ):
                 self.logger.warning(
                     f"Customer {customer.technical_id} CORPORATE customer has personal email domain"
                 )

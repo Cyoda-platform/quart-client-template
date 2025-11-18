@@ -10,7 +10,7 @@ functionality including contact information, address, and status tracking.
 from datetime import datetime, timezone
 from typing import Any, ClassVar, Dict, List, Optional
 
-from pydantic import ConfigDict, Field, field_validator, model_validator, EmailStr
+from pydantic import ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from common.entity.cyoda_entity import CyodaEntity
 
@@ -32,15 +32,19 @@ class Customer(CyodaEntity):
     name: str = Field(..., description="Full name of the customer")
     email: EmailStr = Field(..., description="Email address of the customer")
     phone: str = Field(..., description="Phone number of the customer")
-    
+
     # Address information
-    address_line1: str = Field(..., description="Primary address line", alias="addressLine1")
-    address_line2: Optional[str] = Field(default=None, description="Secondary address line", alias="addressLine2")
+    address_line1: str = Field(
+        ..., description="Primary address line", alias="addressLine1"
+    )
+    address_line2: Optional[str] = Field(
+        default=None, description="Secondary address line", alias="addressLine2"
+    )
     city: str = Field(..., description="City")
     state: Optional[str] = Field(default=None, description="State or province")
     postal_code: str = Field(..., description="Postal or ZIP code", alias="postalCode")
     country: str = Field(..., description="Country")
-    
+
     # Customer status and preferences
     is_active: Optional[bool] = Field(
         default=True,
@@ -50,9 +54,9 @@ class Customer(CyodaEntity):
     customer_type: str = Field(
         default="INDIVIDUAL",
         alias="customerType",
-        description="Type of customer (INDIVIDUAL, BUSINESS, PREMIUM)"
+        description="Type of customer (INDIVIDUAL, BUSINESS, PREMIUM)",
     )
-    
+
     # Timestamps (inherited created_at from CyodaEntity, but need to override updated_at behavior)
     created_at: Optional[str] = Field(
         default_factory=lambda: datetime.now(timezone.utc)
@@ -82,9 +86,9 @@ class Customer(CyodaEntity):
     # Validation rules
     ALLOWED_CUSTOMER_TYPES: ClassVar[List[str]] = [
         "INDIVIDUAL",
-        "BUSINESS", 
+        "BUSINESS",
         "PREMIUM",
-        "CORPORATE"
+        "CORPORATE",
     ]
 
     @field_validator("name")
@@ -106,7 +110,9 @@ class Customer(CyodaEntity):
         if not v or len(v.strip()) == 0:
             raise ValueError("Phone number must be non-empty")
         # Basic phone validation - remove spaces and check length
-        phone_clean = v.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        phone_clean = (
+            v.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+        )
         if len(phone_clean) < 10:
             raise ValueError("Phone number must be at least 10 digits")
         if len(phone_clean) > 15:
@@ -118,7 +124,9 @@ class Customer(CyodaEntity):
     def validate_customer_type(cls, v: str) -> str:
         """Validate customer type field"""
         if v not in cls.ALLOWED_CUSTOMER_TYPES:
-            raise ValueError(f"Customer type must be one of: {cls.ALLOWED_CUSTOMER_TYPES}")
+            raise ValueError(
+                f"Customer type must be one of: {cls.ALLOWED_CUSTOMER_TYPES}"
+            )
         return v
 
     @field_validator("postal_code")
@@ -139,7 +147,9 @@ class Customer(CyodaEntity):
 
         # Business logic validation
         if customer_type not in self.ALLOWED_CUSTOMER_TYPES:
-            raise ValueError(f"Customer type must be one of: {self.ALLOWED_CUSTOMER_TYPES}")
+            raise ValueError(
+                f"Customer type must be one of: {self.ALLOWED_CUSTOMER_TYPES}"
+            )
 
         if customer_type == "PREMIUM" and is_active is False:
             raise ValueError("PREMIUM customers must be active")

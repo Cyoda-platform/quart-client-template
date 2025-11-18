@@ -1,7 +1,7 @@
 """
 Customer Models for Customer API endpoints.
 
-Provides comprehensive request and response schemas for all Customer API operations 
+Provides comprehensive request and response schemas for all Customer API operations
 with proper validation and documentation.
 """
 
@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 # Base Response Models
@@ -73,7 +73,9 @@ class CustomerResponse(BaseModel):
     name: str = Field(..., description="Customer name")
     email: EmailStr = Field(..., description="Customer email")
     phone: str = Field(..., description="Customer phone number")
-    address_line1: str = Field(..., alias="addressLine1", description="Primary address line")
+    address_line1: str = Field(
+        ..., alias="addressLine1", description="Primary address line"
+    )
     address_line2: Optional[str] = Field(
         default=None, alias="addressLine2", description="Secondary address line"
     )
@@ -105,9 +107,7 @@ class CustomerResponse(BaseModel):
 class CustomerListResponse(BaseModel):
     """Response model for Customer list operations."""
 
-    customers: List[Dict[str, Any]] = Field(
-        ..., description="List of Customer objects"
-    )
+    customers: List[Dict[str, Any]] = Field(..., description="List of Customer objects")
     total: int = Field(..., description="Total number of customers")
     limit: Optional[int] = Field(default=None, description="Applied limit")
     offset: Optional[int] = Field(default=None, description="Applied offset")

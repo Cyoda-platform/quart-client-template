@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "name": "Customer",
+  "desc": "Customer lifecycle workflow",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_customer",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "process_customer",
+          "next": "processed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "CustomerProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
+          "name": "update_customer",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    },
+    "processed": {
+      "transitions": [
+        {
+          "name": "complete_customer",
+          "next": "completed",
+          "manual": false
+        },
+        {
+          "name": "reprocess_customer",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    },
+    "completed": {
+      "transitions": [
+        {
+          "name": "reactivate_customer",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

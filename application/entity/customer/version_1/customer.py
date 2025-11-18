@@ -16,8 +16,8 @@ from common.entity.cyoda_entity import CyodaEntity
 class Customer(CyodaEntity):
     """
     Customer entity represents a customer with contact information.
-    
-    Inherits from CyodaEntity to get common fields like entity_id, created_at, 
+
+    Inherits from CyodaEntity to get common fields like entity_id, created_at,
     updated_at, state, etc.
     """
 
@@ -49,15 +49,15 @@ class Customer(CyodaEntity):
         """Validate email field"""
         if not v or len(v.strip()) == 0:
             raise ValueError("Email must be non-empty")
-        
+
         # Basic email validation
         email = v.strip().lower()
         if "@" not in email or "." not in email:
             raise ValueError("Email must be a valid email address")
-        
+
         if len(email) > 254:
             raise ValueError("Email must be at most 254 characters long")
-        
+
         return email
 
     @field_validator("phone")
@@ -66,14 +66,14 @@ class Customer(CyodaEntity):
         """Validate phone field"""
         if v is None:
             return v
-        
+
         phone = v.strip()
         if len(phone) == 0:
             return None
-        
+
         if len(phone) > 20:
             raise ValueError("Phone must be at most 20 characters long")
-        
+
         return phone
 
     @field_validator("address")
@@ -82,14 +82,14 @@ class Customer(CyodaEntity):
         """Validate address field"""
         if v is None:
             return v
-        
+
         address = v.strip()
         if len(address) == 0:
             return None
-        
+
         if len(address) > 500:
             raise ValueError("Address must be at most 500 characters long")
-        
+
         return address
 
     model_config = ConfigDict(

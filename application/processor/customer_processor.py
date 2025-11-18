@@ -10,9 +10,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.customer.version_1.customer import Customer
 from services.services import get_entity_service
 
 
@@ -59,9 +59,7 @@ class CustomerProcessor(CyodaProcessor):
             await self._perform_customer_processing(customer)
 
             # Log processing completion
-            self.logger.info(
-                f"Customer {customer.technical_id} processed successfully"
-            )
+            self.logger.info(f"Customer {customer.technical_id} processed successfully")
 
             return customer
 
@@ -89,7 +87,9 @@ class CustomerProcessor(CyodaProcessor):
         processed_data: Dict[str, Any] = {
             "processed_at": current_timestamp,
             "customer_status": "PROCESSED",
-            "email_domain": customer.email.split("@")[1] if "@" in customer.email else "unknown",
+            "email_domain": (
+                customer.email.split("@")[1] if "@" in customer.email else "unknown"
+            ),
             "name_length": len(customer.name),
             "phone_digits": len([c for c in customer.phone if c.isdigit()]),
         }
@@ -107,11 +107,15 @@ class CustomerProcessor(CyodaProcessor):
 
         try:
             # Add customer processing timestamp to metadata
-            customer.add_metadata("last_processed", 
-                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"))
+            customer.add_metadata(
+                "last_processed",
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            )
 
             # Add customer tier based on email domain (simple business logic)
-            email_domain = customer.email.split("@")[1] if "@" in customer.email else "unknown"
+            email_domain = (
+                customer.email.split("@")[1] if "@" in customer.email else "unknown"
+            )
             if email_domain in ["gmail.com", "yahoo.com", "hotmail.com"]:
                 customer_tier = "STANDARD"
             elif email_domain.endswith(".edu"):

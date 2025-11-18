@@ -11,6 +11,7 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.customer_routes import customer_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,6 +28,7 @@ QuartSchema(
             "description": "ExampleEntity management endpoints",
         },
         {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "Customers", "description": "Customer management endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -57,6 +59,9 @@ _register_error_handlers_typed: Callable[[Quart], None] = (  # type: ignore[assi
     _register_error_handlers
 )
 _register_error_handlers_typed(app)
+
+# Register Customer blueprint
+app.register_blueprint(customer_bp)
 
 
 @app.route("/favicon.ico")

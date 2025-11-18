@@ -42,7 +42,8 @@ class Customer(CyodaEntity):
         description="Flag indicating if the customer is active",
     )
 
-    # Timestamps (inherited created_at from CyodaEntity, but need to override updated_at behavior)
+    # Timestamps (inherited created_at from CyodaEntity,
+    # but need to override updated_at behavior)
     created_at: Optional[str] = Field(
         default_factory=lambda: datetime.now(timezone.utc)
         .isoformat()
@@ -121,7 +122,8 @@ class Customer(CyodaEntity):
         # Check if it contains only digits after cleaning
         if not cleaned_phone.isdigit():
             raise ValueError(
-                "Phone must contain only digits and common separators (spaces, dashes, parentheses, plus)"
+                "Phone must contain only digits and common separators "
+                "(spaces, dashes, parentheses, plus)"
             )
 
         if len(cleaned_phone) < 10:

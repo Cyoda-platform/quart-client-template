@@ -71,7 +71,8 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
 
         except Exception as e:
             self.logger.error(
-                f"Error validating customer {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
+                f"Error validating customer "
+                f"{getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
 
@@ -194,7 +195,7 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
                 "enterprise.com",
             ]
             if any(domain in email_domain for domain in business_domains):
-                # Business customers should have more formal names (at least first and last name)
+                # Business customers should have more formal names
                 if len(customer.name.split()) < 2:
                     self.logger.warning(
                         f"Customer {customer.technical_id} with business email "

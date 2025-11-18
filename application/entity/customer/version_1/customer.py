@@ -8,7 +8,7 @@ id, name, email, and phone fields.
 """
 
 import re
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from pydantic import Field, field_validator
 

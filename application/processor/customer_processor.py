@@ -103,8 +103,6 @@ class CustomerProcessor(CyodaProcessor):
         Args:
             customer: The processed Customer
         """
-        entity_service = get_entity_service()
-
         try:
             # Add customer processing timestamp to metadata
             customer.add_metadata(

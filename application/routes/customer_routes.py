@@ -10,11 +10,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
 
 from application.entity.customer.version_1.customer import Customer
-from common.exception import is_not_found
+
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
 

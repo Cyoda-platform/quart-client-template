@@ -1,0 +1,30 @@
+{
+  "name": "Customer",
+  "version": 1,
+  "fields": [
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "description": "Customer full name"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "required": true,
+      "description": "Customer email address"
+    },
+    {
+      "name": "phone",
+      "type": "string",
+      "required": false,
+      "description": "Customer phone number"
+    },
+    {
+      "name": "address",
+      "type": "string",
+      "required": false,
+      "description": "Customer address"
+    }
+  ]
+}

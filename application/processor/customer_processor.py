@@ -14,7 +14,6 @@ from typing import Any, Dict
 from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from services.services import get_entity_service
 
 
 class CustomerProcessor(CyodaProcessor):
@@ -66,7 +65,8 @@ class CustomerProcessor(CyodaProcessor):
 
         except Exception as e:
             self.logger.error(
-                f"Error processing customer {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
+                f"Error processing customer "
+                f"{getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
 

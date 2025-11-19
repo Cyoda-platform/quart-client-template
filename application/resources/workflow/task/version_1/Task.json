@@ -1,0 +1,125 @@
+{
+  "version": "1.0",
+  "name": "Task Workflow",
+  "desc": "Workflow for Task entity lifecycle management",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "TaskValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "assign",
+          "next": "assigned",
+          "manual": false,
+          "processors": [
+            {
+              "name": "TaskAssignmentProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assigned": {
+      "transitions": [
+        {
+          "name": "start_progress",
+          "next": "in_progress",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "in_progress": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "TaskCompletionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "review",
+          "next": "in_review",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "in_review": {
+      "transitions": [
+        {
+          "name": "approve",
+          "next": "completed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "TaskCompletionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "reject",
+          "next": "in_progress",
+          "manual": true
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}

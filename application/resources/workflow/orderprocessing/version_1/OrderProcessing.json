@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "OrderProcessing",
+  "desc": "Workflow for Order entity: create, update, cancel",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "update",
+          "next": "updated",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "updated": {
+      "transitions": [
+        {
+          "name": "update",
+          "next": "updated",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}

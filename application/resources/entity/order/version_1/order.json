@@ -1,0 +1,11 @@
+{
+  "name": "Order",
+  "version": 1,
+  "description": "Order entity with default fields",
+  "fields": [
+    {"name": "id", "type": "string", "required": true},
+    {"name": "customerId", "type": "string", "required": true},
+    {"name": "status", "type": "string", "required": true},
+    {"name": "total", "type": "number", "required": true}
+  ]
+}

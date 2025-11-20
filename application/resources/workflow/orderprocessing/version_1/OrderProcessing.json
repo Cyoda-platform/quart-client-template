@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "name": "OrderProcessing",
+  "desc": "Order lifecycle workflow with create, update, and cancel transitions",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "name": "Initial",
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "name": "Created",
+      "transitions": [
+        {
+          "name": "update",
+          "next": "updated",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "updated": {
+      "name": "Updated",
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "cancelled": {
+      "name": "Cancelled",
+      "transitions": []
+    },
+    "completed": {
+      "name": "Completed",
+      "transitions": []
+    }
+  }
+}

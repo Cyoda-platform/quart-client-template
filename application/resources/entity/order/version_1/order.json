@@ -1,0 +1,14 @@
+{
+  "name": "Order",
+  "version": 1,
+  "description": "Order entity representing customer orders",
+  "fields": [
+    {"name": "id", "type": "string", "required": true},
+    {"name": "customerId", "type": "string", "required": true},
+    {"name": "items", "type": "array", "items": {"productId": "string", "quantity": "integer", "price": "number"}},
+    {"name": "total", "type": "number"},
+    {"name": "status", "type": "string", "required": true, "enum": ["PENDING", "CONFIRMED", "SHIPPED", "CANCELLED"]},
+    {"name": "createdAt", "type": "datetime"},
+    {"name": "updatedAt", "type": "datetime"}
+  ]
+}

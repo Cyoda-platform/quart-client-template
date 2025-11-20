@@ -1,0 +1,56 @@
+{
+  "name": "Order",
+  "version": 1,
+  "fields": [
+    {
+      "name": "customerId",
+      "type": "string",
+      "required": true,
+      "description": "Customer identifier"
+    },
+    {
+      "name": "items",
+      "type": "array",
+      "required": true,
+      "description": "List of order items",
+      "items": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "required": true,
+            "description": "Product identifier"
+          },
+          "quantity": {
+            "type": "number",
+            "required": true,
+            "description": "Quantity of the product"
+          },
+          "price": {
+            "type": "number",
+            "required": true,
+            "description": "Price per unit"
+          }
+        }
+      }
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "required": true,
+      "description": "Order status"
+    },
+    {
+      "name": "totalAmount",
+      "type": "number",
+      "required": true,
+      "description": "Total order amount"
+    },
+    {
+      "name": "createdAt",
+      "type": "string",
+      "required": true,
+      "description": "Timestamp when the order was created (ISO 8601 format)"
+    }
+  ]
+}

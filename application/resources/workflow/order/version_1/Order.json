@@ -1,0 +1,121 @@
+{
+  "version": "1.0",
+  "name": "Order",
+  "desc": "Order processing workflow with create, update, and cancel operations",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_order",
+          "next": "pending",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "pending": {
+      "transitions": [
+        {
+          "name": "update_order",
+          "next": "pending",
+          "manual": true,
+          "processors": [
+            {
+              "name": "OrderProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
+          "name": "confirm_order",
+          "next": "confirmed",
+          "manual": true
+        },
+        {
+          "name": "cancel_order",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "confirmed": {
+      "transitions": [
+        {
+          "name": "update_order",
+          "next": "confirmed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "OrderProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
+          "name": "start_processing",
+          "next": "processing",
+          "manual": true
+        },
+        {
+          "name": "cancel_order",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "processing": {
+      "transitions": [
+        {
+          "name": "ship_order",
+          "next": "shipped",
+          "manual": true
+        },
+        {
+          "name": "cancel_order",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "shipped": {
+      "transitions": [
+        {
+          "name": "deliver_order",
+          "next": "delivered",
+          "manual": true
+        }
+      ]
+    },
+    "delivered": {
+      "transitions": []
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}

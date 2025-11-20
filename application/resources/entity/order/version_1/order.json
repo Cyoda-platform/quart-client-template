@@ -1,0 +1,12 @@
+{
+  "name": "Order",
+  "version": "1.0",
+  "description": "Order entity representing customer orders",
+  "fields": [
+    {"name": "id", "type": "string", "required": true},
+    {"name": "customerId", "type": "string", "required": true},
+    {"name": "items", "type": "array", "itemsType": "object", "required": true},
+    {"name": "status", "type": "string", "required": true},
+    {"name": "total", "type": "number", "required": true}
+  ]
+}

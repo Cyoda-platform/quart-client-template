@@ -46,114 +46,57 @@ class TestCustomerValidationCriterion:
         assert result is True
 
     @pytest.mark.asyncio
-    async def test_check_invalid_name_empty(self, criterion):
-        """Test validation fails for empty name."""
-        # Create customer with invalid data by bypassing validation
-        customer = Customer.__new__(Customer)
-        customer.name = ""
-        customer.email = "test@example.com"
-        customer.technical_id = "test-id"
+    async def test_check_criterion_logic_directly(self, criterion):
+        """Test the criterion validation logic directly."""
+        # Since Pydantic validates at creation time, we test the criterion logic
+        # by creating a mock customer object with the attributes we want to test
 
-        result = await criterion.check(customer)
+        class MockCustomer:
+            def __init__(self, name, email, phone=None, address=None):
+                self.name = name
+                self.email = email
+                self.phone = phone
+                self.address = address
+                self.technical_id = "test-id"
+
+        # Test invalid name cases
+        mock_customer = MockCustomer("", "test@example.com")
+        result = await criterion.check(mock_customer)
         assert result is False
 
-    @pytest.mark.asyncio
-    async def test_check_invalid_name_too_short(self, criterion):
-        """Test validation fails for name too short."""
-        # Create customer with invalid data by bypassing validation
-        customer = Customer.__new__(Customer)
-        customer.name = "A"
-        customer.email = "test@example.com"
-        customer.technical_id = "test-id"
-
-        result = await criterion.check(customer)
+        mock_customer = MockCustomer("A", "test@example.com")
+        result = await criterion.check(mock_customer)
         assert result is False
 
-    @pytest.mark.asyncio
-    async def test_check_invalid_name_too_long(self, criterion):
-        """Test validation fails for name too long."""
-        # Create customer with invalid data by bypassing validation
-        customer = Customer.__new__(Customer)
-        customer.name = "A" * 101
-        customer.email = "test@example.com"
-        customer.technical_id = "test-id"
-
-        result = await criterion.check(customer)
+        mock_customer = MockCustomer("A" * 101, "test@example.com")
+        result = await criterion.check(mock_customer)
         assert result is False
 
-    @pytest.mark.asyncio
-    async def test_check_invalid_email_empty(self, criterion):
-        """Test validation fails for empty email."""
-        # Create customer with invalid data by bypassing validation
-        customer = Customer.__new__(Customer)
-        customer.name = "John Doe"
-        customer.email = ""
-        customer.technical_id = "test-id"
-
-        result = await criterion.check(customer)
+        # Test invalid email cases
+        mock_customer = MockCustomer("John Doe", "")
+        result = await criterion.check(mock_customer)
         assert result is False
 
-    @pytest.mark.asyncio
-    async def test_check_invalid_email_format(self, criterion):
-        """Test validation fails for invalid email format."""
-        # Create customer with invalid data by bypassing validation
-        customer = Customer.__new__(Customer)
-        customer.name = "John Doe"
-        customer.email = "invalid-email"
-        customer.technical_id = "test-id"
-
-        result = await criterion.check(customer)
+        mock_customer = MockCustomer("John Doe", "invalid-email")
+        result = await criterion.check(mock_customer)
         assert result is False
 
-    @pytest.mark.asyncio
-    async def test_check_invalid_email_too_long(self, criterion):
-        """Test validation fails for email too long."""
-        # Create customer with invalid data by bypassing validation
-        customer = Customer.__new__(Customer)
-        customer.name = "John Doe"
-        customer.email = "a" * 250 + "@example.com"
-        customer.technical_id = "test-id"
-
-        result = await criterion.check(customer)
+        mock_customer = MockCustomer("John Doe", "a" * 250 + "@example.com")
+        result = await criterion.check(mock_customer)
         assert result is False
 
-    @pytest.mark.asyncio
-    async def test_check_invalid_phone_format(self, criterion):
-        """Test validation fails for invalid phone format."""
-        # Create customer with invalid data by bypassing validation
-        customer = Customer.__new__(Customer)
-        customer.name = "John Doe"
-        customer.email = "john@example.com"
-        customer.phone = "invalid-phone!"
-        customer.technical_id = "test-id"
-
-        result = await criterion.check(customer)
+        # Test invalid phone cases
+        mock_customer = MockCustomer("John Doe", "john@example.com", "invalid-phone!")
+        result = await criterion.check(mock_customer)
         assert result is False
 
-    @pytest.mark.asyncio
-    async def test_check_invalid_phone_too_long(self, criterion):
-        """Test validation fails for phone too long."""
-        # Create customer with invalid data by bypassing validation
-        customer = Customer.__new__(Customer)
-        customer.name = "John Doe"
-        customer.email = "john@example.com"
-        customer.phone = "1" * 21
-        customer.technical_id = "test-id"
-
-        result = await criterion.check(customer)
+        mock_customer = MockCustomer("John Doe", "john@example.com", "1" * 21)
+        result = await criterion.check(mock_customer)
         assert result is False
 
-    @pytest.mark.asyncio
-    async def test_check_invalid_address_too_long(self, criterion):
-        """Test validation fails for address too long."""
-        # Create customer with invalid data by bypassing validation
-        customer = Customer.__new__(Customer)
-        customer.name = "John Doe"
-        customer.email = "john@example.com"
-        customer.address = "A" * 501
-        customer.technical_id = "test-id"
-
-        result = await criterion.check(customer)
+        # Test invalid address case
+        mock_customer = MockCustomer("John Doe", "john@example.com", None, "A" * 501)
+        result = await criterion.check(mock_customer)
         assert result is False
 
     @pytest.mark.asyncio

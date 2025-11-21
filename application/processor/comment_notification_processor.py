@@ -177,7 +177,7 @@ class CommentNotificationProcessor(CyodaProcessor):
             comment.update_timestamp()
 
         notification_info = {
-            "mentions_count": len(comment.mentions),
+            "mentions_count": len(comment.mentions or []),
             "notifications_sent": True
         }
 

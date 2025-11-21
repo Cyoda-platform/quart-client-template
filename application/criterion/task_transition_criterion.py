@@ -8,14 +8,13 @@ Ensures only authorized users can perform specific transitions.
 import logging
 from typing import Any
 
-from common.criterion.base import CyodaCriterion
 from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity
+from common.processor.base import CyodaCriteriaChecker, CyodaEntity
 from application.entity.task.version_1.task import Task
 from services.services import get_entity_service
 
 
-class TaskTransitionCriterion(CyodaCriterion):
+class TaskTransitionCriterion(CyodaCriteriaChecker):
     """
     Criterion for validating task state transitions based on user roles
     and business rules.
@@ -30,7 +29,7 @@ class TaskTransitionCriterion(CyodaCriterion):
             self, "logger", logging.getLogger(__name__)
         )
 
-    async def evaluate(self, entity: CyodaEntity, **kwargs: Any) -> bool:
+    async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         """
         Evaluate if the task transition is allowed.
 

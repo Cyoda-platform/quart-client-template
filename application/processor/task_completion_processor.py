@@ -98,8 +98,9 @@ class TaskCompletionProcessor(CyodaProcessor):
             )
 
             total_logged_hours = 0.0
-            if time_entries_response and time_entries_response.entities:
-                for entry_data in time_entries_response.entities:
+            if time_entries_response:
+                for entry_response in time_entries_response:
+                    entry_data = entry_response.data.model_dump() if hasattr(entry_response.data, 'model_dump') else entry_response.data
                     # Only count approved or logged time entries
                     entry_state = entry_data.get("state", "")
                     if entry_state in ["logged", "approved"]:
@@ -140,20 +141,27 @@ class TaskCompletionProcessor(CyodaProcessor):
                 return
 
             # Get all tasks in the project to calculate completion rate
-            project_tasks_response = await entity_service.search(
-                entity_class="Task",
-                entity_version="1",
-                conditions=[{
-                    "field": "project_id",
-                    "operator": "EQUALS",
-                    "value": task.project_id
-                }]
+            project_search_condition = SearchConditionRequest(
+                conditions=[SearchCondition(
+                    field="project_id",
+                    operator=SearchOperator.EQUALS,
+                    value=task.project_id
+                )]
             )
 
-            if project_tasks_response and project_tasks_response.entities:
-                total_tasks = len(project_tasks_response.entities)
-                completed_tasks = sum(1 for t in project_tasks_response.entities 
-                                    if t.get("state") == "done")
+            project_tasks_response = await entity_service.search(
+                entity_class="Task",
+                condition=project_search_condition,
+                entity_version="1"
+            )
+
+            if project_tasks_response:
+                total_tasks = len(project_tasks_response)
+                completed_tasks = 0
+                for task_response in project_tasks_response:
+                    task_data = task_response.data.model_dump() if hasattr(task_response.data, 'model_dump') else task_response.data
+                    if task_data.get("state") == "done":
+                        completed_tasks += 1
                 
                 completion_rate = (completed_tasks / total_tasks) * 100 if total_tasks > 0 else 0
 
@@ -183,7 +191,7 @@ class TaskCompletionProcessor(CyodaProcessor):
             "final_logged_hours": task.logged_hours
         }
 
-        if task.estimate_hours and task.estimate_hours > 0:
+        if task.estimate_hours and task.estimate_hours > 0 and task.logged_hours is not None:
             completion_info["estimate_accuracy"] = (task.logged_hours / task.estimate_hours) * 100
 
         self.logger.info(

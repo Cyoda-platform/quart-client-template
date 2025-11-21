@@ -6,7 +6,6 @@ Performs email uniqueness validation and other business rules as specified in re
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.customer.version_1.customer import Customer

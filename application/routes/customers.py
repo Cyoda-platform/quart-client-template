@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import logging
 import math
-from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
 from quart_schema import (
     operation_id,
@@ -198,8 +197,9 @@ async def list_customers(query_args: CustomerQueryParams) -> ResponseReturnValue
         # Apply sorting
         if query_args.sort_by in ["name", "email", "created_at"]:
             reverse = query_args.order == "desc"
+            sort_key = query_args.sort_by or "created_at"
             entity_list.sort(
-                key=lambda x: x.get(query_args.sort_by, ""), reverse=reverse
+                key=lambda x: x.get(sort_key, ""), reverse=reverse
             )
 
         # Apply pagination
@@ -359,7 +359,7 @@ async def patch_customer(
 @operation_id("delete_customer")
 @validate(
     responses={
-        204: (None, None),
+        200: (DeleteResponse, None),
         404: (ErrorResponse, None),
         400: (ErrorResponse, None),
         500: (ErrorResponse, None),
@@ -378,7 +378,13 @@ async def delete_customer(customer_id: str) -> ResponseReturnValue:
         )
 
         logger.info("Deleted Customer %s", customer_id)
-        return "", 204
+
+        response = DeleteResponse(
+            success=True,
+            message="Customer deleted successfully",
+            entity_id=customer_id,
+        )
+        return response.model_dump(), 200
 
     except ValueError as e:
         logger.warning("Invalid customer ID %s: %s", customer_id, str(e))

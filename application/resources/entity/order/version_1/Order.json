@@ -1,0 +1,84 @@
+{
+  "name": "Order",
+  "version": 1,
+  "fields": [
+    {
+      "name": "order_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the order"
+    },
+    {
+      "name": "items",
+      "type": "array",
+      "required": true,
+      "description": "List of items in the order",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "required": true,
+            "description": "Unique identifier for the item"
+          },
+          "name": {
+            "type": "string",
+            "required": true,
+            "description": "Name of the item"
+          },
+          "quantity": {
+            "type": "number",
+            "required": true,
+            "description": "Quantity of the item"
+          },
+          "unit_price": {
+            "type": "number",
+            "required": true,
+            "description": "Unit price of the item"
+          },
+          "total_price": {
+            "type": "number",
+            "required": true,
+            "description": "Total price for this item"
+          }
+        }
+      }
+    },
+    {
+      "name": "total",
+      "type": "number",
+      "required": true,
+      "description": "Total amount of the order"
+    },
+    {
+      "name": "customer_id",
+      "type": "string",
+      "required": false,
+      "description": "Customer identifier"
+    },
+    {
+      "name": "payment_status",
+      "type": "string",
+      "required": false,
+      "description": "Payment processing status"
+    },
+    {
+      "name": "payment_transaction_id",
+      "type": "string",
+      "required": false,
+      "description": "Payment transaction identifier"
+    },
+    {
+      "name": "cancel_reason",
+      "type": "string",
+      "required": false,
+      "description": "Reason for cancellation (required when cancelling)"
+    },
+    {
+      "name": "refund_transaction_id",
+      "type": "string",
+      "required": false,
+      "description": "Refund transaction identifier"
+    }
+  ]
+}

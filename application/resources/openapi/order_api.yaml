@@ -374,6 +374,180 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /orders/{id}/cancel:
+    post:
+      tags:
+        - Orders
+      summary: Cancel an order
+      description: |
+        Cancels an existing order by transitioning it to the `cancelled` state.
+        This is a terminal state - cancelled orders cannot be updated or reactivated.
+
+        **Business Rules:**
+        - Only orders in `created` or `updated` states can be cancelled
+        - Cancelled orders cannot be cancelled again
+        - Cancellation is irreversible
+      operationId: cancelOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order technical ID (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  maxLength: 500
+                  description: Optional cancellation reason
+                  example: "Customer requested cancellation"
+                metadata:
+                  type: object
+                  description: Optional additional metadata for cancellation
+                  additionalProperties: true
+                  example:
+                    cancelled_by: "customer_service"
+                    refund_requested: true
+            examples:
+              with_reason:
+                summary: Cancel with reason
+                value:
+                  reason: "Customer requested cancellation"
+                  metadata:
+                    cancelled_by: "customer_service"
+                    refund_requested: true
+              simple_cancel:
+                summary: Simple cancellation
+                value: {}
+      responses:
+        '200':
+          description: Order cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelOrderResponse'
+              examples:
+                cancelled_order:
+                  summary: Successfully cancelled order
+                  value:
+                    id: "123e4567-e89b-12d3-a456-426614174000"
+                    status: "cancelled"
+                    message: "Order cancelled successfully"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict - order cannot be cancelled (e.g., already cancelled)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                already_cancelled:
+                  summary: Order already cancelled
+                  value:
+                    error: "CONFLICT"
+                    message: "Order is already cancelled"
+                invalid_state:
+                  summary: Invalid state for cancellation
+                  value:
+                    error: "CONFLICT"
+                    message: "Order cannot be cancelled in current state"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+# Common response references
+components:
+  responses:
+    BadRequest:
+      description: Bad request - invalid input data
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - error
+              - message
+            properties:
+              error:
+                type: string
+                example: "VALIDATION_ERROR"
+              message:
+                type: string
+                example: "Request validation failed"
+              validation_errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                    message:
+                      type: string
+                    value: {}
+
+    Unauthorized:
+      description: Unauthorized - missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - error
+              - message
+            properties:
+              error:
+                type: string
+                example: "UNAUTHORIZED"
+              message:
+                type: string
+                example: "Authentication required"
+
+    NotFound:
+      description: Entity not found
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - error
+              - message
+            properties:
+              error:
+                type: string
+                example: "NOT_FOUND"
+              message:
+                type: string
+                example: "Order not found"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - error
+              - message
+            properties:
+              error:
+                type: string
+                example: "INTERNAL_ERROR"
+              message:
+                type: string
+                example: "An unexpected error occurred"
+
     get:
       tags:
         - Orders

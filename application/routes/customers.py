@@ -44,10 +44,12 @@ from ..models.customer_models import (
     ValidationErrorResponse,
 )
 
+
 # Module-level service proxy
 class _ServiceProxy:
     def __getattr__(self, name: str) -> Any:
         return getattr(get_entity_service(), name)
+
 
 service = _ServiceProxy()
 logger = logging.getLogger(__name__)
@@ -62,6 +64,7 @@ customers_bp = Blueprint("customers", __name__, url_prefix="/api/customers")
 
 
 # ---- CRUD Operations --------------------------------------------------------
+
 
 @customers_bp.route("", methods=["POST"])
 @tag(["customers"])
@@ -93,7 +96,7 @@ async def create_customer(data: Customer) -> ResponseReturnValue:
         # Return created entity with Location header
         entity_dict = _to_entity_dict(response.data)
         headers = {"Location": f"/api/customers/{response.metadata.id}"}
-        
+
         return entity_dict, 201, headers
 
     except ValueError as e:
@@ -163,10 +166,10 @@ async def list_customers(query_args: CustomerQueryParams) -> ResponseReturnValue
     try:
         # Build search conditions
         search_conditions: Dict[str, str] = {}
-        
+
         if query_args.name:
             search_conditions["name"] = query_args.name
-        
+
         if query_args.email:
             search_conditions["email"] = query_args.email
 
@@ -196,14 +199,13 @@ async def list_customers(query_args: CustomerQueryParams) -> ResponseReturnValue
         if query_args.sort_by in ["name", "email", "created_at"]:
             reverse = query_args.order == "desc"
             entity_list.sort(
-                key=lambda x: x.get(query_args.sort_by, ""),
-                reverse=reverse
+                key=lambda x: x.get(query_args.sort_by, ""), reverse=reverse
             )
 
         # Apply pagination
         total = len(entity_list)
         offset = (query_args.page - 1) * query_args.size
-        paginated_entities = entity_list[offset:offset + query_args.size]
+        paginated_entities = entity_list[offset : offset + query_args.size]
         total_pages = math.ceil(total / query_args.size) if total > 0 else 1
 
         return {
@@ -211,7 +213,7 @@ async def list_customers(query_args: CustomerQueryParams) -> ResponseReturnValue
             "total": total,
             "page": query_args.page,
             "size": query_args.size,
-            "total_pages": total_pages
+            "total_pages": total_pages,
         }, 200
 
     except Exception as e:
@@ -262,10 +264,14 @@ async def update_customer(
     except ValueError as e:
         error_msg = str(e)
         if "already in use" in error_msg.lower() or "duplicate" in error_msg.lower():
-            logger.warning("Duplicate email error updating Customer %s: %s", customer_id, error_msg)
+            logger.warning(
+                "Duplicate email error updating Customer %s: %s", customer_id, error_msg
+            )
             return {"error": error_msg, "code": "DUPLICATE_EMAIL"}, 409
         else:
-            logger.warning("Validation error updating Customer %s: %s", customer_id, error_msg)
+            logger.warning(
+                "Validation error updating Customer %s: %s", customer_id, error_msg
+            )
             return {"error": error_msg, "code": "VALIDATION_ERROR"}, 400
     except Exception as e:
         if is_not_found(e):
@@ -332,10 +338,14 @@ async def patch_customer(
     except ValueError as e:
         error_msg = str(e)
         if "already in use" in error_msg.lower() or "duplicate" in error_msg.lower():
-            logger.warning("Duplicate email error patching Customer %s: %s", customer_id, error_msg)
+            logger.warning(
+                "Duplicate email error patching Customer %s: %s", customer_id, error_msg
+            )
             return {"error": error_msg, "code": "DUPLICATE_EMAIL"}, 409
         else:
-            logger.warning("Validation error patching Customer %s: %s", customer_id, error_msg)
+            logger.warning(
+                "Validation error patching Customer %s: %s", customer_id, error_msg
+            )
             return {"error": error_msg, "code": "VALIDATION_ERROR"}, 400
     except Exception as e:
         if is_not_found(e):
@@ -382,6 +392,7 @@ async def delete_customer(customer_id: str) -> ResponseReturnValue:
 
 # ---- Additional Service Endpoints -------------------------------------------
 
+
 @customers_bp.route("/<customer_id>/exists", methods=["GET"])
 @tag(["customers"])
 @operation_id("check_customer_exists")
@@ -399,7 +410,9 @@ async def check_exists(customer_id: str) -> ResponseReturnValue:
         return response.model_dump(), 200
 
     except Exception as e:
-        logger.exception("Error checking Customer existence %s: %s", customer_id, str(e))
+        logger.exception(
+            "Error checking Customer existence %s: %s", customer_id, str(e)
+        )
         return {"error": str(e)}, 500
 
 
@@ -424,6 +437,7 @@ async def count_entities() -> ResponseReturnValue:
 
 
 # ---- Search Endpoints -------------------------------------------------------
+
 
 @customers_bp.route("/search", methods=["POST"])
 @tag(["customers"])
@@ -472,6 +486,7 @@ async def search_entities(data: SearchRequest) -> ResponseReturnValue:
 
 # ---- Workflow Endpoints -----------------------------------------------------
 
+
 @customers_bp.route("/<customer_id>/transitions", methods=["GET"])
 @tag(["customers"])
 @operation_id("get_customer_transitions")
@@ -501,7 +516,9 @@ async def get_available_transitions(customer_id: str) -> ResponseReturnValue:
     except Exception as e:
         if is_not_found(e):
             return {"error": "Customer not found", "code": "NOT_FOUND"}, 404
-        logger.exception("Error getting transitions for Customer %s: %s", customer_id, str(e))
+        logger.exception(
+            "Error getting transitions for Customer %s: %s", customer_id, str(e)
+        )
         return {"error": str(e)}, 500
 
 
@@ -542,7 +559,9 @@ async def trigger_transition(
             entity_version=str(Customer.ENTITY_VERSION),
         )
 
-        logger.info("Executed transition '%s' on Customer %s", data.transition_name, customer_id)
+        logger.info(
+            "Executed transition '%s' on Customer %s", data.transition_name, customer_id
+        )
 
         return {
             "id": response.metadata.id,
@@ -554,5 +573,7 @@ async def trigger_transition(
     except Exception as e:
         if is_not_found(e):
             return {"error": "Customer not found", "code": "NOT_FOUND"}, 404
-        logger.exception("Error executing transition on Customer %s: %s", customer_id, str(e))
+        logger.exception(
+            "Error executing transition on Customer %s: %s", customer_id, str(e)
+        )
         return {"error": str(e)}, 500

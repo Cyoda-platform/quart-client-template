@@ -9,10 +9,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
 from common.service.entity_service import SearchConditionRequest
-from application.entity.customer.version_1.customer import Customer
 from services.services import get_entity_service
 
 
@@ -57,9 +57,7 @@ class CustomerProcessor(CyodaProcessor):
             customer.update_timestamp()
 
             # Log processing completion
-            self.logger.info(
-                f"Customer {customer.technical_id} processed successfully"
-            )
+            self.logger.info(f"Customer {customer.technical_id} processed successfully")
 
             return customer
 
@@ -96,16 +94,22 @@ class CustomerProcessor(CyodaProcessor):
             # Check if any existing customer has the same email but different ID
             for existing_customer_response in existing_customers:
                 existing_customer_data = existing_customer_response.data
-                existing_id = getattr(existing_customer_data, 'technical_id', None) or getattr(existing_customer_data, 'entity_id', None)
+                existing_id = getattr(
+                    existing_customer_data, "technical_id", None
+                ) or getattr(existing_customer_data, "entity_id", None)
                 current_id = customer.technical_id or customer.entity_id
 
                 if existing_id and existing_id != current_id:
                     self.logger.warning(
                         f"Email uniqueness violation: {customer.email} already exists for customer {existing_id}"
                     )
-                    raise ValueError(f"Email {customer.email} is already in use by another customer")
+                    raise ValueError(
+                        f"Email {customer.email} is already in use by another customer"
+                    )
 
-            self.logger.info(f"Email uniqueness validated for customer {customer.technical_id}")
+            self.logger.info(
+                f"Email uniqueness validated for customer {customer.technical_id}"
+            )
 
         except ValueError:
             # Re-raise validation errors

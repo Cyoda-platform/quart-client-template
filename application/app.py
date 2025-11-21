@@ -24,6 +24,10 @@ QuartSchema(
     info={"title": "Cyoda Client Application", "version": "1.0.0"},
     tags=[
         {
+            "name": "customers",
+            "description": "Customer management endpoints",
+        },
+        {
             "name": "ExampleEntities",
             "description": "ExampleEntity management endpoints",
         },
@@ -58,6 +62,9 @@ _register_error_handlers_typed: Callable[[Quart], None] = (  # type: ignore[assi
     _register_error_handlers
 )
 _register_error_handlers_typed(app)
+
+# Register blueprints
+app.register_blueprint(customers_bp)
 
 
 @app.route("/favicon.ico")

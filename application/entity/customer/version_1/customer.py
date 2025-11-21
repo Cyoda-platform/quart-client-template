@@ -7,9 +7,9 @@ Represents a customer with comprehensive contact information and address details
 Includes validation for email uniqueness and required fields as specified in requirements.
 """
 
+import re
 from datetime import datetime, timezone
 from typing import Any, ClassVar, Dict, Optional
-import re
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -18,6 +18,7 @@ from common.entity.cyoda_entity import CyodaEntity
 
 class Address(BaseModel):
     """Address information for a customer"""
+
     street: Optional[str] = Field(default=None, description="Street address")
     city: Optional[str] = Field(default=None, description="City")
     state: Optional[str] = Field(default=None, description="State or province")
@@ -34,7 +35,7 @@ class Address(BaseModel):
 class Customer(CyodaEntity):
     """
     Customer entity representing a customer with contact information and address.
-    
+
     Inherits from CyodaEntity to get common fields like entity_id, state, etc.
     The state field manages workflow states: initial_state -> created -> validated -> completed
     """
@@ -46,7 +47,7 @@ class Customer(CyodaEntity):
     # Required fields from functional requirements
     name: str = Field(..., description="Customer full name")
     email: str = Field(..., description="Customer email address (unique)")
-    
+
     # Optional fields
     phone: Optional[str] = Field(default=None, description="Customer phone number")
     address: Optional[Address] = Field(default=None, description="Customer address")
@@ -81,15 +82,15 @@ class Customer(CyodaEntity):
         """Validate email field according to requirements"""
         if not v or len(v.strip()) == 0:
             raise ValueError("Email is required and must be non-empty")
-        
+
         # Basic email format validation
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(email_pattern, v.strip()):
             raise ValueError("Email must be a valid email address")
-        
+
         if len(v.strip()) > 255:
             raise ValueError("Email must be at most 255 characters long")
-        
+
         return v.strip().lower()  # Normalize email to lowercase
 
     @field_validator("phone")
@@ -98,17 +99,17 @@ class Customer(CyodaEntity):
         """Validate phone field if provided"""
         if v is None:
             return v
-        
+
         if len(v.strip()) == 0:
             return None  # Empty string becomes None
-        
+
         # Basic phone validation - allow various formats
-        phone_clean = re.sub(r'[^\d+\-\(\)\s]', '', v.strip())
+        phone_clean = re.sub(r"[^\d+\-\(\)\s]", "", v.strip())
         if len(phone_clean) < 10:
             raise ValueError("Phone number must be at least 10 digits")
         if len(phone_clean) > 20:
             raise ValueError("Phone number must be at most 20 characters")
-        
+
         return v.strip()
 
     @model_validator(mode="after")

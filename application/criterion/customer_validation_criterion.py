@@ -8,9 +8,9 @@ proceed to the processing stage as specified in functional requirements.
 import re
 from typing import Any
 
+from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.customer.version_1.customer import Customer
 
 
 class CustomerValidationCriterion(CyodaCriteriaChecker):
@@ -65,7 +65,7 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
                 return False
 
             # Email format validation
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
             if not re.match(email_pattern, customer.email):
                 self.logger.warning(
                     f"Customer {customer.technical_id} has invalid email format: {customer.email}"
@@ -80,7 +80,7 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
 
             # Validate phone if provided
             if customer.phone is not None and len(customer.phone.strip()) > 0:
-                phone_clean = re.sub(r'[^\d+\-\(\)\s]', '', customer.phone.strip())
+                phone_clean = re.sub(r"[^\d+\-\(\)\s]", "", customer.phone.strip())
                 if len(phone_clean) < 10:
                     self.logger.warning(
                         f"Customer {customer.technical_id} has invalid phone: too short"
@@ -99,19 +99,19 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
                         f"Customer {customer.technical_id} has invalid address street: too long"
                     )
                     return False
-                
+
                 if customer.address.city and len(customer.address.city) > 100:
                     self.logger.warning(
                         f"Customer {customer.technical_id} has invalid address city: too long"
                     )
                     return False
-                
+
                 if customer.address.state and len(customer.address.state) > 100:
                     self.logger.warning(
                         f"Customer {customer.technical_id} has invalid address state: too long"
                     )
                     return False
-                
+
                 if customer.address.zip and len(customer.address.zip) > 20:
                     self.logger.warning(
                         f"Customer {customer.technical_id} has invalid address zip: too long"

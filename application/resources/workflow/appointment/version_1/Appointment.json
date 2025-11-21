@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "name": "Appointment",
+  "desc": "Appointment workflow for managing patient appointments with doctors",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "request_appointment",
+          "next": "requested",
+          "manual": false
+        }
+      ]
+    },
+    "requested": {
+      "transitions": [
+        {
+          "name": "check_availability",
+          "next": "pending_confirmation",
+          "manual": false,
+          "criterion": {
+            "type": "simple",
+            "jsonPath": "$.scheduled_at",
+            "operation": "NOT_EQUALS",
+            "value": ""
+          }
+        },
+        {
+          "name": "cancel_request",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "pending_confirmation": {
+      "transitions": [
+        {
+          "name": "confirm_appointment",
+          "next": "confirmed",
+          "manual": true
+        },
+        {
+          "name": "cancel_appointment",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "confirmed": {
+      "transitions": [
+        {
+          "name": "complete_appointment",
+          "next": "completed",
+          "manual": true
+        },
+        {
+          "name": "cancel_confirmed",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}

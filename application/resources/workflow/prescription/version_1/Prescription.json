@@ -1,0 +1,112 @@
+{
+  "version": "1.0",
+  "name": "Prescription",
+  "desc": "Prescription workflow for managing medication prescriptions and refills",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "issue_prescription",
+          "next": "issued",
+          "manual": false
+        }
+      ]
+    },
+    "issued": {
+      "transitions": [
+        {
+          "name": "activate_prescription",
+          "next": "active",
+          "manual": false,
+          "criterion": {
+            "type": "simple",
+            "jsonPath": "$.refills_remaining",
+            "operation": "GREATER_THAN",
+            "value": 0
+          }
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "expire_prescription",
+          "next": "expired",
+          "manual": true
+        },
+        {
+          "name": "renew_prescription",
+          "next": "renewed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "PrescriptionProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
+          "name": "use_refill",
+          "next": "active",
+          "manual": true,
+          "criterion": {
+            "type": "simple",
+            "jsonPath": "$.refills_remaining",
+            "operation": "GREATER_THAN",
+            "value": 0
+          },
+          "processors": [
+            {
+              "name": "PrescriptionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "expired": {
+      "transitions": [
+        {
+          "name": "renew_expired",
+          "next": "renewed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "PrescriptionProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "renewed": {
+      "transitions": [
+        {
+          "name": "activate_renewed",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    }
+  }
+}

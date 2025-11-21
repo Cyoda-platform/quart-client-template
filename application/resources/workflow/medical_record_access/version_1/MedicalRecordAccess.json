@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "name": "MedicalRecordAccess",
+  "desc": "Medical record access workflow for managing patient record access permissions",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "request_access",
+          "next": "requested",
+          "manual": false
+        }
+      ]
+    },
+    "requested": {
+      "transitions": [
+        {
+          "name": "approve_access",
+          "next": "approved",
+          "manual": true,
+          "processors": [
+            {
+              "name": "MedicalRecordAccessProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
+          "name": "deny_access",
+          "next": "denied",
+          "manual": true
+        }
+      ]
+    },
+    "approved": {
+      "transitions": [
+        {
+          "name": "revoke_access",
+          "next": "revoked",
+          "manual": true,
+          "processors": [
+            {
+              "name": "MedicalRecordAccessProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "denied": {
+      "transitions": [
+        {
+          "name": "request_again",
+          "next": "requested",
+          "manual": true
+        }
+      ]
+    },
+    "revoked": {
+      "transitions": [
+        {
+          "name": "request_again",
+          "next": "requested",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

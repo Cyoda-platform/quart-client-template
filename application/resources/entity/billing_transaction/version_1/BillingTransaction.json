@@ -1,0 +1,54 @@
+{
+  "name": "BillingTransaction",
+  "version": 1,
+  "fields": [
+    {
+      "name": "transaction_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the billing transaction"
+    },
+    {
+      "name": "patient_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the patient"
+    },
+    {
+      "name": "amount_cents",
+      "type": "number",
+      "required": true,
+      "description": "Transaction amount in cents"
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "required": true,
+      "description": "Currency code (e.g., USD, EUR)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "required": true,
+      "description": "Transaction status (pending/paid/failed)"
+    },
+    {
+      "name": "transaction_created_at",
+      "type": "string",
+      "required": true,
+      "description": "When the transaction was created (ISO 8601)"
+    },
+    {
+      "name": "paid_at",
+      "type": "string",
+      "required": false,
+      "description": "When the transaction was paid (ISO 8601)"
+    },
+    {
+      "name": "invoice_url",
+      "type": "string",
+      "required": false,
+      "description": "URL to the invoice document"
+    }
+  ]
+}

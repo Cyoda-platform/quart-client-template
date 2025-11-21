@@ -1,0 +1,36 @@
+{
+  "name": "Comment",
+  "version": 1,
+  "fields": [
+    {
+      "name": "comment_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the comment"
+    },
+    {
+      "name": "task_id",
+      "type": "string",
+      "required": true,
+      "description": "Technical ID of the parent task"
+    },
+    {
+      "name": "author_id",
+      "type": "string",
+      "required": true,
+      "description": "Technical ID of the comment author"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "required": true,
+      "description": "Comment content"
+    },
+    {
+      "name": "mentions",
+      "type": "array",
+      "required": false,
+      "description": "List of mentioned user technical IDs"
+    }
+  ]
+}

@@ -102,47 +102,70 @@ class OrderCancelProcessor(CyodaProcessor):
     async def _call_external_cancellation_service(self, order: Order) -> dict:
         """
         Call external cancellation service with retry policy.
-        
+
         Args:
             order: The Order entity to cancel
-            
+
         Returns:
             Result from external cancellation service
         """
         try:
-            # Simulate external service call
-            # In a real implementation, this would use the HTTP client wrapper
             self.logger.info(f"Calling external cancellation service for order {order.entity_id}")
-            
-            # Simulate service call with order details
+
+            # Prepare cancellation request
             cancellation_request = {
                 "order_id": order.entity_id,
                 "customer_id": order.customer_id,
                 "amount": order.amount,
                 "cancellation_timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             }
-            
-            # Simulate successful response
-            cancellation_result = {
-                "success": True,
-                "cancellation_id": f"CANCEL_{order.entity_id}_{int(datetime.now().timestamp())}",
-                "message": "Order successfully cancelled in external system",
-                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-            }
-            
+
+            # Use HTTP client with exponential retry policy
+            async with create_order_cancellation_client() as client:
+                try:
+                    # In a real implementation, this would call an actual external service
+                    # For now, simulate the call by logging the request
+                    self.logger.info(
+                        f"Simulating external cancellation service call",
+                        extra={"cancellation_request": cancellation_request}
+                    )
+
+                    # Simulate successful response
+                    cancellation_result = {
+                        "success": True,
+                        "cancellation_id": f"CANCEL_{order.entity_id}_{int(datetime.now().timestamp())}",
+                        "message": "Order successfully cancelled in external system",
+                        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                        "request_data": cancellation_request
+                    }
+
+                    # In real implementation, this would be:
+                    # response = await client.post("/api/orders/cancel", json_data=cancellation_request)
+                    # cancellation_result = response["data"]
+
+                except HttpClientError as e:
+                    self.logger.error(f"HTTP client error calling cancellation service: {str(e)}")
+                    return {
+                        "success": False,
+                        "error": f"HTTP client error: {str(e)}",
+                        "error_type": "http_client_error",
+                        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                    }
+
             self.logger.info(
                 f"External cancellation service call successful for order {order.entity_id}",
                 extra={"cancellation_result": cancellation_result}
             )
-            
+
             return cancellation_result
-            
+
         except Exception as e:
             self.logger.error(f"Failed to call external cancellation service for order {order.entity_id}: {str(e)}")
             # Return error result but don't fail the entire process
             return {
                 "success": False,
                 "error": str(e),
+                "error_type": "unexpected_error",
                 "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             }
 

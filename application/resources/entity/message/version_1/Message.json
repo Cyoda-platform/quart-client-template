@@ -1,0 +1,48 @@
+{
+  "name": "Message",
+  "version": 1,
+  "fields": [
+    {
+      "name": "message_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the message"
+    },
+    {
+      "name": "from_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the message sender"
+    },
+    {
+      "name": "to_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the message recipient"
+    },
+    {
+      "name": "thread_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the conversation thread"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "required": true,
+      "description": "Message content"
+    },
+    {
+      "name": "sent_at",
+      "type": "string",
+      "required": true,
+      "description": "When the message was sent (ISO 8601)"
+    },
+    {
+      "name": "read",
+      "type": "boolean",
+      "required": true,
+      "description": "Whether the message has been read"
+    }
+  ]
+}

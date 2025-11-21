@@ -8,9 +8,9 @@ task time updates, and duration calculations.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
+from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.time_entry.version_1.time_entry import TimeEntry
+from application.data.time_entry.version_1.time_entry import TimeEntry
 from services.services import get_entity_service
 
 
@@ -90,10 +90,10 @@ class TimeEntryProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if not user_response or not user_response.entity:
+            if not user_response or not user_response.data:
                 raise ValueError(f"User {time_entry.user_id} not found")
 
-            user_data = user_response.entity
+            user_data = user_response.data
             is_active = user_data.get("isActive", True)
 
             if not is_active:
@@ -106,10 +106,10 @@ class TimeEntryProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if not task_response or not task_response.entity:
+            if not task_response or not task_response.data:
                 raise ValueError(f"Task {time_entry.task_id} not found")
 
-            task_data = task_response.entity
+            task_data = task_response.data
             task_assignee = task_data.get("assignee_id")
             project_id = task_data.get("project_id")
 
@@ -121,8 +121,8 @@ class TimeEntryProcessor(CyodaProcessor):
                     entity_version="1"
                 )
 
-                if project_response and project_response.entity:
-                    project_data = project_response.entity
+                if project_response and project_response.data:
+                    project_data = project_response.data
                     project_members = project_data.get("members", [])
                     project_owner = project_data.get("owner_id", "")
 
@@ -191,8 +191,8 @@ class TimeEntryProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if task_response and task_response.entity:
-                task_data = task_response.entity.copy()
+            if task_response and task_response.data:
+                task_data = task_response.data.copy()
                 current_logged_hours = task_data.get("logged_hours", 0.0) or 0.0
                 
                 # Add this time entry's hours

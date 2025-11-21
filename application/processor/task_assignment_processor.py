@@ -8,9 +8,9 @@ and notification of assignment.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
+from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.task.version_1.task import Task
+from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
@@ -85,10 +85,10 @@ class TaskAssignmentProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if not assignee_response or not assignee_response.entity:
+            if not assignee_response or not assignee_response.data:
                 raise ValueError(f"Task assignee {task.assignee_id} not found")
 
-            assignee_data = assignee_response.entity
+            assignee_data = assignee_response.data
             is_active = assignee_data.get("isActive", True)
 
             if not is_active:
@@ -101,10 +101,10 @@ class TaskAssignmentProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if not project_response or not project_response.entity:
+            if not project_response or not project_response.data:
                 raise ValueError(f"Project {task.project_id} not found")
 
-            project_data = project_response.entity
+            project_data = project_response.data
             project_members = project_data.get("members", [])
             project_owner = project_data.get("owner_id", "")
 

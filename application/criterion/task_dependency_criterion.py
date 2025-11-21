@@ -8,14 +8,13 @@ Ensures tasks cannot progress if their dependencies are not completed.
 import logging
 from typing import Any
 
-from common.criterion.base import CyodaCriterion
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity
-from application.entity.task.version_1.task import Task
+from common.data.data_casting import cast_entity
+from common.processor.base import CyodaCriteriaChecker, CyodaEntity
+from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
-class TaskDependencyCriterion(CyodaCriterion):
+class TaskDependencyCriterion(CyodaCriteriaChecker):
     """
     Criterion for validating task dependencies are met before transitions.
     """
@@ -29,7 +28,7 @@ class TaskDependencyCriterion(CyodaCriterion):
             self, "logger", logging.getLogger(__name__)
         )
 
-    async def evaluate(self, entity: CyodaEntity, **kwargs: Any) -> bool:
+    async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         """
         Evaluate if task dependencies are met.
 
@@ -81,7 +80,7 @@ class TaskDependencyCriterion(CyodaCriterion):
         entity_service = get_entity_service()
 
         try:
-            for dependency_id in task.dependencies:
+            for dependency_id in (task.dependencies or []):
                 # Get the dependency task
                 dependency_response = await entity_service.get_by_id(
                     entity_id=dependency_id,
@@ -89,11 +88,11 @@ class TaskDependencyCriterion(CyodaCriterion):
                     entity_version="1"
                 )
 
-                if not dependency_response or not dependency_response.entity:
+                if not dependency_response or not dependency_response.data:
                     self.logger.warning(f"Dependency task {dependency_id} not found")
                     return False
 
-                dependency_data = dependency_response.entity
+                dependency_data = dependency_response.data
                 dependency_state = dependency_data.get("state", "")
 
                 # Dependency must be completed

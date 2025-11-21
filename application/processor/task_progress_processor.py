@@ -8,9 +8,9 @@ and progress metrics.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
+from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.task.version_1.task import Task
+from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
@@ -78,13 +78,13 @@ class TaskProgressProcessor(CyodaProcessor):
 
         try:
             # Get all time entries for this task
-            from common.service.entity_service import SearchConditionRequest, SearchCondition, SearchOperator
+            from common.service.data_service import SearchConditionRequest, SearchCondition, SearchOperator
 
             search_condition = SearchConditionRequest(
                 conditions=[SearchCondition(
                     field="task_id",
                     operator=SearchOperator.EQUALS,
-                    value=task.technical_id or task.entity_id
+                    value=task.technical_id or task.data_id
                 )]
             )
 
@@ -97,7 +97,10 @@ class TaskProgressProcessor(CyodaProcessor):
             total_logged_hours = 0.0
             if time_entries_response:
                 for entry_response in time_entries_response:
-                    entry_data = entry_response.data.model_dump() if hasattr(entry_response.data, 'model_dump') else entry_response.data
+                    if hasattr(entry_response.data, 'model_dump'):
+                        entry_data = entry_response.data.model_dump()
+                    else:
+                        entry_data = entry_response.data
                     duration_minutes = entry_data.get("duration_minutes", 0)
                     total_logged_hours += duration_minutes / 60.0
 

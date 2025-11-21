@@ -7,9 +7,9 @@ Handles comment notifications including mentions and real-time updates.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
+from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.comment.version_1.comment import Comment
+from application.data.comment.version_1.comment import Comment
 from services.services import get_entity_service
 
 
@@ -90,8 +90,8 @@ class CommentNotificationProcessor(CyodaProcessor):
                     entity_version="1"
                 )
 
-                if user_response and user_response.entity:
-                    user_data = user_response.entity
+                if user_response and user_response.data:
+                    user_data = user_response.data
                     user_name = user_data.get("name", "Unknown User")
                     
                     self.logger.info(
@@ -128,11 +128,11 @@ class CommentNotificationProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if not task_response or not task_response.entity:
+            if not task_response or not task_response.data:
                 self.logger.warning(f"Could not find task {comment.task_id} for notifications")
                 return
 
-            task_data = task_response.entity
+            task_data = task_response.data
             assignee_id = task_data.get("assignee_id")
             
             # Get project to find owner and members
@@ -144,8 +144,8 @@ class CommentNotificationProcessor(CyodaProcessor):
                     entity_version="1"
                 )
 
-                if project_response and project_response.entity:
-                    project_data = project_response.entity
+                if project_response and project_response.data:
+                    project_data = project_response.data
                     project_owner = project_data.get("owner_id")
                     
                     # Collect participants (excluding comment author)

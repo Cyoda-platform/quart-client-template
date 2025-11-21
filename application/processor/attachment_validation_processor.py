@@ -8,9 +8,9 @@ size validation, and security scanning.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
+from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.attachment.version_1.attachment import Attachment
+from application.data.attachment.version_1.attachment import Attachment
 from services.services import get_entity_service
 
 
@@ -135,10 +135,10 @@ class AttachmentValidationProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if not uploader_response or not uploader_response.entity:
+            if not uploader_response or not uploader_response.data:
                 raise ValueError(f"Uploader {attachment.uploaded_by} not found")
 
-            uploader_data = uploader_response.entity
+            uploader_data = uploader_response.data
             is_active = uploader_data.get("isActive", True)
 
             if not is_active:
@@ -151,10 +151,10 @@ class AttachmentValidationProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if not task_response or not task_response.entity:
+            if not task_response or not task_response.data:
                 raise ValueError(f"Task {attachment.task_id} not found")
 
-            task_data = task_response.entity
+            task_data = task_response.data
             project_id = task_data.get("project_id")
 
             # Get project to validate membership
@@ -165,8 +165,8 @@ class AttachmentValidationProcessor(CyodaProcessor):
                     entity_version="1"
                 )
 
-                if project_response and project_response.entity:
-                    project_data = project_response.entity
+                if project_response and project_response.data:
+                    project_data = project_response.data
                     project_members = project_data.get("members", [])
                     project_owner = project_data.get("owner_id", "")
 

@@ -8,9 +8,9 @@ project statistics updates, and completion notifications.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
+from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.task.version_1.task import Task
+from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
@@ -81,13 +81,13 @@ class TaskCompletionProcessor(CyodaProcessor):
 
         try:
             # Get all approved time entries for this task
-            from common.service.entity_service import SearchConditionRequest, SearchCondition, SearchOperator
+            from common.service.data_service import SearchConditionRequest, SearchCondition, SearchOperator
 
             search_condition = SearchConditionRequest(
                 conditions=[SearchCondition(
                     field="task_id",
                     operator=SearchOperator.EQUALS,
-                    value=task.technical_id or task.entity_id
+                    value=task.technical_id or task.data_id
                 )]
             )
 
@@ -100,7 +100,10 @@ class TaskCompletionProcessor(CyodaProcessor):
             total_logged_hours = 0.0
             if time_entries_response:
                 for entry_response in time_entries_response:
-                    entry_data = entry_response.data.model_dump() if hasattr(entry_response.data, 'model_dump') else entry_response.data
+                    if hasattr(entry_response.data, 'model_dump'):
+                        entry_data = entry_response.data.model_dump()
+                    else:
+                        entry_data = entry_response.data
                     # Only count approved or logged time entries
                     entry_state = entry_data.get("state", "")
                     if entry_state in ["logged", "approved"]:
@@ -136,11 +139,13 @@ class TaskCompletionProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if not project_response or not project_response.entity:
+            if not project_response or not project_response.data:
                 self.logger.warning(f"Could not find project {task.project_id} for statistics update")
                 return
 
             # Get all tasks in the project to calculate completion rate
+            from common.service.entity_service import SearchConditionRequest, SearchCondition, SearchOperator
+
             project_search_condition = SearchConditionRequest(
                 conditions=[SearchCondition(
                     field="project_id",

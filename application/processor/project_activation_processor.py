@@ -8,9 +8,9 @@ and initial setup of project metadata.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
+from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.project.version_1.project import Project
+from application.data.project.version_1.project import Project
 from services.services import get_entity_service
 
 
@@ -84,10 +84,10 @@ class ProjectActivationProcessor(CyodaProcessor):
                 entity_version="1"
             )
 
-            if not owner_response or not owner_response.entity:
+            if not owner_response or not owner_response.data:
                 raise ValueError(f"Project owner {project.owner_id} not found")
 
-            owner_data = owner_response.entity
+            owner_data = owner_response.data
             owner_role = owner_data.get("role", "")
 
             # Validate owner has proper role

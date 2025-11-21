@@ -8,9 +8,9 @@ Ensures only authorized users can perform specific transitions.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
+from common.data.data_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.task.version_1.task import Task
+from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
@@ -95,11 +95,11 @@ class TaskTransitionCriterion(CyodaCriteriaChecker):
                 entity_version="1"
             )
 
-            if not user_response or not user_response.entity:
+            if not user_response or not user_response.data:
                 self.logger.warning(f"User {user_id} not found")
                 return False
 
-            user_data = user_response.entity
+            user_data = user_response.data
             user_role = user_data.get("role", "")
             is_active = user_data.get("isActive", True)
 
@@ -114,11 +114,11 @@ class TaskTransitionCriterion(CyodaCriteriaChecker):
                 entity_version="1"
             )
 
-            if not project_response or not project_response.entity:
+            if not project_response or not project_response.data:
                 self.logger.warning(f"Project {task.project_id} not found")
                 return False
 
-            project_data = project_response.entity
+            project_data = project_response.data
             project_owner = project_data.get("owner_id", "")
             project_members = project_data.get("members", [])
 

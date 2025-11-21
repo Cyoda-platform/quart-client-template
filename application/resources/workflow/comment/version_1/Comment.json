@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "name": "Comment Workflow",
+  "desc": "Workflow for Comment entity with posting and editing states",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "post",
+          "next": "posted",
+          "manual": false,
+          "processors": [
+            {
+              "name": "CommentNotificationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "posted": {
+      "transitions": [
+        {
+          "name": "edit",
+          "next": "edited",
+          "manual": true
+        }
+      ]
+    },
+    "edited": {
+      "transitions": [
+        {
+          "name": "edit_again",
+          "next": "edited",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

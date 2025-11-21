@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "name": "TimeEntry Workflow",
+  "desc": "Workflow for TimeEntry entity with logging and approval states",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "log",
+          "next": "logged",
+          "manual": false,
+          "processors": [
+            {
+              "name": "TimeEntryProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "logged": {
+      "transitions": [
+        {
+          "name": "approve",
+          "next": "approved",
+          "manual": true
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "approved": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": [
+        {
+          "name": "resubmit",
+          "next": "logged",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

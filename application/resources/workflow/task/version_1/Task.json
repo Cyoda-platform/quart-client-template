@@ -1,0 +1,150 @@
+{
+  "version": "1.0",
+  "name": "Task Workflow",
+  "desc": "Core task workflow: backlog -> todo -> in_progress -> review -> done",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "backlog",
+          "manual": false
+        }
+      ]
+    },
+    "backlog": {
+      "transitions": [
+        {
+          "name": "plan",
+          "next": "todo",
+          "manual": false,
+          "processors": [
+            {
+              "name": "TaskAssignmentProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "todo": {
+      "transitions": [
+        {
+          "name": "start_work",
+          "next": "in_progress",
+          "manual": true,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "TaskTransitionCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "return_to_backlog",
+          "next": "backlog",
+          "manual": true
+        }
+      ]
+    },
+    "in_progress": {
+      "transitions": [
+        {
+          "name": "submit_for_review",
+          "next": "review",
+          "manual": true,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "TaskTransitionCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          },
+          "processors": [
+            {
+              "name": "TaskProgressProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "return_to_todo",
+          "next": "todo",
+          "manual": true
+        }
+      ]
+    },
+    "review": {
+      "transitions": [
+        {
+          "name": "approve",
+          "next": "done",
+          "manual": true,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "TaskTransitionCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          },
+          "processors": [
+            {
+              "name": "TaskCompletionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "request_changes",
+          "next": "in_progress",
+          "manual": true,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "TaskTransitionCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "done": {
+      "transitions": [
+        {
+          "name": "reopen",
+          "next": "todo",
+          "manual": true,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "TaskTransitionCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

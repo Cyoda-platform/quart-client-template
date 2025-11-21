@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "name": "Attachment Workflow",
+  "desc": "Workflow for Attachment entity with upload and deletion states",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "upload",
+          "next": "uploaded",
+          "manual": false,
+          "processors": [
+            {
+              "name": "AttachmentValidationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "uploaded": {
+      "transitions": [
+        {
+          "name": "delete",
+          "next": "deleted",
+          "manual": true
+        }
+      ]
+    },
+    "deleted": {
+      "transitions": []
+    }
+  }
+}

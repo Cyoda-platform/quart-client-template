@@ -1,0 +1,48 @@
+{
+  "name": "Attachment",
+  "version": 1,
+  "fields": [
+    {
+      "name": "attachment_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the attachment"
+    },
+    {
+      "name": "task_id",
+      "type": "string",
+      "required": true,
+      "description": "Technical ID of the parent task"
+    },
+    {
+      "name": "filename",
+      "type": "string",
+      "required": true,
+      "description": "Original filename"
+    },
+    {
+      "name": "url",
+      "type": "string",
+      "required": true,
+      "description": "Storage URL for the file"
+    },
+    {
+      "name": "uploaded_by",
+      "type": "string",
+      "required": true,
+      "description": "Technical ID of the uploader"
+    },
+    {
+      "name": "file_size",
+      "type": "number",
+      "required": false,
+      "description": "File size in bytes"
+    },
+    {
+      "name": "content_type",
+      "type": "string",
+      "required": false,
+      "description": "MIME type of the file"
+    }
+  ]
+}

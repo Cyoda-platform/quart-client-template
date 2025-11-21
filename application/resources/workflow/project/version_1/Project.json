@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "name": "Project Workflow",
+  "desc": "Workflow for Project entity with creation, activation, and completion states",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ProjectActivationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": true
+        },
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "completed": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        },
+        {
+          "name": "reopen",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}

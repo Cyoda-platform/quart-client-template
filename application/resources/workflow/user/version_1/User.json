@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "name": "User Workflow",
+  "desc": "Workflow for User entity with simple activation process",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "suspend",
+          "next": "suspended",
+          "manual": true
+        }
+      ]
+    },
+    "suspended": {
+      "transitions": [
+        {
+          "name": "reactivate",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

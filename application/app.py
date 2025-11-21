@@ -11,6 +11,7 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from .routes.customers import customers_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

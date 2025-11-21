@@ -1,0 +1,36 @@
+{
+  "name": "User",
+  "version": 1,
+  "fields": [
+    {
+      "name": "user_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the user"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "description": "Full name of the user"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "required": true,
+      "description": "Email address (must be unique)"
+    },
+    {
+      "name": "role",
+      "type": "string",
+      "required": true,
+      "description": "User role: ADMIN, MANAGER, MEMBER"
+    },
+    {
+      "name": "is_active",
+      "type": "boolean",
+      "required": false,
+      "description": "Whether user account is active"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "MedicalRecord",
+  "version": 1,
+  "fields": [
+    {
+      "name": "record_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the medical record"
+    },
+    {
+      "name": "patient_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the patient"
+    },
+    {
+      "name": "record_type",
+      "type": "string",
+      "required": true,
+      "description": "Type of medical record"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "required": true,
+      "description": "Medical record content or link to content"
+    },
+    {
+      "name": "record_created_at",
+      "type": "string",
+      "required": true,
+      "description": "When the medical record was created (ISO 8601)"
+    },
+    {
+      "name": "access_level",
+      "type": "string",
+      "required": true,
+      "description": "Access level for the record (private/shared)"
+    }
+  ]
+}

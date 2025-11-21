@@ -1,0 +1,54 @@
+{
+  "name": "Prescription",
+  "version": 1,
+  "fields": [
+    {
+      "name": "prescription_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the prescription"
+    },
+    {
+      "name": "patient_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the patient"
+    },
+    {
+      "name": "doctor_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the prescribing doctor"
+    },
+    {
+      "name": "medication_name",
+      "type": "string",
+      "required": true,
+      "description": "Name of the prescribed medication"
+    },
+    {
+      "name": "dosage",
+      "type": "string",
+      "required": true,
+      "description": "Dosage instructions for the medication"
+    },
+    {
+      "name": "instructions",
+      "type": "string",
+      "required": true,
+      "description": "Additional instructions for taking the medication"
+    },
+    {
+      "name": "issued_at",
+      "type": "string",
+      "required": true,
+      "description": "When the prescription was issued (ISO 8601)"
+    },
+    {
+      "name": "refills_remaining",
+      "type": "number",
+      "required": true,
+      "description": "Number of refills remaining"
+    }
+  ]
+}

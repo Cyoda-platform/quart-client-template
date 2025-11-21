@@ -78,7 +78,7 @@ class ProjectActivationProcessor(CyodaProcessor):
 
         try:
             # Get the project owner
-            owner_response = await entity_service.get(
+            owner_response = await entity_service.get_by_id(
                 entity_id=project.owner_id,
                 entity_class="User",
                 entity_version="1"
@@ -111,6 +111,8 @@ class ProjectActivationProcessor(CyodaProcessor):
         project.update_timestamp()
 
         # Ensure owner is in members list
+        if project.members is None:
+            project.members = []
         if project.owner_id not in project.members:
             project.members.append(project.owner_id)
 

@@ -79,7 +79,7 @@ class TaskAssignmentProcessor(CyodaProcessor):
 
         try:
             # Get the assignee
-            assignee_response = await entity_service.get(
+            assignee_response = await entity_service.get_by_id(
                 entity_id=task.assignee_id,
                 entity_class="User",
                 entity_version="1"
@@ -95,7 +95,7 @@ class TaskAssignmentProcessor(CyodaProcessor):
                 raise ValueError(f"Cannot assign task to inactive user {task.assignee_id}")
 
             # Get the project to validate membership
-            project_response = await entity_service.get(
+            project_response = await entity_service.get_by_id(
                 entity_id=task.project_id,
                 entity_class="Project",
                 entity_version="1"

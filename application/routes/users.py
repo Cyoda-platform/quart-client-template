@@ -106,7 +106,7 @@ async def list_users() -> ResponseReturnValue:
             conditions.append({
                 "field": "isActive",
                 "operator": "EQUALS",
-                "value": is_active.lower() == "true"
+                "value": "true" if is_active.lower() == "true" else "false"
             })
 
         # Search users

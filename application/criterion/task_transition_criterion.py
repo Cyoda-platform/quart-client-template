@@ -90,7 +90,7 @@ class TaskTransitionCriterion(CyodaCriterion):
 
         try:
             # Get user information
-            user_response = await entity_service.get(
+            user_response = await entity_service.get_by_id(
                 entity_id=user_id,
                 entity_class="User",
                 entity_version="1"
@@ -109,7 +109,7 @@ class TaskTransitionCriterion(CyodaCriterion):
                 return False
 
             # Get project information
-            project_response = await entity_service.get(
+            project_response = await entity_service.get_by_id(
                 entity_id=task.project_id,
                 entity_class="Project",
                 entity_version="1"

@@ -84,7 +84,7 @@ class CommentNotificationProcessor(CyodaProcessor):
         for mentioned_user_id in comment.mentions:
             try:
                 # Validate mentioned user exists
-                user_response = await entity_service.get(
+                user_response = await entity_service.get_by_id(
                     entity_id=mentioned_user_id,
                     entity_class="User",
                     entity_version="1"
@@ -122,7 +122,7 @@ class CommentNotificationProcessor(CyodaProcessor):
 
         try:
             # Get the task to find participants
-            task_response = await entity_service.get(
+            task_response = await entity_service.get_by_id(
                 entity_id=comment.task_id,
                 entity_class="Task",
                 entity_version="1"
@@ -138,7 +138,7 @@ class CommentNotificationProcessor(CyodaProcessor):
             # Get project to find owner and members
             project_id = task_data.get("project_id")
             if project_id:
-                project_response = await entity_service.get(
+                project_response = await entity_service.get_by_id(
                     entity_id=project_id,
                     entity_class="Project",
                     entity_version="1"

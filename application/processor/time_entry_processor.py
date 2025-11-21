@@ -84,7 +84,7 @@ class TimeEntryProcessor(CyodaProcessor):
 
         try:
             # Get the user
-            user_response = await entity_service.get(
+            user_response = await entity_service.get_by_id(
                 entity_id=time_entry.user_id,
                 entity_class="User",
                 entity_version="1"
@@ -100,7 +100,7 @@ class TimeEntryProcessor(CyodaProcessor):
                 raise ValueError(f"Cannot log time for inactive user {time_entry.user_id}")
 
             # Get the task
-            task_response = await entity_service.get(
+            task_response = await entity_service.get_by_id(
                 entity_id=time_entry.task_id,
                 entity_class="Task",
                 entity_version="1"
@@ -115,7 +115,7 @@ class TimeEntryProcessor(CyodaProcessor):
 
             # Get project to validate membership
             if project_id:
-                project_response = await entity_service.get(
+                project_response = await entity_service.get_by_id(
                     entity_id=project_id,
                     entity_class="Project",
                     entity_version="1"
@@ -185,7 +185,7 @@ class TimeEntryProcessor(CyodaProcessor):
 
         try:
             # Get the current task
-            task_response = await entity_service.get(
+            task_response = await entity_service.get_by_id(
                 entity_id=time_entry.task_id,
                 entity_class="Task",
                 entity_version="1"

@@ -81,14 +81,20 @@ class TaskCompletionProcessor(CyodaProcessor):
 
         try:
             # Get all approved time entries for this task
+            from common.service.entity_service import SearchConditionRequest, SearchCondition, SearchOperator
+
+            search_condition = SearchConditionRequest(
+                conditions=[SearchCondition(
+                    field="task_id",
+                    operator=SearchOperator.EQUALS,
+                    value=task.technical_id or task.entity_id
+                )]
+            )
+
             time_entries_response = await entity_service.search(
                 entity_class="TimeEntry",
-                entity_version="1",
-                conditions=[{
-                    "field": "task_id",
-                    "operator": "EQUALS",
-                    "value": task.technical_id or task.entity_id
-                }]
+                condition=search_condition,
+                entity_version="1"
             )
 
             total_logged_hours = 0.0
@@ -123,7 +129,7 @@ class TaskCompletionProcessor(CyodaProcessor):
 
         try:
             # Get project to update statistics
-            project_response = await entity_service.get(
+            project_response = await entity_service.get_by_id(
                 entity_id=task.project_id,
                 entity_class="Project",
                 entity_version="1"

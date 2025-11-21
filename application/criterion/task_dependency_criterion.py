@@ -83,7 +83,7 @@ class TaskDependencyCriterion(CyodaCriterion):
         try:
             for dependency_id in task.dependencies:
                 # Get the dependency task
-                dependency_response = await entity_service.get(
+                dependency_response = await entity_service.get_by_id(
                     entity_id=dependency_id,
                     entity_class="Task",
                     entity_version="1"

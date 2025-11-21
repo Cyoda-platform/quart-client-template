@@ -116,13 +116,15 @@ class Comment(CyodaEntity):
 
     def add_mention(self, user_id: str) -> None:
         """Add a user mention to the comment"""
-        if user_id and user_id not in self.mentions:
+        if user_id and user_id not in (self.mentions or []):
+            if self.mentions is None:
+                self.mentions = []
             self.mentions.append(user_id)
             self.update_timestamp()
 
     def has_mentions(self) -> bool:
         """Check if comment has mentions"""
-        return len(self.mentions) > 0
+        return len(self.mentions or []) > 0
 
     def is_edited(self) -> bool:
         """Check if comment has been edited"""

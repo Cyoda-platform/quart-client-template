@@ -179,19 +179,21 @@ class Project(CyodaEntity):
 
     def add_member(self, user_id: str) -> None:
         """Add a member to the project"""
-        if user_id and user_id not in self.members:
+        if user_id and user_id not in (self.members or []):
+            if self.members is None:
+                self.members = []
             self.members.append(user_id)
             self.update_timestamp()
 
     def remove_member(self, user_id: str) -> None:
         """Remove a member from the project"""
-        if user_id in self.members:
+        if self.members and user_id in self.members:
             self.members.remove(user_id)
             self.update_timestamp()
 
     def is_member(self, user_id: str) -> bool:
         """Check if user is a project member"""
-        return user_id in self.members or user_id == self.owner_id
+        return user_id in (self.members or []) or user_id == self.owner_id
 
     def to_api_response(self) -> Dict[str, Any]:
         """Convert to API response format"""

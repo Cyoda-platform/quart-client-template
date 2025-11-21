@@ -220,7 +220,7 @@ class Task(CyodaEntity):
 
     def has_dependencies(self) -> bool:
         """Check if task has dependencies"""
-        return len(self.dependencies) > 0
+        return len(self.dependencies or []) > 0
 
     def to_api_response(self) -> Dict[str, Any]:
         """Convert to API response format"""

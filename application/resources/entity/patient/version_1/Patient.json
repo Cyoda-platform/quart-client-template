@@ -1,0 +1,54 @@
+{
+  "name": "Patient",
+  "version": 1,
+  "fields": [
+    {
+      "name": "patient_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the patient"
+    },
+    {
+      "name": "first_name",
+      "type": "string",
+      "required": true,
+      "description": "Patient's first name"
+    },
+    {
+      "name": "last_name",
+      "type": "string",
+      "required": true,
+      "description": "Patient's last name"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "required": true,
+      "description": "Patient's email address"
+    },
+    {
+      "name": "phone",
+      "type": "string",
+      "required": true,
+      "description": "Patient's phone number"
+    },
+    {
+      "name": "dob",
+      "type": "string",
+      "required": true,
+      "description": "Patient's date of birth (YYYY-MM-DD)"
+    },
+    {
+      "name": "address",
+      "type": "string",
+      "required": true,
+      "description": "Patient's address"
+    },
+    {
+      "name": "insurance_provider",
+      "type": "string",
+      "required": true,
+      "description": "Patient's insurance provider"
+    }
+  ]
+}

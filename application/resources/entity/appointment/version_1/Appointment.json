@@ -1,0 +1,42 @@
+{
+  "name": "Appointment",
+  "version": 1,
+  "fields": [
+    {
+      "name": "appointment_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the appointment"
+    },
+    {
+      "name": "patient_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the patient"
+    },
+    {
+      "name": "doctor_id",
+      "type": "string",
+      "required": true,
+      "description": "ID of the doctor"
+    },
+    {
+      "name": "scheduled_at",
+      "type": "string",
+      "required": true,
+      "description": "Scheduled appointment datetime (ISO 8601)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "required": true,
+      "description": "Appointment status (requested/confirmed/cancelled/completed)"
+    },
+    {
+      "name": "reason",
+      "type": "string",
+      "required": true,
+      "description": "Reason for the appointment"
+    }
+  ]
+}

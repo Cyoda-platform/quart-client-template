@@ -1,0 +1,64 @@
+{
+  "name": "Customer",
+  "version": 1,
+  "fields": [
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "description": "Customer full name"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "required": true,
+      "description": "Customer email address (unique)"
+    },
+    {
+      "name": "phone",
+      "type": "string",
+      "required": false,
+      "description": "Customer phone number"
+    },
+    {
+      "name": "address",
+      "type": "object",
+      "required": false,
+      "description": "Customer address",
+      "properties": {
+        "street": {
+          "type": "string",
+          "required": false,
+          "description": "Street address"
+        },
+        "city": {
+          "type": "string",
+          "required": false,
+          "description": "City"
+        },
+        "state": {
+          "type": "string",
+          "required": false,
+          "description": "State or province"
+        },
+        "zip": {
+          "type": "string",
+          "required": false,
+          "description": "ZIP or postal code"
+        }
+      }
+    },
+    {
+      "name": "created_at",
+      "type": "string",
+      "required": false,
+      "description": "Timestamp when the customer was created (auto-generated)"
+    },
+    {
+      "name": "updated_at",
+      "type": "string",
+      "required": false,
+      "description": "Timestamp when the customer was last updated (auto-generated)"
+    }
+  ]
+}

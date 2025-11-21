@@ -1,0 +1,29 @@
+{
+  "name": "customer",
+  "version": 1,
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "required": true,
+      "validation": {
+        "format": "email"
+      }
+    },
+    {
+      "name": "phone",
+      "type": "string",
+      "required": false
+    }
+  ]
+}

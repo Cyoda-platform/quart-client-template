@@ -1,0 +1,353 @@
+openapi: 3.0.3
+info:
+  title: Customer API
+  description: REST API for Customer entity management using Cyoda template
+  version: 1.0.0
+  contact:
+    name: Customer API Support
+    email: support@example.com
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+tags:
+  - name: customers
+    description: Customer management operations
+
+paths:
+  /api/customers:
+    post:
+      tags: [customers]
+      operationId: create_customer
+      summary: Create a new customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCreateRequest'
+      responses:
+        '201':
+          description: Customer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [customers]
+      operationId: list_customers
+      summary: List customers with pagination
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: name
+          in: query
+          schema:
+            type: string
+        - name: email
+          in: query
+          schema:
+            type: string
+            format: email
+        - name: state
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerListResponse'
+
+  /api/customers/{customer_id}:
+    get:
+      tags: [customers]
+      operationId: get_customer
+      summary: Get customer by ID
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Customer details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [customers]
+      operationId: update_customer
+      summary: Update customer (full update)
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: transition
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdateRequest'
+      responses:
+        '200':
+          description: Customer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+
+    patch:
+      tags: [customers]
+      operationId: patch_customer
+      summary: Update customer (partial update)
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: transition
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdateRequest'
+      responses:
+        '200':
+          description: Customer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+
+    delete:
+      tags: [customers]
+      operationId: delete_customer
+      summary: Delete customer
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Customer deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteResponse'
+
+  /api/customers/search:
+    post:
+      tags: [customers]
+      operationId: search_customers
+      summary: Search customers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerSearchResponse'
+
+components:
+  schemas:
+    CustomerCreateRequest:
+      type: object
+      required: [name, email]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Customer full name
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Customer email address
+        phone:
+          type: string
+          maxLength: 20
+          description: Customer phone number
+        address:
+          type: string
+          maxLength: 500
+          description: Customer address
+
+    CustomerUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        phone:
+          type: string
+          maxLength: 20
+        address:
+          type: string
+          maxLength: 500
+
+    CustomerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Customer UUID
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+        state:
+          type: string
+          description: Current workflow state
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        processedData:
+          type: object
+        validationResult:
+          type: object
+
+    CustomerListResponse:
+      type: object
+      properties:
+        customers:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerResponse'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_pages:
+          type: integer
+
+    CustomerSearchResponse:
+      type: object
+      properties:
+        customers:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerResponse'
+        total:
+          type: integer
+
+    SearchRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+        state:
+          type: string
+
+    DeleteResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        entity_id:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: object
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        field_errors:
+          type: object
+        code:
+          type: string

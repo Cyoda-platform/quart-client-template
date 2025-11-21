@@ -41,6 +41,71 @@ You'll receive:
 - `CYODA_CLIENT_SECRET` - Your client secret key
 - `CYODA_HOST` - Your environment host (e.g., `client-123.eu.cyoda.net`)
 
+## Customer API Implementation
+
+This repository includes a complete REST API implementation for Customer entities using the Cyoda template. The Customer API provides full CRUD operations with comprehensive validation and workflow management.
+
+### Customer API Features
+
+- **Complete CRUD Operations**: Create, Read, Update, Delete customers
+- **Input Validation**: Email format validation, required fields, field length constraints
+- **Pagination**: Page-based pagination with metadata
+- **Workflow Integration**: Full Cyoda workflow with states and transitions
+- **Business Logic**: Customer classification (BASIC, STANDARD, PREMIUM)
+- **Comprehensive Testing**: Unit tests for all components
+- **OpenAPI Documentation**: Complete API specification in `openapi.yaml`
+
+### Quick Start - Customer API
+
+1. **Install Dependencies**:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install -e ".[dev]"
+   ```
+
+2. **Run the Application**:
+   ```bash
+   python application/app.py
+   ```
+
+3. **Access the API**:
+   - API Base URL: `http://localhost:8000/api/customers`
+   - OpenAPI Spec: See `openapi.yaml`
+   - Implementation Details: See `CUSTOMER_API_IMPLEMENTATION_SUMMARY.md`
+
+### Customer API Endpoints
+
+- `POST /api/customers` - Create customer
+- `GET /api/customers` - List customers with pagination
+- `GET /api/customers/{id}` - Get customer by ID
+- `PUT /api/customers/{id}` - Full update customer
+- `PATCH /api/customers/{id}` - Partial update customer
+- `DELETE /api/customers/{id}` - Delete customer
+- `POST /api/customers/search` - Search customers
+
+### Example Usage
+
+```bash
+# Create a customer
+curl -X POST http://localhost:8000/api/customers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "phone": "+1-555-123-4567",
+    "address": "123 Main St, Anytown, USA"
+  }'
+
+# List customers with pagination
+curl "http://localhost:8000/api/customers?page=1&page_size=10"
+
+# Get customer by ID
+curl "http://localhost:8000/api/customers/{customer_id}"
+```
+
+For complete documentation, see `CUSTOMER_API_IMPLEMENTATION_SUMMARY.md`.
+
 ## Configuration
 
 ### Required Environment Variables

@@ -7,7 +7,7 @@ external service calls, and event emission as specified in functional requiremen
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Dict
 
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
@@ -99,7 +99,7 @@ class OrderCancelProcessor(CyodaProcessor):
             )
             raise
 
-    async def _call_external_cancellation_service(self, order: Order) -> dict:
+    async def _call_external_cancellation_service(self, order: Order) -> Dict[str, Any]:
         """
         Call external cancellation service with retry policy.
 

@@ -83,16 +83,16 @@ class HttpClient:
         self.default_headers = headers or {}
         self._session: Optional[aiohttp.ClientSession] = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "HttpClient":
         """Async context manager entry."""
         await self._ensure_session()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Async context manager exit."""
         await self.close()
 
-    async def _ensure_session(self):
+    async def _ensure_session(self) -> None:
         """Ensure aiohttp session is created."""
         if self._session is None or self._session.closed:
             timeout = aiohttp.ClientTimeout(total=self.timeout)
@@ -101,7 +101,7 @@ class HttpClient:
                 headers=self.default_headers
             )
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the HTTP session."""
         if self._session and not self._session.closed:
             await self._session.close()
@@ -164,16 +164,19 @@ class HttpClient:
             HttpClientError: If request fails after all retries
         """
         await self._ensure_session()
-        
+
+        if self._session is None:
+            raise HttpClientError("Failed to create HTTP session")
+
         full_url = self._build_url(url)
         request_headers = {**self.default_headers, **(headers or {})}
-        
+
         last_exception = None
-        
+
         for attempt in range(1, self.max_retries + 2):  # +1 for initial attempt
             try:
                 logger.debug(f"HTTP {method} {full_url} (attempt {attempt})")
-                
+
                 async with self._session.request(
                     method=method,
                     url=full_url,

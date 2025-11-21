@@ -199,36 +199,42 @@ class OrderValidator:
         if not isinstance(payload, dict):
             raise OrderValidationError("Order payload must be a dictionary")
         
-        validated_payload = {}
+        validated_payload: Dict[str, Any] = {}
         errors = []
         
         # Validate required fields
         try:
-            validated_payload["customer_id"] = OrderValidator.validate_customer_id(
+            customer_id = OrderValidator.validate_customer_id(
                 payload.get("customer_id")
             )
+            validated_payload["customer_id"] = customer_id
         except OrderValidationError as e:
             errors.append(e.message)
-        
+
         try:
-            validated_payload["amount"] = OrderValidator.validate_amount(
+            amount = OrderValidator.validate_amount(
                 payload.get("amount")
             )
+            validated_payload["amount"] = amount
         except OrderValidationError as e:
             errors.append(e.message)
-        
+
         # Validate optional fields
         try:
-            validated_payload["description"] = OrderValidator.validate_description(
+            description = OrderValidator.validate_description(
                 payload.get("description")
             )
+            if description is not None:
+                validated_payload["description"] = description
         except OrderValidationError as e:
             errors.append(e.message)
-        
+
         try:
-            validated_payload["status"] = OrderValidator.validate_status(
+            status = OrderValidator.validate_status(
                 payload.get("status")
             )
+            if status is not None:
+                validated_payload["status"] = status
         except OrderValidationError as e:
             errors.append(e.message)
         

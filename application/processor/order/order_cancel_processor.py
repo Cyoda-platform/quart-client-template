@@ -12,6 +12,7 @@ from typing import Any
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
 from application.entity.order.version_1.order import Order
+from application.utils.http_client import create_order_cancellation_client, HttpClientError
 from services.services import get_entity_service
 
 

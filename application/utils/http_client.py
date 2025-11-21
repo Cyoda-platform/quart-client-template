@@ -7,7 +7,7 @@ for external service calls used by Order processors.
 
 import asyncio
 import logging
-import time
+# import time  # Not used
 from enum import Enum
 from typing import Any, Dict, Optional, Union
 from urllib.parse import urljoin
@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class RetryPolicy(Enum):
     """Retry policy types."""
+
     FIXED = "FIXED"
     EXPONENTIAL = "EXPONENTIAL"
     LINEAR = "LINEAR"
@@ -26,8 +27,10 @@ class RetryPolicy(Enum):
 
 class HttpClientError(Exception):
     """Base exception for HTTP client errors."""
-    
-    def __init__(self, message: str, status_code: Optional[int] = None, response_data: Any = None):
+
+    def __init__(
+        self, message: str, status_code: Optional[int] = None, response_data: Any = None
+    ):
         self.message = message
         self.status_code = status_code
         self.response_data = response_data
@@ -36,18 +39,20 @@ class HttpClientError(Exception):
 
 class HttpRetryableError(HttpClientError):
     """Exception for retryable HTTP errors."""
+
     pass
 
 
 class HttpNonRetryableError(HttpClientError):
     """Exception for non-retryable HTTP errors."""
+
     pass
 
 
 class HttpClient:
     """
     Lightweight HTTP client with retry support.
-    
+
     Provides async HTTP operations with configurable retry policies,
     timeout handling, and structured error handling.
     """
@@ -60,11 +65,11 @@ class HttpClient:
         retry_policy: RetryPolicy = RetryPolicy.EXPONENTIAL,
         retry_delay: float = 1.0,
         retry_backoff_factor: float = 2.0,
-        headers: Optional[Dict[str, str]] = None
+        headers: Optional[Dict[str, str]] = None,
     ):
         """
         Initialize HTTP client.
-        
+
         Args:
             base_url: Base URL for all requests
             timeout: Request timeout in seconds
@@ -97,8 +102,7 @@ class HttpClient:
         if self._session is None or self._session.closed:
             timeout = aiohttp.ClientTimeout(total=self.timeout)
             self._session = aiohttp.ClientSession(
-                timeout=timeout,
-                headers=self.default_headers
+                timeout=timeout, headers=self.default_headers
             )
 
     async def close(self) -> None:
@@ -144,11 +148,11 @@ class HttpClient:
         headers: Optional[Dict[str, str]] = None,
         json_data: Optional[Dict[str, Any]] = None,
         data: Optional[Union[str, bytes]] = None,
-        params: Optional[Dict[str, str]] = None
+        params: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Make HTTP request with retry logic.
-        
+
         Args:
             method: HTTP method
             url: Request URL
@@ -156,10 +160,10 @@ class HttpClient:
             json_data: JSON data to send
             data: Raw data to send
             params: Query parameters
-            
+
         Returns:
             Response data as dictionary
-            
+
         Raises:
             HttpClientError: If request fails after all retries
         """
@@ -183,66 +187,87 @@ class HttpClient:
                     headers=request_headers,
                     json=json_data,
                     data=data,
-                    params=params
+                    params=params,
                 ) as response:
-                    
+
                     # Read response data
                     try:
                         response_data = await response.json()
                     except Exception:
                         response_data = await response.text()
-                    
+
                     # Check if request was successful
                     if response.status < 400:
-                        logger.debug(f"HTTP {method} {full_url} succeeded (status: {response.status})")
+                        logger.debug(
+                            f"HTTP {method} {full_url} succeeded (status: {response.status})"
+                        )
                         return {
                             "status_code": response.status,
                             "data": response_data,
-                            "headers": dict(response.headers)
+                            "headers": dict(response.headers),
                         }
-                    
+
                     # Handle error responses
-                    error_msg = f"HTTP {method} {full_url} failed with status {response.status}"
-                    
-                    if self._is_retryable_error(response.status) and attempt <= self.max_retries:
-                        logger.warning(f"{error_msg}, retrying (attempt {attempt}/{self.max_retries})")
-                        last_exception = HttpRetryableError(error_msg, response.status, response_data)
+                    error_msg = (
+                        f"HTTP {method} {full_url} failed with status {response.status}"
+                    )
+
+                    if (
+                        self._is_retryable_error(response.status)
+                        and attempt <= self.max_retries
+                    ):
+                        logger.warning(
+                            f"{error_msg}, retrying (attempt {attempt}/{self.max_retries})"
+                        )
+                        last_exception = HttpRetryableError(
+                            error_msg, response.status, response_data
+                        )
                     else:
                         logger.error(f"{error_msg}, not retrying")
-                        raise HttpNonRetryableError(error_msg, response.status, response_data)
-                        
+                        raise HttpNonRetryableError(
+                            error_msg, response.status, response_data
+                        )
+
             except aiohttp.ClientError as e:
-                error_msg = f"HTTP {method} {full_url} failed with client error: {str(e)}"
-                
+                error_msg = (
+                    f"HTTP {method} {full_url} failed with client error: {str(e)}"
+                )
+
                 if attempt <= self.max_retries:
-                    logger.warning(f"{error_msg}, retrying (attempt {attempt}/{self.max_retries})")
+                    logger.warning(
+                        f"{error_msg}, retrying (attempt {attempt}/{self.max_retries})"
+                    )
                     last_exception = HttpRetryableError(error_msg)
                 else:
                     logger.error(f"{error_msg}, not retrying")
                     raise HttpClientError(error_msg) from e
-                    
+
             except Exception as e:
-                error_msg = f"HTTP {method} {full_url} failed with unexpected error: {str(e)}"
+                error_msg = (
+                    f"HTTP {method} {full_url} failed with unexpected error: {str(e)}"
+                )
                 logger.error(error_msg)
                 raise HttpClientError(error_msg) from e
-            
+
             # Wait before retry (except on last attempt)
             if attempt <= self.max_retries:
                 delay = self._calculate_retry_delay(attempt)
                 logger.debug(f"Waiting {delay}s before retry")
                 await asyncio.sleep(delay)
-        
+
         # If we get here, all retries failed
         if last_exception:
             raise last_exception
         else:
-            raise HttpClientError(f"HTTP {method} {full_url} failed after {self.max_retries} retries")
+            raise HttpClientError(
+                f"HTTP {method} {full_url} failed after {self.max_retries} retries"
+            )
 
     async def get(
         self,
         url: str,
         headers: Optional[Dict[str, str]] = None,
-        params: Optional[Dict[str, str]] = None
+        params: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Make GET request."""
         return await self._make_request("GET", url, headers=headers, params=params)
@@ -252,25 +277,27 @@ class HttpClient:
         url: str,
         json_data: Optional[Dict[str, Any]] = None,
         data: Optional[Union[str, bytes]] = None,
-        headers: Optional[Dict[str, str]] = None
+        headers: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Make POST request."""
-        return await self._make_request("POST", url, headers=headers, json_data=json_data, data=data)
+        return await self._make_request(
+            "POST", url, headers=headers, json_data=json_data, data=data
+        )
 
     async def put(
         self,
         url: str,
         json_data: Optional[Dict[str, Any]] = None,
         data: Optional[Union[str, bytes]] = None,
-        headers: Optional[Dict[str, str]] = None
+        headers: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """Make PUT request."""
-        return await self._make_request("PUT", url, headers=headers, json_data=json_data, data=data)
+        return await self._make_request(
+            "PUT", url, headers=headers, json_data=json_data, data=data
+        )
 
     async def delete(
-        self,
-        url: str,
-        headers: Optional[Dict[str, str]] = None
+        self, url: str, headers: Optional[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """Make DELETE request."""
         return await self._make_request("DELETE", url, headers=headers)
@@ -278,10 +305,11 @@ class HttpClient:
 
 # Convenience functions for creating pre-configured clients
 
+
 def create_order_cancellation_client() -> HttpClient:
     """
     Create HTTP client configured for order cancellation service calls.
-    
+
     Returns:
         HttpClient configured with EXPONENTIAL retry policy and 10s timeout
     """
@@ -291,17 +319,17 @@ def create_order_cancellation_client() -> HttpClient:
         retry_policy=RetryPolicy.EXPONENTIAL,
         retry_delay=1.0,
         retry_backoff_factor=2.0,
-        headers={"Content-Type": "application/json"}
+        headers={"Content-Type": "application/json"},
     )
 
 
 def create_fixed_retry_client(timeout: float = 5.0) -> HttpClient:
     """
     Create HTTP client configured with FIXED retry policy.
-    
+
     Args:
         timeout: Request timeout in seconds
-        
+
     Returns:
         HttpClient configured with FIXED retry policy
     """
@@ -310,5 +338,5 @@ def create_fixed_retry_client(timeout: float = 5.0) -> HttpClient:
         max_retries=3,
         retry_policy=RetryPolicy.FIXED,
         retry_delay=1.0,
-        headers={"Content-Type": "application/json"}
+        headers={"Content-Type": "application/json"},
     )

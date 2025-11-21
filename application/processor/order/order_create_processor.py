@@ -9,10 +9,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
-from services.services import get_entity_service
+# from services.services import get_entity_service  # Not used in this processor
 
 
 class OrderCreateProcessor(CyodaProcessor):
@@ -22,7 +22,7 @@ class OrderCreateProcessor(CyodaProcessor):
     - Setting createdAt timestamp
     - Persisting entity
     - Emitting 'OrderCreated' event
-    
+
     Execution mode: SYNC
     Configuration: attachEntity=true, responseTimeoutMs=5000, retryPolicy=FIXED
     """
@@ -65,12 +65,14 @@ class OrderCreateProcessor(CyodaProcessor):
             order.created_at = current_timestamp
 
             # Add processing metadata
-            order.set_processing_metadata({
-                "processed_by": "OrderCreateProcessor",
-                "processed_at": current_timestamp,
-                "transition": "create",
-                "event_emitted": "OrderCreated"
-            })
+            order.set_processing_metadata(
+                {
+                    "processed_by": "OrderCreateProcessor",
+                    "processed_at": current_timestamp,
+                    "transition": "create",
+                    "event_emitted": "OrderCreated",
+                }
+            )
 
             # Emit OrderCreated event (simulated via logging for now)
             await self._emit_order_created_event(order)
@@ -91,7 +93,7 @@ class OrderCreateProcessor(CyodaProcessor):
     async def _emit_order_created_event(self, order: Order) -> None:
         """
         Emit OrderCreated event.
-        
+
         Args:
             order: The created Order entity
         """
@@ -105,14 +107,17 @@ class OrderCreateProcessor(CyodaProcessor):
                 "amount": order.amount,
                 "status": order.status,
                 "created_at": order.created_at,
-                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                "timestamp": datetime.now(timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z"),
             }
-            
+
             self.logger.info(
-                f"EVENT_EMITTED: OrderCreated",
-                extra={"event_data": event_data}
+                f"EVENT_EMITTED: OrderCreated", extra={"event_data": event_data}
             )
-            
+
         except Exception as e:
-            self.logger.error(f"Failed to emit OrderCreated event for order {order.entity_id}: {str(e)}")
+            self.logger.error(
+                f"Failed to emit OrderCreated event for order {order.entity_id}: {str(e)}"
+            )
             # Don't raise - event emission failure shouldn't fail the entire process

@@ -29,11 +29,10 @@ class Order(CyodaEntity):
     # Required business fields
     customer_id: str = Field(..., description="Customer identifier for the order")
     amount: float = Field(..., description="Order amount (must be greater than 0)")
-    
+
     # Status field (managed by workflow)
     status: Optional[str] = Field(
-        default=None,
-        description="Order status: created, updated, cancelled"
+        default=None, description="Order status: created, updated, cancelled"
     )
 
     # Timestamps
@@ -52,15 +51,14 @@ class Order(CyodaEntity):
 
     # Optional fields
     description: Optional[str] = Field(
-        default=None,
-        description="Optional description of the order"
+        default=None, description="Optional description of the order"
     )
-    
+
     # Processing metadata
     processing_metadata: Optional[Dict[str, Any]] = Field(
         default_factory=dict,
         alias="processingMetadata",
-        description="Metadata populated during processing"
+        description="Metadata populated during processing",
     )
 
     @field_validator("customer_id")
@@ -101,7 +99,7 @@ class Order(CyodaEntity):
             raise ValueError("Customer ID is required")
         if self.amount <= 0:
             raise ValueError("Amount must be greater than 0")
-        
+
         return self
 
     def update_timestamp(self) -> None:

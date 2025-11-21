@@ -9,10 +9,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
-from services.services import get_entity_service
+# from services.services import get_entity_service  # Not used in this processor
 
 
 class OrderUpdateProcessor(CyodaProcessor):
@@ -23,7 +23,7 @@ class OrderUpdateProcessor(CyodaProcessor):
     - Setting updatedAt timestamp
     - Persisting entity
     - Emitting 'OrderUpdated' event
-    
+
     Execution mode: SYNC
     Configuration: attachEntity=true, responseTimeoutMs=5000, retryPolicy=FIXED
     """
@@ -58,7 +58,9 @@ class OrderUpdateProcessor(CyodaProcessor):
 
             # Validate that order can be updated
             if not order.can_be_updated():
-                raise ValueError(f"Order {order.entity_id} cannot be updated (current status: {order.status})")
+                raise ValueError(
+                    f"Order {order.entity_id} cannot be updated (current status: {order.status})"
+                )
 
             # Set status to 'updated'
             order.set_status("updated")
@@ -70,13 +72,17 @@ class OrderUpdateProcessor(CyodaProcessor):
             order.updated_at = current_timestamp
 
             # Add processing metadata
-            order.set_processing_metadata({
-                "processed_by": "OrderUpdateProcessor",
-                "processed_at": current_timestamp,
-                "transition": "update",
-                "event_emitted": "OrderUpdated",
-                "previous_status": order.status if order.status != "updated" else "created"
-            })
+            order.set_processing_metadata(
+                {
+                    "processed_by": "OrderUpdateProcessor",
+                    "processed_at": current_timestamp,
+                    "transition": "update",
+                    "event_emitted": "OrderUpdated",
+                    "previous_status": (
+                        order.status if order.status != "updated" else "created"
+                    ),
+                }
+            )
 
             # Emit OrderUpdated event
             await self._emit_order_updated_event(order)
@@ -97,7 +103,7 @@ class OrderUpdateProcessor(CyodaProcessor):
     async def _emit_order_updated_event(self, order: Order) -> None:
         """
         Emit OrderUpdated event.
-        
+
         Args:
             order: The updated Order entity
         """
@@ -111,14 +117,17 @@ class OrderUpdateProcessor(CyodaProcessor):
                 "amount": order.amount,
                 "status": order.status,
                 "updated_at": order.updated_at,
-                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+                "timestamp": datetime.now(timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z"),
             }
-            
+
             self.logger.info(
-                f"EVENT_EMITTED: OrderUpdated",
-                extra={"event_data": event_data}
+                f"EVENT_EMITTED: OrderUpdated", extra={"event_data": event_data}
             )
-            
+
         except Exception as e:
-            self.logger.error(f"Failed to emit OrderUpdated event for order {order.entity_id}: {str(e)}")
+            self.logger.error(
+                f"Failed to emit OrderUpdated event for order {order.entity_id}: {str(e)}"
+            )
             # Don't raise - event emission failure shouldn't fail the entire process

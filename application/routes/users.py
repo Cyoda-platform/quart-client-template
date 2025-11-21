@@ -14,7 +14,7 @@ from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
 
 from application.entity.user.version_1.user import User
-from common.exception import is_not_found
+
 from services.services import get_entity_service
 
 

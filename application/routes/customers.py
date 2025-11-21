@@ -8,7 +8,6 @@ and workflow transitions as specified in functional requirements.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import Any, Dict, Optional
 
 from quart import Blueprint, jsonify, request
@@ -20,7 +19,7 @@ from quart_schema import (
     validate_querystring,
 )
 
-from common.exception import is_not_found
+
 from common.service.entity_service import (
     SearchConditionRequest,
 )

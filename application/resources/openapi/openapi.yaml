@@ -277,5 +277,6 @@ paths:
                     format: date-time
                     example: "2023-12-01T10:00:00Z"
 
-# Include Order API specifications
-$ref: './order_api.yaml#/paths'
+  # Order API endpoints - reference the order_api.yaml for detailed specifications
+  # Note: In practice, you would either include the paths directly here or use
+  # a tool that supports $ref to external files for path merging

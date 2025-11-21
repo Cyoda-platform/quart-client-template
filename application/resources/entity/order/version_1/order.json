@@ -1,0 +1,13 @@
+{
+  "name": "Order",
+  "version": 1,
+  "desc": "Entity representing an order",
+  "attributes": {
+    "id": { "type": "string", "primary": true },
+    "customerId": { "type": "string" },
+    "amount": { "type": "number" },
+    "status": { "type": "string", "enum": ["created", "updated", "cancelled"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

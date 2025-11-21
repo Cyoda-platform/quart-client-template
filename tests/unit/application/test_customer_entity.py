@@ -130,10 +130,12 @@ class TestCustomerEntity:
 
     def test_customer_business_logic_validation(self):
         """Test customer business logic validation."""
-        # Test missing required fields
+        # Test missing required fields - Pydantic validates at field level first
         with pytest.raises(ValidationError) as exc_info:
             Customer(name="", email="")
-        assert "Name and email are required fields" in str(exc_info.value)
+        # Check that validation errors are raised for both fields
+        assert "Name must be non-empty" in str(exc_info.value)
+        assert "Email must be non-empty" in str(exc_info.value)
 
     def test_customer_update_timestamp(self):
         """Test customer timestamp update functionality."""

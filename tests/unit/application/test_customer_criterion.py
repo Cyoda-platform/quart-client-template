@@ -48,102 +48,111 @@ class TestCustomerValidationCriterion:
     @pytest.mark.asyncio
     async def test_check_invalid_name_empty(self, criterion):
         """Test validation fails for empty name."""
-        customer = Customer(
-            name="",
-            email="test@example.com"
-        )
-        
+        # Create customer with invalid data by bypassing validation
+        customer = Customer.__new__(Customer)
+        customer.name = ""
+        customer.email = "test@example.com"
+        customer.technical_id = "test-id"
+
         result = await criterion.check(customer)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_check_invalid_name_too_short(self, criterion):
         """Test validation fails for name too short."""
-        customer = Customer(
-            name="A",
-            email="test@example.com"
-        )
-        
+        # Create customer with invalid data by bypassing validation
+        customer = Customer.__new__(Customer)
+        customer.name = "A"
+        customer.email = "test@example.com"
+        customer.technical_id = "test-id"
+
         result = await criterion.check(customer)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_check_invalid_name_too_long(self, criterion):
         """Test validation fails for name too long."""
-        customer = Customer(
-            name="A" * 101,
-            email="test@example.com"
-        )
-        
+        # Create customer with invalid data by bypassing validation
+        customer = Customer.__new__(Customer)
+        customer.name = "A" * 101
+        customer.email = "test@example.com"
+        customer.technical_id = "test-id"
+
         result = await criterion.check(customer)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_check_invalid_email_empty(self, criterion):
         """Test validation fails for empty email."""
-        customer = Customer(
-            name="John Doe",
-            email=""
-        )
-        
+        # Create customer with invalid data by bypassing validation
+        customer = Customer.__new__(Customer)
+        customer.name = "John Doe"
+        customer.email = ""
+        customer.technical_id = "test-id"
+
         result = await criterion.check(customer)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_check_invalid_email_format(self, criterion):
         """Test validation fails for invalid email format."""
-        customer = Customer(
-            name="John Doe",
-            email="invalid-email"
-        )
-        
+        # Create customer with invalid data by bypassing validation
+        customer = Customer.__new__(Customer)
+        customer.name = "John Doe"
+        customer.email = "invalid-email"
+        customer.technical_id = "test-id"
+
         result = await criterion.check(customer)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_check_invalid_email_too_long(self, criterion):
         """Test validation fails for email too long."""
-        customer = Customer(
-            name="John Doe",
-            email="a" * 250 + "@example.com"
-        )
-        
+        # Create customer with invalid data by bypassing validation
+        customer = Customer.__new__(Customer)
+        customer.name = "John Doe"
+        customer.email = "a" * 250 + "@example.com"
+        customer.technical_id = "test-id"
+
         result = await criterion.check(customer)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_check_invalid_phone_format(self, criterion):
         """Test validation fails for invalid phone format."""
-        customer = Customer(
-            name="John Doe",
-            email="john@example.com",
-            phone="invalid-phone!"
-        )
-        
+        # Create customer with invalid data by bypassing validation
+        customer = Customer.__new__(Customer)
+        customer.name = "John Doe"
+        customer.email = "john@example.com"
+        customer.phone = "invalid-phone!"
+        customer.technical_id = "test-id"
+
         result = await criterion.check(customer)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_check_invalid_phone_too_long(self, criterion):
         """Test validation fails for phone too long."""
-        customer = Customer(
-            name="John Doe",
-            email="john@example.com",
-            phone="1" * 21
-        )
-        
+        # Create customer with invalid data by bypassing validation
+        customer = Customer.__new__(Customer)
+        customer.name = "John Doe"
+        customer.email = "john@example.com"
+        customer.phone = "1" * 21
+        customer.technical_id = "test-id"
+
         result = await criterion.check(customer)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_check_invalid_address_too_long(self, criterion):
         """Test validation fails for address too long."""
-        customer = Customer(
-            name="John Doe",
-            email="john@example.com",
-            address="A" * 501
-        )
-        
+        # Create customer with invalid data by bypassing validation
+        customer = Customer.__new__(Customer)
+        customer.name = "John Doe"
+        customer.email = "john@example.com"
+        customer.address = "A" * 501
+        customer.technical_id = "test-id"
+
         result = await criterion.check(customer)
         assert result is False
 
@@ -193,10 +202,9 @@ class TestCustomerValidationCriterion:
     @pytest.mark.asyncio
     async def test_check_exception_handling(self, criterion, valid_customer):
         """Test exception handling during validation."""
-        # Mock the cast_entity function to raise an exception
-        with pytest.raises(Exception):
-            # This should raise an exception during casting
-            await criterion.check("not_an_entity")
+        # Test with invalid entity type - should return False, not raise exception
+        result = await criterion.check("not_an_entity")
+        assert result is False
 
     def test_criterion_initialization(self, criterion):
         """Test criterion initialization."""

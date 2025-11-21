@@ -1,0 +1,11 @@
+{
+  "name": "customer",
+  "version": 1,
+  "description": "Customer entity with id, name, email, and phone",
+  "attributes": [
+    {"name": "id", "type": "string", "primary_key": true},
+    {"name": "name", "type": "string"},
+    {"name": "email", "type": "string"},
+    {"name": "phone", "type": "string"}
+  ]
+}

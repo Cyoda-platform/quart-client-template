@@ -1,0 +1,107 @@
+{
+  "version": "1.0",
+  "name": "Billing",
+  "desc": "Billing workflow for managing patient billing and payments",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_invoice",
+          "next": "invoice_created",
+          "manual": false
+        }
+      ]
+    },
+    "invoice_created": {
+      "transitions": [
+        {
+          "name": "charge_patient",
+          "next": "pending_payment",
+          "manual": true,
+          "processors": [
+            {
+              "name": "BillingProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 5000,
+                "retryPolicy": "EXPONENTIAL"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "pending_payment": {
+      "transitions": [
+        {
+          "name": "payment_success",
+          "next": "paid",
+          "manual": true,
+          "processors": [
+            {
+              "name": "BillingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
+          "name": "payment_failed",
+          "next": "failed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "BillingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "paid": {
+      "transitions": [
+        {
+          "name": "refund_payment",
+          "next": "invoice_created",
+          "manual": true,
+          "processors": [
+            {
+              "name": "BillingProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 5000,
+                "retryPolicy": "EXPONENTIAL"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "failed": {
+      "transitions": [
+        {
+          "name": "retry_payment",
+          "next": "pending_payment",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

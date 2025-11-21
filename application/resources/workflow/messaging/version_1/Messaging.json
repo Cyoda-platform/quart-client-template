@@ -1,0 +1,65 @@
+{
+  "version": "1.0",
+  "name": "Messaging",
+  "desc": "Messaging workflow for patient-doctor communication",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "send_message",
+          "next": "sent",
+          "manual": false
+        }
+      ]
+    },
+    "sent": {
+      "transitions": [
+        {
+          "name": "deliver_message",
+          "next": "delivered",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MessagingProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delivered": {
+      "transitions": [
+        {
+          "name": "mark_as_read",
+          "next": "read",
+          "manual": true
+        },
+        {
+          "name": "archive_unread",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "read": {
+      "transitions": [
+        {
+          "name": "archive_message",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}

@@ -1,13 +1,48 @@
 {
   "name": "Order",
   "version": 1,
-  "desc": "Entity representing an order",
-  "attributes": {
-    "id": { "type": "string", "primary": true },
-    "customerId": { "type": "string" },
-    "amount": { "type": "number" },
-    "status": { "type": "string", "enum": ["created", "updated", "cancelled"] },
-    "createdAt": { "type": "string", "format": "date-time" },
-    "updatedAt": { "type": "string", "format": "date-time" }
-  }
+  "fields": [
+    {
+      "name": "customer_id",
+      "type": "string",
+      "required": true,
+      "description": "Customer identifier for the order"
+    },
+    {
+      "name": "amount",
+      "type": "number",
+      "required": true,
+      "description": "Order amount (must be greater than 0)"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "required": false,
+      "description": "Order status: created, updated, cancelled"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "required": false,
+      "description": "Optional description of the order"
+    },
+    {
+      "name": "createdAt",
+      "type": "string",
+      "required": false,
+      "description": "Timestamp when the order was created (ISO 8601 format)"
+    },
+    {
+      "name": "updatedAt",
+      "type": "string",
+      "required": false,
+      "description": "Timestamp when the order was last updated (ISO 8601 format)"
+    },
+    {
+      "name": "processingMetadata",
+      "type": "object",
+      "required": false,
+      "description": "Metadata populated during processing"
+    }
+  ]
 }

@@ -11,6 +11,12 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.users import users_bp
+from application.routes.projects import projects_bp
+from application.routes.tasks import tasks_bp
+from application.routes.comments import comments_bp
+from application.routes.attachments import attachments_bp
+from application.routes.time_entries import time_entries_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,13 +26,14 @@ app = Quart(__name__)
 
 QuartSchema(
     app,
-    info={"title": "Cyoda Client Application", "version": "1.0.0"},
+    info={"title": "Project Management Application", "version": "1.0.0"},
     tags=[
-        {
-            "name": "ExampleEntities",
-            "description": "ExampleEntity management endpoints",
-        },
-        {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "Users", "description": "User management endpoints"},
+        {"name": "Projects", "description": "Project management endpoints"},
+        {"name": "Tasks", "description": "Task management endpoints"},
+        {"name": "Comments", "description": "Comment management endpoints"},
+        {"name": "Attachments", "description": "Attachment management endpoints"},
+        {"name": "TimeEntries", "description": "Time entry management endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -37,6 +44,14 @@ QuartSchema(
         }
     },
 )
+
+# Register blueprints
+app.register_blueprint(users_bp)
+app.register_blueprint(projects_bp)
+app.register_blueprint(tasks_bp)
+app.register_blueprint(comments_bp)
+app.register_blueprint(attachments_bp)
+app.register_blueprint(time_entries_bp)
 
 # Global holder for the background task to satisfy mypy
 # (avoid setting arbitrary attrs on app)

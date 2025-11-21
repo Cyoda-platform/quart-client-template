@@ -1,0 +1,444 @@
+openapi: 3.0.3
+info:
+  title: Order API
+  description: |
+    Order entity management API for the Cyoda Client Application.
+    
+    This API provides comprehensive CRUD operations for Order entities with
+    workflow-driven state management. Orders follow a specific lifecycle:
+    
+    1. **Create**: Order starts in `initial_state`, automatically transitions to `created`
+    2. **Update**: Manual transition from `created` or `updated` states
+    3. **Cancel**: Manual transition to `cancelled` state (terminal)
+    
+    ## Order States
+    - `initial_state`: Temporary state during creation
+    - `created`: Order successfully created and active
+    - `updated`: Order has been modified
+    - `cancelled`: Order cancelled (terminal state)
+    
+    ## Business Rules
+    - Customer ID must be at least 3 characters long
+    - Amount must be greater than 0 and less than or equal to 1,000,000
+    - Description is optional but limited to 500 characters
+    - Only `created` and `updated` orders can be cancelled
+    - Cancelled orders cannot be modified
+  version: 1.0.0
+
+components:
+  schemas:
+    # Order entity schemas
+    OrderBase:
+      type: object
+      required:
+        - customer_id
+        - amount
+      properties:
+        customer_id:
+          type: string
+          minLength: 3
+          description: Customer identifier for the order
+          example: "CUST001"
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 1000000
+          multipleOf: 0.01
+          description: Order amount (must be greater than 0)
+          example: 299.99
+        description:
+          type: string
+          maxLength: 500
+          description: Optional description of the order
+          example: "Premium subscription order"
+
+    OrderCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/OrderBase'
+      example:
+        customer_id: "CUST001"
+        amount: 299.99
+        description: "Premium subscription order"
+
+    OrderUpdateRequest:
+      type: object
+      properties:
+        customer_id:
+          type: string
+          minLength: 3
+          description: Customer identifier for the order
+          example: "CUST001"
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+          maximum: 1000000
+          multipleOf: 0.01
+          description: Order amount (must be greater than 0)
+          example: 399.99
+        description:
+          type: string
+          maxLength: 500
+          description: Optional description of the order
+          example: "Updated premium subscription order"
+      example:
+        amount: 399.99
+        description: "Updated premium subscription order"
+
+    Order:
+      allOf:
+        - $ref: '#/components/schemas/OrderBase'
+        - type: object
+          required:
+            - id
+            - status
+            - createdAt
+          properties:
+            id:
+              type: string
+              format: uuid
+              description: Technical entity ID (UUID)
+              example: "123e4567-e89b-12d3-a456-426614174000"
+            status:
+              type: string
+              enum: [created, updated, cancelled]
+              description: Order status managed by workflow
+              example: "created"
+            state:
+              type: string
+              description: Current workflow state
+              example: "created"
+            createdAt:
+              type: string
+              format: date-time
+              description: Timestamp when the order was created (ISO 8601 format)
+              example: "2023-12-01T10:00:00Z"
+            updatedAt:
+              type: string
+              format: date-time
+              description: Timestamp when the order was last updated (ISO 8601 format)
+              example: "2023-12-01T10:30:00Z"
+            processingMetadata:
+              type: object
+              description: Metadata populated during processing
+              additionalProperties: true
+              example:
+                processor: "OrderCreateProcessor"
+                processed_at: "2023-12-01T10:00:05Z"
+
+    OrderResponse:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Technical entity ID (UUID)
+          example: "123e4567-e89b-12d3-a456-426614174000"
+      example:
+        id: "123e4567-e89b-12d3-a456-426614174000"
+
+    OrderListResponse:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        meta:
+          type: object
+          properties:
+            page:
+              type: integer
+              minimum: 1
+              example: 1
+            per_page:
+              type: integer
+              minimum: 1
+              maximum: 100
+              example: 20
+            total:
+              type: integer
+              minimum: 0
+              example: 150
+            total_pages:
+              type: integer
+              minimum: 0
+              example: 8
+
+    CancelOrderResponse:
+      type: object
+      required:
+        - id
+        - status
+        - message
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Technical entity ID (UUID)
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        status:
+          type: string
+          enum: [cancelled]
+          description: Order status after cancellation
+          example: "cancelled"
+        message:
+          type: string
+          description: Cancellation confirmation message
+          example: "Order cancelled successfully"
+
+paths:
+  /orders:
+    post:
+      tags:
+        - Orders
+      summary: Create a new order
+      description: |
+        Creates a new order with the provided data. The order will automatically
+        transition from `initial_state` to `created` state upon successful creation.
+        
+        **Business Rules:**
+        - Customer ID must be at least 3 characters long
+        - Amount must be greater than 0 and less than or equal to 1,000,000
+        - Description is optional but limited to 500 characters
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+            examples:
+              basic_order:
+                summary: Basic order example
+                value:
+                  customer_id: "CUST001"
+                  amount: 299.99
+              order_with_description:
+                summary: Order with description
+                value:
+                  customer_id: "CUST002"
+                  amount: 149.50
+                  description: "Monthly subscription renewal"
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /orders/{id}:
+    get:
+      tags:
+        - Orders
+      summary: Get order by ID
+      description: |
+        Retrieves a specific order by its technical ID (UUID).
+        Returns the complete order information including current state and metadata.
+      operationId: getOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order technical ID (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+              examples:
+                created_order:
+                  summary: Created order example
+                  value:
+                    id: "123e4567-e89b-12d3-a456-426614174000"
+                    customer_id: "CUST001"
+                    amount: 299.99
+                    description: "Premium subscription order"
+                    status: "created"
+                    state: "created"
+                    createdAt: "2023-12-01T10:00:00Z"
+                    updatedAt: "2023-12-01T10:00:00Z"
+                    processingMetadata:
+                      processor: "OrderCreateProcessor"
+                      processed_at: "2023-12-01T10:00:05Z"
+                cancelled_order:
+                  summary: Cancelled order example
+                  value:
+                    id: "456e7890-e89b-12d3-a456-426614174001"
+                    customer_id: "CUST002"
+                    amount: 149.50
+                    description: "Monthly subscription renewal"
+                    status: "cancelled"
+                    state: "cancelled"
+                    createdAt: "2023-12-01T09:00:00Z"
+                    updatedAt: "2023-12-01T11:30:00Z"
+                    processingMetadata:
+                      processor: "OrderCancelProcessor"
+                      processed_at: "2023-12-01T11:30:05Z"
+                      cancellation_reason: "Customer request"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    put:
+      tags:
+        - Orders
+      summary: Update an existing order
+      description: |
+        Updates an existing order with the provided data. The order will transition
+        to `updated` state upon successful update.
+
+        **Business Rules:**
+        - Only orders in `created` or `updated` states can be updated
+        - Cancelled orders cannot be updated
+        - Customer ID must be at least 3 characters long (if provided)
+        - Amount must be greater than 0 and less than or equal to 1,000,000 (if provided)
+        - Description is optional but limited to 500 characters (if provided)
+      operationId: updateOrder
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Order technical ID (UUID)
+          schema:
+            type: string
+            format: uuid
+            example: "123e4567-e89b-12d3-a456-426614174000"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderUpdateRequest'
+            examples:
+              update_amount:
+                summary: Update order amount
+                value:
+                  amount: 399.99
+              update_description:
+                summary: Update order description
+                value:
+                  description: "Updated premium subscription order with additional features"
+              full_update:
+                summary: Full order update
+                value:
+                  customer_id: "CUST001"
+                  amount: 449.99
+                  description: "Premium subscription with extended support"
+      responses:
+        '200':
+          description: Order updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict - order cannot be updated (e.g., already cancelled)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "CONFLICT"
+                message: "Cannot update cancelled order"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    get:
+      tags:
+        - Orders
+      summary: List all orders
+      description: |
+        Retrieves a paginated list of all orders. Results can be filtered
+        and sorted based on query parameters.
+      operationId: listOrders
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: per_page
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: customer_id
+          in: query
+          required: false
+          description: Filter by customer ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter by order status
+          schema:
+            type: string
+            enum: [created, updated, cancelled]
+        - name: min_amount
+          in: query
+          required: false
+          description: Filter by minimum amount
+          schema:
+            type: number
+            format: float
+            minimum: 0
+        - name: max_amount
+          in: query
+          required: false
+          description: Filter by maximum amount
+          schema:
+            type: number
+            format: float
+            minimum: 0
+      responses:
+        '200':
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'

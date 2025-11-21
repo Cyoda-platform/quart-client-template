@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "name": "Order",
+  "description": "Workflow for Order entity supporting create, update, and cancel transitions.",
+  "states": [
+    {
+      "name": "new",
+      "description": "Order has been created but not processed",
+      "transitions": [
+        { "name": "create", "to": "created" }
+      ]
+    },
+    {
+      "name": "created",
+      "description": "Order is active",
+      "transitions": [
+        { "name": "update", "to": "updated" },
+        { "name": "cancel", "to": "cancelled" }
+      ]
+    },
+    {
+      "name": "updated",
+      "description": "Order has been updated after creation",
+      "transitions": [
+        { "name": "update", "to": "updated" },
+        { "name": "cancel", "to": "cancelled" }
+      ]
+    },
+    {
+      "name": "cancelled",
+      "description": "Order has been cancelled",
+      "transitions": []
+    }
+  ]
+}

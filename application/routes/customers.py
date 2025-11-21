@@ -65,9 +65,7 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
 
-customers_bp = Blueprint(
-    "customers", __name__, url_prefix="/api/customers"
-)
+customers_bp = Blueprint("customers", __name__, url_prefix="/api/customers")
 
 
 # ---- Routes -----------------------------------------------------------------
@@ -212,13 +210,18 @@ async def list_customers(
         total = len(entity_list)
         total_pages = (total + query_args.page_size - 1) // query_args.page_size
 
-        return jsonify({
-            "customers": paginated_entities, 
-            "total": total,
-            "page": query_args.page,
-            "page_size": query_args.page_size,
-            "total_pages": total_pages
-        }), 200
+        return (
+            jsonify(
+                {
+                    "customers": paginated_entities,
+                    "total": total,
+                    "page": query_args.page,
+                    "page_size": query_args.page_size,
+                    "total_pages": total_pages,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:  # pragma: no cover
         logger.exception("Error listing Customers: %s", str(e))
@@ -271,9 +274,7 @@ async def update_customer(
         return jsonify(_to_entity_dict(response.data)), 200
 
     except ValueError as e:
-        logger.warning(
-            "Validation error updating Customer %s: %s", customer_id, str(e)
-        )
+        logger.warning("Validation error updating Customer %s: %s", customer_id, str(e))
         return jsonify({"error": str(e), "code": "VALIDATION_ERROR"}), 400
     except Exception as e:  # pragma: no cover
         logger.exception("Error updating Customer %s: %s", customer_id, str(e))
@@ -332,7 +333,10 @@ async def patch_customer(
             updated_customer = Customer(**current_data)
             entity_data = updated_customer.model_dump(by_alias=True)
         except Exception as e:
-            return {"error": f"Validation error: {str(e)}", "code": "VALIDATION_ERROR"}, 400
+            return {
+                "error": f"Validation error: {str(e)}",
+                "code": "VALIDATION_ERROR",
+            }, 400
 
         # Get transition from query parameters
         transition: Optional[str] = query_args.transition
@@ -352,9 +356,7 @@ async def patch_customer(
         return jsonify(_to_entity_dict(response.data)), 200
 
     except ValueError as e:
-        logger.warning(
-            "Validation error patching Customer %s: %s", customer_id, str(e)
-        )
+        logger.warning("Validation error patching Customer %s: %s", customer_id, str(e))
         return jsonify({"error": str(e), "code": "VALIDATION_ERROR"}), 400
     except Exception as e:  # pragma: no cover
         logger.exception("Error patching Customer %s: %s", customer_id, str(e))
@@ -570,9 +572,7 @@ async def search_entities(data: SearchRequest) -> ResponseReturnValue:
 @customers_bp.route("/find-all", methods=["GET"])
 @tag(["customers"])
 @operation_id("find_all_customers")
-@validate(
-    responses={200: (CustomerListResponse, None), 500: (ErrorResponse, None)}
-)
+@validate(responses={200: (CustomerListResponse, None), 500: (ErrorResponse, None)})
 async def find_all_entities() -> ResponseReturnValue:
     """Find all Customers without filtering"""
     try:

@@ -11,9 +11,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.customer.version_1.customer import Customer
 from services.services import get_entity_service
 
 
@@ -60,9 +60,7 @@ class CustomerProcessor(CyodaProcessor):
             customer.update_timestamp()
 
             # Log processing completion
-            self.logger.info(
-                f"Customer {customer.technical_id} processed successfully"
-            )
+            self.logger.info(f"Customer {customer.technical_id} processed successfully")
 
             return customer
 
@@ -95,7 +93,8 @@ class CustomerProcessor(CyodaProcessor):
             "customer_type": self._determine_customer_type(customer),
             "email_domain": customer.email.split("@")[1] if customer.email else None,
             "has_phone": customer.phone is not None and len(customer.phone.strip()) > 0,
-            "has_address": customer.address is not None and len(customer.address.strip()) > 0,
+            "has_address": customer.address is not None
+            and len(customer.address.strip()) > 0,
         }
 
         return processed_data

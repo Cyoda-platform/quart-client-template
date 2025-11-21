@@ -75,13 +75,13 @@ class CustomerResponse(BaseModel):
 class CustomerListResponse(BaseModel):
     """Response model for Customer list operations."""
 
-    customers: List[Dict[str, Any]] = Field(
-        ..., description="List of Customer objects"
-    )
+    customers: List[Dict[str, Any]] = Field(..., description="List of Customer objects")
     total: int = Field(..., description="Total number of customers")
     page: Optional[int] = Field(default=None, description="Current page number")
     page_size: Optional[int] = Field(default=None, description="Page size")
-    total_pages: Optional[int] = Field(default=None, description="Total number of pages")
+    total_pages: Optional[int] = Field(
+        default=None, description="Total number of pages"
+    )
 
 
 class CustomerSearchResponse(BaseModel):

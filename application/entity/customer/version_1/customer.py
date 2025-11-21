@@ -79,15 +79,15 @@ class Customer(CyodaEntity):
         """Validate email field with format validation"""
         if not v or len(v.strip()) == 0:
             raise ValueError("Email must be non-empty")
-        
+
         # Email format validation using regex
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         if not re.match(email_pattern, v.strip()):
             raise ValueError("Email must be a valid email address")
-        
+
         if len(v) > 255:
             raise ValueError("Email must be at most 255 characters long")
-        
+
         return v.strip().lower()  # Normalize to lowercase
 
     @field_validator("phone")
@@ -96,18 +96,20 @@ class Customer(CyodaEntity):
         """Validate phone field if provided"""
         if v is None:
             return v
-        
+
         if len(v.strip()) == 0:
             return None  # Empty string becomes None
-        
+
         # Basic phone validation - allow digits, spaces, hyphens, parentheses, plus
-        phone_pattern = r'^[\d\s\-\(\)\+\.]+$'
+        phone_pattern = r"^[\d\s\-\(\)\+\.]+$"
         if not re.match(phone_pattern, v.strip()):
-            raise ValueError("Phone must contain only digits, spaces, hyphens, parentheses, and plus signs")
-        
+            raise ValueError(
+                "Phone must contain only digits, spaces, hyphens, parentheses, and plus signs"
+            )
+
         if len(v) > 20:
             raise ValueError("Phone must be at most 20 characters long")
-        
+
         return v.strip()
 
     @field_validator("address")
@@ -116,13 +118,13 @@ class Customer(CyodaEntity):
         """Validate address field if provided"""
         if v is None:
             return v
-        
+
         if len(v.strip()) == 0:
             return None  # Empty string becomes None
-        
+
         if len(v) > 500:
             raise ValueError("Address must be at most 500 characters long")
-        
+
         return v.strip()
 
     @model_validator(mode="after")
@@ -131,7 +133,7 @@ class Customer(CyodaEntity):
         # Basic business validation - ensure required fields are present
         if not self.name or not self.email:
             raise ValueError("Name and email are required fields")
-        
+
         return self
 
     def update_timestamp(self) -> None:

@@ -8,9 +8,9 @@ proceed to the processing stage as specified in functional requirements.
 import re
 from typing import Any
 
+from application.entity.customer.version_1.customer import Customer
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.customer.version_1.customer import Customer
 
 
 class CustomerValidationCriterion(CyodaCriteriaChecker):
@@ -61,13 +61,11 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
 
             # Validate email format and requirements
             if not customer.email or len(customer.email.strip()) == 0:
-                self.logger.warning(
-                    f"Customer {customer.technical_id} has empty email"
-                )
+                self.logger.warning(f"Customer {customer.technical_id} has empty email")
                 return False
 
             # Email format validation using regex
-            email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+            email_pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
             if not re.match(email_pattern, customer.email):
                 self.logger.warning(
                     f"Customer {customer.technical_id} has invalid email format: {customer.email}"
@@ -82,7 +80,7 @@ class CustomerValidationCriterion(CyodaCriteriaChecker):
 
             # Validate phone if provided
             if customer.phone is not None and len(customer.phone.strip()) > 0:
-                phone_pattern = r'^[\d\s\-\(\)\+\.]+$'
+                phone_pattern = r"^[\d\s\-\(\)\+\.]+$"
                 if not re.match(phone_pattern, customer.phone):
                     self.logger.warning(
                         f"Customer {customer.technical_id} has invalid phone format: {customer.phone}"

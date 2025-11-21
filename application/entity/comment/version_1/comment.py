@@ -16,7 +16,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Comment(CyodaEntity):
     """
     Comment entity enables collaboration through task comments.
-    
+
     Supports mentions, notifications, and real-time collaboration features.
     State managed by workflow: initial_state -> posted -> (optional: edited).
     """
@@ -31,8 +31,7 @@ class Comment(CyodaEntity):
     author_id: str = Field(..., description="Technical ID of the comment author")
     content: str = Field(..., description="Comment content")
     mentions: Optional[List[str]] = Field(
-        default_factory=list,
-        description="List of mentioned user technical IDs"
+        default_factory=list, description="List of mentioned user technical IDs"
     )
 
     # Timestamps
@@ -93,7 +92,7 @@ class Comment(CyodaEntity):
         """Validate mentions field"""
         if v is None:
             return []
-        
+
         # Remove duplicates and empty strings
         cleaned_mentions = []
         for user_id in v:
@@ -101,7 +100,7 @@ class Comment(CyodaEntity):
                 user_id = user_id.strip()
                 if user_id not in cleaned_mentions:
                     cleaned_mentions.append(user_id)
-        
+
         return cleaned_mentions
 
     @model_validator(mode="after")

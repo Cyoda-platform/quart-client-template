@@ -16,7 +16,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Attachment(CyodaEntity):
     """
     Attachment entity represents file attachments associated with tasks.
-    
+
     Supports various file types with size limits and access control.
     State managed by workflow: initial_state -> uploaded -> (optional: deleted).
     """
@@ -26,20 +26,18 @@ class Attachment(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     # Core attachment fields
-    attachment_id: str = Field(..., description="Business identifier for the attachment")
+    attachment_id: str = Field(
+        ..., description="Business identifier for the attachment"
+    )
     task_id: str = Field(..., description="Technical ID of the parent task")
     filename: str = Field(..., description="Original filename")
     url: str = Field(..., description="Storage URL for the file")
     uploaded_by: str = Field(..., description="Technical ID of the uploader")
     file_size: Optional[int] = Field(
-        default=None,
-        alias="fileSize",
-        description="File size in bytes"
+        default=None, alias="fileSize", description="File size in bytes"
     )
     content_type: Optional[str] = Field(
-        default=None,
-        alias="contentType",
-        description="MIME type of the file"
+        default=None, alias="contentType", description="MIME type of the file"
     )
 
     # Timestamps
@@ -101,17 +99,17 @@ class Attachment(CyodaEntity):
             raise ValueError("Filename must be non-empty")
         if len(v) > 255:
             raise ValueError("Filename must be at most 255 characters long")
-        
+
         # Basic filename validation
         filename = v.strip()
         if not filename or filename in [".", ".."]:
             raise ValueError("Invalid filename")
-        
+
         # Check for dangerous characters
         dangerous_chars = ["<", ">", ":", '"', "|", "?", "*", "\0"]
         if any(char in filename for char in dangerous_chars):
             raise ValueError("Filename contains invalid characters")
-        
+
         return filename
 
     @field_validator("url")
@@ -141,7 +139,9 @@ class Attachment(CyodaEntity):
         if v < 0:
             raise ValueError("File size must be non-negative")
         if v > cls.MAX_FILE_SIZE:
-            raise ValueError(f"File size must be less than {cls.MAX_FILE_SIZE} bytes (10MB)")
+            raise ValueError(
+                f"File size must be less than {cls.MAX_FILE_SIZE} bytes (10MB)"
+            )
         return v
 
     @field_validator("content_type")
@@ -150,11 +150,11 @@ class Attachment(CyodaEntity):
         """Validate content_type field"""
         if v is None:
             return None
-        
+
         content_type = v.strip().lower()
         if not content_type:
             return None
-        
+
         # Allow any content type for now, but log if not in allowed list
         # In production, you might want to enforce the allowed list
         return content_type

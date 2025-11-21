@@ -8,9 +8,9 @@ project statistics updates, and completion notifications.
 import logging
 from typing import Any
 
+from application.data.task.version_1.task import Task
 from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
@@ -58,9 +58,7 @@ class TaskCompletionProcessor(CyodaProcessor):
             self._update_completion_metadata(task)
 
             # Log completion
-            self.logger.info(
-                f"Task {task.technical_id} completed successfully"
-            )
+            self.logger.info(f"Task {task.technical_id} completed successfully")
 
             return task
 
@@ -81,26 +79,30 @@ class TaskCompletionProcessor(CyodaProcessor):
 
         try:
             # Get all approved time entries for this task
-            from common.service.data_service import SearchConditionRequest, SearchCondition, SearchOperator
+            from common.service.data_service import (
+                SearchCondition,
+                SearchConditionRequest,
+                SearchOperator,
+            )
 
             search_condition = SearchConditionRequest(
-                conditions=[SearchCondition(
-                    field="task_id",
-                    operator=SearchOperator.EQUALS,
-                    value=task.technical_id or task.data_id
-                )]
+                conditions=[
+                    SearchCondition(
+                        field="task_id",
+                        operator=SearchOperator.EQUALS,
+                        value=task.technical_id or task.data_id,
+                    )
+                ]
             )
 
             time_entries_response = await entity_service.search(
-                entity_class="TimeEntry",
-                condition=search_condition,
-                entity_version="1"
+                entity_class="TimeEntry", condition=search_condition, entity_version="1"
             )
 
             total_logged_hours = 0.0
             if time_entries_response:
                 for entry_response in time_entries_response:
-                    if hasattr(entry_response.data, 'model_dump'):
+                    if hasattr(entry_response.data, "model_dump"):
                         entry_data = entry_response.data.model_dump()
                     else:
                         entry_data = entry_response.data
@@ -134,41 +136,52 @@ class TaskCompletionProcessor(CyodaProcessor):
         try:
             # Get project to update statistics
             project_response = await entity_service.get_by_id(
-                entity_id=task.project_id,
-                entity_class="Project",
-                entity_version="1"
+                entity_id=task.project_id, entity_class="Project", entity_version="1"
             )
 
             if not project_response or not project_response.data:
-                self.logger.warning(f"Could not find project {task.project_id} for statistics update")
+                self.logger.warning(
+                    f"Could not find project {task.project_id} for statistics update"
+                )
                 return
 
             # Get all tasks in the project to calculate completion rate
-            from common.service.entity_service import SearchConditionRequest, SearchCondition, SearchOperator
+            from common.service.entity_service import (
+                SearchCondition,
+                SearchConditionRequest,
+                SearchOperator,
+            )
 
             project_search_condition = SearchConditionRequest(
-                conditions=[SearchCondition(
-                    field="project_id",
-                    operator=SearchOperator.EQUALS,
-                    value=task.project_id
-                )]
+                conditions=[
+                    SearchCondition(
+                        field="project_id",
+                        operator=SearchOperator.EQUALS,
+                        value=task.project_id,
+                    )
+                ]
             )
 
             project_tasks_response = await entity_service.search(
                 entity_class="Task",
                 condition=project_search_condition,
-                entity_version="1"
+                entity_version="1",
             )
 
             if project_tasks_response:
                 total_tasks = len(project_tasks_response)
                 completed_tasks = 0
                 for task_response in project_tasks_response:
-                    task_data = task_response.data.model_dump() if hasattr(task_response.data, 'model_dump') else task_response.data
+                    if hasattr(task_response.data, "model_dump"):
+                        task_data = task_response.data.model_dump()
+                    else:
+                        task_data = task_response.data
                     if task_data.get("state") == "done":
                         completed_tasks += 1
-                
-                completion_rate = (completed_tasks / total_tasks) * 100 if total_tasks > 0 else 0
+
+                completion_rate = (
+                    (completed_tasks / total_tasks) * 100 if total_tasks > 0 else 0
+                )
 
                 self.logger.info(
                     f"Project {task.project_id} statistics: "
@@ -193,11 +206,17 @@ class TaskCompletionProcessor(CyodaProcessor):
         # Calculate final metrics
         completion_info = {
             "completed_at": task.updated_at,
-            "final_logged_hours": task.logged_hours
+            "final_logged_hours": task.logged_hours,
         }
 
-        if task.estimate_hours and task.estimate_hours > 0 and task.logged_hours is not None:
-            completion_info["estimate_accuracy"] = (task.logged_hours / task.estimate_hours) * 100
+        if (
+            task.estimate_hours
+            and task.estimate_hours > 0
+            and task.logged_hours is not None
+        ):
+            completion_info["estimate_accuracy"] = (
+                task.logged_hours / task.estimate_hours
+            ) * 100
 
         self.logger.info(
             f"Task completion metadata updated for {task.technical_id}: {completion_info}"

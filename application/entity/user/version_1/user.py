@@ -16,7 +16,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class User(CyodaEntity):
     """
     User entity represents system users with role-based access control.
-    
+
     Manages user profiles, authentication, and permission levels for the
     project management system. State managed by workflow: initial_state -> active.
     """
@@ -31,9 +31,7 @@ class User(CyodaEntity):
     email: str = Field(..., description="Email address (must be unique)")
     role: str = Field(..., description="User role: ADMIN, MANAGER, MEMBER")
     is_active: Optional[bool] = Field(
-        default=True,
-        alias="isActive",
-        description="Whether user account is active"
+        default=True, alias="isActive", description="Whether user account is active"
     )
 
     # Timestamps
@@ -83,16 +81,16 @@ class User(CyodaEntity):
         """Validate email field"""
         if not v or len(v.strip()) == 0:
             raise ValueError("Email must be non-empty")
-        
+
         email = v.strip().lower()
-        
+
         # Basic email validation
         if "@" not in email or "." not in email:
             raise ValueError("Email must be a valid email address")
-        
+
         if len(email) > 255:
             raise ValueError("Email must be at most 255 characters long")
-            
+
         return email
 
     @field_validator("role")

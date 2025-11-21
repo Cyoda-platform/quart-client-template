@@ -13,21 +13,26 @@ from typing import Any, Dict
 from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
 
-from services.services import get_entity_service
 from application.entity.project.version_1.project import Project
+from services.services import get_entity_service
+
 
 # Module-level service instance
 class _ServiceProxy:
     def __getattr__(self, name: str) -> Any:
         return getattr(get_entity_service(), name)
 
+
 service = _ServiceProxy()
 logger = logging.getLogger(__name__)
+
 
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
+
 projects_bp = Blueprint("projects", __name__, url_prefix="/api/projects")
+
 
 @projects_bp.route("", methods=["POST"])
 async def create_project() -> ResponseReturnValue:
@@ -56,6 +61,7 @@ async def create_project() -> ResponseReturnValue:
         logger.exception("Error creating Project: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @projects_bp.route("/<entity_id>", methods=["GET"])
 async def get_project(entity_id: str) -> ResponseReturnValue:
     """Get Project by ID"""
@@ -78,6 +84,7 @@ async def get_project(entity_id: str) -> ResponseReturnValue:
         logger.exception("Error getting Project: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @projects_bp.route("", methods=["GET"])
 async def list_projects() -> ResponseReturnValue:
     """List Projects with optional filtering"""
@@ -89,24 +96,18 @@ async def list_projects() -> ResponseReturnValue:
 
         conditions = []
         if owner_id:
-            conditions.append({
-                "field": "owner_id",
-                "operator": "EQUALS",
-                "value": owner_id
-            })
+            conditions.append(
+                {"field": "owner_id", "operator": "EQUALS", "value": owner_id}
+            )
         if status:
-            conditions.append({
-                "field": "state",
-                "operator": "EQUALS",
-                "value": status
-            })
+            conditions.append({"field": "state", "operator": "EQUALS", "value": status})
 
         response = await service.search(
             entity_class=Project.ENTITY_NAME,
             entity_version=str(Project.ENTITY_VERSION),
             conditions=conditions,
             limit=limit,
-            offset=offset
+            offset=offset,
         )
 
         projects = []
@@ -117,12 +118,13 @@ async def list_projects() -> ResponseReturnValue:
             "projects": projects,
             "total": len(projects),
             "limit": limit,
-            "offset": offset
+            "offset": offset,
         }, 200
 
     except Exception as e:
         logger.exception("Error listing Projects: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
+
 
 @projects_bp.route("/<entity_id>", methods=["PUT"])
 async def update_project(entity_id: str) -> ResponseReturnValue:
@@ -166,6 +168,7 @@ async def update_project(entity_id: str) -> ResponseReturnValue:
         logger.exception("Error updating Project: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @projects_bp.route("/<entity_id>", methods=["DELETE"])
 async def delete_project(entity_id: str) -> ResponseReturnValue:
     """Delete Project by ID"""
@@ -195,6 +198,7 @@ async def delete_project(entity_id: str) -> ResponseReturnValue:
         logger.exception("Error deleting Project: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @projects_bp.route("/<entity_id>/transition", methods=["POST"])
 async def transition_project(entity_id: str) -> ResponseReturnValue:
     """Transition Project state"""
@@ -204,7 +208,10 @@ async def transition_project(entity_id: str) -> ResponseReturnValue:
 
         data = await request.get_json()
         if not data or "transition" not in data:
-            return {"error": "Transition name is required", "code": "INVALID_REQUEST"}, 400
+            return {
+                "error": "Transition name is required",
+                "code": "INVALID_REQUEST",
+            }, 400
 
         transition_name = data["transition"]
 
@@ -215,12 +222,15 @@ async def transition_project(entity_id: str) -> ResponseReturnValue:
             transition_name=transition_name,
         )
 
-        logger.info("Transitioned Project %s with transition: %s", entity_id, transition_name)
+        logger.info(
+            "Transitioned Project %s with transition: %s", entity_id, transition_name
+        )
         return _to_entity_dict(response.data), 200
 
     except Exception as e:
         logger.exception("Error transitioning Project: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
+
 
 @projects_bp.route("/<entity_id>/tasks", methods=["GET"])
 async def get_project_tasks(entity_id: str) -> ResponseReturnValue:
@@ -233,11 +243,9 @@ async def get_project_tasks(entity_id: str) -> ResponseReturnValue:
         response = await service.search(
             entity_class="Task",
             entity_version="1",
-            conditions=[{
-                "field": "project_id",
-                "operator": "EQUALS",
-                "value": entity_id
-            }]
+            conditions=[
+                {"field": "project_id", "operator": "EQUALS", "value": entity_id}
+            ],
         )
 
         tasks = []

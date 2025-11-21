@@ -8,9 +8,9 @@ size validation, and security scanning.
 import logging
 from typing import Any
 
+from application.data.attachment.version_1.attachment import Attachment
 from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.data.attachment.version_1.attachment import Attachment
 from services.services import get_entity_service
 
 
@@ -90,7 +90,7 @@ class AttachmentValidationProcessor(CyodaProcessor):
         # Validate content type if provided
         if attachment.content_type:
             content_type = attachment.content_type.lower()
-            
+
             # Check for dangerous content types
             dangerous_types = [
                 "application/x-executable",
@@ -101,20 +101,37 @@ class AttachmentValidationProcessor(CyodaProcessor):
                 "application/x-sh",
                 "text/x-script",
             ]
-            
+
             if any(dangerous in content_type for dangerous in dangerous_types):
-                raise ValueError(f"Content type {content_type} is not allowed for security reasons")
+                raise ValueError(
+                    f"Content type {content_type} is not allowed for security reasons"
+                )
 
         # Validate filename extension
         file_extension = attachment.get_file_extension()
         if file_extension:
             dangerous_extensions = [
-                "exe", "bat", "cmd", "com", "pif", "scr", "vbs", "js", "jar",
-                "sh", "ps1", "py", "rb", "pl", "php"
+                "exe",
+                "bat",
+                "cmd",
+                "com",
+                "pif",
+                "scr",
+                "vbs",
+                "js",
+                "jar",
+                "sh",
+                "ps1",
+                "py",
+                "rb",
+                "pl",
+                "php",
             ]
-            
+
             if file_extension in dangerous_extensions:
-                raise ValueError(f"File extension .{file_extension} is not allowed for security reasons")
+                raise ValueError(
+                    f"File extension .{file_extension} is not allowed for security reasons"
+                )
 
         self.logger.info(f"File properties validated for {attachment.filename}")
 
@@ -132,7 +149,7 @@ class AttachmentValidationProcessor(CyodaProcessor):
             uploader_response = await entity_service.get_by_id(
                 entity_id=attachment.uploaded_by,
                 entity_class="User",
-                entity_version="1"
+                entity_version="1",
             )
 
             if not uploader_response or not uploader_response.data:
@@ -142,13 +159,13 @@ class AttachmentValidationProcessor(CyodaProcessor):
             is_active = uploader_data.get("isActive", True)
 
             if not is_active:
-                raise ValueError(f"Cannot upload attachment for inactive user {attachment.uploaded_by}")
+                raise ValueError(
+                    f"Cannot upload attachment for inactive user {attachment.uploaded_by}"
+                )
 
             # Get the task to validate access
             task_response = await entity_service.get_by_id(
-                entity_id=attachment.task_id,
-                entity_class="Task",
-                entity_version="1"
+                entity_id=attachment.task_id, entity_class="Task", entity_version="1"
             )
 
             if not task_response or not task_response.data:
@@ -160,9 +177,7 @@ class AttachmentValidationProcessor(CyodaProcessor):
             # Get project to validate membership
             if project_id:
                 project_response = await entity_service.get_by_id(
-                    entity_id=project_id,
-                    entity_class="Project",
-                    entity_version="1"
+                    entity_id=project_id, entity_class="Project", entity_version="1"
                 )
 
                 if project_response and project_response.data:
@@ -171,13 +186,17 @@ class AttachmentValidationProcessor(CyodaProcessor):
                     project_owner = project_data.get("owner_id", "")
 
                     # Check if uploader has access to the project
-                    if (attachment.uploaded_by not in project_members and 
-                        attachment.uploaded_by != project_owner):
+                    if (
+                        attachment.uploaded_by not in project_members
+                        and attachment.uploaded_by != project_owner
+                    ):
                         raise ValueError(
                             f"User {attachment.uploaded_by} does not have access to project {project_id}"
                         )
 
-            self.logger.info(f"Uploader permissions validated for {attachment.uploaded_by}")
+            self.logger.info(
+                f"Uploader permissions validated for {attachment.uploaded_by}"
+            )
 
         except Exception as e:
             self.logger.error(f"Failed to validate uploader permissions: {str(e)}")
@@ -192,19 +211,29 @@ class AttachmentValidationProcessor(CyodaProcessor):
         """
         # Basic filename security checks
         filename = attachment.filename.lower()
-        
+
         # Check for suspicious patterns
         suspicious_patterns = [
-            "..", "\\", "/", "<script", "javascript:", "data:", "vbscript:"
+            "..",
+            "\\",
+            "/",
+            "<script",
+            "javascript:",
+            "data:",
+            "vbscript:",
         ]
-        
+
         for pattern in suspicious_patterns:
             if pattern in filename:
                 raise ValueError(f"Filename contains suspicious pattern: {pattern}")
 
         # Check URL security
         url = attachment.url.lower()
-        if not (url.startswith("http://") or url.startswith("https://") or url.startswith("/")):
+        if not (
+            url.startswith("http://")
+            or url.startswith("https://")
+            or url.startswith("/")
+        ):
             raise ValueError("URL must be a valid HTTP/HTTPS URL or relative path")
 
         self.logger.info(f"Security checks passed for {attachment.filename}")
@@ -224,7 +253,7 @@ class AttachmentValidationProcessor(CyodaProcessor):
             "validated_at": attachment.created_at,
             "file_size": attachment.file_size,
             "content_type": attachment.content_type,
-            "is_secure": True
+            "is_secure": True,
         }
 
         self.logger.info(

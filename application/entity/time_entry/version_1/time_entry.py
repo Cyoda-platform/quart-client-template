@@ -16,9 +16,9 @@ from common.entity.cyoda_entity import CyodaEntity
 class TimeEntry(CyodaEntity):
     """
     TimeEntry entity represents time tracking for tasks.
-    
+
     Supports both manual time entry and timer-based tracking with automatic
-    duration calculation. State managed by workflow: 
+    duration calculation. State managed by workflow:
     initial_state -> logged -> (optional: approved/rejected).
     """
 
@@ -32,14 +32,11 @@ class TimeEntry(CyodaEntity):
     user_id: str = Field(..., description="Technical ID of the user logging time")
     start_time: str = Field(..., description="Start timestamp (ISO 8601 format)")
     end_time: Optional[str] = Field(
-        default=None,
-        alias="endTime",
-        description="End timestamp (ISO 8601 format)"
+        default=None, alias="endTime", description="End timestamp (ISO 8601 format)"
     )
     duration_minutes: int = Field(..., description="Duration in minutes")
     description: Optional[str] = Field(
-        default=None,
-        description="Description of work performed"
+        default=None, description="Description of work performed"
     )
 
     # Timestamps
@@ -93,10 +90,10 @@ class TimeEntry(CyodaEntity):
         """Validate start_time field"""
         if not v or len(v.strip()) == 0:
             raise ValueError("Start time must be non-empty")
-        
+
         # Basic ISO 8601 format validation
         try:
-            start_dt = datetime.fromisoformat(v.replace('Z', '+00:00'))
+            start_dt = datetime.fromisoformat(v.replace("Z", "+00:00"))
             # Check if start time is not in the future
             if start_dt > datetime.now(timezone.utc):
                 raise ValueError("Start time cannot be in the future")
@@ -104,7 +101,7 @@ class TimeEntry(CyodaEntity):
             if "Start time cannot be in the future" in str(e):
                 raise e
             raise ValueError("Start time must be in ISO 8601 format")
-        
+
         return v.strip()
 
     @field_validator("end_time")
@@ -113,16 +110,16 @@ class TimeEntry(CyodaEntity):
         """Validate end_time field"""
         if v is None:
             return None
-        
+
         if not v.strip():
             return None
-            
+
         # Basic ISO 8601 format validation
         try:
-            datetime.fromisoformat(v.replace('Z', '+00:00'))
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
         except ValueError:
             raise ValueError("End time must be in ISO 8601 format")
-        
+
         return v.strip()
 
     @field_validator("duration_minutes")
@@ -132,7 +129,9 @@ class TimeEntry(CyodaEntity):
         if v <= 0:
             raise ValueError("Duration must be positive")
         if v > cls.MAX_DURATION_MINUTES:
-            raise ValueError(f"Duration must be less than {cls.MAX_DURATION_MINUTES} minutes (24 hours)")
+            raise ValueError(
+                f"Duration must be less than {cls.MAX_DURATION_MINUTES} minutes (24 hours)"
+            )
         return v
 
     @field_validator("description")
@@ -141,13 +140,13 @@ class TimeEntry(CyodaEntity):
         """Validate description field"""
         if v is None:
             return None
-        
+
         if not v.strip():
             return None
-        
+
         if len(v) > 500:
             raise ValueError("Description must be at most 500 characters long")
-        
+
         return v.strip()
 
     @model_validator(mode="after")
@@ -156,22 +155,32 @@ class TimeEntry(CyodaEntity):
         # Validate end time is after start time if both are provided
         if self.start_time and self.end_time:
             try:
-                start_dt = datetime.fromisoformat(self.start_time.replace('Z', '+00:00'))
-                end_dt = datetime.fromisoformat(self.end_time.replace('Z', '+00:00'))
-                
+                start_dt = datetime.fromisoformat(
+                    self.start_time.replace("Z", "+00:00")
+                )
+                end_dt = datetime.fromisoformat(self.end_time.replace("Z", "+00:00"))
+
                 if end_dt <= start_dt:
                     raise ValueError("End time must be after start time")
-                
+
                 # Calculate expected duration and validate against provided duration
                 expected_duration = int((end_dt - start_dt).total_seconds() / 60)
-                if abs(expected_duration - self.duration_minutes) > 1:  # Allow 1 minute tolerance
+                if (
+                    abs(expected_duration - self.duration_minutes) > 1
+                ):  # Allow 1 minute tolerance
                     raise ValueError("Duration does not match start and end times")
-                    
+
             except ValueError as e:
-                if any(msg in str(e) for msg in ["End time must be after start time", "Duration does not match"]):
+                if any(
+                    msg in str(e)
+                    for msg in [
+                        "End time must be after start time",
+                        "Duration does not match",
+                    ]
+                ):
                     raise e
                 # If date parsing fails, let the field validators handle it
-        
+
         return self
 
     def update_timestamp(self) -> None:
@@ -190,10 +199,10 @@ class TimeEntry(CyodaEntity):
         """Calculate duration in minutes from start and end times"""
         if not self.start_time or not self.end_time:
             return None
-        
+
         try:
-            start_dt = datetime.fromisoformat(self.start_time.replace('Z', '+00:00'))
-            end_dt = datetime.fromisoformat(self.end_time.replace('Z', '+00:00'))
+            start_dt = datetime.fromisoformat(self.start_time.replace("Z", "+00:00"))
+            end_dt = datetime.fromisoformat(self.end_time.replace("Z", "+00:00"))
             return int((end_dt - start_dt).total_seconds() / 60)
         except ValueError:
             return None

@@ -8,9 +8,9 @@ and progress metrics.
 import logging
 from typing import Any
 
+from application.data.task.version_1.task import Task
 from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
@@ -78,26 +78,30 @@ class TaskProgressProcessor(CyodaProcessor):
 
         try:
             # Get all time entries for this task
-            from common.service.data_service import SearchConditionRequest, SearchCondition, SearchOperator
+            from common.service.data_service import (
+                SearchCondition,
+                SearchConditionRequest,
+                SearchOperator,
+            )
 
             search_condition = SearchConditionRequest(
-                conditions=[SearchCondition(
-                    field="task_id",
-                    operator=SearchOperator.EQUALS,
-                    value=task.technical_id or task.data_id
-                )]
+                conditions=[
+                    SearchCondition(
+                        field="task_id",
+                        operator=SearchOperator.EQUALS,
+                        value=task.technical_id or task.data_id,
+                    )
+                ]
             )
 
             time_entries_response = await entity_service.search(
-                entity_class="TimeEntry",
-                condition=search_condition,
-                entity_version="1"
+                entity_class="TimeEntry", condition=search_condition, entity_version="1"
             )
 
             total_logged_hours = 0.0
             if time_entries_response:
                 for entry_response in time_entries_response:
-                    if hasattr(entry_response.data, 'model_dump'):
+                    if hasattr(entry_response.data, "model_dump"):
                         entry_data = entry_response.data.model_dump()
                     else:
                         entry_data = entry_response.data
@@ -131,8 +135,14 @@ class TaskProgressProcessor(CyodaProcessor):
 
         # Calculate progress percentage if estimate is available
         progress_info = {}
-        if task.estimate_hours and task.estimate_hours > 0 and task.logged_hours is not None:
-            progress_percentage = min(100.0, (task.logged_hours / task.estimate_hours) * 100)
+        if (
+            task.estimate_hours
+            and task.estimate_hours > 0
+            and task.logged_hours is not None
+        ):
+            progress_percentage = min(
+                100.0, (task.logged_hours / task.estimate_hours) * 100
+            )
             progress_info["progress_percentage"] = round(progress_percentage, 2)
             progress_info["is_over_estimate"] = task.logged_hours > task.estimate_hours
 

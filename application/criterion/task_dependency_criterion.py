@@ -8,9 +8,9 @@ Ensures tasks cannot progress if their dependencies are not completed.
 import logging
 from typing import Any
 
+from application.data.task.version_1.task import Task
 from common.data.data_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
@@ -80,12 +80,10 @@ class TaskDependencyCriterion(CyodaCriteriaChecker):
         entity_service = get_entity_service()
 
         try:
-            for dependency_id in (task.dependencies or []):
+            for dependency_id in task.dependencies or []:
                 # Get the dependency task
                 dependency_response = await entity_service.get_by_id(
-                    entity_id=dependency_id,
-                    entity_class="Task",
-                    entity_version="1"
+                    entity_id=dependency_id, entity_class="Task", entity_version="1"
                 )
 
                 if not dependency_response or not dependency_response.data:

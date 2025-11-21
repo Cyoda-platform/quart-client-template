@@ -16,7 +16,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Task(CyodaEntity):
     """
     Task entity represents work items within projects.
-    
+
     Core entity with workflow states: backlog -> todo -> in_progress -> review -> done
     Supports assignments, priorities, time tracking, and dependencies.
     """
@@ -31,29 +31,21 @@ class Task(CyodaEntity):
     title: str = Field(..., description="Task title")
     description: str = Field(..., description="Task description")
     assignee_id: Optional[str] = Field(
-        default=None,
-        alias="assigneeId",
-        description="Technical ID of assigned user"
+        default=None, alias="assigneeId", description="Technical ID of assigned user"
     )
     priority: str = Field(..., description="Task priority: HIGH, MEDIUM, LOW")
     estimate_hours: Optional[float] = Field(
-        default=None,
-        alias="estimateHours",
-        description="Estimated hours to complete"
+        default=None, alias="estimateHours", description="Estimated hours to complete"
     )
     logged_hours: Optional[float] = Field(
-        default=0.0,
-        alias="loggedHours",
-        description="Actual hours logged"
+        default=0.0, alias="loggedHours", description="Actual hours logged"
     )
     due_date: Optional[str] = Field(
-        default=None,
-        alias="dueDate",
-        description="Task due date (ISO 8601 format)"
+        default=None, alias="dueDate", description="Task due date (ISO 8601 format)"
     )
     dependencies: Optional[List[str]] = Field(
         default_factory=list,
-        description="List of task technical IDs this task depends on"
+        description="List of task technical IDs this task depends on",
     )
 
     # Timestamps
@@ -153,16 +145,16 @@ class Task(CyodaEntity):
         """Validate due_date field"""
         if v is None:
             return None
-        
+
         if not v.strip():
             return None
-            
+
         # Basic ISO 8601 format validation
         try:
-            datetime.fromisoformat(v.replace('Z', '+00:00'))
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
         except ValueError:
             raise ValueError("Due date must be in ISO 8601 format")
-        
+
         return v.strip()
 
     @field_validator("dependencies")
@@ -171,7 +163,7 @@ class Task(CyodaEntity):
         """Validate dependencies field"""
         if v is None:
             return []
-        
+
         # Remove duplicates and empty strings
         cleaned_deps = []
         for dep_id in v:
@@ -179,18 +171,20 @@ class Task(CyodaEntity):
                 dep_id = dep_id.strip()
                 if dep_id not in cleaned_deps:
                     cleaned_deps.append(dep_id)
-        
+
         return cleaned_deps
 
     @model_validator(mode="after")
     def validate_business_logic(self) -> "Task":
         """Validate business logic rules"""
         # Validate logged hours vs estimate
-        if (self.estimate_hours is not None and 
-            self.logged_hours is not None and 
-            self.logged_hours > self.estimate_hours * 1.5):
+        if (
+            self.estimate_hours is not None
+            and self.logged_hours is not None
+            and self.logged_hours > self.estimate_hours * 1.5
+        ):
             raise ValueError("Logged hours cannot exceed 150% of estimated hours")
-        
+
         return self
 
     def update_timestamp(self) -> None:
@@ -207,9 +201,9 @@ class Task(CyodaEntity):
         """Check if task is overdue"""
         if not self.due_date:
             return False
-        
+
         try:
-            due_dt = datetime.fromisoformat(self.due_date.replace('Z', '+00:00'))
+            due_dt = datetime.fromisoformat(self.due_date.replace("Z", "+00:00"))
             return datetime.now(timezone.utc) > due_dt
         except ValueError:
             return False

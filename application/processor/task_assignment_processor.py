@@ -8,9 +8,9 @@ and notification of assignment.
 import logging
 from typing import Any
 
+from application.data.task.version_1.task import Task
 from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
@@ -79,10 +79,11 @@ class TaskAssignmentProcessor(CyodaProcessor):
 
         try:
             # Get the assignee
+            if not task.assignee_id:
+                raise ValueError("Task assignee ID is required")
+
             assignee_response = await entity_service.get_by_id(
-                entity_id=task.assignee_id,
-                entity_class="User",
-                entity_version="1"
+                entity_id=task.assignee_id, entity_class="User", entity_version="1"
             )
 
             if not assignee_response or not assignee_response.data:
@@ -92,13 +93,13 @@ class TaskAssignmentProcessor(CyodaProcessor):
             is_active = assignee_data.get("isActive", True)
 
             if not is_active:
-                raise ValueError(f"Cannot assign task to inactive user {task.assignee_id}")
+                raise ValueError(
+                    f"Cannot assign task to inactive user {task.assignee_id}"
+                )
 
             # Get the project to validate membership
             project_response = await entity_service.get_by_id(
-                entity_id=task.project_id,
-                entity_class="Project",
-                entity_version="1"
+                entity_id=task.project_id, entity_class="Project", entity_version="1"
             )
 
             if not project_response or not project_response.data:
@@ -109,13 +110,20 @@ class TaskAssignmentProcessor(CyodaProcessor):
             project_owner = project_data.get("owner_id", "")
 
             # Check if assignee is project member or owner
-            if task.assignee_id not in project_members and task.assignee_id != project_owner:
-                raise ValueError(f"User {task.assignee_id} is not a member of project {task.project_id}")
+            if (
+                task.assignee_id not in project_members
+                and task.assignee_id != project_owner
+            ):
+                raise ValueError(
+                    f"User {task.assignee_id} is not a member of project {task.project_id}"
+                )
 
             self.logger.info(f"Task assignee {task.assignee_id} validated")
 
         except Exception as e:
-            self.logger.error(f"Failed to validate task assignee {task.assignee_id}: {str(e)}")
+            self.logger.error(
+                f"Failed to validate task assignee {task.assignee_id}: {str(e)}"
+            )
             raise
 
     def _update_task_metadata(self, task: Task) -> None:

@@ -7,9 +7,9 @@ Handles comment notifications including mentions and real-time updates.
 import logging
 from typing import Any
 
+from application.data.comment.version_1.comment import Comment
 from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.data.comment.version_1.comment import Comment
 from services.services import get_entity_service
 
 
@@ -85,31 +85,31 @@ class CommentNotificationProcessor(CyodaProcessor):
             try:
                 # Validate mentioned user exists
                 user_response = await entity_service.get_by_id(
-                    entity_id=mentioned_user_id,
-                    entity_class="User",
-                    entity_version="1"
+                    entity_id=mentioned_user_id, entity_class="User", entity_version="1"
                 )
 
                 if user_response and user_response.data:
                     user_data = user_response.data
                     user_name = user_data.get("name", "Unknown User")
-                    
+
                     self.logger.info(
                         f"Processing mention for user {mentioned_user_id} ({user_name}) "
                         f"in comment {comment.technical_id}"
                     )
-                    
+
                     # In a real implementation, this would trigger:
                     # - Email notification
                     # - In-app notification
                     # - WebSocket real-time update
                     # For now, we just log the mention
-                    
+
                 else:
                     self.logger.warning(f"Mentioned user {mentioned_user_id} not found")
 
             except Exception as e:
-                self.logger.error(f"Error processing mention for user {mentioned_user_id}: {str(e)}")
+                self.logger.error(
+                    f"Error processing mention for user {mentioned_user_id}: {str(e)}"
+                )
 
     async def _notify_task_participants(self, comment: Comment) -> None:
         """
@@ -123,31 +123,29 @@ class CommentNotificationProcessor(CyodaProcessor):
         try:
             # Get the task to find participants
             task_response = await entity_service.get_by_id(
-                entity_id=comment.task_id,
-                entity_class="Task",
-                entity_version="1"
+                entity_id=comment.task_id, entity_class="Task", entity_version="1"
             )
 
             if not task_response or not task_response.data:
-                self.logger.warning(f"Could not find task {comment.task_id} for notifications")
+                self.logger.warning(
+                    f"Could not find task {comment.task_id} for notifications"
+                )
                 return
 
             task_data = task_response.data
             assignee_id = task_data.get("assignee_id")
-            
+
             # Get project to find owner and members
             project_id = task_data.get("project_id")
             if project_id:
                 project_response = await entity_service.get_by_id(
-                    entity_id=project_id,
-                    entity_class="Project",
-                    entity_version="1"
+                    entity_id=project_id, entity_class="Project", entity_version="1"
                 )
 
                 if project_response and project_response.data:
                     project_data = project_response.data
                     project_owner = project_data.get("owner_id")
-                    
+
                     # Collect participants (excluding comment author)
                     participants = set()
                     if assignee_id and assignee_id != comment.author_id:
@@ -178,7 +176,7 @@ class CommentNotificationProcessor(CyodaProcessor):
 
         notification_info = {
             "mentions_count": len(comment.mentions or []),
-            "notifications_sent": True
+            "notifications_sent": True,
         }
 
         self.logger.info(

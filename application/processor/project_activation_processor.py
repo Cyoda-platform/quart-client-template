@@ -8,9 +8,9 @@ and initial setup of project metadata.
 import logging
 from typing import Any
 
+from application.data.project.version_1.project import Project
 from common.data.data_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.data.project.version_1.project import Project
 from services.services import get_entity_service
 
 
@@ -55,9 +55,7 @@ class ProjectActivationProcessor(CyodaProcessor):
             self._initialize_project_metadata(project)
 
             # Log activation completion
-            self.logger.info(
-                f"Project {project.technical_id} activated successfully"
-            )
+            self.logger.info(f"Project {project.technical_id} activated successfully")
 
             return project
 
@@ -79,9 +77,7 @@ class ProjectActivationProcessor(CyodaProcessor):
         try:
             # Get the project owner
             owner_response = await entity_service.get_by_id(
-                entity_id=project.owner_id,
-                entity_class="User",
-                entity_version="1"
+                entity_id=project.owner_id, entity_class="User", entity_version="1"
             )
 
             if not owner_response or not owner_response.data:
@@ -92,12 +88,18 @@ class ProjectActivationProcessor(CyodaProcessor):
 
             # Validate owner has proper role
             if owner_role not in ["ADMIN", "MANAGER"]:
-                raise ValueError(f"Project owner must have ADMIN or MANAGER role, got: {owner_role}")
+                raise ValueError(
+                    f"Project owner must have ADMIN or MANAGER role, got: {owner_role}"
+                )
 
-            self.logger.info(f"Project owner {project.owner_id} validated with role {owner_role}")
+            self.logger.info(
+                f"Project owner {project.owner_id} validated with role {owner_role}"
+            )
 
         except Exception as e:
-            self.logger.error(f"Failed to validate project owner {project.owner_id}: {str(e)}")
+            self.logger.error(
+                f"Failed to validate project owner {project.owner_id}: {str(e)}"
+            )
             raise
 
     def _initialize_project_metadata(self, project: Project) -> None:

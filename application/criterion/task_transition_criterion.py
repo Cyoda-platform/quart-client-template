@@ -8,9 +8,9 @@ Ensures only authorized users can perform specific transitions.
 import logging
 from typing import Any
 
+from application.data.task.version_1.task import Task
 from common.data.data_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.data.task.version_1.task import Task
 from services.services import get_entity_service
 
 
@@ -55,7 +55,9 @@ class TaskTransitionCriterion(CyodaCriteriaChecker):
             user_id = kwargs.get("user_id", "")
 
             if not transition_name or not user_id:
-                self.logger.warning("Missing transition_name or user_id in evaluation context")
+                self.logger.warning(
+                    "Missing transition_name or user_id in evaluation context"
+                )
                 return False
 
             # Evaluate based on transition type
@@ -73,7 +75,9 @@ class TaskTransitionCriterion(CyodaCriteriaChecker):
             )
             return False
 
-    async def _evaluate_transition(self, task: Task, transition_name: str, user_id: str) -> bool:
+    async def _evaluate_transition(
+        self, task: Task, transition_name: str, user_id: str
+    ) -> bool:
         """
         Evaluate specific transition based on business rules.
 
@@ -90,9 +94,7 @@ class TaskTransitionCriterion(CyodaCriteriaChecker):
         try:
             # Get user information
             user_response = await entity_service.get_by_id(
-                entity_id=user_id,
-                entity_class="User",
-                entity_version="1"
+                entity_id=user_id, entity_class="User", entity_version="1"
             )
 
             if not user_response or not user_response.data:
@@ -109,9 +111,7 @@ class TaskTransitionCriterion(CyodaCriteriaChecker):
 
             # Get project information
             project_response = await entity_service.get_by_id(
-                entity_id=task.project_id,
-                entity_class="Project",
-                entity_version="1"
+                entity_id=task.project_id, entity_class="Project", entity_version="1"
             )
 
             if not project_response or not project_response.data:
@@ -124,13 +124,15 @@ class TaskTransitionCriterion(CyodaCriteriaChecker):
 
             # Check if user has access to the project
             has_project_access = (
-                user_id == project_owner or
-                user_id in project_members or
-                user_role == "ADMIN"
+                user_id == project_owner
+                or user_id in project_members
+                or user_role == "ADMIN"
             )
 
             if not has_project_access:
-                self.logger.warning(f"User {user_id} does not have access to project {task.project_id}")
+                self.logger.warning(
+                    f"User {user_id} does not have access to project {task.project_id}"
+                )
                 return False
 
             # Evaluate specific transitions
@@ -143,12 +145,12 @@ class TaskTransitionCriterion(CyodaCriteriaChecker):
             return False
 
     def _evaluate_specific_transition(
-        self, 
-        task: Task, 
-        transition_name: str, 
-        user_id: str, 
-        user_role: str, 
-        project_owner: str
+        self,
+        task: Task,
+        transition_name: str,
+        user_id: str,
+        user_role: str,
+        project_owner: str,
     ) -> bool:
         """
         Evaluate specific transition rules.
@@ -180,9 +182,8 @@ class TaskTransitionCriterion(CyodaCriteriaChecker):
         elif transition_name == "submit_for_review":
             # Only assignee or project owner can submit for review
             return (
-                (task.assignee_id and user_id == task.assignee_id) or
-                user_id == project_owner
-            )
+                task.assignee_id and user_id == task.assignee_id
+            ) or user_id == project_owner
 
         elif transition_name == "approve":
             # Only project owner or manager can approve

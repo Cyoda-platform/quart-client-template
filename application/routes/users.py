@@ -8,30 +8,35 @@ and user management functionality.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
 
+from application.entity.user.version_1.user import User
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.user.version_1.user import User
+
 
 # Module-level service instance to avoid repeated lookups
 class _ServiceProxy:
     def __getattr__(self, name: str) -> Any:
         return getattr(get_entity_service(), name)
 
+
 service = _ServiceProxy()
 logger = logging.getLogger(__name__)
+
 
 # Helper to normalize entity data from service
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
+
 users_bp = Blueprint("users", __name__, url_prefix="/api/users")
 
 # ---- Routes -----------------------------------------------------------------
+
 
 @users_bp.route("", methods=["POST"])
 async def create_user() -> ResponseReturnValue:
@@ -62,6 +67,7 @@ async def create_user() -> ResponseReturnValue:
         logger.exception("Error creating User: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @users_bp.route("/<entity_id>", methods=["GET"])
 async def get_user(entity_id: str) -> ResponseReturnValue:
     """Get User by ID"""
@@ -84,6 +90,7 @@ async def get_user(entity_id: str) -> ResponseReturnValue:
         logger.exception("Error getting User: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @users_bp.route("", methods=["GET"])
 async def list_users() -> ResponseReturnValue:
     """List Users with optional filtering"""
@@ -97,17 +104,15 @@ async def list_users() -> ResponseReturnValue:
         # Build search conditions
         conditions = []
         if role:
-            conditions.append({
-                "field": "role",
-                "operator": "EQUALS",
-                "value": role
-            })
+            conditions.append({"field": "role", "operator": "EQUALS", "value": role})
         if is_active is not None:
-            conditions.append({
-                "field": "isActive",
-                "operator": "EQUALS",
-                "value": "true" if is_active.lower() == "true" else "false"
-            })
+            conditions.append(
+                {
+                    "field": "isActive",
+                    "operator": "EQUALS",
+                    "value": "true" if is_active.lower() == "true" else "false",
+                }
+            )
 
         # Search users
         response = await service.search(
@@ -115,7 +120,7 @@ async def list_users() -> ResponseReturnValue:
             entity_version=str(User.ENTITY_VERSION),
             conditions=conditions,
             limit=limit,
-            offset=offset
+            offset=offset,
         )
 
         users = []
@@ -126,12 +131,13 @@ async def list_users() -> ResponseReturnValue:
             "users": users,
             "total": len(users),
             "limit": limit,
-            "offset": offset
+            "offset": offset,
         }, 200
 
     except Exception as e:
         logger.exception("Error listing Users: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
+
 
 @users_bp.route("/<entity_id>", methods=["PUT"])
 async def update_user(entity_id: str) -> ResponseReturnValue:
@@ -179,6 +185,7 @@ async def update_user(entity_id: str) -> ResponseReturnValue:
         logger.exception("Error updating User: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @users_bp.route("/<entity_id>", methods=["DELETE"])
 async def delete_user(entity_id: str) -> ResponseReturnValue:
     """Delete User by ID"""
@@ -210,6 +217,7 @@ async def delete_user(entity_id: str) -> ResponseReturnValue:
         logger.exception("Error deleting User: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @users_bp.route("/<entity_id>/transition", methods=["POST"])
 async def transition_user(entity_id: str) -> ResponseReturnValue:
     """Transition User state"""
@@ -219,7 +227,10 @@ async def transition_user(entity_id: str) -> ResponseReturnValue:
 
         data = await request.get_json()
         if not data or "transition" not in data:
-            return {"error": "Transition name is required", "code": "INVALID_REQUEST"}, 400
+            return {
+                "error": "Transition name is required",
+                "code": "INVALID_REQUEST",
+            }, 400
 
         transition_name = data["transition"]
 
@@ -231,7 +242,9 @@ async def transition_user(entity_id: str) -> ResponseReturnValue:
             transition_name=transition_name,
         )
 
-        logger.info("Transitioned User %s with transition: %s", entity_id, transition_name)
+        logger.info(
+            "Transitioned User %s with transition: %s", entity_id, transition_name
+        )
         return _to_entity_dict(response.data), 200
 
     except Exception as e:

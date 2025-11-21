@@ -16,9 +16,9 @@ from common.entity.cyoda_entity import CyodaEntity
 class Project(CyodaEntity):
     """
     Project entity represents containers for tasks with team members.
-    
+
     Projects are owned by users with MANAGER or ADMIN roles and can contain
-    multiple tasks and team members. State managed by workflow: 
+    multiple tasks and team members. State managed by workflow:
     initial_state -> created -> active -> (completed/archived).
     """
 
@@ -33,17 +33,15 @@ class Project(CyodaEntity):
     owner_id: str = Field(..., description="Technical ID of the project owner (User)")
     members: Optional[List[str]] = Field(
         default_factory=list,
-        description="List of user technical IDs who are project members"
+        description="List of user technical IDs who are project members",
     )
     start_date: Optional[str] = Field(
         default=None,
         alias="startDate",
-        description="Project start date (ISO 8601 format)"
+        description="Project start date (ISO 8601 format)",
     )
     end_date: Optional[str] = Field(
-        default=None,
-        alias="endDate",
-        description="Project end date (ISO 8601 format)"
+        default=None, alias="endDate", description="Project end date (ISO 8601 format)"
     )
 
     # Timestamps
@@ -108,7 +106,7 @@ class Project(CyodaEntity):
         """Validate members field"""
         if v is None:
             return []
-        
+
         # Remove duplicates and empty strings
         cleaned_members = []
         for member_id in v:
@@ -116,7 +114,7 @@ class Project(CyodaEntity):
                 member_id = member_id.strip()
                 if member_id not in cleaned_members:
                     cleaned_members.append(member_id)
-        
+
         return cleaned_members
 
     @field_validator("start_date")
@@ -125,16 +123,16 @@ class Project(CyodaEntity):
         """Validate start_date field"""
         if v is None:
             return None
-        
+
         if not v.strip():
             return None
-            
+
         # Basic ISO 8601 format validation
         try:
-            datetime.fromisoformat(v.replace('Z', '+00:00'))
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
         except ValueError:
             raise ValueError("Start date must be in ISO 8601 format")
-        
+
         return v.strip()
 
     @field_validator("end_date")
@@ -143,16 +141,16 @@ class Project(CyodaEntity):
         """Validate end_date field"""
         if v is None:
             return None
-        
+
         if not v.strip():
             return None
-            
+
         # Basic ISO 8601 format validation
         try:
-            datetime.fromisoformat(v.replace('Z', '+00:00'))
+            datetime.fromisoformat(v.replace("Z", "+00:00"))
         except ValueError:
             raise ValueError("End date must be in ISO 8601 format")
-        
+
         return v.strip()
 
     @model_validator(mode="after")
@@ -161,16 +159,18 @@ class Project(CyodaEntity):
         # Validate date range if both dates are provided
         if self.start_date and self.end_date:
             try:
-                start_dt = datetime.fromisoformat(self.start_date.replace('Z', '+00:00'))
-                end_dt = datetime.fromisoformat(self.end_date.replace('Z', '+00:00'))
-                
+                start_dt = datetime.fromisoformat(
+                    self.start_date.replace("Z", "+00:00")
+                )
+                end_dt = datetime.fromisoformat(self.end_date.replace("Z", "+00:00"))
+
                 if end_dt <= start_dt:
                     raise ValueError("End date must be after start date")
             except ValueError as e:
                 if "End date must be after start date" in str(e):
                     raise e
                 # If date parsing fails, let the field validators handle it
-        
+
         return self
 
     def update_timestamp(self) -> None:

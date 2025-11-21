@@ -13,20 +13,25 @@ from typing import Any, Dict
 from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
 
-from services.services import get_entity_service
 from application.entity.attachment.version_1.attachment import Attachment
+from services.services import get_entity_service
+
 
 class _ServiceProxy:
     def __getattr__(self, name: str) -> Any:
         return getattr(get_entity_service(), name)
 
+
 service = _ServiceProxy()
 logger = logging.getLogger(__name__)
+
 
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
+
 attachments_bp = Blueprint("attachments", __name__, url_prefix="/api/attachments")
+
 
 @attachments_bp.route("", methods=["POST"])
 async def create_attachment() -> ResponseReturnValue:
@@ -55,6 +60,7 @@ async def create_attachment() -> ResponseReturnValue:
         logger.exception("Error creating Attachment: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @attachments_bp.route("/<entity_id>", methods=["GET"])
 async def get_attachment(entity_id: str) -> ResponseReturnValue:
     """Get Attachment by ID"""
@@ -77,6 +83,7 @@ async def get_attachment(entity_id: str) -> ResponseReturnValue:
         logger.exception("Error getting Attachment: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @attachments_bp.route("", methods=["GET"])
 async def list_attachments() -> ResponseReturnValue:
     """List Attachments with filtering"""
@@ -89,30 +96,24 @@ async def list_attachments() -> ResponseReturnValue:
 
         conditions = []
         if task_id:
-            conditions.append({
-                "field": "task_id",
-                "operator": "EQUALS",
-                "value": task_id
-            })
+            conditions.append(
+                {"field": "task_id", "operator": "EQUALS", "value": task_id}
+            )
         if uploaded_by:
-            conditions.append({
-                "field": "uploaded_by",
-                "operator": "EQUALS",
-                "value": uploaded_by
-            })
+            conditions.append(
+                {"field": "uploaded_by", "operator": "EQUALS", "value": uploaded_by}
+            )
         if content_type:
-            conditions.append({
-                "field": "content_type",
-                "operator": "EQUALS",
-                "value": content_type
-            })
+            conditions.append(
+                {"field": "content_type", "operator": "EQUALS", "value": content_type}
+            )
 
         response = await service.search(
             entity_class=Attachment.ENTITY_NAME,
             entity_version=str(Attachment.ENTITY_VERSION),
             conditions=conditions,
             limit=limit,
-            offset=offset
+            offset=offset,
         )
 
         attachments = []
@@ -123,12 +124,13 @@ async def list_attachments() -> ResponseReturnValue:
             "attachments": attachments,
             "total": len(attachments),
             "limit": limit,
-            "offset": offset
+            "offset": offset,
         }, 200
 
     except Exception as e:
         logger.exception("Error listing Attachments: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
+
 
 @attachments_bp.route("/<entity_id>", methods=["DELETE"])
 async def delete_attachment(entity_id: str) -> ResponseReturnValue:
@@ -159,6 +161,7 @@ async def delete_attachment(entity_id: str) -> ResponseReturnValue:
         logger.exception("Error deleting Attachment: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
 
+
 @attachments_bp.route("/<entity_id>/transition", methods=["POST"])
 async def transition_attachment(entity_id: str) -> ResponseReturnValue:
     """Transition Attachment state"""
@@ -168,7 +171,10 @@ async def transition_attachment(entity_id: str) -> ResponseReturnValue:
 
         data = await request.get_json()
         if not data or "transition" not in data:
-            return {"error": "Transition name is required", "code": "INVALID_REQUEST"}, 400
+            return {
+                "error": "Transition name is required",
+                "code": "INVALID_REQUEST",
+            }, 400
 
         transition_name = data["transition"]
 
@@ -179,12 +185,15 @@ async def transition_attachment(entity_id: str) -> ResponseReturnValue:
             transition_name=transition_name,
         )
 
-        logger.info("Transitioned Attachment %s with transition: %s", entity_id, transition_name)
+        logger.info(
+            "Transitioned Attachment %s with transition: %s", entity_id, transition_name
+        )
         return _to_entity_dict(response.data), 200
 
     except Exception as e:
         logger.exception("Error transitioning Attachment: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
+
 
 # Special endpoint for task attachments
 @attachments_bp.route("/task/<task_id>", methods=["GET"])
@@ -197,11 +206,7 @@ async def get_task_attachments(task_id: str) -> ResponseReturnValue:
         response = await service.search(
             entity_class=Attachment.ENTITY_NAME,
             entity_version=str(Attachment.ENTITY_VERSION),
-            conditions=[{
-                "field": "task_id",
-                "operator": "EQUALS",
-                "value": task_id
-            }]
+            conditions=[{"field": "task_id", "operator": "EQUALS", "value": task_id}],
         )
 
         attachments = []

@@ -2,22 +2,45 @@
   "version": "1.0",
   "name": "OrderProcessing",
   "desc": "Workflow for Order entity handling create, update, and cancel",
-  "initialState": "created",
+  "initialState": "initial_state",
   "active": true,
   "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderCreateProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 5000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
     "created": {
       "transitions": [
         {
           "name": "update",
           "next": "updated",
-          "manual": false,
+          "manual": true,
           "processors": [
             {
               "name": "OrderUpdateProcessor",
               "executionMode": "SYNC",
               "config": {
+                "attachEntity": true,
                 "calculationNodesTags": "cyoda_application",
-                "attachEntity": true
+                "responseTimeoutMs": 5000,
+                "retryPolicy": "FIXED"
               }
             }
           ]
@@ -25,16 +48,57 @@
         {
           "name": "cancel",
           "next": "cancelled",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "OrderCancelProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 10000,
+                "retryPolicy": "EXPONENTIAL"
+              }
+            }
+          ]
         }
       ]
     },
     "updated": {
       "transitions": [
         {
+          "name": "update",
+          "next": "updated",
+          "manual": true,
+          "processors": [
+            {
+              "name": "OrderUpdateProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 5000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
           "name": "cancel",
           "next": "cancelled",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "OrderCancelProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 10000,
+                "retryPolicy": "EXPONENTIAL"
+              }
+            }
+          ]
         }
       ]
     },

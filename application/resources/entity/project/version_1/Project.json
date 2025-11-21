@@ -1,0 +1,48 @@
+{
+  "name": "Project",
+  "version": 1,
+  "fields": [
+    {
+      "name": "project_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the project"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "description": "Project name"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "required": true,
+      "description": "Project description"
+    },
+    {
+      "name": "owner_id",
+      "type": "string",
+      "required": true,
+      "description": "Technical ID of the project owner (User)"
+    },
+    {
+      "name": "members",
+      "type": "array",
+      "required": false,
+      "description": "List of user technical IDs who are project members"
+    },
+    {
+      "name": "start_date",
+      "type": "string",
+      "required": false,
+      "description": "Project start date (ISO 8601 format)"
+    },
+    {
+      "name": "end_date",
+      "type": "string",
+      "required": false,
+      "description": "Project end date (ISO 8601 format)"
+    }
+  ]
+}

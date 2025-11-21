@@ -1,0 +1,66 @@
+{
+  "name": "Task",
+  "version": 1,
+  "fields": [
+    {
+      "name": "task_id",
+      "type": "string",
+      "required": true,
+      "description": "Business identifier for the task"
+    },
+    {
+      "name": "project_id",
+      "type": "string",
+      "required": true,
+      "description": "Technical ID of the parent project"
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "required": true,
+      "description": "Task title"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "required": true,
+      "description": "Task description"
+    },
+    {
+      "name": "assignee_id",
+      "type": "string",
+      "required": false,
+      "description": "Technical ID of assigned user"
+    },
+    {
+      "name": "priority",
+      "type": "string",
+      "required": true,
+      "description": "Task priority: HIGH, MEDIUM, LOW"
+    },
+    {
+      "name": "estimate_hours",
+      "type": "number",
+      "required": false,
+      "description": "Estimated hours to complete"
+    },
+    {
+      "name": "logged_hours",
+      "type": "number",
+      "required": false,
+      "description": "Actual hours logged"
+    },
+    {
+      "name": "due_date",
+      "type": "string",
+      "required": false,
+      "description": "Task due date (ISO 8601 format)"
+    },
+    {
+      "name": "dependencies",
+      "type": "array",
+      "required": false,
+      "description": "List of task technical IDs this task depends on"
+    }
+  ]
+}

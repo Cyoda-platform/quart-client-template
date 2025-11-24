@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "name": "Order",
+  "desc": "Workflow for Order entity: create, update, cancel",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false,
+          "processors": [
+            {
+              "name": "persist_order",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 5000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "update",
+          "next": "created",
+          "manual": false,
+          "processors": [
+            {
+              "name": "apply_order_updates",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true,
+          "processors": [
+            {
+              "name": "mark_order_cancelled",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 7000,
+                "retryPolicy": "EXPONENTIAL"
+              }
+            }
+          ],
+          "criterion": {
+            "type": "simple",
+            "jsonPath": "$.status",
+            "operation": "EQUALS",
+            "value": "CANCELLABLE"
+          }
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}

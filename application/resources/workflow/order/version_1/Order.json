@@ -13,7 +13,7 @@
           "manual": false,
           "processors": [
             {
-              "name": "create_order_processor",
+              "name": "persist_order",
               "executionMode": "SYNC",
               "config": {
                 "calculationNodesTags": "cyoda_application",
@@ -32,8 +32,8 @@
           "manual": false,
           "processors": [
             {
-              "name": "update_order_processor",
-              "executionMode": "SYNC",
+              "name": "apply_order_updates",
+              "executionMode": "ASYNC_NEW_TX",
               "config": {
                 "calculationNodesTags": "cyoda_application",
                 "attachEntity": true
@@ -47,7 +47,7 @@
           "manual": true,
           "processors": [
             {
-              "name": "cancel_order_processor",
+              "name": "process_order_cancellation",
               "executionMode": "ASYNC_NEW_TX",
               "config": {
                 "calculationNodesTags": "cyoda_application",
@@ -59,7 +59,23 @@
       ]
     },
     "updated": {
-      "transitions": []
+      "transitions": [
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true,
+          "processors": [
+            {
+              "name": "process_order_cancellation",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "attachEntity": true
+              }
+            }
+          ]
+        }
+      ]
     },
     "cancelled": {
       "transitions": []

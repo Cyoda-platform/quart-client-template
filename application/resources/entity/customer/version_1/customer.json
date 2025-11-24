@@ -1,0 +1,11 @@
+{
+  "name": "customer",
+  "version": 1,
+  "description": "Customer entity with basic contact fields",
+  "fields": [
+    {"name": "id", "type": "uuid", "description": "Unique identifier for the customer"},
+    {"name": "name", "type": "string", "description": "Full name of the customer"},
+    {"name": "email", "type": "string", "description": "Email address of the customer"},
+    {"name": "phone", "type": "string", "description": "Phone number of the customer"}
+  ]
+}

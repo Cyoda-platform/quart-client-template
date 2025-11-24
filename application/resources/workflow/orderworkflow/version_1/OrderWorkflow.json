@@ -1,7 +1,7 @@
 {
   "version": "1.0",
-  "name": "Order",
-  "desc": "Workflow for Order entity: create, update, cancel",
+  "name": "OrderWorkflow",
+  "desc": "Workflow for Order entity supporting create, update, and cancel transitions",
   "initialState": "initial_state",
   "active": true,
   "states": {
@@ -13,11 +13,11 @@
           "manual": false,
           "processors": [
             {
-              "name": "persist_order",
+              "name": "persist_entity",
               "executionMode": "SYNC",
               "config": {
-                "calculationNodesTags": "cyoda_application",
-                "attachEntity": true
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application"
               }
             }
           ]
@@ -32,11 +32,11 @@
           "manual": false,
           "processors": [
             {
-              "name": "apply_order_updates",
+              "name": "apply_updates",
               "executionMode": "SYNC",
               "config": {
-                "calculationNodesTags": "cyoda_application",
-                "attachEntity": true
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application"
               }
             }
           ]
@@ -44,28 +44,38 @@
         {
           "name": "cancel",
           "next": "cancelled",
-          "manual": true,
+          "manual": false,
           "processors": [
             {
-              "name": "mark_order_cancelled",
+              "name": "mark_cancelled",
               "executionMode": "SYNC",
               "config": {
-                "calculationNodesTags": "cyoda_application",
-                "attachEntity": true
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application"
               }
             }
-          ],
-          "criterion": {
-            "type": "simple",
-            "jsonPath": "$.status",
-            "operation": "NOT_EQUALS",
-            "value": "shipped"
-          }
+          ]
         }
       ]
     },
     "updated": {
-      "transitions": []
+      "transitions": [
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "mark_cancelled",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
     },
     "cancelled": {
       "transitions": []

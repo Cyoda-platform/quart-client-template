@@ -1,7 +1,7 @@
 {
   "version": "1.0",
   "name": "Order",
-  "desc": "Workflow for Order entity: create, update, cancel",
+  "desc": "Workflow for Order entity: create, update, cancel transitions",
   "initialState": "initial_state",
   "active": true,
   "states": {
@@ -13,7 +13,7 @@
           "manual": false,
           "processors": [
             {
-              "name": "persist_order",
+              "name": "create_order_processor",
               "executionMode": "SYNC",
               "config": {
                 "calculationNodesTags": "cyoda_application",
@@ -32,7 +32,7 @@
           "manual": false,
           "processors": [
             {
-              "name": "apply_order_updates",
+              "name": "update_order_processor",
               "executionMode": "SYNC",
               "config": {
                 "calculationNodesTags": "cyoda_application",
@@ -47,20 +47,14 @@
           "manual": true,
           "processors": [
             {
-              "name": "mark_order_cancelled",
-              "executionMode": "SYNC",
+              "name": "cancel_order_processor",
+              "executionMode": "ASYNC_NEW_TX",
               "config": {
                 "calculationNodesTags": "cyoda_application",
                 "attachEntity": true
               }
             }
-          ],
-          "criterion": {
-            "type": "simple",
-            "jsonPath": "$.status",
-            "operation": "NOT_EQUALS",
-            "value": "shipped"
-          }
+          ]
         }
       ]
     },

@@ -1,0 +1,82 @@
+{
+  "name": "order",
+  "version": 1,
+  "description": "Represents a customer's order with line items, totals, and status.",
+  "primary_key": ["id"],
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "format": "uuid",
+      "description": "Unique identifier for the order",
+      "required": true
+    },
+    {
+      "name": "customer_id",
+      "type": "string",
+      "description": "Reference to the customer who placed the order",
+      "required": true
+    },
+    {
+      "name": "items",
+      "type": "array",
+      "description": "List of line items in the order",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": { "type": "string", "description": "Product identifier" },
+          "quantity": { "type": "integer", "description": "Quantity ordered" },
+          "unit_price": { "type": "number", "description": "Unit price for the item" }
+        },
+        "required": ["product_id", "quantity", "unit_price"]
+      },
+      "required": true
+    },
+    {
+      "name": "total_amount",
+      "type": "number",
+      "description": "Total order amount",
+      "required": true
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "description": "Currency code (ISO 4217)",
+      "example": "USD",
+      "required": true
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "description": "Current order status",
+      "enum": ["CREATED", "UPDATED", "CANCELLED"],
+      "required": true
+    },
+    {
+      "name": "shipping_address",
+      "type": "object",
+      "description": "Shipping address for the order",
+      "properties": {
+        "line1": { "type": "string" },
+        "line2": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "postal_code": { "type": "string" },
+        "country": { "type": "string" }
+      }
+    },
+    {
+      "name": "created_at",
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the order was created",
+      "required": true
+    },
+    {
+      "name": "updated_at",
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the last update to the order"
+    }
+  ]
+}

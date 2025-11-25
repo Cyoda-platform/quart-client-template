@@ -1,0 +1,12 @@
+{
+  "name": "Order",
+  "version": 1,
+  "description": "Represents a customer order with items and total amount.",
+  "fields": [
+    {"name": "id", "type": "string", "description": "Unique identifier for the order"},
+    {"name": "status", "type": "string", "description": "Current status of the order (created, updated, cancelled)"},
+    {"name": "items", "type": "array", "description": "List of order items"},
+    {"name": "total", "type": "number", "description": "Total amount for the order"},
+    {"name": "customerId", "type": "string", "description": "Reference to the customer who placed the order"}
+  ]
+}

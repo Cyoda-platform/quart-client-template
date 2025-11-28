@@ -28,5 +28,12 @@
       "description": "Phone number of the customer",
       "required": false
     }
+  ],
+  "indexes": [
+    {
+      "fields": ["email"],
+      "unique": true,
+      "description": "Ensure emails are unique across customers"
+    }
   ]
 }

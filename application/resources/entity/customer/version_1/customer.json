@@ -1,32 +1,28 @@
 {
-  "name": "customer",
-  "description": "Represents a customer in the system",
+  "name": "Customer",
   "version": 1,
+  "description": "Represents a customer with contact information.",
   "fields": [
     {
       "name": "id",
-      "type": "string",
-      "description": "Unique identifier for the customer",
-      "required": true
+      "type": "uuid",
+      "description": "Unique identifier for the customer"
     },
     {
       "name": "name",
       "type": "string",
-      "description": "Full name of the customer",
-      "required": true
+      "description": "Full name of the customer"
     },
     {
       "name": "email",
       "type": "string",
       "format": "email",
-      "description": "Email address of the customer",
-      "required": true
+      "description": "Email address of the customer"
     },
     {
       "name": "phone",
       "type": "string",
-      "description": "Phone number of the customer",
-      "required": false
+      "description": "Phone number of the customer"
     }
   ]
 }

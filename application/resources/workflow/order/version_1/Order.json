@@ -1,0 +1,84 @@
+{
+  "version": "1.0",
+  "name": "Order",
+  "desc": "Workflow for Order entity with create, update, and cancel transitions",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false,
+          "processors": [
+            {
+              "name": "persistOrder",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "update",
+          "next": "updated",
+          "manual": false,
+          "processors": [
+            {
+              "name": "updateOrderProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true,
+          "processors": [
+            {
+              "name": "cancelOrderProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "updated": {
+      "transitions": [
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true,
+          "processors": [
+            {
+              "name": "cancelOrderProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}

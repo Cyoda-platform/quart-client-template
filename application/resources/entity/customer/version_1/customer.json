@@ -5,7 +5,7 @@
   "fields": [
     {
       "name": "id",
-      "type": "uuid",
+      "type": "string",
       "description": "Unique identifier for the customer",
       "required": true
     },

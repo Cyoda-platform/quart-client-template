@@ -27,13 +27,6 @@
       "type": "string",
       "description": "Phone number of the customer",
       "required": false
-    },
-    {
-      "name": "created_at",
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when the customer was created",
-      "required": false
     }
   ]
 }

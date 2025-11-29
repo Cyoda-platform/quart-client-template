@@ -1,13 +1,13 @@
 {
-  "name": "customer",
+  "name": "Customer",
+  "description": "Represents a customer in the system",
   "version": 1,
-  "description": "Customer entity representing a user/customer in the system",
   "fields": [
     {
       "name": "id",
       "type": "string",
-      "description": "Unique identifier for the customer",
-      "primary_key": true
+      "format": "uuid",
+      "description": "Unique identifier for the customer"
     },
     {
       "name": "name",
@@ -17,8 +17,7 @@
     {
       "name": "email",
       "type": "string",
-      "description": "Email address of the customer",
-      "format": "email"
+      "description": "Email address of the customer"
     },
     {
       "name": "phone",

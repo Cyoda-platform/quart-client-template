@@ -1,0 +1,54 @@
+{
+  "name": "CustomerWorkflow",
+  "version": 1,
+  "description": "Workflow to manage Customer lifecycle",
+  "states": [
+    {
+      "name": "created",
+      "type": "terminal",
+      "description": "Customer has been created"
+    },
+    {
+      "name": "updated",
+      "type": "terminal",
+      "description": "Customer data has been updated"
+    }
+  ],
+  "transitions": [
+    {
+      "name": "create",
+      "from": "*",
+      "to": "created",
+      "actions": [
+        {
+          "type": "create_entity",
+          "entity": "customer",
+          "version": 1
+        },
+        {
+          "type": "emit_event",
+          "event": "CustomerCreated",
+          "payload": {
+            "id": "{{entity.id}}",
+            "name": "{{entity.name}}",
+            "email": "{{entity.email}}",
+            "phone": "{{entity.phone}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "update",
+      "from": "created",
+      "to": "updated",
+      "actions": [
+        {
+          "type": "update_entity",
+          "entity": "customer",
+          "version": 1,
+          "fields": ["name","email","phone"]
+        }
+      ]
+    }
+  ]
+}

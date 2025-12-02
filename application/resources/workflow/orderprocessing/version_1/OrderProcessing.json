@@ -1,0 +1,89 @@
+{
+  "name": "OrderProcessing",
+  "version": 1,
+  "description": "Workflow for the Order entity with create, update, and cancel transitions.",
+  "entity": "order",
+  "initial_state": "created",
+  "states": [
+    {
+      "name": "created",
+      "description": "Order has been created and is active."
+    },
+    {
+      "name": "updated",
+      "description": "Order details have been updated."
+    },
+    {
+      "name": "cancelled",
+      "description": "Order has been cancelled and will not be processed."
+    }
+  ],
+  "transitions": [
+    {
+      "name": "create",
+      "description": "Create a new Order.",
+      "from": ["__none__"],
+      "to": "created",
+      "input": ["order_id", "customer_id", "items", "total_amount"],
+      "actions": [
+        {
+          "type": "persist",
+          "description": "Persist new Order entity"
+        },
+        {
+          "type": "emit_event",
+          "event": "OrderCreated",
+          "description": "Emit OrderCreated event"
+        }
+      ]
+    },
+    {
+      "name": "update",
+      "description": "Update an existing Order's mutable fields.",
+      "from": ["created", "updated"],
+      "to": "updated",
+      "input": ["items", "total_amount", "shipping_address", "status"],
+      "conditions": [
+        {
+          "description": "Order must not be cancelled",
+          "expression": "state != 'cancelled'"
+        }
+      ],
+      "actions": [
+        {
+          "type": "persist",
+          "description": "Persist updated Order fields"
+        },
+        {
+          "type": "emit_event",
+          "event": "OrderUpdated",
+          "description": "Emit OrderUpdated event"
+        }
+      ]
+    },
+    {
+      "name": "cancel",
+      "description": "Cancel an active Order.",
+      "from": ["created", "updated"],
+      "to": "cancelled",
+      "input": ["reason"],
+      "conditions": [
+        {
+          "description": "Order must not already be cancelled",
+          "expression": "state != 'cancelled'"
+        }
+      ],
+      "actions": [
+        {
+          "type": "persist",
+          "description": "Mark Order as cancelled"
+        },
+        {
+          "type": "emit_event",
+          "event": "OrderCancelled",
+          "description": "Emit OrderCancelled event"
+        }
+      ]
+    }
+  ]
+}

@@ -14,6 +14,7 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 
 from common.exception import is_not_found
+from common.service.entity_service import SearchCondition, SearchConditionRequest, SearchOperator
 from services.services import get_entity_service
 from application.entity.market_data.version_1.market_data import MarketData
 
@@ -63,7 +64,7 @@ async def get_market_data(data_id: str) -> ResponseReturnValue:
             entity_version=str(MarketData.ENTITY_VERSION),
         )
 
-        if is_not_found(response):
+        if response is None:
             return jsonify({"error": "Market data not found"}), 404
 
         return jsonify(response.entity), 200

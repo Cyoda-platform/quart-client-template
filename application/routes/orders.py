@@ -64,7 +64,7 @@ async def get_order(order_id: str) -> ResponseReturnValue:
             entity_version=str(Order.ENTITY_VERSION),
         )
 
-        if is_not_found(response):
+        if response is None:
             return jsonify({"error": "Order not found"}), 404
 
         return jsonify(response.entity), 200
@@ -88,39 +88,38 @@ async def list_orders() -> ResponseReturnValue:
         # Build search conditions if filters provided
         conditions = []
         if portfolio_id:
-            conditions.append({
-                "field": "portfolioId",
-                "operator": "EQUALS",
-                "value": portfolio_id
-            })
+            conditions.append(SearchCondition(
+                field="portfolioId",
+                operator=SearchOperator.EQUALS,
+                value=portfolio_id
+            ))
         if symbol:
-            conditions.append({
-                "field": "symbol",
-                "operator": "EQUALS",
-                "value": symbol.upper()
-            })
+            conditions.append(SearchCondition(
+                field="symbol",
+                operator=SearchOperator.EQUALS,
+                value=symbol.upper()
+            ))
         if status:
-            conditions.append({
-                "field": "state",
-                "operator": "EQUALS",
-                "value": status
-            })
+            conditions.append(SearchCondition(
+                field="state",
+                operator=SearchOperator.EQUALS,
+                value=status
+            ))
 
         if conditions:
-            from common.service.entity_service import SearchConditionRequest
-            search_request = SearchConditionRequest(
+            search_request = SearchConditionRequest(conditions=conditions)
+            response = await entity_service.search(
                 entity_class=Order.ENTITY_NAME,
+                condition=search_request,
                 entity_version=str(Order.ENTITY_VERSION),
-                conditions=conditions
             )
-            response = await entity_service.search(search_request)
-            orders = response.entities
+            orders = [r.entity for r in response]
         else:
             response = await entity_service.find_all(
                 entity_class=Order.ENTITY_NAME,
                 entity_version=str(Order.ENTITY_VERSION),
             )
-            orders = response.entities
+            orders = [r.entity for r in response]
 
         return jsonify({
             "orders": orders,
@@ -153,7 +152,7 @@ async def update_order(order_id: str) -> ResponseReturnValue:
             transition=transition,
         )
 
-        if is_not_found(response):
+        if response is None:
             return jsonify({"error": "Order not found"}), 404
 
         return jsonify({
@@ -181,7 +180,7 @@ async def cancel_order(order_id: str) -> ResponseReturnValue:
             transition="cancel",
         )
 
-        if is_not_found(response):
+        if response is None:
             return jsonify({"error": "Order not found"}), 404
 
         return jsonify({
@@ -209,7 +208,7 @@ async def fill_order(order_id: str) -> ResponseReturnValue:
             transition="fill",
         )
 
-        if is_not_found(response):
+        if response is None:
             return jsonify({"error": "Order not found"}), 404
 
         return jsonify({
@@ -229,14 +228,11 @@ async def delete_order(order_id: str) -> ResponseReturnValue:
     try:
         entity_service = get_entity_service()
         
-        response = await entity_service.delete(
+        deleted_id = await entity_service.delete_by_id(
             entity_id=order_id,
             entity_class=Order.ENTITY_NAME,
             entity_version=str(Order.ENTITY_VERSION),
         )
-
-        if is_not_found(response):
-            return jsonify({"error": "Order not found"}), 404
 
         return jsonify({"message": "Order deleted successfully"}), 200
 

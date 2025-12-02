@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
 
 from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue

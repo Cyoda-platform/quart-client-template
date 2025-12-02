@@ -1,11 +1,10 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
 from uuid import uuid4
 
 from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
-from quart_schema import operation_id, tag, validate
+from quart_schema import operation_id, tag
 
 from application.entity.cart import Cart
 from services.services import get_entity_service

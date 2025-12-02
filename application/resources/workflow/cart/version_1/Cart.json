@@ -1,0 +1,100 @@
+{
+  "version": "1.0",
+  "name": "Cart Workflow",
+  "desc": "Workflow for Cart entity with state transitions",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "NEW",
+          "manual": false
+        }
+      ]
+    },
+    "NEW": {
+      "transitions": [
+        {
+          "name": "CREATE_ON_FIRST_ADD",
+          "next": "ACTIVE",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RecalculateTotalsProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ACTIVE": {
+      "transitions": [
+        {
+          "name": "ADD_ITEM",
+          "next": "ACTIVE",
+          "manual": true,
+          "processors": [
+            {
+              "name": "RecalculateTotalsProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DECREMENT_ITEM",
+          "next": "ACTIVE",
+          "manual": true,
+          "processors": [
+            {
+              "name": "RecalculateTotalsProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "REMOVE_ITEM",
+          "next": "ACTIVE",
+          "manual": true,
+          "processors": [
+            {
+              "name": "RecalculateTotalsProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "OPEN_CHECKOUT",
+          "next": "CHECKING_OUT",
+          "manual": true
+        }
+      ]
+    },
+    "CHECKING_OUT": {
+      "transitions": [
+        {
+          "name": "CHECKOUT",
+          "next": "CONVERTED",
+          "manual": true
+        }
+      ]
+    },
+    "CONVERTED": {
+      "transitions": []
+    }
+  }
+}
+

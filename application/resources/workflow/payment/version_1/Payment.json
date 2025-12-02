@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "name": "Payment Workflow",
+  "desc": "Workflow for Payment entity with dummy auto-payment",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "INITIATED",
+          "manual": false
+        }
+      ]
+    },
+    "INITIATED": {
+      "transitions": [
+        {
+          "name": "START_DUMMY_PAYMENT",
+          "next": "INITIATED",
+          "manual": true,
+          "processors": [
+            {
+              "name": "CreateDummyPaymentProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "AUTO_MARK_PAID",
+          "next": "PAID",
+          "manual": true,
+          "processors": [
+            {
+              "name": "AutoMarkPaidProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "PAID": {
+      "transitions": []
+    },
+    "FAILED": {
+      "transitions": []
+    },
+    "CANCELED": {
+      "transitions": []
+    }
+  }
+}
+

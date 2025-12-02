@@ -6,10 +6,10 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag
 
-from services.services import get_entity_service
+from application.entity.cart import Cart
 from application.entity.order import Order
 from application.entity.payment import Payment
-from application.entity.cart import Cart
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +22,9 @@ def _get_timestamp() -> str:
 
 def _generate_ulid() -> str:
     """Generate a short ULID-like order number"""
-    import time
     import random
+    import time
+
     timestamp = int(time.time() * 1000)
     random_part = random.randint(100000, 999999)
     return f"{timestamp:x}{random_part:x}"[:12]
@@ -136,4 +137,3 @@ async def get_order(order_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error getting order %s: %s", order_id, str(e))
         return jsonify({"error": str(e)}), 500
-

@@ -24,4 +24,3 @@ class Shipment(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

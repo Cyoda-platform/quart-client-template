@@ -64,4 +64,3 @@ class Product(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

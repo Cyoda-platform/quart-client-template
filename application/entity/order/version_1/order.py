@@ -11,12 +11,8 @@ class Order(CyodaEntity):
 
     orderId: str = Field(..., description="Order ID")
     orderNumber: str = Field(..., description="Order number (short ULID)")
-    status: str = Field(
-        default="WAITING_TO_FULFILL", description="Order status"
-    )
-    lines: List[Dict[str, Any]] = Field(
-        default_factory=list, description="Order lines"
-    )
+    status: str = Field(default="WAITING_TO_FULFILL", description="Order status")
+    lines: List[Dict[str, Any]] = Field(default_factory=list, description="Order lines")
     totals: Optional[Dict[str, Any]] = Field(
         None, description="Order totals (items, grand)"
     )
@@ -32,4 +28,3 @@ class Order(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

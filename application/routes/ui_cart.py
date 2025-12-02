@@ -7,8 +7,8 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.cart import Cart
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -224,4 +224,3 @@ async def open_checkout(cart_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error opening checkout: %s", str(e))
         return jsonify({"error": str(e)}), 500
-

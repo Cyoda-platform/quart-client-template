@@ -6,8 +6,8 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag
 
-from services.services import get_entity_service
 from application.entity.payment import Payment
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -85,4 +85,3 @@ async def get_payment_status(payment_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error getting payment %s: %s", payment_id, str(e))
         return jsonify({"error": str(e)}), 500
-

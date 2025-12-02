@@ -29,10 +29,10 @@ class Cart(CyodaEntity):
     totalItems: int = Field(default=0, description="Total items in cart")
     grandTotal: float = Field(default=0.0, description="Grand total")
     guestContact: Optional[Dict[str, Any]] = Field(
-        None, description="Guest contact information"
+        default=None, description="Guest contact information"
     )
-    createdAt: Optional[str] = Field(None, description="Creation timestamp")
-    updatedAt: Optional[str] = Field(None, description="Update timestamp")
+    createdAt: Optional[str] = Field(default=None, description="Creation timestamp")
+    updatedAt: Optional[str] = Field(default=None, description="Update timestamp")
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -40,4 +40,3 @@ class Cart(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

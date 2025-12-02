@@ -2,9 +2,9 @@ import asyncio
 import logging
 from typing import Any
 
+from application.entity.payment import Payment
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.payment import Payment
 
 
 class CreateDummyPaymentProcessor(CyodaProcessor):
@@ -61,9 +61,7 @@ class AutoMarkPaidProcessor(CyodaProcessor):
 
             payment.status = "PAID"
 
-            self.logger.info(
-                f"Payment {payment.technical_id} auto-marked as PAID"
-            )
+            self.logger.info(f"Payment {payment.technical_id} auto-marked as PAID")
 
             return payment
 
@@ -72,4 +70,3 @@ class AutoMarkPaidProcessor(CyodaProcessor):
                 f"Error auto-marking payment {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

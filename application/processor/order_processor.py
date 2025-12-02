@@ -2,10 +2,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaProcessor
 from application.entity.order import Order
 from application.entity.shipment import Shipment
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaEntity, CyodaProcessor
 from services.services import get_entity_service
 
 
@@ -44,9 +44,7 @@ class CreateOrderFromPaidProcessor(CyodaProcessor):
                         )
 
                         if product_result:
-                            product_data = product_result.data.model_dump(
-                                by_alias=True
-                            )
+                            product_data = product_result.data.model_dump(by_alias=True)
                             product_data["quantityAvailable"] = max(
                                 0, product_data.get("quantityAvailable", 0) - qty
                             )
@@ -94,4 +92,3 @@ class CreateOrderFromPaidProcessor(CyodaProcessor):
                 f"Error creating order {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

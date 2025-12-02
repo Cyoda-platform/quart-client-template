@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
+from application.entity.cart import Cart
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.cart import Cart
 
 
 class RecalculateTotalsProcessor(CyodaProcessor):
@@ -47,4 +47,3 @@ class RecalculateTotalsProcessor(CyodaProcessor):
                 f"Error recalculating totals for cart {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

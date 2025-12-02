@@ -5,9 +5,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate_querystring
 
-from common.service.entity_service import SearchConditionRequest
-from services.services import get_entity_service
 from application.entity.product import Product
+from common.service.entity_service import SearchConditionRequest, SearchOperator
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +41,16 @@ async def list_products() -> ResponseReturnValue:
         if min_price_str:
             try:
                 min_price = float(min_price_str)
-                builder.gte("price", min_price)
+                builder.add_condition(
+                    "price", SearchOperator.GREATER_OR_EQUAL, min_price
+                )
             except ValueError:
                 pass
 
         if max_price_str:
             try:
                 max_price = float(max_price_str)
-                builder.lte("price", max_price)
+                builder.add_condition("price", SearchOperator.LESS_OR_EQUAL, max_price)
             except ValueError:
                 pass
 
@@ -125,4 +127,3 @@ async def get_product_by_sku(sku: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error getting product %s: %s", sku, str(e))
         return jsonify({"error": str(e)}), 500
-

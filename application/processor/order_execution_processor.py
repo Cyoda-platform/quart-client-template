@@ -85,7 +85,7 @@ class OrderExecutionProcessor(CyodaProcessor):
             datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         )
 
-        execution_data = {
+        execution_data: Dict[str, Any] = {
             "executed_at": current_timestamp,
             "status": "FILLED",
             "filled_quantity": 0,
@@ -102,7 +102,7 @@ class OrderExecutionProcessor(CyodaProcessor):
             execution_data["filled_quantity"] = order.quantity
             execution_data["remaining_quantity"] = 0
             execution_data["execution_price"] = market_price
-            execution_data["executions"].append({
+            execution_data["executions"].append({  # type: ignore
                 "quantity": order.quantity,
                 "price": market_price,
                 "timestamp": current_timestamp
@@ -113,7 +113,7 @@ class OrderExecutionProcessor(CyodaProcessor):
                 execution_data["filled_quantity"] = order.quantity
                 execution_data["remaining_quantity"] = 0
                 execution_data["execution_price"] = order.price
-                execution_data["executions"].append({
+                execution_data["executions"].append({  # type: ignore
                     "quantity": order.quantity,
                     "price": order.price,
                     "timestamp": current_timestamp
@@ -123,10 +123,10 @@ class OrderExecutionProcessor(CyodaProcessor):
                 execution_data["message"] = "Limit order waiting for favorable price"
 
         # Update order fill information
-        if execution_data["filled_quantity"] > 0:
+        if execution_data["filled_quantity"] > 0:  # type: ignore
             order.update_fill(
-                execution_data["filled_quantity"],
-                execution_data["execution_price"]
+                execution_data["filled_quantity"],  # type: ignore
+                execution_data["execution_price"]  # type: ignore
             )
 
         return execution_data
@@ -173,19 +173,19 @@ class OrderExecutionProcessor(CyodaProcessor):
 
             # Create Trade entity
             trade = Trade(
-                trade_id=f"TRD-{str(uuid.uuid4())[:8]}",
-                order_id=order.order_id,
+                tradeId=f"TRD-{str(uuid.uuid4())[:8]}",
+                orderId=order.order_id,
                 symbol=order.symbol,
                 side=order.side,
-                quantity=execution_data["filled_quantity"],
-                price=execution_data["execution_price"],
-                portfolio_id=order.portfolio_id,
-                execution_time=execution_data["executed_at"],
-                settlement_date=settlement_date.isoformat().replace("+00:00", "Z"),
+                quantity=execution_data["filled_quantity"],  # type: ignore
+                price=execution_data["execution_price"],  # type: ignore
+                portfolioId=order.portfolio_id,
+                executionTime=execution_data["executed_at"],  # type: ignore
+                settlementDate=settlement_date.isoformat().replace("+00:00", "Z"),
                 exchange="SIMULATED",
                 commission=self._calculate_commission(
-                    execution_data["filled_quantity"],
-                    execution_data["execution_price"]
+                    execution_data["filled_quantity"],  # type: ignore
+                    execution_data["execution_price"]  # type: ignore
                 )
             )
 

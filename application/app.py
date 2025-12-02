@@ -11,12 +11,24 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.ui_products import ui_products_bp
+from application.routes.ui_cart import ui_cart_bp
+from application.routes.ui_checkout import ui_checkout_bp
+from application.routes.ui_payment import ui_payment_bp
+from application.routes.ui_order import ui_order_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
+
+# Register UI blueprints
+app.register_blueprint(ui_products_bp)
+app.register_blueprint(ui_cart_bp)
+app.register_blueprint(ui_checkout_bp)
+app.register_blueprint(ui_payment_bp)
+app.register_blueprint(ui_order_bp)
 
 QuartSchema(
     app,

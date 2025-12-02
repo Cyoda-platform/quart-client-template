@@ -253,7 +253,7 @@ async def delete_market_data(data_id: str) -> ResponseReturnValue:
     try:
         entity_service = get_entity_service()
 
-        deleted_id = await entity_service.delete_by_id(
+        await entity_service.delete_by_id(
             entity_id=data_id,
             entity_class=MarketData.ENTITY_NAME,
             entity_version=str(MarketData.ENTITY_VERSION),

@@ -1,1 +1,1 @@
-
+# Trade entity module

@@ -1,1 +1,1 @@
-
+# MarketData entity module

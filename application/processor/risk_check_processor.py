@@ -116,8 +116,6 @@ class RiskCheckProcessor(CyodaProcessor):
     async def _check_position_limits(self, order: Order) -> Dict[str, Any]:
         """Check position limits for the order"""
         try:
-            entity_service = get_entity_service()
-
             # Get portfolio to check current positions
             # This is a simplified check - in real implementation would query actual positions
             check_result = {

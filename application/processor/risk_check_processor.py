@@ -79,7 +79,7 @@ class RiskCheckProcessor(CyodaProcessor):
             datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         )
 
-        risk_checks = {
+        risk_checks: Dict[str, Any] = {
             "checked_at": current_timestamp,
             "status": "PASSED",
             "checks": [],
@@ -89,9 +89,9 @@ class RiskCheckProcessor(CyodaProcessor):
 
         # Check 1: Position limit check
         position_check = await self._check_position_limits(order)
-        risk_checks["checks"].append(position_check)
+        risk_checks["checks"].append(position_check)  # type: ignore
         if not position_check["passed"]:
-            risk_checks["errors"].append(position_check["message"])
+            risk_checks["errors"].append(position_check["message"])  # type: ignore
 
         # Check 2: Exposure limit check
         exposure_check = await self._check_exposure_limits(order)

@@ -80,24 +80,25 @@ async def get_market_data_by_symbol(symbol: str) -> ResponseReturnValue:
     try:
         entity_service = get_entity_service()
         
-        from common.service.entity_service import SearchConditionRequest
         search_request = SearchConditionRequest(
-            entity_class=MarketData.ENTITY_NAME,
-            entity_version=str(MarketData.ENTITY_VERSION),
-            conditions=[{
-                "field": "symbol",
-                "operator": "EQUALS",
-                "value": symbol.upper()
-            }]
+            conditions=[SearchCondition(
+                field="symbol",
+                operator=SearchOperator.EQUALS,
+                value=symbol.upper()
+            )]
         )
-        
-        response = await entity_service.search(search_request)
-        
-        if not response.entities:
+
+        response = await entity_service.search(
+            entity_class=MarketData.ENTITY_NAME,
+            condition=search_request,
+            entity_version=str(MarketData.ENTITY_VERSION),
+        )
+
+        if not response:
             return jsonify({"error": "Market data not found for symbol"}), 404
 
         # Return the most recent entry (assuming sorted by timestamp)
-        latest_data = response.entities[0]
+        latest_data = response[0].entity
         return jsonify(latest_data), 200
 
     except Exception as e:
@@ -120,45 +121,44 @@ async def list_market_data() -> ResponseReturnValue:
         # Build search conditions if filters provided
         conditions = []
         if symbol:
-            conditions.append({
-                "field": "symbol",
-                "operator": "EQUALS",
-                "value": symbol.upper()
-            })
+            conditions.append(SearchCondition(
+                field="symbol",
+                operator=SearchOperator.EQUALS,
+                value=symbol.upper()
+            ))
         if exchange:
-            conditions.append({
-                "field": "exchange",
-                "operator": "EQUALS",
-                "value": exchange.upper()
-            })
+            conditions.append(SearchCondition(
+                field="exchange",
+                operator=SearchOperator.EQUALS,
+                value=exchange.upper()
+            ))
         if instrument_type:
-            conditions.append({
-                "field": "instrumentType",
-                "operator": "EQUALS",
-                "value": instrument_type
-            })
+            conditions.append(SearchCondition(
+                field="instrumentType",
+                operator=SearchOperator.EQUALS,
+                value=instrument_type
+            ))
         if market_status:
-            conditions.append({
-                "field": "marketStatus",
-                "operator": "EQUALS",
-                "value": market_status
-            })
+            conditions.append(SearchCondition(
+                field="marketStatus",
+                operator=SearchOperator.EQUALS,
+                value=market_status
+            ))
 
         if conditions:
-            from common.service.entity_service import SearchConditionRequest
-            search_request = SearchConditionRequest(
+            search_request = SearchConditionRequest(conditions=conditions)
+            response = await entity_service.search(
                 entity_class=MarketData.ENTITY_NAME,
+                condition=search_request,
                 entity_version=str(MarketData.ENTITY_VERSION),
-                conditions=conditions
             )
-            response = await entity_service.search(search_request)
-            market_data_list = response.entities
+            market_data_list = [r.entity for r in response]
         else:
             response = await entity_service.find_all(
                 entity_class=MarketData.ENTITY_NAME,
                 entity_version=str(MarketData.ENTITY_VERSION),
             )
-            market_data_list = response.entities
+            market_data_list = [r.entity for r in response]
 
         return jsonify({
             "market_data": market_data_list,
@@ -191,7 +191,7 @@ async def update_market_data(data_id: str) -> ResponseReturnValue:
             transition=transition,
         )
 
-        if is_not_found(response):
+        if response is None:
             return jsonify({"error": "Market data not found"}), 404
 
         return jsonify({
@@ -217,7 +217,7 @@ async def get_symbols() -> ResponseReturnValue:
         )
 
         # Extract unique symbols
-        symbols = list(set(data.get("symbol", "") for data in response.entities))
+        symbols = list(set(data.entity.get("symbol", "") for data in response))
         symbols.sort()
 
         return jsonify({
@@ -236,14 +236,11 @@ async def delete_market_data(data_id: str) -> ResponseReturnValue:
     try:
         entity_service = get_entity_service()
         
-        response = await entity_service.delete(
+        deleted_id = await entity_service.delete_by_id(
             entity_id=data_id,
             entity_class=MarketData.ENTITY_NAME,
             entity_version=str(MarketData.ENTITY_VERSION),
         )
-
-        if is_not_found(response):
-            return jsonify({"error": "Market data not found"}), 404
 
         return jsonify({"message": "Market data deleted successfully"}), 200
 

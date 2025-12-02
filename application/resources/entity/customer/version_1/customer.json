@@ -1,0 +1,32 @@
+{
+  "name": "customer",
+  "version": 1,
+  "description": "Customer entity representing a user/customer in the system.",
+  "fields": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "description": "Unique identifier for the customer",
+      "required": true
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Full name of the customer",
+      "required": true
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "format": "email",
+      "description": "Email address of the customer",
+      "required": true
+    },
+    {
+      "name": "phone",
+      "type": "string",
+      "description": "Phone number of the customer",
+      "required": false
+    }
+  ]
+}

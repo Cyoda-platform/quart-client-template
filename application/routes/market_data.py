@@ -67,7 +67,7 @@ async def get_market_data(data_id: str) -> ResponseReturnValue:
         if response is None:
             return jsonify({"error": "Market data not found"}), 404
 
-        return jsonify(response.entity), 200
+        return jsonify(response.data.model_dump(by_alias=True)), 200
 
     except Exception as e:
         logger.error(f"Error getting market data {data_id}: {str(e)}")
@@ -98,7 +98,7 @@ async def get_market_data_by_symbol(symbol: str) -> ResponseReturnValue:
             return jsonify({"error": "Market data not found for symbol"}), 404
 
         # Return the most recent entry (assuming sorted by timestamp)
-        latest_data = response[0].entity
+        latest_data = response[0].data.model_dump(by_alias=True)
         return jsonify(latest_data), 200
 
     except Exception as e:
@@ -152,13 +152,13 @@ async def list_market_data() -> ResponseReturnValue:
                 condition=search_request,
                 entity_version=str(MarketData.ENTITY_VERSION),
             )
-            market_data_list = [r.entity for r in response]
+            market_data_list = [r.data.model_dump(by_alias=True) for r in response]
         else:
             response = await entity_service.find_all(
                 entity_class=MarketData.ENTITY_NAME,
                 entity_version=str(MarketData.ENTITY_VERSION),
             )
-            market_data_list = [r.entity for r in response]
+            market_data_list = [r.data.model_dump(by_alias=True) for r in response]
 
         return jsonify({
             "market_data": market_data_list,

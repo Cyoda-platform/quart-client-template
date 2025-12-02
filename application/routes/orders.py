@@ -67,7 +67,7 @@ async def get_order(order_id: str) -> ResponseReturnValue:
         if response is None:
             return jsonify({"error": "Order not found"}), 404
 
-        return jsonify(response.entity), 200
+        return jsonify(response.data.model_dump(by_alias=True)), 200
 
     except Exception as e:
         logger.error(f"Error getting order {order_id}: {str(e)}")
@@ -113,13 +113,13 @@ async def list_orders() -> ResponseReturnValue:
                 condition=search_request,
                 entity_version=str(Order.ENTITY_VERSION),
             )
-            orders = [r.entity for r in response]
+            orders = [r.data.model_dump(by_alias=True) for r in response]
         else:
             response = await entity_service.find_all(
                 entity_class=Order.ENTITY_NAME,
                 entity_version=str(Order.ENTITY_VERSION),
             )
-            orders = [r.entity for r in response]
+            orders = [r.data.model_dump(by_alias=True) for r in response]
 
         return jsonify({
             "orders": orders,

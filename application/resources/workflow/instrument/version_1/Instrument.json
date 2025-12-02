@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "name": "Instrument",
+  "desc": "Workflow for Instrument entity with validation and setup",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "setup",
+          "next": "active",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "InstrumentValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          },
+          "processors": [
+            {
+              "name": "InstrumentSetupProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "active": {
+      "transitions": []
+    }
+  }
+}

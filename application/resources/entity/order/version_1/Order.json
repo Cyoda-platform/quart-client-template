@@ -1,0 +1,102 @@
+{
+  "name": "Order",
+  "version": 1,
+  "fields": [
+    {
+      "name": "order_id",
+      "type": "string",
+      "required": true,
+      "description": "Business order identifier"
+    },
+    {
+      "name": "symbol",
+      "type": "string",
+      "required": true,
+      "description": "Trading symbol"
+    },
+    {
+      "name": "order_type",
+      "type": "string",
+      "required": true,
+      "description": "Order type: MARKET, LIMIT, STOP, STOP_LIMIT"
+    },
+    {
+      "name": "side",
+      "type": "string",
+      "required": true,
+      "description": "Order side: BUY or SELL"
+    },
+    {
+      "name": "quantity",
+      "type": "number",
+      "required": true,
+      "description": "Order quantity"
+    },
+    {
+      "name": "portfolio_id",
+      "type": "string",
+      "required": true,
+      "description": "Associated portfolio identifier"
+    },
+    {
+      "name": "time_in_force",
+      "type": "string",
+      "required": true,
+      "description": "Time in force: DAY, GTC, IOC, FOK"
+    },
+    {
+      "name": "price",
+      "type": "number",
+      "required": false,
+      "description": "Limit/stop price (required for LIMIT, STOP, STOP_LIMIT orders)"
+    },
+    {
+      "name": "stop_price",
+      "type": "number",
+      "required": false,
+      "description": "Stop price (required for STOP, STOP_LIMIT orders)"
+    },
+    {
+      "name": "filled_quantity",
+      "type": "number",
+      "required": false,
+      "description": "Executed quantity"
+    },
+    {
+      "name": "remaining_quantity",
+      "type": "number",
+      "required": false,
+      "description": "Remaining quantity to be filled"
+    },
+    {
+      "name": "average_fill_price",
+      "type": "number",
+      "required": false,
+      "description": "Average execution price"
+    },
+    {
+      "name": "order_source",
+      "type": "string",
+      "required": false,
+      "description": "Source of the order (API, GUI, etc.)"
+    },
+    {
+      "name": "client_order_id",
+      "type": "string",
+      "required": false,
+      "description": "Client-provided order identifier"
+    },
+    {
+      "name": "risk_check_result",
+      "type": "object",
+      "required": false,
+      "description": "Result of risk checks"
+    },
+    {
+      "name": "execution_data",
+      "type": "object",
+      "required": false,
+      "description": "Execution-related data"
+    }
+  ]
+}

@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "name": "Order",
+  "desc": "Workflow for Order entity with validation, risk checking, and execution",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "risk_check",
+          "next": "risk_checked",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "OrderValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "risk_checked": {
+      "transitions": [
+        {
+          "name": "submit",
+          "next": "submitted",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskCheckProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "submitted": {
+      "transitions": [
+        {
+          "name": "fill",
+          "next": "filled",
+          "manual": true,
+          "processors": [
+            {
+              "name": "OrderExecutionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "filled": {
+      "transitions": []
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "name": "Instrument",
+  "version": 1,
+  "fields": [
+    {
+      "name": "symbol",
+      "type": "string",
+      "required": true,
+      "description": "Trading symbol (e.g., AAPL, SPY)"
+    },
+    {
+      "name": "instrument_type",
+      "type": "string",
+      "required": true,
+      "description": "Instrument type: EQUITY or DERIVATIVE"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "description": "Full instrument name"
+    },
+    {
+      "name": "exchange",
+      "type": "string",
+      "required": true,
+      "description": "Primary exchange"
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "required": true,
+      "description": "Trading currency (e.g., USD, EUR)"
+    },
+    {
+      "name": "lot_size",
+      "type": "number",
+      "required": true,
+      "description": "Minimum trading unit"
+    },
+    {
+      "name": "tick_size",
+      "type": "number",
+      "required": true,
+      "description": "Minimum price increment"
+    },
+    {
+      "name": "is_tradable",
+      "type": "boolean",
+      "required": true,
+      "description": "Trading status flag"
+    },
+    {
+      "name": "contract_specs",
+      "type": "object",
+      "required": false,
+      "description": "Derivative contract specifications (for derivatives only)"
+    },
+    {
+      "name": "margin_requirement",
+      "type": "number",
+      "required": false,
+      "description": "Margin requirement percentage"
+    },
+    {
+      "name": "max_order_size",
+      "type": "number",
+      "required": false,
+      "description": "Maximum order size allowed"
+    },
+    {
+      "name": "trading_hours",
+      "type": "object",
+      "required": false,
+      "description": "Trading hours information"
+    },
+    {
+      "name": "setup_data",
+      "type": "object",
+      "required": false,
+      "description": "Data populated during instrument setup"
+    }
+  ]
+}

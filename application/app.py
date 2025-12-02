@@ -11,6 +11,8 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.orders import orders_bp
+from application.routes.market_data import market_data_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,10 +25,33 @@ QuartSchema(
     info={"title": "Cyoda Client Application", "version": "1.0.0"},
     tags=[
         {
-            "name": "ExampleEntities",
-            "description": "ExampleEntity management endpoints",
+            "name": "Orders",
+            "description": "Trading order management endpoints",
         },
-        {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {
+            "name": "MarketData",
+            "description": "Market data feed endpoints",
+        },
+        {
+            "name": "Instruments",
+            "description": "Financial instrument management endpoints",
+        },
+        {
+            "name": "Portfolios",
+            "description": "Portfolio tracking endpoints",
+        },
+        {
+            "name": "Trades",
+            "description": "Trade execution and settlement endpoints",
+        },
+        {
+            "name": "RiskControl",
+            "description": "Risk management and monitoring endpoints",
+        },
+        {
+            "name": "Compliance",
+            "description": "Regulatory compliance and reporting endpoints",
+        },
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -57,6 +82,10 @@ _register_error_handlers_typed: Callable[[Quart], None] = (  # type: ignore[assi
     _register_error_handlers
 )
 _register_error_handlers_typed(app)
+
+# Register route blueprints
+app.register_blueprint(orders_bp)
+app.register_blueprint(market_data_bp)
 
 
 @app.route("/favicon.ico")

@@ -1,0 +1,78 @@
+{
+  "name": "MarketData",
+  "version": 1,
+  "fields": [
+    {
+      "name": "symbol",
+      "type": "string",
+      "required": true,
+      "description": "Trading symbol (e.g., AAPL, SPY)"
+    },
+    {
+      "name": "instrument_type",
+      "type": "string",
+      "required": true,
+      "description": "Instrument type: EQUITY or DERIVATIVE"
+    },
+    {
+      "name": "price",
+      "type": "number",
+      "required": true,
+      "description": "Current market price"
+    },
+    {
+      "name": "bid_price",
+      "type": "number",
+      "required": false,
+      "description": "Best bid price"
+    },
+    {
+      "name": "ask_price",
+      "type": "number",
+      "required": false,
+      "description": "Best ask price"
+    },
+    {
+      "name": "volume",
+      "type": "number",
+      "required": true,
+      "description": "Trading volume"
+    },
+    {
+      "name": "market_status",
+      "type": "string",
+      "required": true,
+      "description": "Market status: OPEN, CLOSED, PRE_MARKET, AFTER_HOURS"
+    },
+    {
+      "name": "timestamp",
+      "type": "string",
+      "required": true,
+      "description": "Data timestamp (ISO 8601 format)"
+    },
+    {
+      "name": "exchange",
+      "type": "string",
+      "required": true,
+      "description": "Exchange identifier"
+    },
+    {
+      "name": "spread",
+      "type": "number",
+      "required": false,
+      "description": "Bid-ask spread calculated during enrichment"
+    },
+    {
+      "name": "volatility",
+      "type": "number",
+      "required": false,
+      "description": "Price volatility calculated during enrichment"
+    },
+    {
+      "name": "enrichment_data",
+      "type": "object",
+      "required": false,
+      "description": "Additional data populated during enrichment"
+    }
+  ]
+}

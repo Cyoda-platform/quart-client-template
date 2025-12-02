@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "name": "MarketData",
+  "desc": "Workflow for MarketData entity with validation, enrichment, and publishing",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "enrich",
+          "next": "enriched",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "MarketDataValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "enriched": {
+      "transitions": [
+        {
+          "name": "publish",
+          "next": "published",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataEnrichmentProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "published": {
+      "transitions": []
+    }
+  }
+}

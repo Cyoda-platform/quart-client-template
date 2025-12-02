@@ -9,9 +9,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
 from services.services import get_entity_service
 
 
@@ -84,7 +84,7 @@ class RiskCheckProcessor(CyodaProcessor):
             "status": "PASSED",
             "checks": [],
             "warnings": [],
-            "errors": []
+            "errors": [],
         }
 
         # Check 1: Position limit check
@@ -117,7 +117,7 @@ class RiskCheckProcessor(CyodaProcessor):
         """Check position limits for the order"""
         try:
             entity_service = get_entity_service()
-            
+
             # Get portfolio to check current positions
             # This is a simplified check - in real implementation would query actual positions
             check_result = {
@@ -128,8 +128,8 @@ class RiskCheckProcessor(CyodaProcessor):
                 "details": {
                     "current_position": 0,  # Would be calculated from actual positions
                     "order_quantity": order.quantity,
-                    "position_limit": 10000  # Would be retrieved from risk rules
-                }
+                    "position_limit": 10000,  # Would be retrieved from risk rules
+                },
             }
 
             # Simulate position limit check
@@ -145,7 +145,7 @@ class RiskCheckProcessor(CyodaProcessor):
             return {
                 "check_type": "POSITION_LIMIT",
                 "passed": False,
-                "message": f"Position limit check failed: {str(e)}"
+                "message": f"Position limit check failed: {str(e)}",
             }
 
     async def _check_exposure_limits(self, order: Order) -> Dict[str, Any]:
@@ -161,8 +161,8 @@ class RiskCheckProcessor(CyodaProcessor):
                 "details": {
                     "order_notional": notional_value,
                     "current_exposure": 0,  # Would be calculated from actual portfolio
-                    "exposure_limit": 1000000  # Would be retrieved from risk rules
-                }
+                    "exposure_limit": 1000000,  # Would be retrieved from risk rules
+                },
             }
 
             # Simulate exposure limit check
@@ -178,7 +178,7 @@ class RiskCheckProcessor(CyodaProcessor):
             return {
                 "check_type": "EXPOSURE_LIMIT",
                 "passed": False,
-                "message": f"Exposure limit check failed: {str(e)}"
+                "message": f"Exposure limit check failed: {str(e)}",
             }
 
     def _check_order_size(self, order: Order) -> Dict[str, Any]:
@@ -190,8 +190,8 @@ class RiskCheckProcessor(CyodaProcessor):
             "details": {
                 "order_quantity": order.quantity,
                 "min_quantity": 1,
-                "max_quantity": 100000
-            }
+                "max_quantity": 100000,
+            },
         }
 
         # Check minimum and maximum order sizes

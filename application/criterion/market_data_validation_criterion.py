@@ -7,9 +7,9 @@ proceed to the enrichment stage.
 
 from typing import Any
 
+from application.entity.market_data.version_1.market_data import MarketData
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.market_data.version_1.market_data import MarketData
 
 
 class MarketDataValidationCriterion(CyodaCriteriaChecker):
@@ -81,9 +81,11 @@ class MarketDataValidationCriterion(CyodaCriteriaChecker):
                 return False
 
             # Validate bid/ask price consistency if both are provided
-            if (market_data.bid_price is not None and 
-                market_data.ask_price is not None and 
-                market_data.bid_price > market_data.ask_price):
+            if (
+                market_data.bid_price is not None
+                and market_data.ask_price is not None
+                and market_data.bid_price > market_data.ask_price
+            ):
                 self.logger.warning(
                     f"MarketData {market_data.technical_id} has bid price higher than ask price"
                 )

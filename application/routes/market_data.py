@@ -8,15 +8,19 @@ and real-time market data streaming.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+
 
 from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 
-from common.exception import is_not_found
-from common.service.entity_service import SearchCondition, SearchConditionRequest, SearchOperator
-from services.services import get_entity_service
 from application.entity.market_data.version_1.market_data import MarketData
+
+from common.service.entity_service import (
+    SearchCondition,
+    SearchConditionRequest,
+    SearchOperator,
+)
+from services.services import get_entity_service
 
 # Create blueprint for market data routes
 market_data_bp = Blueprint("market_data", __name__, url_prefix="/api/market-data")
@@ -33,7 +37,7 @@ async def create_market_data() -> ResponseReturnValue:
             return jsonify({"error": "Request body is required"}), 400
 
         entity_service = get_entity_service()
-        
+
         # Save the market data
         response = await entity_service.save(
             entity=data,
@@ -41,11 +45,16 @@ async def create_market_data() -> ResponseReturnValue:
             entity_version=str(MarketData.ENTITY_VERSION),
         )
 
-        return jsonify({
-            "id": response.metadata.id,
-            "state": response.metadata.state,
-            "message": "Market data created successfully"
-        }), 201
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "state": response.metadata.state,
+                    "message": "Market data created successfully",
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         logger.error(f"Error creating market data: {str(e)}")
@@ -57,7 +66,7 @@ async def get_market_data(data_id: str) -> ResponseReturnValue:
     """Get market data by ID"""
     try:
         entity_service = get_entity_service()
-        
+
         response = await entity_service.get_by_id(
             entity_id=data_id,
             entity_class=MarketData.ENTITY_NAME,
@@ -79,13 +88,13 @@ async def get_market_data_by_symbol(symbol: str) -> ResponseReturnValue:
     """Get latest market data for a symbol"""
     try:
         entity_service = get_entity_service()
-        
+
         search_request = SearchConditionRequest(
-            conditions=[SearchCondition(
-                field="symbol",
-                operator=SearchOperator.EQUALS,
-                value=symbol.upper()
-            )]
+            conditions=[
+                SearchCondition(
+                    field="symbol", operator=SearchOperator.EQUALS, value=symbol.upper()
+                )
+            ]
         )
 
         response = await entity_service.search(
@@ -111,39 +120,45 @@ async def list_market_data() -> ResponseReturnValue:
     """List market data with optional filtering"""
     try:
         entity_service = get_entity_service()
-        
+
         # Get query parameters
         symbol = request.args.get("symbol")
         exchange = request.args.get("exchange")
         instrument_type = request.args.get("instrument_type")
         market_status = request.args.get("market_status")
-        
+
         # Build search conditions if filters provided
         conditions = []
         if symbol:
-            conditions.append(SearchCondition(
-                field="symbol",
-                operator=SearchOperator.EQUALS,
-                value=symbol.upper()
-            ))
+            conditions.append(
+                SearchCondition(
+                    field="symbol", operator=SearchOperator.EQUALS, value=symbol.upper()
+                )
+            )
         if exchange:
-            conditions.append(SearchCondition(
-                field="exchange",
-                operator=SearchOperator.EQUALS,
-                value=exchange.upper()
-            ))
+            conditions.append(
+                SearchCondition(
+                    field="exchange",
+                    operator=SearchOperator.EQUALS,
+                    value=exchange.upper(),
+                )
+            )
         if instrument_type:
-            conditions.append(SearchCondition(
-                field="instrumentType",
-                operator=SearchOperator.EQUALS,
-                value=instrument_type
-            ))
+            conditions.append(
+                SearchCondition(
+                    field="instrumentType",
+                    operator=SearchOperator.EQUALS,
+                    value=instrument_type,
+                )
+            )
         if market_status:
-            conditions.append(SearchCondition(
-                field="marketStatus",
-                operator=SearchOperator.EQUALS,
-                value=market_status
-            ))
+            conditions.append(
+                SearchCondition(
+                    field="marketStatus",
+                    operator=SearchOperator.EQUALS,
+                    value=market_status,
+                )
+            )
 
         if conditions:
             search_request = SearchConditionRequest(conditions=conditions)
@@ -160,10 +175,10 @@ async def list_market_data() -> ResponseReturnValue:
             )
             market_data_list = [r.data.model_dump(by_alias=True) for r in response]
 
-        return jsonify({
-            "market_data": market_data_list,
-            "count": len(market_data_list)
-        }), 200
+        return (
+            jsonify({"market_data": market_data_list, "count": len(market_data_list)}),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error listing market data: {str(e)}")
@@ -179,10 +194,10 @@ async def update_market_data(data_id: str) -> ResponseReturnValue:
             return jsonify({"error": "Request body is required"}), 400
 
         entity_service = get_entity_service()
-        
+
         # Get transition if specified
         transition = data.pop("transition", None)
-        
+
         response = await entity_service.update(
             entity_id=data_id,
             entity=data,
@@ -194,11 +209,16 @@ async def update_market_data(data_id: str) -> ResponseReturnValue:
         if response is None:
             return jsonify({"error": "Market data not found"}), 404
 
-        return jsonify({
-            "id": response.metadata.id,
-            "state": response.metadata.state,
-            "message": "Market data updated successfully"
-        }), 200
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "state": response.metadata.state,
+                    "message": "Market data updated successfully",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error updating market data {data_id}: {str(e)}")
@@ -210,20 +230,17 @@ async def get_symbols() -> ResponseReturnValue:
     """Get list of available symbols"""
     try:
         entity_service = get_entity_service()
-        
+
         response = await entity_service.find_all(
             entity_class=MarketData.ENTITY_NAME,
             entity_version=str(MarketData.ENTITY_VERSION),
         )
 
         # Extract unique symbols
-        symbols = list(set(data.entity.get("symbol", "") for data in response))
+        symbols = list(set(getattr(data.data, "symbol", "") for data in response))
         symbols.sort()
 
-        return jsonify({
-            "symbols": symbols,
-            "count": len(symbols)
-        }), 200
+        return jsonify({"symbols": symbols, "count": len(symbols)}), 200
 
     except Exception as e:
         logger.error(f"Error getting symbols: {str(e)}")
@@ -235,7 +252,7 @@ async def delete_market_data(data_id: str) -> ResponseReturnValue:
     """Delete market data entry"""
     try:
         entity_service = get_entity_service()
-        
+
         deleted_id = await entity_service.delete_by_id(
             entity_id=data_id,
             entity_class=MarketData.ENTITY_NAME,

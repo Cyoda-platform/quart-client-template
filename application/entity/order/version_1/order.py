@@ -26,80 +26,64 @@ class Order(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     # Required fields from functional requirements
-    order_id: str = Field(
-        ..., 
-        alias="orderId",
-        description="Business order identifier"
-    )
+    order_id: str = Field(..., alias="orderId", description="Business order identifier")
     symbol: str = Field(..., description="Trading symbol")
     order_type: str = Field(
-        ..., 
+        ...,
         alias="orderType",
-        description="Order type: MARKET, LIMIT, STOP, STOP_LIMIT"
+        description="Order type: MARKET, LIMIT, STOP, STOP_LIMIT",
     )
     side: str = Field(..., description="Order side: BUY or SELL")
     quantity: int = Field(..., description="Order quantity")
     portfolio_id: str = Field(
-        ..., 
-        alias="portfolioId",
-        description="Associated portfolio identifier"
+        ..., alias="portfolioId", description="Associated portfolio identifier"
     )
     time_in_force: str = Field(
-        ..., 
-        alias="timeInForce",
-        description="Time in force: DAY, GTC, IOC, FOK"
+        ..., alias="timeInForce", description="Time in force: DAY, GTC, IOC, FOK"
     )
 
     # Optional price fields (required for limit/stop orders)
     price: Optional[float] = Field(
         default=None,
-        description="Limit/stop price (required for LIMIT, STOP, STOP_LIMIT orders)"
+        description="Limit/stop price (required for LIMIT, STOP, STOP_LIMIT orders)",
     )
     stop_price: Optional[float] = Field(
         default=None,
         alias="stopPrice",
-        description="Stop price (required for STOP, STOP_LIMIT orders)"
+        description="Stop price (required for STOP, STOP_LIMIT orders)",
     )
 
     # Execution tracking fields
     filled_quantity: int = Field(
-        default=0,
-        alias="filledQuantity",
-        description="Executed quantity"
+        default=0, alias="filledQuantity", description="Executed quantity"
     )
     remaining_quantity: Optional[int] = Field(
         default=None,
         alias="remainingQuantity",
-        description="Remaining quantity to be filled"
+        description="Remaining quantity to be filled",
     )
     average_fill_price: Optional[float] = Field(
-        default=None,
-        alias="averageFillPrice",
-        description="Average execution price"
+        default=None, alias="averageFillPrice", description="Average execution price"
     )
 
     # Order metadata
     order_source: Optional[str] = Field(
         default="API",
         alias="orderSource",
-        description="Source of the order (API, GUI, etc.)"
+        description="Source of the order (API, GUI, etc.)",
     )
     client_order_id: Optional[str] = Field(
         default=None,
         alias="clientOrderId",
-        description="Client-provided order identifier"
+        description="Client-provided order identifier",
     )
 
     # Processing-related fields
     risk_check_result: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="riskCheckResult",
-        description="Result of risk checks"
+        default=None, alias="riskCheckResult", description="Result of risk checks"
     )
     execution_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="executionData",
-        description="Execution-related data"
+        default=None, alias="executionData", description="Execution-related data"
     )
 
     # Validation constants
@@ -164,7 +148,9 @@ class Order(CyodaEntity):
     def validate_time_in_force(cls, v: str) -> str:
         """Validate time in force"""
         if v not in cls.ALLOWED_TIME_IN_FORCE:
-            raise ValueError(f"Time in force must be one of: {cls.ALLOWED_TIME_IN_FORCE}")
+            raise ValueError(
+                f"Time in force must be one of: {cls.ALLOWED_TIME_IN_FORCE}"
+            )
         return v
 
     @field_validator("price", "stop_price")
@@ -189,7 +175,7 @@ class Order(CyodaEntity):
         # Price requirements based on order type
         if self.order_type in ["LIMIT", "STOP_LIMIT"] and self.price is None:
             raise ValueError(f"{self.order_type} orders require a price")
-        
+
         if self.order_type in ["STOP", "STOP_LIMIT"] and self.stop_price is None:
             raise ValueError(f"{self.order_type} orders require a stop price")
 
@@ -243,14 +229,16 @@ class Order(CyodaEntity):
         """Update order with fill information"""
         self.filled_quantity += fill_quantity
         self.remaining_quantity = self.quantity - self.filled_quantity
-        
+
         # Update average fill price
         if self.average_fill_price is None:
             self.average_fill_price = fill_price
         else:
-            total_filled_value = (self.filled_quantity - fill_quantity) * self.average_fill_price + fill_quantity * fill_price
+            total_filled_value = (
+                self.filled_quantity - fill_quantity
+            ) * self.average_fill_price + fill_quantity * fill_price
             self.average_fill_price = total_filled_value / self.filled_quantity
-        
+
         self.update_timestamp()
 
     def update_timestamp(self) -> None:

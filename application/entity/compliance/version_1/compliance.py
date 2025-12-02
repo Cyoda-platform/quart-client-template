@@ -27,76 +27,68 @@ class Compliance(CyodaEntity):
 
     # Required fields from functional requirements
     report_id: str = Field(
-        ..., 
-        alias="reportId",
-        description="Business report identifier"
+        ..., alias="reportId", description="Business report identifier"
     )
     report_type: str = Field(
-        ..., 
+        ...,
         alias="reportType",
-        description="Report type: TRADE_REPORT, POSITION_REPORT, RISK_REPORT"
+        description="Report type: TRADE_REPORT, POSITION_REPORT, RISK_REPORT",
     )
     portfolio_id: str = Field(
-        ..., 
-        alias="portfolioId",
-        description="Associated portfolio identifier"
+        ..., alias="portfolioId", description="Associated portfolio identifier"
     )
     reporting_date: str = Field(
-        ..., 
-        alias="reportingDate",
-        description="Report date (ISO 8601 format)"
+        ..., alias="reportingDate", description="Report date (ISO 8601 format)"
     )
-    data: Dict[str, Any] = Field(
-        ...,
-        description="Report data content"
-    )
+    data: Dict[str, Any] = Field(..., description="Report data content")
     status: str = Field(
         default="PENDING",
-        description="Report status: PENDING, SUBMITTED, ACKNOWLEDGED, REJECTED"
+        description="Report status: PENDING, SUBMITTED, ACKNOWLEDGED, REJECTED",
     )
 
     # Optional submission tracking
     submission_time: Optional[str] = Field(
         default=None,
         alias="submissionTime",
-        description="Submission timestamp (ISO 8601 format)"
+        description="Submission timestamp (ISO 8601 format)",
     )
     acknowledgment_time: Optional[str] = Field(
         default=None,
         alias="acknowledgmentTime",
-        description="Acknowledgment timestamp (ISO 8601 format)"
+        description="Acknowledgment timestamp (ISO 8601 format)",
     )
 
     # Regulatory metadata
     regulatory_authority: Optional[str] = Field(
         default=None,
         alias="regulatoryAuthority",
-        description="Target regulatory authority"
+        description="Target regulatory authority",
     )
     regulation_reference: Optional[str] = Field(
         default=None,
         alias="regulationReference",
-        description="Applicable regulation reference"
+        description="Applicable regulation reference",
     )
 
     # Processing fields
     validation_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="validationData",
-        description="Compliance validation data"
+        default=None, alias="validationData", description="Compliance validation data"
     )
     submission_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="submissionData",
-        description="Submission processing data"
+        default=None, alias="submissionData", description="Submission processing data"
     )
 
     # Validation constants
     ALLOWED_REPORT_TYPES: ClassVar[List[str]] = [
-        "TRADE_REPORT", "POSITION_REPORT", "RISK_REPORT"
+        "TRADE_REPORT",
+        "POSITION_REPORT",
+        "RISK_REPORT",
     ]
     ALLOWED_STATUSES: ClassVar[List[str]] = [
-        "PENDING", "SUBMITTED", "ACKNOWLEDGED", "REJECTED"
+        "PENDING",
+        "SUBMITTED",
+        "ACKNOWLEDGED",
+        "REJECTED",
     ]
 
     @field_validator("report_id")
@@ -148,13 +140,17 @@ class Compliance(CyodaEntity):
     def submit_report(self) -> None:
         """Mark report as submitted"""
         self.status = "SUBMITTED"
-        self.submission_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        self.submission_time = (
+            datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        )
         self.update_timestamp()
 
     def acknowledge_report(self) -> None:
         """Mark report as acknowledged"""
         self.status = "ACKNOWLEDGED"
-        self.acknowledgment_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        self.acknowledgment_time = (
+            datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        )
         self.update_timestamp()
 
     def reject_report(self) -> None:

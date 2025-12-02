@@ -7,13 +7,13 @@ for filled orders in the trading platform.
 
 import logging
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaProcessor
 from application.entity.order.version_1.order import Order
 from application.entity.trade.version_1.trade import Trade
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaEntity, CyodaProcessor
 from services.services import get_entity_service
 
 
@@ -91,7 +91,7 @@ class OrderExecutionProcessor(CyodaProcessor):
             "filled_quantity": 0,
             "remaining_quantity": order.quantity,
             "execution_price": 0.0,
-            "executions": []
+            "executions": [],
         }
 
         # Simulate market price (in real system would come from market data)
@@ -102,22 +102,26 @@ class OrderExecutionProcessor(CyodaProcessor):
             execution_data["filled_quantity"] = order.quantity
             execution_data["remaining_quantity"] = 0
             execution_data["execution_price"] = market_price
-            execution_data["executions"].append({  # type: ignore
-                "quantity": order.quantity,
-                "price": market_price,
-                "timestamp": current_timestamp
-            })
+            execution_data["executions"].append(
+                {  # type: ignore
+                    "quantity": order.quantity,
+                    "price": market_price,
+                    "timestamp": current_timestamp,
+                }
+            )
         elif order.is_limit_order() and order.price:
             # Limit orders execute if market price is favorable
             if self._should_limit_order_execute(order, market_price):
                 execution_data["filled_quantity"] = order.quantity
                 execution_data["remaining_quantity"] = 0
                 execution_data["execution_price"] = order.price
-                execution_data["executions"].append({  # type: ignore
-                    "quantity": order.quantity,
-                    "price": order.price,
-                    "timestamp": current_timestamp
-                })
+                execution_data["executions"].append(
+                    {  # type: ignore
+                        "quantity": order.quantity,
+                        "price": order.price,
+                        "timestamp": current_timestamp,
+                    }
+                )
             else:
                 execution_data["status"] = "PENDING"
                 execution_data["message"] = "Limit order waiting for favorable price"
@@ -126,7 +130,7 @@ class OrderExecutionProcessor(CyodaProcessor):
         if execution_data["filled_quantity"] > 0:  # type: ignore
             order.update_fill(
                 execution_data["filled_quantity"],  # type: ignore
-                execution_data["execution_price"]  # type: ignore
+                execution_data["execution_price"],  # type: ignore
             )
 
         return execution_data
@@ -167,7 +171,7 @@ class OrderExecutionProcessor(CyodaProcessor):
 
             # Calculate settlement date (T+2 for equities)
             execution_time = datetime.fromisoformat(
-                execution_data["executed_at"].replace('Z', '+00:00')
+                execution_data["executed_at"].replace("Z", "+00:00")
             )
             settlement_date = execution_time + timedelta(days=2)
 
@@ -185,8 +189,8 @@ class OrderExecutionProcessor(CyodaProcessor):
                 exchange="SIMULATED",
                 commission=self._calculate_commission(
                     execution_data["filled_quantity"],  # type: ignore
-                    execution_data["execution_price"]  # type: ignore
-                )
+                    execution_data["execution_price"],  # type: ignore
+                ),
             )
 
             # Convert to dict for EntityService

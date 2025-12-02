@@ -7,9 +7,9 @@ proceed to risk checking stage.
 
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.order.version_1.order import Order
 
 
 class OrderValidationCriterion(CyodaCriteriaChecker):
@@ -45,15 +45,11 @@ class OrderValidationCriterion(CyodaCriteriaChecker):
 
             # Validate required fields
             if not order.order_id or len(order.order_id.strip()) == 0:
-                self.logger.warning(
-                    f"Order {order.technical_id} has invalid order_id"
-                )
+                self.logger.warning(f"Order {order.technical_id} has invalid order_id")
                 return False
 
             if not order.symbol or len(order.symbol.strip()) == 0:
-                self.logger.warning(
-                    f"Order {order.technical_id} has invalid symbol"
-                )
+                self.logger.warning(f"Order {order.technical_id} has invalid symbol")
                 return False
 
             if order.order_type not in Order.ALLOWED_ORDER_TYPES:

@@ -8,15 +8,19 @@ and workflow transitions for trading order management.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+
 
 from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 
-from common.exception import is_not_found
-from common.service.entity_service import SearchCondition, SearchConditionRequest, SearchOperator
-from services.services import get_entity_service
 from application.entity.order.version_1.order import Order
+
+from common.service.entity_service import (
+    SearchCondition,
+    SearchConditionRequest,
+    SearchOperator,
+)
+from services.services import get_entity_service
 
 # Create blueprint for order routes
 orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
@@ -33,7 +37,7 @@ async def create_order() -> ResponseReturnValue:
             return jsonify({"error": "Request body is required"}), 400
 
         entity_service = get_entity_service()
-        
+
         # Save the order
         response = await entity_service.save(
             entity=data,
@@ -41,11 +45,16 @@ async def create_order() -> ResponseReturnValue:
             entity_version=str(Order.ENTITY_VERSION),
         )
 
-        return jsonify({
-            "id": response.metadata.id,
-            "state": response.metadata.state,
-            "message": "Order created successfully"
-        }), 201
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "state": response.metadata.state,
+                    "message": "Order created successfully",
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         logger.error(f"Error creating order: {str(e)}")
@@ -57,7 +66,7 @@ async def get_order(order_id: str) -> ResponseReturnValue:
     """Get order by ID"""
     try:
         entity_service = get_entity_service()
-        
+
         response = await entity_service.get_by_id(
             entity_id=order_id,
             entity_class=Order.ENTITY_NAME,
@@ -79,32 +88,34 @@ async def list_orders() -> ResponseReturnValue:
     """List all orders with optional filtering"""
     try:
         entity_service = get_entity_service()
-        
+
         # Get query parameters
         portfolio_id = request.args.get("portfolio_id")
         symbol = request.args.get("symbol")
         status = request.args.get("status")
-        
+
         # Build search conditions if filters provided
         conditions = []
         if portfolio_id:
-            conditions.append(SearchCondition(
-                field="portfolioId",
-                operator=SearchOperator.EQUALS,
-                value=portfolio_id
-            ))
+            conditions.append(
+                SearchCondition(
+                    field="portfolioId",
+                    operator=SearchOperator.EQUALS,
+                    value=portfolio_id,
+                )
+            )
         if symbol:
-            conditions.append(SearchCondition(
-                field="symbol",
-                operator=SearchOperator.EQUALS,
-                value=symbol.upper()
-            ))
+            conditions.append(
+                SearchCondition(
+                    field="symbol", operator=SearchOperator.EQUALS, value=symbol.upper()
+                )
+            )
         if status:
-            conditions.append(SearchCondition(
-                field="state",
-                operator=SearchOperator.EQUALS,
-                value=status
-            ))
+            conditions.append(
+                SearchCondition(
+                    field="state", operator=SearchOperator.EQUALS, value=status
+                )
+            )
 
         if conditions:
             search_request = SearchConditionRequest(conditions=conditions)
@@ -121,10 +132,7 @@ async def list_orders() -> ResponseReturnValue:
             )
             orders = [r.data.model_dump(by_alias=True) for r in response]
 
-        return jsonify({
-            "orders": orders,
-            "count": len(orders)
-        }), 200
+        return jsonify({"orders": orders, "count": len(orders)}), 200
 
     except Exception as e:
         logger.error(f"Error listing orders: {str(e)}")
@@ -140,10 +148,10 @@ async def update_order(order_id: str) -> ResponseReturnValue:
             return jsonify({"error": "Request body is required"}), 400
 
         entity_service = get_entity_service()
-        
+
         # Get transition if specified
         transition = data.pop("transition", None)
-        
+
         response = await entity_service.update(
             entity_id=order_id,
             entity=data,
@@ -155,11 +163,16 @@ async def update_order(order_id: str) -> ResponseReturnValue:
         if response is None:
             return jsonify({"error": "Order not found"}), 404
 
-        return jsonify({
-            "id": response.metadata.id,
-            "state": response.metadata.state,
-            "message": "Order updated successfully"
-        }), 200
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "state": response.metadata.state,
+                    "message": "Order updated successfully",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error updating order {order_id}: {str(e)}")
@@ -171,7 +184,7 @@ async def cancel_order(order_id: str) -> ResponseReturnValue:
     """Cancel an order"""
     try:
         entity_service = get_entity_service()
-        
+
         response = await entity_service.update(
             entity_id=order_id,
             entity={},
@@ -183,11 +196,16 @@ async def cancel_order(order_id: str) -> ResponseReturnValue:
         if response is None:
             return jsonify({"error": "Order not found"}), 404
 
-        return jsonify({
-            "id": response.metadata.id,
-            "state": response.metadata.state,
-            "message": "Order cancelled successfully"
-        }), 200
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "state": response.metadata.state,
+                    "message": "Order cancelled successfully",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error cancelling order {order_id}: {str(e)}")
@@ -199,7 +217,7 @@ async def fill_order(order_id: str) -> ResponseReturnValue:
     """Fill an order (trigger execution)"""
     try:
         entity_service = get_entity_service()
-        
+
         response = await entity_service.update(
             entity_id=order_id,
             entity={},
@@ -211,11 +229,16 @@ async def fill_order(order_id: str) -> ResponseReturnValue:
         if response is None:
             return jsonify({"error": "Order not found"}), 404
 
-        return jsonify({
-            "id": response.metadata.id,
-            "state": response.metadata.state,
-            "message": "Order fill triggered successfully"
-        }), 200
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "state": response.metadata.state,
+                    "message": "Order fill triggered successfully",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error filling order {order_id}: {str(e)}")
@@ -227,8 +250,8 @@ async def delete_order(order_id: str) -> ResponseReturnValue:
     """Delete an order"""
     try:
         entity_service = get_entity_service()
-        
-        deleted_id = await entity_service.delete_by_id(
+
+        await entity_service.delete_by_id(
             entity_id=order_id,
             entity_class=Order.ENTITY_NAME,
             entity_version=str(Order.ENTITY_VERSION),

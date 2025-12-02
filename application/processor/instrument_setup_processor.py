@@ -9,9 +9,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from application.entity.instrument.version_1.instrument import Instrument
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.instrument.version_1.instrument import Instrument
 
 
 class InstrumentSetupProcessor(CyodaProcessor):
@@ -94,7 +94,7 @@ class InstrumentSetupProcessor(CyodaProcessor):
             "feed_enabled": True,
             "feed_source": f"{instrument.exchange}_FEED",
             "update_frequency": "REAL_TIME",
-            "data_fields": ["price", "volume", "bid", "ask"]
+            "data_fields": ["price", "volume", "bid", "ask"],
         }
 
     def _configure_trading_parameters(self, instrument: Instrument) -> Dict[str, Any]:
@@ -104,7 +104,7 @@ class InstrumentSetupProcessor(CyodaProcessor):
             "max_order_size": instrument.max_order_size or 1000000,
             "price_precision": self._calculate_price_precision(instrument.tick_size),
             "margin_enabled": instrument.requires_margin(),
-            "trading_hours": instrument.trading_hours or self._default_trading_hours()
+            "trading_hours": instrument.trading_hours or self._default_trading_hours(),
         }
 
     def _calculate_price_precision(self, tick_size: float) -> int:
@@ -125,5 +125,5 @@ class InstrumentSetupProcessor(CyodaProcessor):
         return {
             "market_open": "09:30",
             "market_close": "16:00",
-            "timezone": "US/Eastern"
+            "timezone": "US/Eastern",
         }

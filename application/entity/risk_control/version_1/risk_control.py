@@ -26,63 +26,44 @@ class RiskControl(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     # Required fields from functional requirements
-    rule_id: str = Field(
-        ..., 
-        alias="ruleId",
-        description="Risk rule identifier"
-    )
+    rule_id: str = Field(..., alias="ruleId", description="Risk rule identifier")
     rule_type: str = Field(
-        ..., 
+        ...,
         alias="ruleType",
-        description="Risk rule type: POSITION_LIMIT, EXPOSURE_LIMIT, CONCENTRATION_LIMIT"
+        description="Risk rule type: POSITION_LIMIT, EXPOSURE_LIMIT, CONCENTRATION_LIMIT",
     )
     portfolio_id: str = Field(
-        ..., 
-        alias="portfolioId",
-        description="Associated portfolio identifier"
+        ..., alias="portfolioId", description="Associated portfolio identifier"
     )
-    limit_value: float = Field(
-        ..., 
-        alias="limitValue",
-        description="Risk limit value"
-    )
+    limit_value: float = Field(..., alias="limitValue", description="Risk limit value")
     current_value: float = Field(
-        ..., 
-        alias="currentValue",
-        description="Current exposure/position value"
+        ..., alias="currentValue", description="Current exposure/position value"
     )
     breach_threshold: float = Field(
-        ..., 
-        alias="breachThreshold",
-        description="Warning threshold percentage (0-100)"
+        ..., alias="breachThreshold", description="Warning threshold percentage (0-100)"
     )
 
     # Optional fields
     symbol: Optional[str] = Field(
-        default=None,
-        description="Specific symbol (if applicable)"
+        default=None, description="Specific symbol (if applicable)"
     )
     is_breached: bool = Field(
-        default=False,
-        alias="isBreached",
-        description="Breach status flag"
+        default=False, alias="isBreached", description="Breach status flag"
     )
 
     # Risk monitoring data
     monitoring_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="monitoringData",
-        description="Risk monitoring data"
+        default=None, alias="monitoringData", description="Risk monitoring data"
     )
     alert_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="alertData",
-        description="Risk alert data"
+        default=None, alias="alertData", description="Risk alert data"
     )
 
     # Validation constants
     ALLOWED_RULE_TYPES: ClassVar[List[str]] = [
-        "POSITION_LIMIT", "EXPOSURE_LIMIT", "CONCENTRATION_LIMIT"
+        "POSITION_LIMIT",
+        "EXPOSURE_LIMIT",
+        "CONCENTRATION_LIMIT",
     ]
 
     @field_validator("rule_type")

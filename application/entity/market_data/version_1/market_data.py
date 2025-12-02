@@ -29,51 +29,46 @@ class MarketData(CyodaEntity):
     # Required fields from functional requirements
     symbol: str = Field(..., description="Trading symbol (e.g., AAPL, SPY)")
     instrument_type: str = Field(
-        ..., 
-        alias="instrumentType",
-        description="Instrument type: EQUITY or DERIVATIVE"
+        ..., alias="instrumentType", description="Instrument type: EQUITY or DERIVATIVE"
     )
     price: float = Field(..., description="Current market price")
     volume: int = Field(..., description="Trading volume")
     market_status: str = Field(
-        ..., 
+        ...,
         alias="marketStatus",
-        description="Market status: OPEN, CLOSED, PRE_MARKET, AFTER_HOURS"
+        description="Market status: OPEN, CLOSED, PRE_MARKET, AFTER_HOURS",
     )
     timestamp: str = Field(..., description="Data timestamp (ISO 8601 format)")
     exchange: str = Field(..., description="Exchange identifier")
 
     # Optional price fields
     bid_price: Optional[float] = Field(
-        default=None, 
-        alias="bidPrice",
-        description="Best bid price"
+        default=None, alias="bidPrice", description="Best bid price"
     )
     ask_price: Optional[float] = Field(
-        default=None, 
-        alias="askPrice",
-        description="Best ask price"
+        default=None, alias="askPrice", description="Best ask price"
     )
 
     # Processing-related fields (populated during enrichment)
     spread: Optional[float] = Field(
-        default=None,
-        description="Bid-ask spread calculated during enrichment"
+        default=None, description="Bid-ask spread calculated during enrichment"
     )
     volatility: Optional[float] = Field(
-        default=None,
-        description="Price volatility calculated during enrichment"
+        default=None, description="Price volatility calculated during enrichment"
     )
     enrichment_data: Optional[Dict[str, Any]] = Field(
         default=None,
         alias="enrichmentData",
-        description="Additional data populated during enrichment"
+        description="Additional data populated during enrichment",
     )
 
     # Validation constants
     ALLOWED_INSTRUMENT_TYPES: ClassVar[List[str]] = ["EQUITY", "DERIVATIVE"]
     ALLOWED_MARKET_STATUSES: ClassVar[List[str]] = [
-        "OPEN", "CLOSED", "PRE_MARKET", "AFTER_HOURS"
+        "OPEN",
+        "CLOSED",
+        "PRE_MARKET",
+        "AFTER_HOURS",
     ]
 
     @field_validator("symbol")
@@ -91,7 +86,9 @@ class MarketData(CyodaEntity):
     def validate_instrument_type(cls, v: str) -> str:
         """Validate instrument type"""
         if v not in cls.ALLOWED_INSTRUMENT_TYPES:
-            raise ValueError(f"Instrument type must be one of: {cls.ALLOWED_INSTRUMENT_TYPES}")
+            raise ValueError(
+                f"Instrument type must be one of: {cls.ALLOWED_INSTRUMENT_TYPES}"
+            )
         return v
 
     @field_validator("price", "bid_price", "ask_price")
@@ -115,7 +112,9 @@ class MarketData(CyodaEntity):
     def validate_market_status(cls, v: str) -> str:
         """Validate market status"""
         if v not in cls.ALLOWED_MARKET_STATUSES:
-            raise ValueError(f"Market status must be one of: {cls.ALLOWED_MARKET_STATUSES}")
+            raise ValueError(
+                f"Market status must be one of: {cls.ALLOWED_MARKET_STATUSES}"
+            )
         return v
 
     @field_validator("exchange")
@@ -147,7 +146,7 @@ class MarketData(CyodaEntity):
     def is_stale(self, max_age_seconds: int = 60) -> bool:
         """Check if market data is stale based on timestamp"""
         try:
-            data_time = datetime.fromisoformat(self.timestamp.replace('Z', '+00:00'))
+            data_time = datetime.fromisoformat(self.timestamp.replace("Z", "+00:00"))
             current_time = datetime.now(timezone.utc)
             age_seconds = (current_time - data_time).total_seconds()
             return age_seconds > max_age_seconds

@@ -29,64 +29,57 @@ class Instrument(CyodaEntity):
     # Required fields from functional requirements
     symbol: str = Field(..., description="Trading symbol (e.g., AAPL, SPY)")
     instrument_type: str = Field(
-        ..., 
-        alias="instrumentType",
-        description="Instrument type: EQUITY or DERIVATIVE"
+        ..., alias="instrumentType", description="Instrument type: EQUITY or DERIVATIVE"
     )
     name: str = Field(..., description="Full instrument name")
     exchange: str = Field(..., description="Primary exchange")
     currency: str = Field(..., description="Trading currency (e.g., USD, EUR)")
-    lot_size: int = Field(
-        ..., 
-        alias="lotSize",
-        description="Minimum trading unit"
-    )
+    lot_size: int = Field(..., alias="lotSize", description="Minimum trading unit")
     tick_size: float = Field(
-        ..., 
-        alias="tickSize",
-        description="Minimum price increment"
+        ..., alias="tickSize", description="Minimum price increment"
     )
     is_tradable: bool = Field(
-        ..., 
-        alias="isTradable",
-        description="Trading status flag"
+        ..., alias="isTradable", description="Trading status flag"
     )
 
     # Optional derivative contract specifications
     contract_specs: Optional[Dict[str, Any]] = Field(
         default=None,
         alias="contractSpecs",
-        description="Derivative contract specifications (for derivatives only)"
+        description="Derivative contract specifications (for derivatives only)",
     )
 
     # Additional trading parameters
     margin_requirement: Optional[float] = Field(
         default=None,
         alias="marginRequirement",
-        description="Margin requirement percentage"
+        description="Margin requirement percentage",
     )
     max_order_size: Optional[int] = Field(
-        default=None,
-        alias="maxOrderSize",
-        description="Maximum order size allowed"
+        default=None, alias="maxOrderSize", description="Maximum order size allowed"
     )
     trading_hours: Optional[Dict[str, str]] = Field(
-        default=None,
-        alias="tradingHours",
-        description="Trading hours information"
+        default=None, alias="tradingHours", description="Trading hours information"
     )
 
     # Setup-related fields (populated during setup)
     setup_data: Optional[Dict[str, Any]] = Field(
         default=None,
         alias="setupData",
-        description="Data populated during instrument setup"
+        description="Data populated during instrument setup",
     )
 
     # Validation constants
     ALLOWED_INSTRUMENT_TYPES: ClassVar[List[str]] = ["EQUITY", "DERIVATIVE"]
     ALLOWED_CURRENCIES: ClassVar[List[str]] = [
-        "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY"
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "CAD",
+        "AUD",
+        "CHF",
+        "CNY",
     ]
 
     @field_validator("symbol")
@@ -104,7 +97,9 @@ class Instrument(CyodaEntity):
     def validate_instrument_type(cls, v: str) -> str:
         """Validate instrument type"""
         if v not in cls.ALLOWED_INSTRUMENT_TYPES:
-            raise ValueError(f"Instrument type must be one of: {cls.ALLOWED_INSTRUMENT_TYPES}")
+            raise ValueError(
+                f"Instrument type must be one of: {cls.ALLOWED_INSTRUMENT_TYPES}"
+            )
         return v
 
     @field_validator("name")
@@ -190,11 +185,11 @@ class Instrument(CyodaEntity):
         # Check lot size alignment
         if order_size % self.lot_size != 0:
             return False
-        
+
         # Check maximum order size if specified
         if self.max_order_size is not None and order_size > self.max_order_size:
             return False
-            
+
         return True
 
     def calculate_minimum_price_increment(self, price: float) -> float:

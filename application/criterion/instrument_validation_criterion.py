@@ -7,9 +7,9 @@ proceed to setup stage.
 
 from typing import Any
 
+from application.entity.instrument.version_1.instrument import Instrument
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.instrument.version_1.instrument import Instrument
 
 
 class InstrumentValidationCriterion(CyodaCriteriaChecker):
@@ -96,7 +96,10 @@ class InstrumentValidationCriterion(CyodaCriteriaChecker):
 
             # Validate margin requirements
             if instrument.margin_requirement is not None:
-                if instrument.margin_requirement < 0 or instrument.margin_requirement > 100:
+                if (
+                    instrument.margin_requirement < 0
+                    or instrument.margin_requirement > 100
+                ):
                     self.logger.warning(
                         f"Instrument {instrument.technical_id} has invalid margin_requirement: {instrument.margin_requirement}"
                     )

@@ -26,71 +26,43 @@ class Trade(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     # Required fields from functional requirements
-    trade_id: str = Field(
-        ..., 
-        alias="tradeId",
-        description="Business trade identifier"
-    )
+    trade_id: str = Field(..., alias="tradeId", description="Business trade identifier")
     order_id: str = Field(
-        ..., 
-        alias="orderId",
-        description="Originating order identifier"
+        ..., alias="orderId", description="Originating order identifier"
     )
     symbol: str = Field(..., description="Trading symbol")
     side: str = Field(..., description="Trade side: BUY or SELL")
     quantity: int = Field(..., description="Executed quantity")
     price: float = Field(..., description="Execution price")
     portfolio_id: str = Field(
-        ..., 
-        alias="portfolioId",
-        description="Associated portfolio identifier"
+        ..., alias="portfolioId", description="Associated portfolio identifier"
     )
     execution_time: str = Field(
-        ..., 
-        alias="executionTime",
-        description="Execution timestamp (ISO 8601 format)"
+        ..., alias="executionTime", description="Execution timestamp (ISO 8601 format)"
     )
     settlement_date: str = Field(
-        ..., 
-        alias="settlementDate",
-        description="Settlement date (ISO 8601 format)"
+        ..., alias="settlementDate", description="Settlement date (ISO 8601 format)"
     )
 
     # Trade metadata
-    exchange: Optional[str] = Field(
-        default=None,
-        description="Execution exchange"
-    )
-    counterparty: Optional[str] = Field(
-        default=None,
-        description="Trade counterparty"
-    )
-    commission: Optional[float] = Field(
-        default=0.0,
-        description="Commission charged"
-    )
-    fees: Optional[float] = Field(
-        default=0.0,
-        description="Additional fees"
-    )
+    exchange: Optional[str] = Field(default=None, description="Execution exchange")
+    counterparty: Optional[str] = Field(default=None, description="Trade counterparty")
+    commission: Optional[float] = Field(default=0.0, description="Commission charged")
+    fees: Optional[float] = Field(default=0.0, description="Additional fees")
 
     # Settlement tracking
     settlement_status: str = Field(
         default="PENDING",
         alias="settlementStatus",
-        description="Settlement status: PENDING, SETTLED, FAILED"
+        description="Settlement status: PENDING, SETTLED, FAILED",
     )
     settlement_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="settlementData",
-        description="Settlement processing data"
+        default=None, alias="settlementData", description="Settlement processing data"
     )
 
     # Reporting fields
     reporting_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="reportingData",
-        description="Regulatory reporting data"
+        default=None, alias="reportingData", description="Regulatory reporting data"
     )
 
     # Validation constants
@@ -144,7 +116,9 @@ class Trade(CyodaEntity):
     def validate_settlement_status(cls, v: str) -> str:
         """Validate settlement status"""
         if v not in cls.ALLOWED_SETTLEMENT_STATUSES:
-            raise ValueError(f"Settlement status must be one of: {cls.ALLOWED_SETTLEMENT_STATUSES}")
+            raise ValueError(
+                f"Settlement status must be one of: {cls.ALLOWED_SETTLEMENT_STATUSES}"
+            )
         return v
 
     def calculate_notional_value(self) -> float:
@@ -155,7 +129,7 @@ class Trade(CyodaEntity):
         """Calculate total cost including fees and commission"""
         notional = self.calculate_notional_value()
         total_fees = (self.commission or 0) + (self.fees or 0)
-        
+
         if self.side == "BUY":
             return notional + total_fees
         else:  # SELL

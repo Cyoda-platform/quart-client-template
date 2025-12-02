@@ -27,95 +27,84 @@ class Portfolio(CyodaEntity):
 
     # Required fields from functional requirements
     portfolio_id: str = Field(
-        ..., 
-        alias="portfolioId",
-        description="Business portfolio identifier"
+        ..., alias="portfolioId", description="Business portfolio identifier"
     )
-    account_id: str = Field(
-        ..., 
-        alias="accountId",
-        description="Account identifier"
-    )
+    account_id: str = Field(..., alias="accountId", description="Account identifier")
     cash_balance: float = Field(
-        ..., 
-        alias="cashBalance",
-        description="Available cash balance"
+        ..., alias="cashBalance", description="Available cash balance"
     )
     total_value: float = Field(
-        ..., 
-        alias="totalValue",
-        description="Total portfolio value"
+        ..., alias="totalValue", description="Total portfolio value"
     )
 
     # P&L tracking fields
     unrealized_pnl: float = Field(
-        default=0.0,
-        alias="unrealizedPnl",
-        description="Unrealized profit and loss"
+        default=0.0, alias="unrealizedPnl", description="Unrealized profit and loss"
     )
     realized_pnl: float = Field(
-        default=0.0,
-        alias="realizedPnl",
-        description="Realized profit and loss"
+        default=0.0, alias="realizedPnl", description="Realized profit and loss"
     )
 
     # Position tracking
     positions: List[Dict[str, Any]] = Field(
-        default_factory=list,
-        description="Current positions in the portfolio"
+        default_factory=list, description="Current positions in the portfolio"
     )
 
     # Portfolio metadata
     base_currency: str = Field(
         default="USD",
         alias="baseCurrency",
-        description="Base currency for portfolio valuation"
+        description="Base currency for portfolio valuation",
     )
     portfolio_type: str = Field(
         default="TRADING",
         alias="portfolioType",
-        description="Portfolio type: TRADING, INVESTMENT, HEDGE"
+        description="Portfolio type: TRADING, INVESTMENT, HEDGE",
     )
     risk_profile: Optional[str] = Field(
         default=None,
         alias="riskProfile",
-        description="Risk profile: CONSERVATIVE, MODERATE, AGGRESSIVE"
+        description="Risk profile: CONSERVATIVE, MODERATE, AGGRESSIVE",
     )
 
     # Calculated fields (updated during processing)
     market_value: Optional[float] = Field(
         default=None,
         alias="marketValue",
-        description="Current market value of positions"
+        description="Current market value of positions",
     )
     day_pnl: Optional[float] = Field(
-        default=None,
-        alias="dayPnl",
-        description="Day profit and loss"
+        default=None, alias="dayPnl", description="Day profit and loss"
     )
     exposure: Optional[Dict[str, float]] = Field(
-        default=None,
-        description="Portfolio exposure by asset class/sector"
+        default=None, description="Portfolio exposure by asset class/sector"
     )
 
     # Processing-related fields
     update_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="updateData",
-        description="Data from portfolio updates"
+        default=None, alias="updateData", description="Data from portfolio updates"
     )
     pnl_calculation_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        alias="pnlCalculationData",
-        description="P&L calculation details"
+        default=None, alias="pnlCalculationData", description="P&L calculation details"
     )
 
     # Validation constants
     ALLOWED_CURRENCIES: ClassVar[List[str]] = [
-        "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY"
+        "USD",
+        "EUR",
+        "GBP",
+        "JPY",
+        "CAD",
+        "AUD",
+        "CHF",
+        "CNY",
     ]
     ALLOWED_PORTFOLIO_TYPES: ClassVar[List[str]] = ["TRADING", "INVESTMENT", "HEDGE"]
-    ALLOWED_RISK_PROFILES: ClassVar[List[str]] = ["CONSERVATIVE", "MODERATE", "AGGRESSIVE"]
+    ALLOWED_RISK_PROFILES: ClassVar[List[str]] = [
+        "CONSERVATIVE",
+        "MODERATE",
+        "AGGRESSIVE",
+    ]
 
     @field_validator("portfolio_id")
     @classmethod
@@ -151,7 +140,9 @@ class Portfolio(CyodaEntity):
     def validate_portfolio_type(cls, v: str) -> str:
         """Validate portfolio type"""
         if v not in cls.ALLOWED_PORTFOLIO_TYPES:
-            raise ValueError(f"Portfolio type must be one of: {cls.ALLOWED_PORTFOLIO_TYPES}")
+            raise ValueError(
+                f"Portfolio type must be one of: {cls.ALLOWED_PORTFOLIO_TYPES}"
+            )
         return v
 
     @field_validator("risk_profile")
@@ -159,7 +150,9 @@ class Portfolio(CyodaEntity):
     def validate_risk_profile(cls, v: Optional[str]) -> Optional[str]:
         """Validate risk profile"""
         if v is not None and v not in cls.ALLOWED_RISK_PROFILES:
-            raise ValueError(f"Risk profile must be one of: {cls.ALLOWED_RISK_PROFILES}")
+            raise ValueError(
+                f"Risk profile must be one of: {cls.ALLOWED_RISK_PROFILES}"
+            )
         return v
 
     def get_position(self, symbol: str) -> Optional[Dict[str, Any]]:
@@ -172,15 +165,17 @@ class Portfolio(CyodaEntity):
     def add_position(self, symbol: str, quantity: int, average_price: float) -> None:
         """Add or update a position"""
         existing_position = self.get_position(symbol)
-        
+
         if existing_position:
             # Update existing position
             old_quantity = existing_position["quantity"]
             old_avg_price = existing_position["average_price"]
-            
+
             new_quantity = old_quantity + quantity
             if new_quantity != 0:
-                new_avg_price = ((old_quantity * old_avg_price) + (quantity * average_price)) / new_quantity
+                new_avg_price = (
+                    (old_quantity * old_avg_price) + (quantity * average_price)
+                ) / new_quantity
                 existing_position["quantity"] = new_quantity
                 existing_position["average_price"] = new_avg_price
             else:
@@ -189,14 +184,16 @@ class Portfolio(CyodaEntity):
         else:
             # Add new position
             if quantity != 0:
-                self.positions.append({
-                    "symbol": symbol,
-                    "quantity": quantity,
-                    "average_price": average_price,
-                    "market_value": quantity * average_price,
-                    "unrealized_pnl": 0.0
-                })
-        
+                self.positions.append(
+                    {
+                        "symbol": symbol,
+                        "quantity": quantity,
+                        "average_price": average_price,
+                        "market_value": quantity * average_price,
+                        "unrealized_pnl": 0.0,
+                    }
+                )
+
         self.update_timestamp()
 
     def calculate_total_value(self) -> float:
@@ -214,7 +211,9 @@ class Portfolio(CyodaEntity):
         if position:
             quantity = position["quantity"]
             position["market_value"] = quantity * market_price
-            position["unrealized_pnl"] = (market_price - position["average_price"]) * quantity
+            position["unrealized_pnl"] = (
+                market_price - position["average_price"]
+            ) * quantity
             self.update_timestamp()
 
     def set_update_data(self, update_data: Dict[str, Any]) -> None:
@@ -230,8 +229,16 @@ class Portfolio(CyodaEntity):
 
     def get_net_exposure(self) -> float:
         """Calculate net exposure (long positions - short positions)"""
-        long_value = sum(pos.get("market_value", 0) for pos in self.positions if pos.get("quantity", 0) > 0)
-        short_value = sum(abs(pos.get("market_value", 0)) for pos in self.positions if pos.get("quantity", 0) < 0)
+        long_value = sum(
+            pos.get("market_value", 0)
+            for pos in self.positions
+            if pos.get("quantity", 0) > 0
+        )
+        short_value = sum(
+            abs(pos.get("market_value", 0))
+            for pos in self.positions
+            if pos.get("quantity", 0) < 0
+        )
         return long_value - short_value
 
     def get_gross_exposure(self) -> float:

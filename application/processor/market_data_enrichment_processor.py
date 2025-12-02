@@ -9,9 +9,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from application.entity.market_data.version_1.market_data import MarketData
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.market_data.version_1.market_data import MarketData
 
 
 class MarketDataEnrichmentProcessor(CyodaProcessor):
@@ -143,7 +143,9 @@ class MarketDataEnrichmentProcessor(CyodaProcessor):
 
         # Calculate spread percentage if available
         if market_data.spread is not None and market_data.price > 0:
-            indicators["spread_percentage"] = (market_data.spread / market_data.price) * 100
+            indicators["spread_percentage"] = (
+                market_data.spread / market_data.price
+            ) * 100
 
         return indicators
 

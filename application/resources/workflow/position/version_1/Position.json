@@ -1,0 +1,81 @@
+{
+  "version": "1.0",
+  "name": "Position Workflow",
+  "desc": "Workflow for position tracking and P&L calculation",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "open",
+          "next": "opened",
+          "manual": false
+        }
+      ]
+    },
+    "opened": {
+      "transitions": [
+        {
+          "name": "update_market_price",
+          "next": "opened",
+          "manual": true,
+          "processors": [
+            {
+              "name": "PositionMarketUpdateProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "add_trade",
+          "next": "opened",
+          "manual": true,
+          "processors": [
+            {
+              "name": "PositionTradeProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "update_greeks",
+          "next": "opened",
+          "manual": true,
+          "processors": [
+            {
+              "name": "PositionGreeksProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "PositionCloseProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "closed": {
+      "transitions": []
+    }
+  }
+}

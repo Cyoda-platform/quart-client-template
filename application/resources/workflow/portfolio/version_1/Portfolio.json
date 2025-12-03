@@ -1,0 +1,99 @@
+{
+  "version": "1.0",
+  "name": "Portfolio Workflow",
+  "desc": "Workflow for portfolio management and performance tracking",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "calculate",
+          "next": "calculated",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PortfolioCalculationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "calculated": {
+      "transitions": [
+        {
+          "name": "update",
+          "next": "calculated",
+          "manual": true,
+          "processors": [
+            {
+              "name": "PortfolioUpdateProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "generate_report",
+          "next": "reported",
+          "manual": true,
+          "processors": [
+            {
+              "name": "PortfolioReportProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "reported": {
+      "transitions": [
+        {
+          "name": "update",
+          "next": "calculated",
+          "manual": true,
+          "processors": [
+            {
+              "name": "PortfolioUpdateProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "closed": {
+      "transitions": []
+    }
+  }
+}

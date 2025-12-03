@@ -1,0 +1,68 @@
+{
+  "workflow": {
+    "name": "Order",
+    "version": 1,
+    "description": "Workflow for Order entity with create, update, and cancel transitions",
+    "entity": "Order",
+    "states": [
+      {
+        "name": "New",
+        "description": "Order has been created but not yet processed"
+      },
+      {
+        "name": "Processing",
+        "description": "Order is being processed"
+      },
+      {
+        "name": "Completed",
+        "description": "Order has been completed and shipped"
+      },
+      {
+        "name": "Cancelled",
+        "description": "Order has been cancelled"
+      }
+    ],
+    "transitions": [
+      {
+        "name": "create",
+        "from": null,
+        "to": "New",
+        "description": "Create a new order",
+        "actions": [
+          "set_creation_timestamp",
+          "validate_order_items"
+        ]
+      },
+      {
+        "name": "update",
+        "from": ["New", "Processing"],
+        "to": "Processing",
+        "description": "Update order details (allowed in New or Processing states)",
+        "actions": [
+          "update_items",
+          "recalculate_totals"
+        ]
+      },
+      {
+        "name": "cancel",
+        "from": ["New", "Processing"],
+        "to": "Cancelled",
+        "description": "Cancel the order",
+        "actions": [
+          "release_inventory",
+          "refund_payments"
+        ]
+      }
+    ],
+    "guards": [
+      {
+        "name": "can_update",
+        "expression": "state in ['New', 'Processing']"
+      },
+      {
+        "name": "can_cancel",
+        "expression": "state in ['New', 'Processing'] and not is_shipped"
+      }
+    ]
+  }
+}

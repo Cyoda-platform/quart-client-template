@@ -1,0 +1,99 @@
+{
+  "version": "1.0",
+  "name": "Instrument Workflow",
+  "desc": "Workflow for managing instrument lifecycle from creation to delisting",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "InstrumentValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "InstrumentActivationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "suspend",
+          "next": "suspended",
+          "manual": true
+        },
+        {
+          "name": "delist",
+          "next": "delisted",
+          "manual": true
+        },
+        {
+          "name": "update_market_data",
+          "next": "active",
+          "manual": true,
+          "processors": [
+            {
+              "name": "InstrumentMarketDataProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "suspended": {
+      "transitions": [
+        {
+          "name": "reactivate",
+          "next": "active",
+          "manual": true
+        },
+        {
+          "name": "delist",
+          "next": "delisted",
+          "manual": true
+        }
+      ]
+    },
+    "delisted": {
+      "transitions": []
+    }
+  }
+}

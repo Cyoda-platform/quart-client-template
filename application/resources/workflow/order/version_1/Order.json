@@ -1,0 +1,137 @@
+{
+  "version": "1.0",
+  "name": "Order Workflow",
+  "desc": "Workflow for order lifecycle from submission to settlement",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "submit",
+          "next": "submitted",
+          "manual": false
+        }
+      ]
+    },
+    "submitted": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "OrderValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "risk_check",
+          "next": "risk_checked",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderRiskProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "risk_checked": {
+      "transitions": [
+        {
+          "name": "compliance_check",
+          "next": "compliance_approved",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderComplianceProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "compliance_approved": {
+      "transitions": [
+        {
+          "name": "execute",
+          "next": "executed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderExecutionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "executed": {
+      "transitions": [
+        {
+          "name": "settle",
+          "next": "settled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderSettlementProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "settled": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}

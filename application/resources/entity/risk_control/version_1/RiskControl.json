@@ -1,0 +1,102 @@
+{
+  "name": "RiskControl",
+  "version": 1,
+  "fields": [
+    {
+      "name": "clientId",
+      "type": "string",
+      "required": true,
+      "description": "Client identifier"
+    },
+    {
+      "name": "limitName",
+      "type": "string",
+      "required": true,
+      "description": "Risk limit name"
+    },
+    {
+      "name": "limitType",
+      "type": "string",
+      "required": true,
+      "description": "Type of risk limit"
+    },
+    {
+      "name": "limitValue",
+      "type": "number",
+      "required": true,
+      "description": "Maximum allowed value"
+    },
+    {
+      "name": "warningThreshold",
+      "type": "number",
+      "required": true,
+      "description": "Warning threshold (percentage of limit)"
+    },
+    {
+      "name": "breachThreshold",
+      "type": "number",
+      "required": true,
+      "description": "Breach threshold (percentage of limit)"
+    },
+    {
+      "name": "currentExposure",
+      "type": "number",
+      "required": false,
+      "description": "Current exposure value"
+    },
+    {
+      "name": "utilizationPercentage",
+      "type": "number",
+      "required": false,
+      "description": "Current utilization percentage"
+    },
+    {
+      "name": "isActive",
+      "type": "boolean",
+      "required": false,
+      "description": "Whether limit is active"
+    },
+    {
+      "name": "isBreached",
+      "type": "boolean",
+      "required": false,
+      "description": "Whether limit is currently breached"
+    },
+    {
+      "name": "warningTriggered",
+      "type": "boolean",
+      "required": false,
+      "description": "Whether warning threshold triggered"
+    },
+    {
+      "name": "breachCount",
+      "type": "number",
+      "required": false,
+      "description": "Number of breaches"
+    },
+    {
+      "name": "lastBreachTime",
+      "type": "string",
+      "required": false,
+      "description": "Last breach timestamp"
+    },
+    {
+      "name": "breachReason",
+      "type": "string",
+      "required": false,
+      "description": "Reason for last breach"
+    },
+    {
+      "name": "createdAt",
+      "type": "string",
+      "required": false,
+      "description": "Risk control creation timestamp"
+    },
+    {
+      "name": "lastUpdated",
+      "type": "string",
+      "required": false,
+      "description": "Last update timestamp"
+    }
+  ]
+}

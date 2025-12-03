@@ -1,0 +1,156 @@
+{
+  "name": "MarketData",
+  "version": 1,
+  "fields": [
+    {
+      "name": "instrumentId",
+      "type": "string",
+      "required": true,
+      "description": "Instrument technical ID"
+    },
+    {
+      "name": "symbol",
+      "type": "string",
+      "required": true,
+      "description": "Trading symbol"
+    },
+    {
+      "name": "exchange",
+      "type": "string",
+      "required": true,
+      "description": "Exchange code"
+    },
+    {
+      "name": "dataSource",
+      "type": "string",
+      "required": true,
+      "description": "Market data source"
+    },
+    {
+      "name": "lastPrice",
+      "type": "number",
+      "required": false,
+      "description": "Last traded price"
+    },
+    {
+      "name": "bidPrice",
+      "type": "number",
+      "required": false,
+      "description": "Best bid price"
+    },
+    {
+      "name": "askPrice",
+      "type": "number",
+      "required": false,
+      "description": "Best ask price"
+    },
+    {
+      "name": "bidSize",
+      "type": "number",
+      "required": false,
+      "description": "Bid size"
+    },
+    {
+      "name": "askSize",
+      "type": "number",
+      "required": false,
+      "description": "Ask size"
+    },
+    {
+      "name": "volume",
+      "type": "number",
+      "required": false,
+      "description": "Trading volume"
+    },
+    {
+      "name": "turnover",
+      "type": "number",
+      "required": false,
+      "description": "Trading turnover"
+    },
+    {
+      "name": "vwap",
+      "type": "number",
+      "required": false,
+      "description": "Volume weighted average price"
+    },
+    {
+      "name": "openPrice",
+      "type": "number",
+      "required": false,
+      "description": "Opening price"
+    },
+    {
+      "name": "highPrice",
+      "type": "number",
+      "required": false,
+      "description": "High price"
+    },
+    {
+      "name": "lowPrice",
+      "type": "number",
+      "required": false,
+      "description": "Low price"
+    },
+    {
+      "name": "closePrice",
+      "type": "number",
+      "required": false,
+      "description": "Previous close price"
+    },
+    {
+      "name": "priceChange",
+      "type": "number",
+      "required": false,
+      "description": "Price change from previous close"
+    },
+    {
+      "name": "priceChangePercent",
+      "type": "number",
+      "required": false,
+      "description": "Price change percentage"
+    },
+    {
+      "name": "marketStatus",
+      "type": "string",
+      "required": false,
+      "description": "Market status"
+    },
+    {
+      "name": "tradingSession",
+      "type": "string",
+      "required": false,
+      "description": "Trading session"
+    },
+    {
+      "name": "dataQuality",
+      "type": "string",
+      "required": false,
+      "description": "Data quality indicator"
+    },
+    {
+      "name": "staleThresholdSeconds",
+      "type": "number",
+      "required": false,
+      "description": "Stale data threshold in seconds"
+    },
+    {
+      "name": "marketTimestamp",
+      "type": "string",
+      "required": true,
+      "description": "Market data timestamp from exchange"
+    },
+    {
+      "name": "receivedTimestamp",
+      "type": "string",
+      "required": false,
+      "description": "Timestamp when data was received"
+    },
+    {
+      "name": "processedTimestamp",
+      "type": "string",
+      "required": false,
+      "description": "Timestamp when data was processed"
+    }
+  ]
+}

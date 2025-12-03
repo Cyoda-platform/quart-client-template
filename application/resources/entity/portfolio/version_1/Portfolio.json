@@ -1,0 +1,132 @@
+{
+  "name": "Portfolio",
+  "version": 1,
+  "fields": [
+    {
+      "name": "clientId",
+      "type": "string",
+      "required": true,
+      "description": "Client identifier"
+    },
+    {
+      "name": "portfolioName",
+      "type": "string",
+      "required": true,
+      "description": "Portfolio name"
+    },
+    {
+      "name": "baseCurrency",
+      "type": "string",
+      "required": false,
+      "description": "Base currency for portfolio"
+    },
+    {
+      "name": "totalValue",
+      "type": "number",
+      "required": false,
+      "description": "Total portfolio value"
+    },
+    {
+      "name": "cashBalance",
+      "type": "number",
+      "required": false,
+      "description": "Cash balance"
+    },
+    {
+      "name": "investedValue",
+      "type": "number",
+      "required": false,
+      "description": "Total invested value"
+    },
+    {
+      "name": "marketValue",
+      "type": "number",
+      "required": false,
+      "description": "Current market value of positions"
+    },
+    {
+      "name": "dailyPnl",
+      "type": "number",
+      "required": false,
+      "description": "Daily profit and loss"
+    },
+    {
+      "name": "totalPnl",
+      "type": "number",
+      "required": false,
+      "description": "Total profit and loss"
+    },
+    {
+      "name": "unrealizedPnl",
+      "type": "number",
+      "required": false,
+      "description": "Unrealized profit and loss"
+    },
+    {
+      "name": "realizedPnl",
+      "type": "number",
+      "required": false,
+      "description": "Realized profit and loss"
+    },
+    {
+      "name": "var95",
+      "type": "number",
+      "required": false,
+      "description": "Value at Risk 95%"
+    },
+    {
+      "name": "beta",
+      "type": "number",
+      "required": false,
+      "description": "Portfolio beta"
+    },
+    {
+      "name": "sharpeRatio",
+      "type": "number",
+      "required": false,
+      "description": "Sharpe ratio"
+    },
+    {
+      "name": "maxDrawdown",
+      "type": "number",
+      "required": false,
+      "description": "Maximum drawdown"
+    },
+    {
+      "name": "positionCount",
+      "type": "number",
+      "required": false,
+      "description": "Number of positions"
+    },
+    {
+      "name": "longPositions",
+      "type": "number",
+      "required": false,
+      "description": "Number of long positions"
+    },
+    {
+      "name": "shortPositions",
+      "type": "number",
+      "required": false,
+      "description": "Number of short positions"
+    },
+    {
+      "name": "inceptionDate",
+      "type": "string",
+      "required": false,
+      "description": "Portfolio inception date"
+    },
+    {
+      "name": "lastUpdated",
+      "type": "string",
+      "required": false,
+      "description": "Last portfolio update timestamp"
+    },
+    {
+      "name": "isActive",
+      "type": "boolean",
+      "required": false,
+      "description": "Whether portfolio is active"
+    }
+  ]
+}

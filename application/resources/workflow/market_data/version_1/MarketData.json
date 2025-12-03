@@ -1,0 +1,114 @@
+{
+  "version": "1.0",
+  "name": "MarketData Workflow",
+  "desc": "Workflow for market data processing and distribution",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "receive",
+          "next": "received",
+          "manual": false
+        }
+      ]
+    },
+    "received": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "MarketDataValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "process",
+          "next": "processed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "processed": {
+      "transitions": [
+        {
+          "name": "distribute",
+          "next": "distributed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataDistributionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "mark_stale",
+          "next": "stale",
+          "manual": true
+        }
+      ]
+    },
+    "distributed": {
+      "transitions": [
+        {
+          "name": "update",
+          "next": "received",
+          "manual": true
+        },
+        {
+          "name": "mark_stale",
+          "next": "stale",
+          "manual": true
+        }
+      ]
+    },
+    "stale": {
+      "transitions": [
+        {
+          "name": "refresh",
+          "next": "received",
+          "manual": true
+        }
+      ]
+    },
+    "rejected": {
+      "transitions": [
+        {
+          "name": "retry",
+          "next": "received",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

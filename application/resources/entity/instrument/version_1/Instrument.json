@@ -1,0 +1,120 @@
+{
+  "name": "Instrument",
+  "version": 1,
+  "fields": [
+    {
+      "name": "symbol",
+      "type": "string",
+      "required": true,
+      "description": "Trading symbol (e.g., AAPL, MSFT)"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "description": "Full instrument name"
+    },
+    {
+      "name": "isin",
+      "type": "string",
+      "required": false,
+      "description": "International Securities Identification Number"
+    },
+    {
+      "name": "cusip",
+      "type": "string",
+      "required": false,
+      "description": "Committee on Uniform Securities Identification Procedures number"
+    },
+    {
+      "name": "instrumentType",
+      "type": "string",
+      "required": true,
+      "description": "Type of instrument (EQUITY, OPTION, FUTURE, BOND)"
+    },
+    {
+      "name": "assetClass",
+      "type": "string",
+      "required": true,
+      "description": "Asset class (EQUITY, FIXED_INCOME, DERIVATIVE, COMMODITY)"
+    },
+    {
+      "name": "exchange",
+      "type": "string",
+      "required": true,
+      "description": "Primary exchange (NYSE, NASDAQ, CME)"
+    },
+    {
+      "name": "currency",
+      "type": "string",
+      "required": true,
+      "description": "Trading currency (USD, EUR, GBP)"
+    },
+    {
+      "name": "tickSize",
+      "type": "number",
+      "required": false,
+      "description": "Minimum price increment"
+    },
+    {
+      "name": "lotSize",
+      "type": "number",
+      "required": false,
+      "description": "Standard trading lot size"
+    },
+    {
+      "name": "multiplier",
+      "type": "number",
+      "required": false,
+      "description": "Contract multiplier for derivatives"
+    },
+    {
+      "name": "lastPrice",
+      "type": "number",
+      "required": false,
+      "description": "Last traded price"
+    },
+    {
+      "name": "bidPrice",
+      "type": "number",
+      "required": false,
+      "description": "Current bid price"
+    },
+    {
+      "name": "askPrice",
+      "type": "number",
+      "required": false,
+      "description": "Current ask price"
+    },
+    {
+      "name": "isActive",
+      "type": "boolean",
+      "required": false,
+      "description": "Whether instrument is actively tradeable"
+    },
+    {
+      "name": "listingDate",
+      "type": "string",
+      "required": false,
+      "description": "Date when instrument was listed"
+    },
+    {
+      "name": "delistingDate",
+      "type": "string",
+      "required": false,
+      "description": "Date when instrument was delisted"
+    },
+    {
+      "name": "createdAt",
+      "type": "string",
+      "required": false,
+      "description": "Timestamp when instrument was created"
+    },
+    {
+      "name": "updatedAt",
+      "type": "string",
+      "required": false,
+      "description": "Timestamp when instrument was last updated"
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+{
+  "name": "Order",
+  "version": 1,
+  "fields": [
+    {
+      "name": "orderId",
+      "type": "string",
+      "required": true,
+      "description": "Unique order identifier"
+    },
+    {
+      "name": "clientId",
+      "type": "string",
+      "required": true,
+      "description": "Client identifier"
+    },
+    {
+      "name": "instrumentId",
+      "type": "string",
+      "required": true,
+      "description": "Instrument technical ID"
+    },
+    {
+      "name": "symbol",
+      "type": "string",
+      "required": true,
+      "description": "Trading symbol"
+    },
+    {
+      "name": "side",
+      "type": "string",
+      "required": true,
+      "description": "Order side (BUY, SELL)"
+    },
+    {
+      "name": "quantity",
+      "type": "number",
+      "required": true,
+      "description": "Order quantity"
+    },
+    {
+      "name": "price",
+      "type": "number",
+      "required": false,
+      "description": "Order price (null for market orders)"
+    },
+    {
+      "name": "orderType",
+      "type": "string",
+      "required": true,
+      "description": "Order type (MARKET, LIMIT, STOP)"
+    },
+    {
+      "name": "timeInForce",
+      "type": "string",
+      "required": false,
+      "description": "Time in force (DAY, GTC, IOC, FOK)"
+    },
+    {
+      "name": "filledQuantity",
+      "type": "number",
+      "required": false,
+      "description": "Quantity filled"
+    },
+    {
+      "name": "remainingQuantity",
+      "type": "number",
+      "required": false,
+      "description": "Quantity remaining"
+    },
+    {
+      "name": "averagePrice",
+      "type": "number",
+      "required": false,
+      "description": "Average execution price"
+    },
+    {
+      "name": "orderStatus",
+      "type": "string",
+      "required": false,
+      "description": "Current order status"
+    },
+    {
+      "name": "rejectionReason",
+      "type": "string",
+      "required": false,
+      "description": "Reason for rejection"
+    },
+    {
+      "name": "riskChecked",
+      "type": "boolean",
+      "required": false,
+      "description": "Whether risk checks passed"
+    },
+    {
+      "name": "complianceApproved",
+      "type": "boolean",
+      "required": false,
+      "description": "Whether compliance approved"
+    },
+    {
+      "name": "submittedAt",
+      "type": "string",
+      "required": false,
+      "description": "Order submission timestamp"
+    },
+    {
+      "name": "executedAt",
+      "type": "string",
+      "required": false,
+      "description": "Order execution timestamp"
+    },
+    {
+      "name": "settledAt",
+      "type": "string",
+      "required": false,
+      "description": "Order settlement timestamp"
+    }
+  ]
+}

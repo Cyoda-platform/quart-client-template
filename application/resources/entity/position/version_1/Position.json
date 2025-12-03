@@ -1,0 +1,114 @@
+{
+  "name": "Position",
+  "version": 1,
+  "fields": [
+    {
+      "name": "clientId",
+      "type": "string",
+      "required": true,
+      "description": "Client identifier"
+    },
+    {
+      "name": "instrumentId",
+      "type": "string",
+      "required": true,
+      "description": "Instrument technical ID"
+    },
+    {
+      "name": "symbol",
+      "type": "string",
+      "required": true,
+      "description": "Trading symbol"
+    },
+    {
+      "name": "portfolioId",
+      "type": "string",
+      "required": false,
+      "description": "Portfolio technical ID"
+    },
+    {
+      "name": "quantity",
+      "type": "number",
+      "required": true,
+      "description": "Position quantity (positive for long, negative for short)"
+    },
+    {
+      "name": "averagePrice",
+      "type": "number",
+      "required": true,
+      "description": "Average cost price"
+    },
+    {
+      "name": "marketPrice",
+      "type": "number",
+      "required": false,
+      "description": "Current market price"
+    },
+    {
+      "name": "costBasis",
+      "type": "number",
+      "required": true,
+      "description": "Total cost basis"
+    },
+    {
+      "name": "marketValue",
+      "type": "number",
+      "required": false,
+      "description": "Current market value"
+    },
+    {
+      "name": "unrealizedPnl",
+      "type": "number",
+      "required": false,
+      "description": "Unrealized P&L"
+    },
+    {
+      "name": "realizedPnl",
+      "type": "number",
+      "required": false,
+      "description": "Realized P&L"
+    },
+    {
+      "name": "delta",
+      "type": "number",
+      "required": false,
+      "description": "Position delta"
+    },
+    {
+      "name": "gamma",
+      "type": "number",
+      "required": false,
+      "description": "Position gamma"
+    },
+    {
+      "name": "theta",
+      "type": "number",
+      "required": false,
+      "description": "Position theta"
+    },
+    {
+      "name": "vega",
+      "type": "number",
+      "required": false,
+      "description": "Position vega"
+    },
+    {
+      "name": "openedAt",
+      "type": "string",
+      "required": false,
+      "description": "Position opening timestamp"
+    },
+    {
+      "name": "lastUpdated",
+      "type": "string",
+      "required": false,
+      "description": "Last update timestamp"
+    },
+    {
+      "name": "closedAt",
+      "type": "string",
+      "required": false,
+      "description": "Position closing timestamp"
+    }
+  ]
+}

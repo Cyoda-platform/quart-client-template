@@ -1,0 +1,64 @@
+{
+  "name": "OrderProcessing",
+  "version": 1,
+  "description": "Workflow for Order entity handling create, update, and cancel transitions.",
+  "entity": "Order",
+  "states": [
+    {
+      "name": "new",
+      "description": "Order has been created but not yet processed."
+    },
+    {
+      "name": "active",
+      "description": "Order is active and being processed."
+    },
+    {
+      "name": "cancelled",
+      "description": "Order has been cancelled."
+    }
+  ],
+  "transitions": [
+    {
+      "name": "create",
+      "from": [],
+      "to": "new",
+      "description": "Create a new order. Initializes order with 'new' state and required fields.",
+      "inputs": [
+        { "name": "order_id", "type": "string", "required": true },
+        { "name": "customer_id", "type": "string", "required": true },
+        { "name": "items", "type": "list", "required": true }
+      ],
+      "outputs": [
+        { "name": "order", "type": "Order" }
+      ]
+    },
+    {
+      "name": "update",
+      "from": ["new", "active"],
+      "to": "active",
+      "description": "Update order details. Moves order to 'active' state if not cancelled.",
+      "inputs": [
+        { "name": "order_id", "type": "string", "required": true },
+        { "name": "updates", "type": "object", "required": true }
+      ],
+      "outputs": [
+        { "name": "order", "type": "Order" }
+      ]
+    },
+    {
+      "name": "cancel",
+      "from": ["new", "active"],
+      "to": "cancelled",
+      "description": "Cancel an existing order. Moves order to 'cancelled' state.",
+      "inputs": [
+        { "name": "order_id", "type": "string", "required": true },
+        { "name": "reason", "type": "string", "required": false }
+      ],
+      "outputs": [
+        { "name": "order", "type": "Order" }
+      ]
+    }
+  ],
+  "guards": [],
+  "actions": []
+}

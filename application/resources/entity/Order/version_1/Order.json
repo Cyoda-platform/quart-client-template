@@ -1,0 +1,14 @@
+{
+  "name": "Order",
+  "version": 1,
+  "description": "Entity representing a customer order.",
+  "fields": [
+    { "name": "order_id", "type": "string", "primary": true, "description": "Unique order identifier" },
+    { "name": "customer_id", "type": "string", "description": "Customer identifier" },
+    { "name": "items", "type": "list", "description": "List of order items" },
+    { "name": "total_amount", "type": "number", "description": "Total order amount" },
+    { "name": "status", "type": "string", "description": "Order status (new, active, cancelled)" },
+    { "name": "created_at", "type": "datetime", "description": "Creation timestamp" },
+    { "name": "updated_at", "type": "datetime", "description": "Last updated timestamp" }
+  ]
+}

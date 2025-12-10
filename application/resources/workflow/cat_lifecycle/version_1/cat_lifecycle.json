@@ -1,0 +1,58 @@
+{
+  "id": "cat_lifecycle",
+  "name": "cat_lifecycle",
+  "description": "Lifecycle workflow for cat entities (tracks availability and adoption)",
+  "model": "cat",
+  "model_version": 1,
+  "metadata": {
+    "target_model": "cat",
+    "target_model_version": 1
+  },
+  "initial_state": "new",
+  "states": [
+    { "name": "new", "initial": true },
+    { "name": "available" },
+    { "name": "adopted" },
+    { "name": "archived" }
+  ],
+  "transitions": [
+    {
+      "name": "make_available",
+      "from": "new",
+      "to": "available",
+      "allowed_attributes": []
+    },
+    {
+      "name": "adopt",
+      "from": "available",
+      "to": "adopted",
+      "allowed_attributes": ["owner_id"],
+      "description": "Allow setting owner_id during this transition"
+    },
+    {
+      "name": "return",
+      "from": "adopted",
+      "to": "available"
+    },
+    {
+      "name": "archive",
+      "from": "available",
+      "to": "archived"
+    },
+    {
+      "name": "restore",
+      "from": "archived",
+      "to": "available"
+    }
+  ],
+  "on_create": {
+    "auto_transitions": [
+      {
+        "trigger": "make_available",
+        "from": "new",
+        "to": "available"
+      }
+    ]
+  },
+  "permissions": "default"
+}

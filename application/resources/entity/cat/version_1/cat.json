@@ -1,0 +1,12 @@
+{
+  "name": "cat",
+  "description": "Represents a cat in the system",
+  "version": 1,
+  "fields": [
+    {"name": "id", "type": "uuid", "description": "Unique identifier for the cat"},
+    {"name": "name", "type": "string", "description": "The cat's name"},
+    {"name": "age", "type": "integer", "description": "Age of the cat in years"},
+    {"name": "color", "type": "string", "description": "Primary color of the cat"},
+    {"name": "owner_id", "type": "uuid", "description": "Reference to the owner (Person entity)"}
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "name": "CustomerWorkflow",
+  "version": 1,
+  "description": "Manages Customer lifecycle: create, update, and delete.",
+  "entity": "Customer",
+  "states": [
+    { "name": "Created", "description": "Initial state after creation." },
+    { "name": "Active", "description": "Customer is active and usable." },
+    { "name": "Deleted", "description": "Customer has been soft-deleted or archived." }
+  ],
+  "transitions": [
+    {
+      "name": "create_customer",
+      "from": "Created",
+      "to": "Active",
+      "event": "CustomerCreated",
+      "processor": "validate_customer",
+      "description": "Validate and persist a new Customer."
+    },
+    {
+      "name": "update_customer",
+      "from": "Active",
+      "to": "Active",
+      "event": "CustomerUpdated",
+      "processor": "apply_customer_update",
+      "description": "Apply updates to an existing Customer."
+    },
+    {
+      "name": "delete_customer",
+      "from": "Active",
+      "to": "Deleted",
+      "event": "CustomerDeleted",
+      "processor": "archive_customer",
+      "description": "Soft-delete or archive the Customer record."
+    }
+  ],
+  "events": [
+    {
+      "name": "CustomerCreated",
+      "payload": {
+        "id": "string",
+        "name": "string",
+        "email": "string",
+        "phone": "string"
+      }
+    },
+    {
+      "name": "CustomerUpdated",
+      "payload": {
+        "id": "string",
+        "changes": "object"
+      }
+    },
+    {
+      "name": "CustomerDeleted",
+      "payload": {
+        "id": "string"
+      }
+    }
+  ],
+  "processors": [
+    {
+      "name": "validate_customer",
+      "type": "function",
+      "description": "Ensure required fields are present and email is valid."
+    },
+    {
+      "name": "apply_customer_update",
+      "type": "function",
+      "description": "Merge incoming changes into the Customer entity."
+    },
+    {
+      "name": "archive_customer",
+      "type": "function",
+      "description": "Perform soft-delete actions (mark as deleted, archive data)."
+    }
+  ]
+}

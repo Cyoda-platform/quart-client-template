@@ -1,0 +1,55 @@
+{
+  "name": "CustomerOnboarding",
+  "description": "Workflow for onboarding and updating customer records",
+  "version": 1,
+  "states": [
+    {"name": "new", "description": "New customer created (pending onboarding)"},
+    {"name": "active", "description": "Customer active in the system"},
+    {"name": "suspended", "description": "Customer suspended due to issues"}
+  ],
+  "transitions": [
+    {
+      "name": "onboard",
+      "from": ["new"],
+      "to": "active",
+      "description": "Complete onboarding (validate email/phone, create profile)",
+      "actions": [
+        {"type": "validate", "target": "email", "params": {"format": "email"}},
+        {"type": "validate", "target": "phone", "params": {"required": false}},
+        {"type": "set", "target": "activated_at", "value": "${now()}"}
+      ]
+    },
+    {
+      "name": "update_profile",
+      "from": ["active"],
+      "to": "active",
+      "description": "Update customer profile fields",
+      "actions": [
+        {"type": "modify", "target": "name"},
+        {"type": "modify", "target": "email"},
+        {"type": "modify", "target": "phone"}
+      ]
+    },
+    {
+      "name": "suspend",
+      "from": ["active"],
+      "to": "suspended",
+      "description": "Suspend customer",
+      "actions": [
+        {"type": "set", "target": "suspended_at", "value": "${now()}"}
+      ]
+    },
+    {
+      "name": "reactivate",
+      "from": ["suspended"],
+      "to": "active",
+      "description": "Reactivate suspended customer",
+      "actions": [
+        {"type": "set", "target": "reactivated_at", "value": "${now()}"}
+      ]
+    }
+  ],
+  "triggers": [
+    {"event": "CustomerCreated", "transition": "onboard"}
+  ]
+}

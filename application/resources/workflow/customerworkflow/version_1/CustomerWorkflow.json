@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "name": "CustomerWorkflow",
+  "initialState": "Draft",
+  "states": [
+    {
+      "name": "Draft",
+      "transitions": [
+        {
+          "name": "submit",
+          "to": "Active",
+          "guard": null,
+          "actions": []
+        }
+      ]
+    },
+    {
+      "name": "Active",
+      "transitions": [
+        {
+          "name": "suspend",
+          "to": "Suspended",
+          "actions": []
+        },
+        {
+          "name": "archive",
+          "to": "Archived",
+          "actions": []
+        }
+      ]
+    },
+    {
+      "name": "Suspended",
+      "transitions": [
+        {
+          "name": "reactivate",
+          "to": "Active",
+          "actions": []
+        }
+      ]
+    },
+    {
+      "name": "Archived",
+      "transitions": []
+    }
+  ]
+}

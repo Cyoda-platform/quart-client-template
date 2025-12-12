@@ -1,54 +1,85 @@
 {
-  "version": "1.1",
-  "name": "Order",
-  "desc": "Improved workflow for Order entity: clearer state names, explicit manual flags, descriptions on transitions, and active=true",
-  "initialState": "initial_state",
-  "active": true,
-  "states": {
-    "initial_state": {
-      "transitions": [
-        {
-          "name": "create",
-          "next": "created",
-          "manual": true,
-          "description": "Create a new order (initiated by user)"
-        }
-      ]
+  "id": "workflow_workflow-order",
+  "entityModel": {
+    "modelName": "order",
+    "modelVersion": 1
+  },
+  "configuration": {
+    "active": false,
+    "desc": "Workflow for Order entity with create, update, and cancel transitions",
+    "initialState": "initial_state",
+    "name": "Order",
+    "states": {
+      "cancelled": {
+        "transitions": []
+      },
+      "created": {
+        "transitions": [
+          {
+            "description": "Update order details (user-initiated)",
+            "manual": false,
+            "name": "update",
+            "next": "updated"
+          }
+        ]
+      },
+      "initial_state": {
+        "transitions": [
+          {
+            "description": "Create a new order (user-initiated)",
+            "manual": true,
+            "name": "create",
+            "next": "created"
+          }
+        ]
+      },
+      "updated": {
+        "transitions": [
+          {
+            "description": "Cancel the order after updates",
+            "manual": true,
+            "name": "cancel",
+            "next": "cancelled"
+          }
+        ]
+      }
     },
-    "created": {
-      "transitions": [
-        {
-          "name": "update",
-          "next": "updated",
-          "manual": true,
-          "description": "Update order details (user-initiated). Validations should run in processors."
-        },
-        {
-          "name": "cancel",
-          "next": "cancelled",
-          "manual": true,
-          "description": "Cancel the order (user-initiated). Idempotent: cancelling an already cancelled order is a no-op."
+    "version": "1.0"
+  },
+  "layout": {
+    "states": [
+      {
+        "id": "cancelled",
+        "position": {
+          "x": 669.4807171049334,
+          "y": 322.4183245595018
         }
-      ]
-    },
-    "updated": {
-      "transitions": [
-        {
-          "name": "update",
-          "next": "updated",
-          "manual": true,
-          "description": "Apply another update to the order (idempotent/merge semantics recommended)."
-        },
-        {
-          "name": "cancel",
-          "next": "cancelled",
-          "manual": true,
-          "description": "Cancel the order after updates"
+      },
+      {
+        "id": "created",
+        "position": {
+          "x": 930.7802673456321,
+          "y": -528.6129767390805
         }
-      ]
-    },
-    "cancelled": {
-      "transitions": []
-    }
-  }
+      },
+      {
+        "id": "initial_state",
+        "position": {
+          "x": 922.3788922517165,
+          "y": -955.1248974401607
+        }
+      },
+      {
+        "id": "updated",
+        "position": {
+          "x": 969.209098007923,
+          "y": -221.09882161258523
+        }
+      }
+    ],
+    "transitions": [],
+    "updatedAt": "2025-12-12T12:58:23.883Z"
+  },
+  "createdAt": "2025-12-12T12:47:38.577Z",
+  "updatedAt": "2025-12-12T12:58:23.883Z"
 }

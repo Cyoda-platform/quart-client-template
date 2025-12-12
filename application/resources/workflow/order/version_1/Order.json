@@ -1,5 +1,5 @@
 {
-  "active": false,
+  "active": true,
   "desc": "Workflow for Order entity with create, update, and cancel transitions",
   "initialState": "initial_state",
   "name": "Order",

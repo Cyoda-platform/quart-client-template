@@ -1,7 +1,7 @@
 {
-  "version": "1.0",
+  "version": "1.1",
   "name": "Order",
-  "desc": "Workflow for Order entity with create, update, and cancel transitions",
+  "desc": "Improved workflow for Order entity: clearer state names, explicit manual flags, descriptions on transitions, and active=true",
   "initialState": "initial_state",
   "active": true,
   "states": {
@@ -11,7 +11,7 @@
           "name": "create",
           "next": "created",
           "manual": true,
-          "description": "Create a new order (user-initiated)"
+          "description": "Create a new order (initiated by user)"
         }
       ]
     },
@@ -21,13 +21,13 @@
           "name": "update",
           "next": "updated",
           "manual": true,
-          "description": "Update order details (user-initiated)"
+          "description": "Update order details (user-initiated). Validations should run in processors."
         },
         {
           "name": "cancel",
           "next": "cancelled",
           "manual": true,
-          "description": "Cancel the order (user-initiated)"
+          "description": "Cancel the order (user-initiated). Idempotent: cancelling an already cancelled order is a no-op."
         }
       ]
     },
@@ -37,7 +37,7 @@
           "name": "update",
           "next": "updated",
           "manual": true,
-          "description": "Apply another update to the order"
+          "description": "Apply another update to the order (idempotent/merge semantics recommended)."
         },
         {
           "name": "cancel",

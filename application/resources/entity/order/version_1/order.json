@@ -1,0 +1,47 @@
+{
+  "order_id": "ORDER-1001",
+  "customer_id": "CUST-501",
+  "items": [
+    {
+      "sku": "SKU-123",
+      "name": "Wireless Mouse",
+      "quantity": 2,
+      "unit_price": 29.99
+    },
+    {
+      "sku": "SKU-456",
+      "name": "Mechanical Keyboard",
+      "quantity": 1,
+      "unit_price": 89.99
+    }
+  ],
+  "shipping_address": {
+    "line1": "123 Elm St",
+    "line2": "Apt 4B",
+    "city": "Springfield",
+    "state": "IL",
+    "zip": "62704",
+    "country": "USA"
+  },
+  "billing_address": {
+    "line1": "123 Elm St",
+    "line2": "Apt 4B",
+    "city": "Springfield",
+    "state": "IL",
+    "zip": "62704",
+    "country": "USA"
+  },
+  "order_total": 149.97,
+  "currency": "USD",
+  "status": "PLACED",
+  "placed_at": "2025-12-12T10:30:00Z",
+  "shipped_at": null,
+  "tracking_number": null,
+  "payment": {
+    "method": "credit_card",
+    "transaction_id": "txn_7890",
+    "paid_at": "2025-12-12T10:31:00Z",
+    "amount": 149.97,
+    "currency": "USD"
+  }
+}

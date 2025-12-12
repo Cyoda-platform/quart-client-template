@@ -1,0 +1,88 @@
+{
+  "name": "order_fulfillment",
+  "entity": "order",
+  "description": "Standard order fulfillment workflow for Order entity",
+  "initial_state": "PLACED",
+  "states": [
+    "PLACED",
+    "PROCESSING",
+    "PACKED",
+    "SHIPPED",
+    "DELIVERED",
+    "CANCELLED",
+    "RETURNED"
+  ],
+  "transitions": [
+    {
+      "name": "confirm_payment",
+      "from": "PLACED",
+      "to": "PROCESSING",
+      "trigger": "payment_confirmed",
+      "actions": [
+        {"type": "set_field", "field": "status", "value": "PROCESSING"},
+        {"type": "log", "message": "Payment confirmed, moving to PROCESSING"}
+      ]
+    },
+    {
+      "name": "pack_order",
+      "from": "PROCESSING",
+      "to": "PACKED",
+      "trigger": "order_packed",
+      "actions": [
+        {"type": "set_field", "field": "status", "value": "PACKED"},
+        {"type": "notify", "to": "warehouse", "message": "Order ready for packing"}
+      ]
+    },
+    {
+      "name": "ship_order",
+      "from": "PACKED",
+      "to": "SHIPPED",
+      "trigger": "order_shipped",
+      "actions": [
+        {"type": "set_field", "field": "status", "value": "SHIPPED"},
+        {"type": "set_field", "field": "shipped_at", "value": "now"},
+        {"type": "notify", "to": "customer", "message": "Your order has shipped"}
+      ]
+    },
+    {
+      "name": "deliver_order",
+      "from": "SHIPPED",
+      "to": "DELIVERED",
+      "trigger": "order_delivered",
+      "actions": [
+        {"type": "set_field", "field": "status", "value": "DELIVERED"},
+        {"type": "set_field", "field": "delivered_at", "value": "now"}
+      ]
+    },
+    {
+      "name": "cancel_order",
+      "from": ["PLACED", "PROCESSING", "PACKED"],
+      "to": "CANCELLED",
+      "trigger": "order_cancelled",
+      "actions": [
+        {"type": "set_field", "field": "status", "value": "CANCELLED"},
+        {"type": "notify", "to": "customer", "message": "Your order has been cancelled"}
+      ]
+    },
+    {
+      "name": "return_order",
+      "from": "DELIVERED",
+      "to": "RETURNED",
+      "trigger": "return_initiated",
+      "actions": [
+        {"type": "set_field", "field": "status", "value": "RETURNED"},
+        {"type": "notify", "to": "returns_team", "message": "Return initiated for order"}
+      ]
+    }
+  ],
+  "events": [
+    {"name": "payment_confirmed", "description": "Triggered when payment is confirmed"},
+    {"name": "order_packed", "description": "Warehouse confirms order packed"},
+    {"name": "order_shipped", "description": "Carrier picks up order"},
+    {"name": "order_delivered", "description": "Carrier marks order delivered"},
+    {"name": "order_cancelled", "description": "Customer or system cancels order"},
+    {"name": "return_initiated", "description": "Customer initiates return"}
+  ],
+  "assignees": {"PACKED": "warehouse", "SHIPPED": "logistics", "RETURNED": "returns_team"},
+  "metadata": {"created_by": "cyoda_data_agent", "generated_at": "2025-12-12T00:00:00Z"}
+}

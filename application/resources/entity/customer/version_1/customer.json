@@ -1,1 +1,6 @@
-{"customer_id": "CUST-001", "name": "John Doe", "email": "john.doe@example.com", "phone": "+1-555-123-4567"}
+{
+  "customer_id": "001",
+  "email": "john.doe@example.com",
+  "name": "John Doe",
+  "phone": "+1-555-123-4567"
+}

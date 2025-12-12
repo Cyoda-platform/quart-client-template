@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "name": "OrderProcessing",
+  "initialState": "Created",
+  "states": [
+    {
+      "name": "Created",
+      "transitions": [
+        {
+          "name": "create",
+          "to": "Created",
+          "description": "Initial creation of an order"
+        },
+        {
+          "name": "update",
+          "to": "Updated",
+          "description": "Update order details"
+        },
+        {
+          "name": "cancel",
+          "to": "Cancelled",
+          "description": "Cancel the order"
+        }
+      ]
+    },
+    {
+      "name": "Updated",
+      "transitions": [
+        {
+          "name": "update",
+          "to": "Updated",
+          "description": "Apply further updates to the order"
+        },
+        {
+          "name": "cancel",
+          "to": "Cancelled",
+          "description": "Cancel the order after updates"
+        }
+      ]
+    },
+    {
+      "name": "Cancelled",
+      "transitions": []
+    }
+  ]
+}

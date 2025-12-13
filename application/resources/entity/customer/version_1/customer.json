@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "name": "customer",
+  "description": "Represents a customer with contact details",
+  "primary_key": "id",
+  "fields": {
+    "id": { "type": "string", "description": "Unique identifier for the customer" },
+    "name": { "type": "string", "description": "Full name" },
+    "email": { "type": "string", "description": "Email address" },
+    "phone": { "type": "string", "description": "Phone number" }
+  }
+}

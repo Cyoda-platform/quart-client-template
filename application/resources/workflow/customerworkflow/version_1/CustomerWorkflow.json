@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "name": "CustomerWorkflow",
+  "desc": "Workflow for Customer lifecycle: create, update, delete",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {"name": "create", "next": "active", "manual": false},
+        {"name": "update", "next": "initial_state", "manual": false},
+        {"name": "delete", "next": "deleted", "manual": true}
+      ]
+    },
+    "active": {
+      "transitions": [
+        {"name": "update", "next": "active", "manual": false},
+        {"name": "deactivate", "next": "deleted", "manual": true}
+      ]
+    },
+    "deleted": {
+      "transitions": []
+    }
+  }
+}

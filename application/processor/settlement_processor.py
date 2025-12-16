@@ -7,9 +7,9 @@ Handles clearing, settlement, and reporting.
 import logging
 from typing import Any
 
+from application.entity.trade.version_1.trade import Trade
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.trade.version_1.trade import Trade
 from services.services import get_entity_service
 
 
@@ -51,9 +51,7 @@ class ClearingInterface(CyodaProcessor):
             if not trade.buy_order_id or not trade.sell_order_id:
                 raise ValueError("Trade must have both buy and sell order IDs")
 
-            self.logger.info(
-                f"Trade {trade.technical_id} submitted to clearing"
-            )
+            self.logger.info(f"Trade {trade.technical_id} submitted to clearing")
 
             return trade
 
@@ -109,4 +107,3 @@ class SettlementReporting(CyodaProcessor):
                 f"Settlement reporting failed for {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

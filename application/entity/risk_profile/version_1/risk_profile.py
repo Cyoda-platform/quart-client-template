@@ -15,7 +15,9 @@ class RiskProfile(CyodaEntity):
     ENTITY_NAME: ClassVar[str] = "RiskProfile"
     ENTITY_VERSION: ClassVar[int] = 1
 
-    risk_profile_id: str = Field(..., description="Business identifier for the risk profile")
+    risk_profile_id: str = Field(
+        ..., description="Business identifier for the risk profile"
+    )
     account_id: str = Field(..., description="Associated account ID")
     max_notional: float = Field(..., description="Maximum notional exposure")
     max_position: float = Field(..., description="Maximum position size")

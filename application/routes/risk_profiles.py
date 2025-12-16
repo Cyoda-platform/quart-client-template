@@ -85,7 +85,9 @@ async def get_risk_profile(risk_profile_id: str) -> tuple[Dict[str, Any], int]:
 
 @risk_profiles_bp.route("/<risk_profile_id>", methods=["PUT"])
 @validate_request(RiskProfile)
-async def update_risk_profile(risk_profile_id: str, data: RiskProfile) -> tuple[Dict[str, Any], int]:
+async def update_risk_profile(
+    risk_profile_id: str, data: RiskProfile
+) -> tuple[Dict[str, Any], int]:
     """
     Update a risk profile.
 
@@ -143,4 +145,3 @@ async def delete_risk_profile(risk_profile_id: str) -> tuple[Dict[str, str], int
     except Exception as e:
         logger.error(f"Failed to delete risk profile: {str(e)}")
         return {"error": str(e)}, 400
-

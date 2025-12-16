@@ -7,9 +7,9 @@ Handles margin calculations, limit checking, and risk alerts.
 import logging
 from typing import Any
 
+from application.entity.risk_profile.version_1.risk_profile import RiskProfile
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.risk_profile.version_1.risk_profile import RiskProfile
 from services.services import get_entity_service
 
 
@@ -48,7 +48,10 @@ class MarginCalculator(CyodaProcessor):
             risk_profile = cast_entity(entity, RiskProfile)
 
             # Validate margin requirement
-            if risk_profile.margin_requirement <= 0 or risk_profile.margin_requirement > 100:
+            if (
+                risk_profile.margin_requirement <= 0
+                or risk_profile.margin_requirement > 100
+            ):
                 raise ValueError("Margin requirement must be between 0 and 100")
 
             self.logger.info(
@@ -163,4 +166,3 @@ class RiskAlerter(CyodaProcessor):
                 f"Risk alert generation failed for {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

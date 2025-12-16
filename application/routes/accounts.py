@@ -143,4 +143,3 @@ async def delete_account(account_id: str) -> tuple[Dict[str, str], int]:
     except Exception as e:
         logger.error(f"Failed to delete account: {str(e)}")
         return {"error": str(e)}, 400
-

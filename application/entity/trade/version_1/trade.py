@@ -23,7 +23,9 @@ class Trade(CyodaEntity):
     quantity: float = Field(..., description="Trade quantity")
     price: float = Field(..., description="Trade execution price")
     trade_time: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         description="Trade execution timestamp",
     )
     status: str = Field(default="Open", description="Trade status")

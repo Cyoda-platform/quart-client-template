@@ -7,9 +7,9 @@ Validates risk profiles and compliance requirements.
 import logging
 from typing import Any
 
+from application.entity.risk_profile.version_1.risk_profile import RiskProfile
 from common.criterion.base import CyodaCriterion, CyodaEntity
 from common.entity.entity_casting import cast_entity
-from application.entity.risk_profile.version_1.risk_profile import RiskProfile
 
 
 class RiskValidationCriterion(CyodaCriterion):
@@ -65,7 +65,10 @@ class RiskValidationCriterion(CyodaCriterion):
                 return False
 
             # Validate margin requirement
-            if risk_profile.margin_requirement <= 0 or risk_profile.margin_requirement > 100:
+            if (
+                risk_profile.margin_requirement <= 0
+                or risk_profile.margin_requirement > 100
+            ):
                 self.logger.warning("Margin requirement must be between 0 and 100")
                 return False
 
@@ -79,4 +82,3 @@ class RiskValidationCriterion(CyodaCriterion):
                 f"Risk validation error for {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

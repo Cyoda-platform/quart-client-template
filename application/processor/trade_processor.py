@@ -7,9 +7,9 @@ Handles trade matching, confirmation, and settlement.
 import logging
 from typing import Any
 
+from application.entity.trade.version_1.trade import Trade
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.trade.version_1.trade import Trade
 from services.services import get_entity_service
 
 
@@ -112,4 +112,3 @@ class TradeConfirmation(CyodaProcessor):
                 f"Trade confirmation failed for {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

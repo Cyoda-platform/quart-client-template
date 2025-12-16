@@ -61,7 +61,9 @@ async def get_instrument(instrument_id: str) -> tuple[Dict[str, Any], int]:
 
 @instruments_bp.route("/<instrument_id>", methods=["PUT"])
 @validate_request(Instrument)
-async def update_instrument(instrument_id: str, data: Instrument) -> tuple[Dict[str, Any], int]:
+async def update_instrument(
+    instrument_id: str, data: Instrument
+) -> tuple[Dict[str, Any], int]:
     """Update an instrument."""
     try:
         entity_service = get_entity_service()
@@ -95,4 +97,3 @@ async def delete_instrument(instrument_id: str) -> tuple[Dict[str, str], int]:
     except Exception as e:
         logger.error(f"Failed to delete instrument: {str(e)}")
         return {"error": str(e)}, 400
-

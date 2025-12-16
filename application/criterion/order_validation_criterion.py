@@ -7,9 +7,9 @@ Validates orders before processing.
 import logging
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.criterion.base import CyodaCriterion, CyodaEntity
 from common.entity.entity_casting import cast_entity
-from application.entity.order.version_1.order import Order
 
 
 class OrderValidationCriterion(CyodaCriterion):
@@ -79,9 +79,7 @@ class OrderValidationCriterion(CyodaCriterion):
                 self.logger.warning("LIMIT orders must have a positive price")
                 return False
 
-            self.logger.info(
-                f"Order {order.technical_id} validation passed"
-            )
+            self.logger.info(f"Order {order.technical_id} validation passed")
             return True
 
         except Exception as e:
@@ -89,4 +87,3 @@ class OrderValidationCriterion(CyodaCriterion):
                 f"Order validation error for {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

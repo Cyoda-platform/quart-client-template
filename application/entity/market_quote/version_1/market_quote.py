@@ -22,7 +22,9 @@ class MarketQuote(CyodaEntity):
     bid_size: float = Field(..., description="Bid size at bid price")
     ask_size: float = Field(..., description="Ask size at ask price")
     timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         description="Quote timestamp",
     )
 

@@ -7,9 +7,9 @@ Handles order submission, execution, and reporting.
 import logging
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
 from services.services import get_entity_service
 
 
@@ -51,9 +51,7 @@ class RiskEvaluation(CyodaProcessor):
             self._validate_margin(order)
             self._validate_limits(order)
 
-            self.logger.info(
-                f"Risk evaluation passed for order {order.technical_id}"
-            )
+            self.logger.info(f"Risk evaluation passed for order {order.technical_id}")
 
             return order
 
@@ -170,4 +168,3 @@ class ExecutionReportEmitter(CyodaProcessor):
                 f"Failed to emit execution report for {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

@@ -66,11 +66,14 @@ async def get_order(order_id: str) -> tuple[Dict[str, Any], int]:
     try:
         entity_service = get_entity_service()
 
-        response = await entity_service.get(
+        response = await entity_service.get_by_id(
             entity_id=order_id,
             entity_class=Order.ENTITY_NAME,
             entity_version=str(Order.ENTITY_VERSION),
         )
+
+        if response is None:
+            return {"error": "Order not found"}, 404
 
         order_data = response.entity.model_dump(by_alias=True)
         order_data["id"] = response.metadata.id
@@ -131,7 +134,7 @@ async def delete_order(order_id: str) -> tuple[Dict[str, str], int]:
     try:
         entity_service = get_entity_service()
 
-        await entity_service.delete(
+        await entity_service.delete_by_id(
             entity_id=order_id,
             entity_class=Order.ENTITY_NAME,
             entity_version=str(Order.ENTITY_VERSION),
@@ -181,4 +184,3 @@ async def transition_order(order_id: str) -> tuple[Dict[str, Any], int]:
     except Exception as e:
         logger.error(f"Failed to transition order: {str(e)}")
         return {"error": str(e)}, 400
-

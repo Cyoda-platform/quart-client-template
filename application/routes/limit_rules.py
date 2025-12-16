@@ -61,7 +61,9 @@ async def get_limit_rule(rule_id: str) -> tuple[Dict[str, Any], int]:
 
 @limit_rules_bp.route("/<rule_id>", methods=["PUT"])
 @validate_request(LimitRule)
-async def update_limit_rule(rule_id: str, data: LimitRule) -> tuple[Dict[str, Any], int]:
+async def update_limit_rule(
+    rule_id: str, data: LimitRule
+) -> tuple[Dict[str, Any], int]:
     """Update a limit rule."""
     try:
         entity_service = get_entity_service()
@@ -95,4 +97,3 @@ async def delete_limit_rule(rule_id: str) -> tuple[Dict[str, str], int]:
     except Exception as e:
         logger.error(f"Failed to delete limit rule: {str(e)}")
         return {"error": str(e)}, 400
-

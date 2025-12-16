@@ -7,9 +7,9 @@ Validates trades before matching and settlement.
 import logging
 from typing import Any
 
+from application.entity.trade.version_1.trade import Trade
 from common.criterion.base import CyodaCriterion, CyodaEntity
 from common.entity.entity_casting import cast_entity
-from application.entity.trade.version_1.trade import Trade
 
 
 class TradeValidationCriterion(CyodaCriterion):
@@ -73,9 +73,7 @@ class TradeValidationCriterion(CyodaCriterion):
                 self.logger.warning("Trade price must be positive")
                 return False
 
-            self.logger.info(
-                f"Trade {trade.technical_id} validation passed"
-            )
+            self.logger.info(f"Trade {trade.technical_id} validation passed")
             return True
 
         except Exception as e:
@@ -83,4 +81,3 @@ class TradeValidationCriterion(CyodaCriterion):
                 f"Trade validation error for {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

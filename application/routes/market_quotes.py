@@ -61,7 +61,9 @@ async def get_market_quote(quote_id: str) -> tuple[Dict[str, Any], int]:
 
 @market_quotes_bp.route("/<quote_id>", methods=["PUT"])
 @validate_request(MarketQuote)
-async def update_market_quote(quote_id: str, data: MarketQuote) -> tuple[Dict[str, Any], int]:
+async def update_market_quote(
+    quote_id: str, data: MarketQuote
+) -> tuple[Dict[str, Any], int]:
     """Update a market quote."""
     try:
         entity_service = get_entity_service()
@@ -95,4 +97,3 @@ async def delete_market_quote(quote_id: str) -> tuple[Dict[str, str], int]:
     except Exception as e:
         logger.error(f"Failed to delete market quote: {str(e)}")
         return {"error": str(e)}, 400
-

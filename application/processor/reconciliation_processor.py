@@ -7,9 +7,9 @@ Handles position reconciliation and discrepancy reporting.
 import logging
 from typing import Any
 
+from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.position.version_1.position import Position
 from services.services import get_entity_service
 
 
@@ -112,4 +112,3 @@ class DiscrepancyReporter(CyodaProcessor):
                 f"Discrepancy reporting failed for {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

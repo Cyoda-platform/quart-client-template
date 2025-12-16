@@ -181,4 +181,3 @@ async def transition_trade(trade_id: str) -> tuple[Dict[str, Any], int]:
     except Exception as e:
         logger.error(f"Failed to transition trade: {str(e)}")
         return {"error": str(e)}, 400
-

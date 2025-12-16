@@ -85,7 +85,9 @@ async def get_position(position_id: str) -> tuple[Dict[str, Any], int]:
 
 @positions_bp.route("/<position_id>", methods=["PUT"])
 @validate_request(Position)
-async def update_position(position_id: str, data: Position) -> tuple[Dict[str, Any], int]:
+async def update_position(
+    position_id: str, data: Position
+) -> tuple[Dict[str, Any], int]:
     """
     Update a position.
 
@@ -143,4 +145,3 @@ async def delete_position(position_id: str) -> tuple[Dict[str, str], int]:
     except Exception as e:
         logger.error(f"Failed to delete position: {str(e)}")
         return {"error": str(e)}, 400
-

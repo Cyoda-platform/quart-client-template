@@ -16,15 +16,21 @@ class ComplianceEvent(CyodaEntity):
     ENTITY_NAME: ClassVar[str] = "ComplianceEvent"
     ENTITY_VERSION: ClassVar[int] = 1
 
-    event_id: str = Field(..., description="Business identifier for the compliance event")
+    event_id: str = Field(
+        ..., description="Business identifier for the compliance event"
+    )
     type: str = Field(..., description="Event type: VIOLATION, ALERT, BREACH, etc.")
     description: str = Field(..., description="Event description")
     timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         description="Event timestamp",
     )
     account_id: str = Field(..., description="Associated account ID")
-    severity: str = Field(default="INFO", description="Event severity: INFO, WARNING, CRITICAL")
+    severity: str = Field(
+        default="INFO", description="Event severity: INFO, WARNING, CRITICAL"
+    )
     status: str = Field(default="Open", description="Event status")
 
     model_config = ConfigDict(

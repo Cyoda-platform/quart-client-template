@@ -19,7 +19,9 @@ class Portfolio(CyodaEntity):
     account_id: str = Field(..., description="Associated account ID")
     total_value: float = Field(default=0.0, description="Total portfolio value")
     total_pnl: float = Field(default=0.0, description="Total profit/loss")
-    positions_summary: Dict[str, Any] = Field(default_factory=dict, description="Summary of positions by instrument")
+    positions_summary: Dict[str, Any] = Field(
+        default_factory=dict, description="Summary of positions by instrument"
+    )
     status: str = Field(default="Active", description="Portfolio status")
 
     model_config = ConfigDict(

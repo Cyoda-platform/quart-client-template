@@ -25,7 +25,9 @@ class Order(CyodaEntity):
     price: Optional[float] = Field(None, description="Order price (for LIMIT orders)")
     status: str = Field(default="New", description="Order status")
     created_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         description="Order creation timestamp",
     )
     filled_quantity: float = Field(default=0.0, description="Quantity filled so far")

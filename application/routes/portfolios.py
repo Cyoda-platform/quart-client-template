@@ -85,7 +85,9 @@ async def get_portfolio(portfolio_id: str) -> tuple[Dict[str, Any], int]:
 
 @portfolios_bp.route("/<portfolio_id>", methods=["PUT"])
 @validate_request(Portfolio)
-async def update_portfolio(portfolio_id: str, data: Portfolio) -> tuple[Dict[str, Any], int]:
+async def update_portfolio(
+    portfolio_id: str, data: Portfolio
+) -> tuple[Dict[str, Any], int]:
     """
     Update a portfolio.
 
@@ -143,4 +145,3 @@ async def delete_portfolio(portfolio_id: str) -> tuple[Dict[str, str], int]:
     except Exception as e:
         logger.error(f"Failed to delete portfolio: {str(e)}")
         return {"error": str(e)}, 400
-

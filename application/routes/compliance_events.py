@@ -10,12 +10,16 @@ from typing import Any, Dict
 from quart import Blueprint, jsonify, request
 from quart_schema import validate_request, validate_response
 
-from application.entity.compliance_event.version_1.compliance_event import ComplianceEvent
+from application.entity.compliance_event.version_1.compliance_event import (
+    ComplianceEvent,
+)
 from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
-compliance_events_bp = Blueprint("compliance_events", __name__, url_prefix="/api/compliance-events")
+compliance_events_bp = Blueprint(
+    "compliance_events", __name__, url_prefix="/api/compliance-events"
+)
 
 
 @compliance_events_bp.route("", methods=["POST"])
@@ -61,7 +65,9 @@ async def get_compliance_event(event_id: str) -> tuple[Dict[str, Any], int]:
 
 @compliance_events_bp.route("/<event_id>", methods=["PUT"])
 @validate_request(ComplianceEvent)
-async def update_compliance_event(event_id: str, data: ComplianceEvent) -> tuple[Dict[str, Any], int]:
+async def update_compliance_event(
+    event_id: str, data: ComplianceEvent
+) -> tuple[Dict[str, Any], int]:
     """Update a compliance event."""
     try:
         entity_service = get_entity_service()
@@ -95,4 +101,3 @@ async def delete_compliance_event(event_id: str) -> tuple[Dict[str, str], int]:
     except Exception as e:
         logger.error(f"Failed to delete compliance event: {str(e)}")
         return {"error": str(e)}, 400
-

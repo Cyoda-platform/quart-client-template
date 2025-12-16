@@ -1,0 +1,57 @@
+{
+    "version": "1.0",
+    "name": "MarketData Workflow",
+    "desc": "Workflow for processing market data",
+    "initialState": "initial_state",
+    "active": true,
+    "states": {
+        "initial_state": {
+            "transitions": [
+                {
+                    "name": "ingest",
+                    "next": "ingested",
+                    "manual": false,
+                    "processors": [
+                        {
+                            "name": "MarketDataIngestProcessor",
+                            "executionMode": "SYNC"
+                        }
+                    ]
+                }
+            ]
+        },
+        "ingested": {
+            "transitions": [
+                {
+                    "name": "validate",
+                    "next": "validated",
+                    "manual": false,
+                    "criterion": {
+                        "type": "function",
+                        "function": {
+                            "name": "MarketDataValidationCriterion"
+                        }
+                    }
+                }
+            ]
+        },
+        "validated": {
+            "transitions": [
+                {
+                    "name": "broadcast",
+                    "next": "broadcasted",
+                    "manual": false,
+                    "processors": [
+                        {
+                            "name": "MarketDataBroadcastProcessor",
+                            "executionMode": "ASYNC"
+                        }
+                    ]
+                }
+            ]
+        },
+        "broadcasted": {
+            "transitions": []
+        }
+    }
+}

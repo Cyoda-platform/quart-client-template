@@ -1,17 +1,13 @@
 {
     "symbol": "AAPL",
-    "timestamp": "2025-12-16T14:30:00.123Z",
-    "last_price": 185.50,
-    "last_size": 100,
-    "bid_price": 185.49,
-    "bid_size": 500,
-    "ask_price": 185.51,
-    "ask_size": 450,
-    "open_price": 183.25,
-    "close_price": 186.75,
-    "high_price": 187.00,
-    "low_price": 182.90,
-    "volume": 2500000,
-    "data_source": "NASDAQ_LEVEL2",
-    "is_market_open": true
+    "price": 175.50,
+    "price_type": "LAST",
+    "volume": 1234567,
+    "market": "NASDAQ",
+    "instrument_type": "STOCK",
+    "historical_prices": [
+        {"price": 170.25, "timestamp": "2025-12-15T10:30:00Z"},
+        {"price": 172.80, "timestamp": "2025-12-15T11:00:00Z"},
+        {"price": 175.50, "timestamp": "2025-12-15T12:00:00Z"}
+    ]
 }

@@ -8,7 +8,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class RiskProfile(CyodaEntity):
     """
     RiskProfile defines risk limits and requirements for an account.
-    
+
     Manages margin requirements and position limits.
     """
 
@@ -28,4 +28,3 @@ class RiskProfile(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

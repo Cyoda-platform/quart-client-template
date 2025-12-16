@@ -8,7 +8,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Instrument(CyodaEntity):
     """
     Instrument represents a tradable security or derivative.
-    
+
     Defines the characteristics of instruments available for trading.
     """
 
@@ -29,4 +29,3 @@ class Instrument(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

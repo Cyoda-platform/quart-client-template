@@ -8,7 +8,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Account(CyodaEntity):
     """
     Account represents a trading account.
-    
+
     Manages account-level information including balance and currency.
     """
 
@@ -28,4 +28,3 @@ class Account(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

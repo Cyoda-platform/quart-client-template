@@ -8,7 +8,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Position(CyodaEntity):
     """
     Position represents a holding of an instrument in an account.
-    
+
     Tracks quantity, cost basis, and profit/loss for each position.
     """
 
@@ -30,4 +30,3 @@ class Position(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

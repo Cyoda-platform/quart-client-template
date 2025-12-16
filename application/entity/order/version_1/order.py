@@ -9,7 +9,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Order(CyodaEntity):
     """
     Order represents a trading order in the real-time trading platform.
-    
+
     Manages order lifecycle from creation through execution or cancellation.
     """
 
@@ -26,7 +26,7 @@ class Order(CyodaEntity):
     status: str = Field(default="New", description="Order status")
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Order creation timestamp"
+        description="Order creation timestamp",
     )
     filled_quantity: float = Field(default=0.0, description="Quantity filled so far")
     average_price: Optional[float] = Field(None, description="Average execution price")
@@ -37,4 +37,3 @@ class Order(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

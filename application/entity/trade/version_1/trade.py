@@ -9,7 +9,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Trade(CyodaEntity):
     """
     Trade represents an executed trade between buy and sell orders.
-    
+
     Records the matching and execution details of orders.
     """
 
@@ -24,7 +24,7 @@ class Trade(CyodaEntity):
     price: float = Field(..., description="Trade execution price")
     trade_time: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Trade execution timestamp"
+        description="Trade execution timestamp",
     )
     status: str = Field(default="Open", description="Trade status")
 
@@ -34,4 +34,3 @@ class Trade(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

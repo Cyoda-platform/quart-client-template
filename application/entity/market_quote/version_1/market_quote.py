@@ -9,7 +9,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class MarketQuote(CyodaEntity):
     """
     MarketQuote represents real-time market pricing data.
-    
+
     Contains bid/ask prices and sizes for an instrument.
     """
 
@@ -23,7 +23,7 @@ class MarketQuote(CyodaEntity):
     ask_size: float = Field(..., description="Ask size at ask price")
     timestamp: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Quote timestamp"
+        description="Quote timestamp",
     )
 
     model_config = ConfigDict(
@@ -32,4 +32,3 @@ class MarketQuote(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

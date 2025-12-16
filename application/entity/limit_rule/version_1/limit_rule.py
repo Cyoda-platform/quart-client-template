@@ -8,7 +8,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class LimitRule(CyodaEntity):
     """
     LimitRule defines trading limits for accounts and instruments.
-    
+
     Enforces compliance and risk management constraints.
     """
 
@@ -29,4 +29,3 @@ class LimitRule(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

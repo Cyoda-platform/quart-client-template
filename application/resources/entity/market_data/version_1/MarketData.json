@@ -1,0 +1,11 @@
+{
+  "symbol": "AAPL",
+  "exchange": "NASDAQ",
+  "timestamp": "2025-12-16T14:30:45.123Z",
+  "bid": 245.50,
+  "ask": 245.52,
+  "last": 245.51,
+  "volume": 2850000,
+  "sequence": 1048576
+}
+

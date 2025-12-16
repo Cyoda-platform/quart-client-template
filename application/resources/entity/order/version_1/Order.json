@@ -1,0 +1,15 @@
+{
+    "order_id": "ORD-20250101-123456",
+    "account_id": "ACC-5678",
+    "instrument_symbol": "AAPL",
+    "order_type": "LIMIT",
+    "side": "BUY",
+    "quantity": 100,
+    "price": 185.50,
+    "time_in_force": "GTC",
+    "status": "PENDING",
+    "trader_id": "TRADER-001",
+    "timestamp": "2025-12-16T14:30:00Z",
+    "total_value": 18550.00,
+    "execution_venue": "NASDAQ"
+}

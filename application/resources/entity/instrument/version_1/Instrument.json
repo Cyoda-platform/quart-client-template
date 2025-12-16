@@ -1,0 +1,18 @@
+{
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "asset_class": "EQUITY",
+    "currency": "USD",
+    "exchange": "NASDAQ",
+    "sector": "Technology",
+    "country_of_origin": "US",
+    "isin": "US0378331005",
+    "cusip": "037833100",
+    "tick_size": 0.01,
+    "margin_requirement": 0.15,
+    "trading_hours": {
+        "open": "09:30:00",
+        "close": "16:00:00",
+        "timezone": "America/New_York"
+    }
+}

@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "name": "OrderRoute",
+  "desc": "Workflow for defining order routing rules.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_route",
+          "next": "enabled",
+          "manual": false
+        }
+      ]
+    },
+    "enabled": {
+      "transitions": [
+        {
+          "name": "update_route",
+          "next": "enabled",
+          "manual": true
+        },
+        {
+          "name": "disable_route",
+          "next": "disabled",
+          "manual": true
+        }
+      ]
+    },
+    "disabled": {}
+  }
+}

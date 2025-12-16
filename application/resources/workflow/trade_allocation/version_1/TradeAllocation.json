@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "name": "TradeAllocation",
+  "desc": "Workflow for trade allocations to accounts.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_trade_allocation",
+          "next": "allocated",
+          "manual": false
+        }
+      ]
+    },
+    "allocated": {
+      "transitions": [
+        {
+          "name": "update_allocation",
+          "next": "allocated",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

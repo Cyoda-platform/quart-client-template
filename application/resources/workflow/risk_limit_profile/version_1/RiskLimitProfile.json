@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "name": "RiskLimitProfile",
+  "desc": "Workflow for managing risk limit profiles.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_profile",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "update_profile",
+          "next": "active",
+          "manual": true
+        },
+        {
+          "name": "deactivate_profile",
+          "next": "inactive",
+          "manual": true
+        }
+      ]
+    },
+    "inactive": {}
+  }
+}

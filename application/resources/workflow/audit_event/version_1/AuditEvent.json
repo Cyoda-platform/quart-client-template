@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "name": "AuditEvent",
+  "desc": "Workflow for system audit events.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "record_event",
+          "next": "recorded",
+          "manual": false
+        }
+      ]
+    },
+    "recorded": {}
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "name": "ExecutionReport",
+  "desc": "Workflow for trade execution reports.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_execution_report",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {}
+  }
+}

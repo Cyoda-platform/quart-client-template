@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "name": "Account",
+  "desc": "Lifecycle workflow for financial accounts.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_account",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "update_account",
+          "next": "active",
+          "manual": true
+        },
+        {
+          "name": "close_account",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "closed": {}
+  }
+}

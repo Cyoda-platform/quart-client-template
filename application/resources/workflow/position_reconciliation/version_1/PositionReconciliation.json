@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "name": "PositionReconciliation",
+  "desc": "Position reconciliation workflow",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "start",
+          "next": "Pending",
+          "manual": false
+        }
+      ]
+    },
+    "Pending": {
+      "transitions": [
+        {
+          "name": "reconcile",
+          "next": "Reconciling",
+          "manual": true,
+          "processors": [
+            {
+              "name": "LedgerCompare",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 5000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Reconciling": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "Reconciled",
+          "manual": true
+        },
+        {
+          "name": "discrepancy",
+          "next": "Discrepant",
+          "manual": true,
+          "processors": [
+            {
+              "name": "DiscrepancyReporter",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Reconciled": {
+      "transitions": []
+    },
+    "Discrepant": {
+      "transitions": []
+    }
+  }
+}
+

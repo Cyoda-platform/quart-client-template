@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "name": "Settlement",
+  "desc": "Settlement processing workflow",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "initiate",
+          "next": "Initiated",
+          "manual": false
+        }
+      ]
+    },
+    "Initiated": {
+      "transitions": [
+        {
+          "name": "start_settlement",
+          "next": "InSettlement",
+          "manual": true,
+          "processors": [
+            {
+              "name": "ClearingInterface",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 5000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "InSettlement": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "Completed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "SettlementReporting",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
+          "name": "fail",
+          "next": "Failed",
+          "manual": true
+        }
+      ]
+    },
+    "Completed": {
+      "transitions": []
+    },
+    "Failed": {
+      "transitions": []
+    }
+  }
+}
+

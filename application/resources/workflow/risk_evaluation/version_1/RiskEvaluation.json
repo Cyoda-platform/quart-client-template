@@ -1,0 +1,84 @@
+{
+  "version": "1.0",
+  "name": "RiskEvaluation",
+  "desc": "Risk evaluation and compliance workflow",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "start",
+          "next": "Idle",
+          "manual": false
+        }
+      ]
+    },
+    "Idle": {
+      "transitions": [
+        {
+          "name": "evaluate",
+          "next": "Evaluating",
+          "manual": true,
+          "processors": [
+            {
+              "name": "MarginCalculator",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Evaluating": {
+      "transitions": [
+        {
+          "name": "pass",
+          "next": "Passed",
+          "manual": true,
+          "processors": [
+            {
+              "name": "LimitChecker",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        },
+        {
+          "name": "block",
+          "next": "Blocked",
+          "manual": true,
+          "processors": [
+            {
+              "name": "RiskAlerter",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Passed": {
+      "transitions": []
+    },
+    "Blocked": {
+      "transitions": []
+    }
+  }
+}
+

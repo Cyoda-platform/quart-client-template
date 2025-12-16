@@ -1,0 +1,11 @@
+{
+  "position_id": "POS-12345-AAPL",
+  "account_id": "ACC-12345",
+  "instrument_id": "INST-AAPL",
+  "quantity": 100.0,
+  "avg_price": 148.75,
+  "pnl": 1500.0,
+  "current_price": 150.25,
+  "status": "Open"
+}
+

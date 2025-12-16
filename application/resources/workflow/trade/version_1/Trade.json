@@ -1,0 +1,64 @@
+{
+  "version": "1.0",
+  "name": "Trade",
+  "desc": "Trade matching and settlement workflow",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "Open",
+          "manual": false
+        }
+      ]
+    },
+    "Open": {
+      "transitions": [
+        {
+          "name": "match",
+          "next": "Matched",
+          "manual": true,
+          "processors": [
+            {
+              "name": "MatchingEngine",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Matched": {
+      "transitions": [
+        {
+          "name": "settle",
+          "next": "Settled",
+          "manual": true,
+          "processors": [
+            {
+              "name": "TradeConfirmation",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "Settled": {
+      "transitions": []
+    }
+  }
+}
+

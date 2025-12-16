@@ -1,0 +1,10 @@
+{
+  "rule_id": "RULE-12345-001",
+  "account_id": "ACC-12345",
+  "instrument_id": null,
+  "limit_type": "NOTIONAL",
+  "value": 1000000.0,
+  "active": true,
+  "status": "Active"
+}
+

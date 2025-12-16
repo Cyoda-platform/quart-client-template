@@ -1,0 +1,9 @@
+{
+  "risk_profile_id": "RISK-12345",
+  "account_id": "ACC-12345",
+  "max_notional": 1000000.0,
+  "max_position": 500000.0,
+  "margin_requirement": 0.25,
+  "status": "Active"
+}
+

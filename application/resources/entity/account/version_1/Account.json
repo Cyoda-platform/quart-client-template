@@ -1,0 +1,9 @@
+{
+  "account_id": "ACC-12345",
+  "name": "John Doe Trading Account",
+  "margin_balance": 100000.0,
+  "currency": "USD",
+  "status": "Active",
+  "total_balance": 500000.0
+}
+

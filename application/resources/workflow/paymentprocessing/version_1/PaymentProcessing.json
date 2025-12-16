@@ -1,0 +1,60 @@
+{
+  "version": "1",
+  "name": "PaymentProcessing",
+  "desc": "Workflow for the payment lifecycle: create -> validate -> authorize -> capture -> settle -> reconcile/refund -> archive",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {"name": "create_payment", "next": "created", "manual": false}
+      ]
+    },
+    "created": {
+      "transitions": [
+        {"name": "validate_payment", "next": "validated", "manual": false},
+        {"name": "cancel", "next": "cancelled", "manual": true}
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {"name": "authorize", "next": "authorized", "manual": false}
+      ]
+    },
+    "authorized": {
+      "transitions": [
+        {"name": "capture", "next": "captured", "manual": false},
+        {"name": "void", "next": "cancelled", "manual": false}
+      ]
+    },
+    "captured": {
+      "transitions": [
+        {"name": "settle", "next": "settled", "manual": false},
+        {"name": "refund", "next": "refunded", "manual": true}
+      ]
+    },
+    "settled": {
+      "transitions": [
+        {"name": "reconcile", "next": "reconciled", "manual": false}
+      ]
+    },
+    "refunded": {
+      "transitions": [
+        {"name": "archive", "next": "archived", "manual": false}
+      ]
+    },
+    "reconciled": {
+      "transitions": [
+        {"name": "archive", "next": "archived", "manual": false}
+      ]
+    },
+    "cancelled": {
+      "transitions": [
+        {"name": "archive", "next": "archived", "manual": false}
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "order_id": "ORD-20251216-001",
+  "account_id": "ACC-12345",
+  "instrument_id": "INST-AAPL",
+  "side": "BUY",
+  "type": "LIMIT",
+  "quantity": 100.0,
+  "price": 150.25,
+  "status": "New",
+  "created_at": "2025-12-16T10:30:00Z",
+  "filled_quantity": 0.0,
+  "average_price": null
+}
+

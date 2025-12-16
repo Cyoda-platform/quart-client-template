@@ -1,0 +1,20 @@
+{
+  "portfolio_id": "PORT-12345",
+  "account_id": "ACC-12345",
+  "total_value": 500000.0,
+  "total_pnl": 25000.0,
+  "positions_summary": {
+    "INST-AAPL": {
+      "quantity": 100.0,
+      "value": 15025.0,
+      "pnl": 1500.0
+    },
+    "INST-MSFT": {
+      "quantity": 50.0,
+      "value": 18000.0,
+      "pnl": 800.0
+    }
+  },
+  "status": "Active"
+}
+

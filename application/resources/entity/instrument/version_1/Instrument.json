@@ -1,0 +1,10 @@
+{
+  "instrument_id": "INST-AAPL",
+  "symbol": "AAPL",
+  "type": "STOCK",
+  "expiry_date": null,
+  "currency": "USD",
+  "lot_size": 1.0,
+  "status": "Active"
+}
+

@@ -1,0 +1,115 @@
+{
+    "version": "1.0",
+    "name": "OrderLifecycle",
+    "desc": "Order processing and execution workflow",
+    "initialState": "new",
+    "active": true,
+    "states": {
+        "new": {
+            "transitions": [
+                {
+                    "name": "validate_order",
+                    "next": "validated",
+                    "manual": false,
+                    "processors": [
+                        {
+                            "name": "PreTradeRiskProcessor",
+                            "executionMode": "SYNC",
+                            "config": {
+                                "riskChecks": ["margin", "credit_limit", "concentration"]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "reject_order",
+                    "next": "failed",
+                    "manual": false
+                }
+            ]
+        },
+        "validated": {
+            "transitions": [
+                {
+                    "name": "route_order",
+                    "next": "routed",
+                    "manual": false,
+                    "processors": [
+                        {
+                            "name": "OrderRoutingProcessor",
+                            "executionMode": "ASYNC_NEW_TX"
+                        }
+                    ]
+                }
+            ]
+        },
+        "routed": {
+            "transitions": [
+                {
+                    "name": "partial_fill",
+                    "next": "partially_filled",
+                    "manual": false
+                },
+                {
+                    "name": "complete_fill",
+                    "next": "filled",
+                    "manual": false
+                },
+                {
+                    "name": "cancel_order",
+                    "next": "cancelled",
+                    "manual": true
+                }
+            ]
+        },
+        "partially_filled": {
+            "transitions": [
+                {
+                    "name": "partial_fill_update",
+                    "next": "partially_filled",
+                    "manual": false
+                },
+                {
+                    "name": "complete_fill",
+                    "next": "filled",
+                    "manual": false
+                },
+                {
+                    "name": "cancel_order",
+                    "next": "cancelled",
+                    "manual": true
+                }
+            ]
+        },
+        "filled": {
+            "transitions": [
+                {
+                    "name": "settle_trade",
+                    "next": "settled",
+                    "manual": false
+                }
+            ]
+        },
+        "cancelled": {
+            "transitions": []
+        },
+        "failed": {
+            "transitions": []
+        },
+        "settled": {
+            "transitions": [
+                {
+                    "name": "post_trade_risk_check",
+                    "next": "settled",
+                    "manual": false,
+                    "processors": [
+                        {
+                            "name": "PostTradeRiskProcessor",
+                            "executionMode": "SYNC"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

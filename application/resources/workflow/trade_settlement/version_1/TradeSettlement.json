@@ -1,0 +1,92 @@
+{
+    "version": "1.0",
+    "name": "TradeSettlement",
+    "desc": "Trade settlement and reconciliation workflow",
+    "initialState": "pending",
+    "active": true,
+    "states": {
+        "pending": {
+            "transitions": [
+                {
+                    "name": "initiate_settlement",
+                    "next": "processing",
+                    "manual": false
+                }
+            ]
+        },
+        "processing": {
+            "transitions": [
+                {
+                    "name": "validate_settlement_details",
+                    "next": "validating",
+                    "manual": false,
+                    "processors": [
+                        {
+                            "name": "SettlementValidationProcessor",
+                            "executionMode": "SYNC"
+                        }
+                    ]
+                }
+            ]
+        },
+        "validating": {
+            "transitions": [
+                {
+                    "name": "settlement_approved",
+                    "next": "funds_transfer",
+                    "manual": false
+                },
+                {
+                    "name": "settlement_rejected",
+                    "next": "failed",
+                    "manual": false
+                }
+            ]
+        },
+        "funds_transfer": {
+            "transitions": [
+                {
+                    "name": "complete_transfer",
+                    "next": "reconciliation",
+                    "manual": false
+                }
+            ]
+        },
+        "reconciliation": {
+            "transitions": [
+                {
+                    "name": "reconcile_trade",
+                    "next": "settled",
+                    "manual": false,
+                    "processors": [
+                        {
+                            "name": "TradeReconciliationProcessor",
+                            "executionMode": "SYNC"
+                        }
+                    ]
+                }
+            ]
+        },
+        "settled": {
+            "transitions": [
+                {
+                    "name": "archive_settlement",
+                    "next": "archived",
+                    "manual": false
+                }
+            ]
+        },
+        "failed": {
+            "transitions": [
+                {
+                    "name": "retry_settlement",
+                    "next": "processing",
+                    "manual": true
+                }
+            ]
+        },
+        "archived": {
+            "transitions": []
+        }
+    }
+}

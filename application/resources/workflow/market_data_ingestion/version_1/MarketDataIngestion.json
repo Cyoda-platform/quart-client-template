@@ -1,0 +1,69 @@
+{
+    "version": "1.0",
+    "name": "MarketDataIngestion",
+    "desc": "Market data real-time ingestion workflow",
+    "initialState": "initial_state",
+    "active": true,
+    "states": {
+        "initial_state": {
+            "transitions": [
+                {
+                    "name": "start_ingestion",
+                    "next": "receiving",
+                    "manual": false
+                }
+            ]
+        },
+        "receiving": {
+            "transitions": [
+                {
+                    "name": "process_tick_data",
+                    "next": "processing",
+                    "manual": false,
+                    "processors": [
+                        {
+                            "name": "MarketDataProcessor",
+                            "executionMode": "ASYNC_NEW_TX",
+                            "config": {
+                                "dataValidation": true,
+                                "latencyThreshold": 10
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "processing": {
+            "transitions": [
+                {
+                    "name": "validate_data",
+                    "next": "storing",
+                    "manual": false
+                },
+                {
+                    "name": "data_invalid",
+                    "next": "error_state",
+                    "manual": false
+                }
+            ]
+        },
+        "storing": {
+            "transitions": [
+                {
+                    "name": "store_completed",
+                    "next": "receiving",
+                    "manual": false
+                }
+            ]
+        },
+        "error_state": {
+            "transitions": [
+                {
+                    "name": "retry_ingestion",
+                    "next": "receiving",
+                    "manual": true
+                }
+            ]
+        }
+    }
+}

@@ -8,7 +8,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Position(CyodaEntity):
     """
     Position represents a trading position for an account and symbol.
-    
+
     Tracks current holdings, average entry price, and profit/loss metrics
     for risk management and reporting.
     """
@@ -18,15 +18,16 @@ class Position(CyodaEntity):
 
     account_id: str = Field(..., description="Account identifier")
     symbol: str = Field(..., description="Trading symbol (e.g., AAPL, BTC/USD)")
-    quantity: float = Field(..., description="Current position quantity (positive for long, negative for short)")
+    quantity: float = Field(
+        ...,
+        description="Current position quantity (positive for long, negative for short)",
+    )
     avg_price: float = Field(..., description="Average entry price")
     realized_pnl: float = Field(
-        default=0.0,
-        description="Realized profit/loss from closed positions"
+        default=0.0, description="Realized profit/loss from closed positions"
     )
     unrealized_pnl: Optional[float] = Field(
-        None,
-        description="Unrealized profit/loss based on current market price"
+        None, description="Unrealized profit/loss based on current market price"
     )
 
     @field_validator("avg_price")
@@ -65,4 +66,3 @@ class Position(CyodaEntity):
     def is_flat(self) -> bool:
         """Check if position is flat (no holdings)"""
         return self.quantity == 0
-

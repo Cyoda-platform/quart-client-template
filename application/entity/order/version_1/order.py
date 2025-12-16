@@ -9,7 +9,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Order(CyodaEntity):
     """
     Order represents a trading order in the system.
-    
+
     Tracks order lifecycle from creation through execution including
     pricing, quantity, execution type, and current status.
     """
@@ -22,23 +22,26 @@ class Order(CyodaEntity):
     symbol: str = Field(..., description="Trading symbol (e.g., AAPL, BTC/USD)")
     side: str = Field(..., description="Order side: BUY or SELL")
     type: str = Field(..., description="Order type: MARKET, LIMIT, STOP, STOP_LIMIT")
-    price: Optional[float] = Field(None, description="Limit price (required for LIMIT orders)")
+    price: Optional[float] = Field(
+        None, description="Limit price (required for LIMIT orders)"
+    )
     quantity: float = Field(..., description="Order quantity")
     time_in_force: str = Field(
         default="GTC",
-        description="Time in force: GTC (Good-Till-Cancel), IOC (Immediate-Or-Cancel), FOK (Fill-Or-Kill)"
+        description="Time in force: GTC (Good-Till-Cancel), IOC (Immediate-Or-Cancel), FOK (Fill-Or-Kill)",
     )
     status: str = Field(
         default="PENDING",
-        description="Order status: PENDING, ACCEPTED, REJECTED, FILLED, PARTIALLY_FILLED, CANCELLED"
+        description="Order status: PENDING, ACCEPTED, REJECTED, FILLED, PARTIALLY_FILLED, CANCELLED",
     )
     created_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Order creation timestamp (ISO 8601 format)"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        description="Order creation timestamp (ISO 8601 format)",
     )
     updated_at: Optional[str] = Field(
-        None,
-        description="Last update timestamp (ISO 8601 format)"
+        None, description="Last update timestamp (ISO 8601 format)"
     )
 
     @field_validator("side")
@@ -77,4 +80,3 @@ class Order(CyodaEntity):
     def is_active(self) -> bool:
         """Check if order is still active"""
         return self.status in ("PENDING", "ACCEPTED", "PARTIALLY_FILLED")
-

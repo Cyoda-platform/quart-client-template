@@ -9,7 +9,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Trade(CyodaEntity):
     """
     Trade represents an executed trade between a buyer and seller.
-    
+
     Records the matching of buy and sell orders with execution details
     including price, quantity, and execution timestamp.
     """
@@ -24,8 +24,10 @@ class Trade(CyodaEntity):
     price: float = Field(..., description="Execution price")
     quantity: float = Field(..., description="Executed quantity")
     timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Trade execution timestamp (ISO 8601 format)"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        description="Trade execution timestamp (ISO 8601 format)",
     )
 
     @field_validator("price")
@@ -47,4 +49,3 @@ class Trade(CyodaEntity):
     def get_notional_value(self) -> float:
         """Calculate total notional value of trade"""
         return self.price * self.quantity
-

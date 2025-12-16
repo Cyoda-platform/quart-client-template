@@ -9,7 +9,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class MarketData(CyodaEntity):
     """
     MarketData represents real-time market data for a trading symbol.
-    
+
     Captures market quotes including bid/ask prices, last trade price,
     volume, and sequence number for order book management.
     """
@@ -18,10 +18,14 @@ class MarketData(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     symbol: str = Field(..., description="Trading symbol (e.g., AAPL, BTC/USD)")
-    exchange: str = Field(..., description="Exchange identifier (e.g., NASDAQ, NYSE, BINANCE)")
+    exchange: str = Field(
+        ..., description="Exchange identifier (e.g., NASDAQ, NYSE, BINANCE)"
+    )
     timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Timestamp of market data snapshot (ISO 8601 format)"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        description="Timestamp of market data snapshot (ISO 8601 format)",
     )
     bid: float = Field(..., description="Best bid price")
     ask: float = Field(..., description="Best ask price")
@@ -40,4 +44,3 @@ class MarketData(CyodaEntity):
     def get_spread(self) -> float:
         """Calculate bid-ask spread"""
         return self.ask - self.bid
-

@@ -1,0 +1,74 @@
+{
+  "version": "1.0",
+  "name": "Trade",
+  "desc": "Trade execution workflow with settlement and confirmation",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "execute",
+          "next": "executed",
+          "manual": false
+        }
+      ]
+    },
+    "executed": {
+      "transitions": [
+        {
+          "name": "settle",
+          "next": "settled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "TradeSettleProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "settled": {
+      "transitions": [
+        {
+          "name": "confirm",
+          "next": "confirmed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "TradeConfirmProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            },
+            {
+              "name": "AuditLogProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 2000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "confirmed": {
+      "transitions": []
+    }
+  }
+}
+

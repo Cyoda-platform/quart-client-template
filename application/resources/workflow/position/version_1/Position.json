@@ -1,0 +1,95 @@
+{
+  "version": "1.0",
+  "name": "Position",
+  "desc": "Position update workflow with trade application, P&L recalculation, and persistence",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "apply_trade",
+          "next": "apply_trade",
+          "manual": false
+        }
+      ]
+    },
+    "apply_trade": {
+      "transitions": [
+        {
+          "name": "apply_trade",
+          "next": "recalculate_pnl",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PositionApplyTradeProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "recalculate_pnl": {
+      "transitions": [
+        {
+          "name": "recalculate_pnl",
+          "next": "persist",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PositionRecalculatePnLProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "persist": {
+      "transitions": [
+        {
+          "name": "persist",
+          "next": "completed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PositionPersistProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            },
+            {
+              "name": "AuditLogProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 2000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

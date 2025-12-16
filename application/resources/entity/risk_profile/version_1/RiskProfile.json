@@ -1,0 +1,13 @@
+{
+  "accountId": "ACC-12345",
+  "limits": {
+    "maxPosition": 10000,
+    "maxNotional": 500000
+  },
+  "marginRequirements": {
+    "initialMarginRate": 0.25,
+    "maintenanceMarginRate": 0.15
+  },
+  "currentExposure": 245000
+}
+

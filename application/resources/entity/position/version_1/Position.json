@@ -1,0 +1,9 @@
+{
+  "accountId": "ACC-12345",
+  "symbol": "AAPL",
+  "quantity": 500,
+  "avgPrice": 240.25,
+  "realizedPnL": 2500.00,
+  "unrealizedPnL": 2635.00
+}
+

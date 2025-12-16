@@ -1,0 +1,10 @@
+{
+  "tradeId": "TRD-20251216-001",
+  "buyOrderId": "ORD-20251216-001",
+  "sellOrderId": "ORD-20251216-002",
+  "symbol": "AAPL",
+  "price": 245.50,
+  "quantity": 100,
+  "timestamp": "2025-12-16T14:31:15.789Z"
+}
+

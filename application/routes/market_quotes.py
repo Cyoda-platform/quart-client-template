@@ -52,7 +52,7 @@ async def get_marketquote(marketquote_id: str) -> tuple[Dict[str, Any], int]:
         )
         if response is None:
             return {"error": "MarketQuote not found"}, 404
-        marketquote_data = response.entity.model_dump(by_alias=True)
+        marketquote_data = response.data.model_dump(by_alias=True)
         marketquote_data["id"] = response.metadata.id
         marketquote_data["state"] = response.metadata.state
         return marketquote_data, 200
@@ -71,6 +71,7 @@ async def update_marketquote(
         entity_service = get_entity_service()
         marketquote_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=marketquote_id,
             entity=marketquote_data,
             entity_class=MarketQuote.ENTITY_NAME,
             entity_version=str(MarketQuote.ENTITY_VERSION),

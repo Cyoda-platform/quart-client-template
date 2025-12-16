@@ -56,7 +56,7 @@ async def get_complianceevent(complianceevent_id: str) -> tuple[Dict[str, Any], 
         )
         if response is None:
             return {"error": "ComplianceEvent not found"}, 404
-        complianceevent_data = response.entity.model_dump(by_alias=True)
+        complianceevent_data = response.data.model_dump(by_alias=True)
         complianceevent_data["id"] = response.metadata.id
         complianceevent_data["state"] = response.metadata.state
         return complianceevent_data, 200
@@ -75,6 +75,7 @@ async def update_complianceevent(
         entity_service = get_entity_service()
         complianceevent_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=complianceevent_id,
             entity=complianceevent_data,
             entity_class=ComplianceEvent.ENTITY_NAME,
             entity_version=str(ComplianceEvent.ENTITY_VERSION),

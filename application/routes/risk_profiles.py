@@ -52,7 +52,7 @@ async def get_riskprofile(riskprofile_id: str) -> tuple[Dict[str, Any], int]:
         )
         if response is None:
             return {"error": "RiskProfile not found"}, 404
-        riskprofile_data = response.entity.model_dump(by_alias=True)
+        riskprofile_data = response.data.model_dump(by_alias=True)
         riskprofile_data["id"] = response.metadata.id
         riskprofile_data["state"] = response.metadata.state
         return riskprofile_data, 200
@@ -71,6 +71,7 @@ async def update_riskprofile(
         entity_service = get_entity_service()
         riskprofile_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=riskprofile_id,
             entity=riskprofile_data,
             entity_class=RiskProfile.ENTITY_NAME,
             entity_version=str(RiskProfile.ENTITY_VERSION),

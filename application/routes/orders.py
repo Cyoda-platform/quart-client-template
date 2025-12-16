@@ -52,7 +52,7 @@ async def get_order(order_id: str) -> tuple[Dict[str, Any], int]:
         )
         if response is None:
             return {"error": "Order not found"}, 404
-        order_data = response.entity.model_dump(by_alias=True)
+        order_data = response.data.model_dump(by_alias=True)
         order_data["id"] = response.metadata.id
         order_data["state"] = response.metadata.state
         return order_data, 200
@@ -69,6 +69,7 @@ async def update_order(order_id: str, data: Order) -> tuple[Dict[str, Any], int]
         entity_service = get_entity_service()
         order_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=order_id,
             entity=order_data,
             entity_class=Order.ENTITY_NAME,
             entity_version=str(Order.ENTITY_VERSION),

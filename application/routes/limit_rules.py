@@ -52,7 +52,7 @@ async def get_limitrule(limitrule_id: str) -> tuple[Dict[str, Any], int]:
         )
         if response is None:
             return {"error": "LimitRule not found"}, 404
-        limitrule_data = response.entity.model_dump(by_alias=True)
+        limitrule_data = response.data.model_dump(by_alias=True)
         limitrule_data["id"] = response.metadata.id
         limitrule_data["state"] = response.metadata.state
         return limitrule_data, 200
@@ -71,6 +71,7 @@ async def update_limitrule(
         entity_service = get_entity_service()
         limitrule_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=limitrule_id,
             entity=limitrule_data,
             entity_class=LimitRule.ENTITY_NAME,
             entity_version=str(LimitRule.ENTITY_VERSION),

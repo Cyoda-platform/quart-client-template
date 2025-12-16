@@ -52,7 +52,7 @@ async def get_account(account_id: str) -> tuple[Dict[str, Any], int]:
         )
         if response is None:
             return {"error": "Account not found"}, 404
-        account_data = response.entity.model_dump(by_alias=True)
+        account_data = response.data.model_dump(by_alias=True)
         account_data["id"] = response.metadata.id
         account_data["state"] = response.metadata.state
         return account_data, 200
@@ -69,6 +69,7 @@ async def update_account(account_id: str, data: Account) -> tuple[Dict[str, Any]
         entity_service = get_entity_service()
         account_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=account_id,
             entity=account_data,
             entity_class=Account.ENTITY_NAME,
             entity_version=str(Account.ENTITY_VERSION),

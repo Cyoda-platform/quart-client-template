@@ -52,7 +52,7 @@ async def get_instrument(instrument_id: str) -> tuple[Dict[str, Any], int]:
         )
         if response is None:
             return {"error": "Instrument not found"}, 404
-        instrument_data = response.entity.model_dump(by_alias=True)
+        instrument_data = response.data.model_dump(by_alias=True)
         instrument_data["id"] = response.metadata.id
         instrument_data["state"] = response.metadata.state
         return instrument_data, 200
@@ -71,6 +71,7 @@ async def update_instrument(
         entity_service = get_entity_service()
         instrument_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=instrument_id,
             entity=instrument_data,
             entity_class=Instrument.ENTITY_NAME,
             entity_version=str(Instrument.ENTITY_VERSION),

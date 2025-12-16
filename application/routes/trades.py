@@ -52,7 +52,7 @@ async def get_trade(trade_id: str) -> tuple[Dict[str, Any], int]:
         )
         if response is None:
             return {"error": "Trade not found"}, 404
-        trade_data = response.entity.model_dump(by_alias=True)
+        trade_data = response.data.model_dump(by_alias=True)
         trade_data["id"] = response.metadata.id
         trade_data["state"] = response.metadata.state
         return trade_data, 200
@@ -69,6 +69,7 @@ async def update_trade(trade_id: str, data: Trade) -> tuple[Dict[str, Any], int]
         entity_service = get_entity_service()
         trade_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=trade_id,
             entity=trade_data,
             entity_class=Trade.ENTITY_NAME,
             entity_version=str(Trade.ENTITY_VERSION),

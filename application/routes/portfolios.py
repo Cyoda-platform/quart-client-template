@@ -52,7 +52,7 @@ async def get_portfolio(portfolio_id: str) -> tuple[Dict[str, Any], int]:
         )
         if response is None:
             return {"error": "Portfolio not found"}, 404
-        portfolio_data = response.entity.model_dump(by_alias=True)
+        portfolio_data = response.data.model_dump(by_alias=True)
         portfolio_data["id"] = response.metadata.id
         portfolio_data["state"] = response.metadata.state
         return portfolio_data, 200
@@ -71,6 +71,7 @@ async def update_portfolio(
         entity_service = get_entity_service()
         portfolio_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=portfolio_id,
             entity=portfolio_data,
             entity_class=Portfolio.ENTITY_NAME,
             entity_version=str(Portfolio.ENTITY_VERSION),

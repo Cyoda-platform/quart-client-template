@@ -52,7 +52,7 @@ async def get_position(position_id: str) -> tuple[Dict[str, Any], int]:
         )
         if response is None:
             return {"error": "Position not found"}, 404
-        position_data = response.entity.model_dump(by_alias=True)
+        position_data = response.data.model_dump(by_alias=True)
         position_data["id"] = response.metadata.id
         position_data["state"] = response.metadata.state
         return position_data, 200
@@ -71,6 +71,7 @@ async def update_position(
         entity_service = get_entity_service()
         position_data = data.model_dump(by_alias=True)
         response = await entity_service.update(
+            entity_id=position_id,
             entity=position_data,
             entity_class=Position.ENTITY_NAME,
             entity_version=str(Position.ENTITY_VERSION),

@@ -167,11 +167,11 @@ async def transition_order(order_id: str) -> tuple[Dict[str, Any], int]:
         if not transition_name:
             return {"error": "Transition name is required"}, 400
 
-        response = await entity_service.transition(
+        response = await entity_service.execute_transition(
             entity_id=order_id,
+            transition=transition_name,
             entity_class=Order.ENTITY_NAME,
             entity_version=str(Order.ENTITY_VERSION),
-            transition=transition_name,
         )
 
         order_data = response.entity.model_dump(by_alias=True)

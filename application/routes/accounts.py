@@ -66,11 +66,14 @@ async def get_account(account_id: str) -> tuple[Dict[str, Any], int]:
     try:
         entity_service = get_entity_service()
 
-        response = await entity_service.get(
+        response = await entity_service.get_by_id(
             entity_id=account_id,
             entity_class=Account.ENTITY_NAME,
             entity_version=str(Account.ENTITY_VERSION),
         )
+
+        if response is None:
+            return {"error": "Account not found"}, 404
 
         account_data = response.entity.model_dump(by_alias=True)
         account_data["id"] = response.metadata.id
@@ -131,7 +134,7 @@ async def delete_account(account_id: str) -> tuple[Dict[str, str], int]:
     try:
         entity_service = get_entity_service()
 
-        await entity_service.delete(
+        await entity_service.delete_by_id(
             entity_id=account_id,
             entity_class=Account.ENTITY_NAME,
             entity_version=str(Account.ENTITY_VERSION),

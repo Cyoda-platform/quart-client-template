@@ -66,7 +66,7 @@ async def get_risk_profile(risk_profile_id: str) -> tuple[Dict[str, Any], int]:
     try:
         entity_service = get_entity_service()
 
-        response = await entity_service.get(
+        response = await entity_service.get_by_id(
             entity_id=risk_profile_id,
             entity_class=RiskProfile.ENTITY_NAME,
             entity_version=str(RiskProfile.ENTITY_VERSION),
@@ -133,7 +133,7 @@ async def delete_risk_profile(risk_profile_id: str) -> tuple[Dict[str, str], int
     try:
         entity_service = get_entity_service()
 
-        await entity_service.delete(
+        await entity_service.delete_by_id(
             entity_id=risk_profile_id,
             entity_class=RiskProfile.ENTITY_NAME,
             entity_version=str(RiskProfile.ENTITY_VERSION),

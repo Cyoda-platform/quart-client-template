@@ -66,11 +66,14 @@ async def get_trade(trade_id: str) -> tuple[Dict[str, Any], int]:
     try:
         entity_service = get_entity_service()
 
-        response = await entity_service.get(
+        response = await entity_service.get_by_id(
             entity_id=trade_id,
             entity_class=Trade.ENTITY_NAME,
             entity_version=str(Trade.ENTITY_VERSION),
         )
+
+        if response is None:
+            return {"error": "Trade not found"}, 404
 
         trade_data = response.entity.model_dump(by_alias=True)
         trade_data["id"] = response.metadata.id
@@ -131,7 +134,7 @@ async def delete_trade(trade_id: str) -> tuple[Dict[str, str], int]:
     try:
         entity_service = get_entity_service()
 
-        await entity_service.delete(
+        await entity_service.delete_by_id(
             entity_id=trade_id,
             entity_class=Trade.ENTITY_NAME,
             entity_version=str(Trade.ENTITY_VERSION),
@@ -164,11 +167,11 @@ async def transition_trade(trade_id: str) -> tuple[Dict[str, Any], int]:
         if not transition_name:
             return {"error": "Transition name is required"}, 400
 
-        response = await entity_service.transition(
+        response = await entity_service.execute_transition(
             entity_id=trade_id,
+            transition=transition_name,
             entity_class=Trade.ENTITY_NAME,
             entity_version=str(Trade.ENTITY_VERSION),
-            transition=transition_name,
         )
 
         trade_data = response.entity.model_dump(by_alias=True)

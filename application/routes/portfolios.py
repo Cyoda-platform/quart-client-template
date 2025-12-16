@@ -66,7 +66,7 @@ async def get_portfolio(portfolio_id: str) -> tuple[Dict[str, Any], int]:
     try:
         entity_service = get_entity_service()
 
-        response = await entity_service.get(
+        response = await entity_service.get_by_id(
             entity_id=portfolio_id,
             entity_class=Portfolio.ENTITY_NAME,
             entity_version=str(Portfolio.ENTITY_VERSION),
@@ -133,7 +133,7 @@ async def delete_portfolio(portfolio_id: str) -> tuple[Dict[str, str], int]:
     try:
         entity_service = get_entity_service()
 
-        await entity_service.delete(
+        await entity_service.delete_by_id(
             entity_id=portfolio_id,
             entity_class=Portfolio.ENTITY_NAME,
             entity_version=str(Portfolio.ENTITY_VERSION),

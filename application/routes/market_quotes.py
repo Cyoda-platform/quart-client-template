@@ -45,7 +45,7 @@ async def get_market_quote(quote_id: str) -> tuple[Dict[str, Any], int]:
     """Get market quote by technical ID."""
     try:
         entity_service = get_entity_service()
-        response = await entity_service.get(
+        response = await entity_service.get_by_id(
             entity_id=quote_id,
             entity_class=MarketQuote.ENTITY_NAME,
             entity_version=str(MarketQuote.ENTITY_VERSION),
@@ -87,7 +87,7 @@ async def delete_market_quote(quote_id: str) -> tuple[Dict[str, str], int]:
     """Delete a market quote."""
     try:
         entity_service = get_entity_service()
-        await entity_service.delete(
+        await entity_service.delete_by_id(
             entity_id=quote_id,
             entity_class=MarketQuote.ENTITY_NAME,
             entity_version=str(MarketQuote.ENTITY_VERSION),

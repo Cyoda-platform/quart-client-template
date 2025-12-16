@@ -49,7 +49,7 @@ async def get_compliance_event(event_id: str) -> tuple[Dict[str, Any], int]:
     """Get compliance event by technical ID."""
     try:
         entity_service = get_entity_service()
-        response = await entity_service.get(
+        response = await entity_service.get_by_id(
             entity_id=event_id,
             entity_class=ComplianceEvent.ENTITY_NAME,
             entity_version=str(ComplianceEvent.ENTITY_VERSION),
@@ -91,7 +91,7 @@ async def delete_compliance_event(event_id: str) -> tuple[Dict[str, str], int]:
     """Delete a compliance event."""
     try:
         entity_service = get_entity_service()
-        await entity_service.delete(
+        await entity_service.delete_by_id(
             entity_id=event_id,
             entity_class=ComplianceEvent.ENTITY_NAME,
             entity_version=str(ComplianceEvent.ENTITY_VERSION),

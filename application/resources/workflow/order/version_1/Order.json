@@ -1,0 +1,137 @@
+{
+  "version": "1.0",
+  "name": "Order",
+  "desc": "Order processing workflow with validation, risk checks, matching, and execution",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "receive",
+          "next": "receive",
+          "manual": false
+        }
+      ]
+    },
+    "receive": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validate",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderValidateProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "validate": {
+      "transitions": [
+        {
+          "name": "pre_trade_risk_check",
+          "next": "pre_trade_risk_check",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderPreTradeRiskCheckProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "pre_trade_risk_check": {
+      "transitions": [
+        {
+          "name": "route_or_match",
+          "next": "route_or_match",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderRouteOrMatchProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "route_or_match": {
+      "transitions": [
+        {
+          "name": "fill",
+          "next": "fill",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderFillProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "fill": {
+      "transitions": [
+        {
+          "name": "acknowledge",
+          "next": "acknowledged",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderAcknowledgeProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            },
+            {
+              "name": "AuditLogProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 2000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "acknowledged": {
+      "transitions": []
+    }
+  }
+}
+

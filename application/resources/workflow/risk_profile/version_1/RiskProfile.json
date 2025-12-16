@@ -1,0 +1,95 @@
+{
+  "version": "1.0",
+  "name": "RiskProfile",
+  "desc": "Risk profile evaluation workflow with limit checks, blocking/allowing decisions, and alerting",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "evaluate",
+          "next": "evaluate_limits",
+          "manual": false
+        }
+      ]
+    },
+    "evaluate_limits": {
+      "transitions": [
+        {
+          "name": "evaluate_limits",
+          "next": "decision",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskProfileEvaluateLimitsProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "decision": {
+      "transitions": [
+        {
+          "name": "block_or_allow",
+          "next": "alert",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskProfileBlockOrAllowProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "alert": {
+      "transitions": [
+        {
+          "name": "send_alert",
+          "next": "completed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskProfileAlertProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            },
+            {
+              "name": "AuditLogProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 2000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

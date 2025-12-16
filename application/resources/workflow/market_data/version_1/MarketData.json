@@ -1,0 +1,116 @@
+{
+  "version": "1.0",
+  "name": "MarketData",
+  "desc": "Market data ingestion and processing workflow with normalization, deduplication, broadcasting, and order book updates",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "ingest",
+          "next": "normalize",
+          "manual": false
+        }
+      ]
+    },
+    "normalize": {
+      "transitions": [
+        {
+          "name": "normalize_data",
+          "next": "deduplicate",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataNormalizeProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "deduplicate": {
+      "transitions": [
+        {
+          "name": "deduplicate_data",
+          "next": "broadcast",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataDeduplicateProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "broadcast": {
+      "transitions": [
+        {
+          "name": "broadcast_data",
+          "next": "update_order_book",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataBroadcastProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update_order_book": {
+      "transitions": [
+        {
+          "name": "update_order_book",
+          "next": "completed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataUpdateOrderBookProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 3000,
+                "retryPolicy": "FIXED"
+              }
+            },
+            {
+              "name": "AuditLogProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 2000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

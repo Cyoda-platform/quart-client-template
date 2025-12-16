@@ -1,0 +1,12 @@
+{
+  "event_id": "AUDIT-EVT-112233",
+  "timestamp": "2025-12-16T09:35:00Z",
+  "user_id": "USER-555",
+  "action": "update_account",
+  "target_entity_type": "Account",
+  "target_entity_id": "ACC-12345",
+  "details": {
+    "old_balance": 15000.50,
+    "new_balance": 14900.50
+  }
+}

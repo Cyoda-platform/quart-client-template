@@ -1,0 +1,9 @@
+{
+  "profile_id": "RLP-PRO-007",
+  "name": "Aggressive Trader Profile",
+  "description": "Profile for high-frequency trading with strict risk controls.",
+  "max_loss_percentage": 0.02,
+  "max_drawdown_amount": 5000.00,
+  "leverage_limit": 10.0,
+  "enabled": true
+}

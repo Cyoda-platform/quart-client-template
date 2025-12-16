@@ -1,0 +1,8 @@
+{
+  "allocation_id": "ALLOC-54321",
+  "execution_report_id": "EXEC-RPT-98765",
+  "account_id": "ACC-12345",
+  "allocated_quantity": 50.0,
+  "allocation_price": 175.50,
+  "allocation_time": "2025-12-16T09:31:00Z"
+}

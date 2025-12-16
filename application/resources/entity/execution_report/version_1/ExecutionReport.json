@@ -1,0 +1,10 @@
+{
+  "report_id": "EXEC-RPT-98765",
+  "order_id": "ORD-ABCDE",
+  "execution_time": "2025-12-16T09:30:00Z",
+  "symbol": "AAPL",
+  "executed_quantity": 100.0,
+  "execution_price": 175.50,
+  "side": "buy",
+  "status": "filled"
+}

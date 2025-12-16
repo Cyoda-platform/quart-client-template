@@ -1,0 +1,8 @@
+{
+  "account_id": "ACC-12345",
+  "name": "Primary Checking Account",
+  "currency": "USD",
+  "balance": 15000.50,
+  "status": "active",
+  "created_at": "2023-01-15T10:00:00Z"
+}

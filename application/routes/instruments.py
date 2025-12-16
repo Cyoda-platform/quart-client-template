@@ -1,13 +1,13 @@
 """
 Instrument management API routes for the trading platform.
 
-Provides REST endpoints for instrument CRUD operations.
+Provides REST endpoints for Instrument CRUD operations.
 """
 
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint
 from quart_schema import validate_request, validate_response
 
 from application.entity.instrument.version_1.instrument import Instrument
@@ -22,7 +22,7 @@ instruments_bp = Blueprint("instruments", __name__, url_prefix="/api/instruments
 @validate_request(Instrument)
 @validate_response(Instrument, status_code=201)
 async def create_instrument(data: Instrument) -> tuple[Dict[str, Any], int]:
-    """Create a new instrument."""
+    """Create a new Instrument."""
     try:
         entity_service = get_entity_service()
         instrument_data = data.model_dump(by_alias=True)
@@ -36,13 +36,13 @@ async def create_instrument(data: Instrument) -> tuple[Dict[str, Any], int]:
         logger.info(f"Instrument created: {response.metadata.id}")
         return instrument_data, 201
     except Exception as e:
-        logger.error(f"Failed to create instrument: {str(e)}")
+        logger.error(f"Failed to create Instrument: {str(e)}")
         return {"error": str(e)}, 400
 
 
 @instruments_bp.route("/<instrument_id>", methods=["GET"])
 async def get_instrument(instrument_id: str) -> tuple[Dict[str, Any], int]:
-    """Get instrument by technical ID."""
+    """Get Instrument by technical ID."""
     try:
         entity_service = get_entity_service()
         response = await entity_service.get_by_id(
@@ -50,12 +50,14 @@ async def get_instrument(instrument_id: str) -> tuple[Dict[str, Any], int]:
             entity_class=Instrument.ENTITY_NAME,
             entity_version=str(Instrument.ENTITY_VERSION),
         )
+        if response is None:
+            return {"error": "Instrument not found"}, 404
         instrument_data = response.entity.model_dump(by_alias=True)
         instrument_data["id"] = response.metadata.id
         instrument_data["state"] = response.metadata.state
         return instrument_data, 200
     except Exception as e:
-        logger.error(f"Failed to get instrument: {str(e)}")
+        logger.error(f"Failed to get Instrument: {str(e)}")
         return {"error": str(e)}, 404
 
 
@@ -64,11 +66,11 @@ async def get_instrument(instrument_id: str) -> tuple[Dict[str, Any], int]:
 async def update_instrument(
     instrument_id: str, data: Instrument
 ) -> tuple[Dict[str, Any], int]:
-    """Update an instrument."""
+    """Update a Instrument."""
     try:
         entity_service = get_entity_service()
         instrument_data = data.model_dump(by_alias=True)
-        response = await entity_service.save(
+        response = await entity_service.update(
             entity=instrument_data,
             entity_class=Instrument.ENTITY_NAME,
             entity_version=str(Instrument.ENTITY_VERSION),
@@ -78,13 +80,13 @@ async def update_instrument(
         logger.info(f"Instrument updated: {instrument_id}")
         return instrument_data, 200
     except Exception as e:
-        logger.error(f"Failed to update instrument: {str(e)}")
+        logger.error(f"Failed to update Instrument: {str(e)}")
         return {"error": str(e)}, 400
 
 
 @instruments_bp.route("/<instrument_id>", methods=["DELETE"])
 async def delete_instrument(instrument_id: str) -> tuple[Dict[str, str], int]:
-    """Delete an instrument."""
+    """Delete a Instrument."""
     try:
         entity_service = get_entity_service()
         await entity_service.delete_by_id(
@@ -95,5 +97,5 @@ async def delete_instrument(instrument_id: str) -> tuple[Dict[str, str], int]:
         logger.info(f"Instrument deleted: {instrument_id}")
         return {"message": "Instrument deleted successfully"}, 200
     except Exception as e:
-        logger.error(f"Failed to delete instrument: {str(e)}")
+        logger.error(f"Failed to delete Instrument: {str(e)}")
         return {"error": str(e)}, 400

@@ -1,0 +1,18 @@
+{
+    "risk_profile_id": "RP-001",
+    "account_id": "ACC-5678",
+    "risk_tolerance": "MODERATE",
+    "max_daily_loss_limit": 10000.00,
+    "max_single_trade_loss_limit": 2500.00,
+    "margin_call_threshold": 0.25,
+    "leverage_ratio": 2.0,
+    "concentration_limits": {
+        "single_stock_max_percent": 0.15,
+        "sector_max_percent": 0.30
+    },
+    "risk_metrics": {
+        "value_at_risk_1day": 5000.00,
+        "max_drawdown_percent": 0.20
+    },
+    "last_risk_assessment_date": "2025-12-01"
+}

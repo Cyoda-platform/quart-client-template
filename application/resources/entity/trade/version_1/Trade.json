@@ -1,0 +1,15 @@
+{
+    "trade_id": "TRD-20250101-123456",
+    "order_id": "ORD-20250101-123456",
+    "symbol": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "execution_price": 185.50,
+    "total_value": 18550.00,
+    "timestamp": "2025-12-16T14:30:15Z",
+    "execution_venue": "NASDAQ",
+    "commission": 9.99,
+    "trader_id": "TRADER-001",
+    "settlement_date": "2025-12-18",
+    "trade_status": "SETTLED"
+}

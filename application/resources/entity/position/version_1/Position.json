@@ -1,0 +1,15 @@
+{
+    "position_id": "POS-20250101-123456",
+    "account_id": "ACC-5678",
+    "symbol": "AAPL",
+    "quantity": 100,
+    "average_cost": 185.50,
+    "current_market_price": 186.75,
+    "unrealized_pl": 125.00,
+    "realized_pl": 500.00,
+    "total_cost_basis": 18550.00,
+    "current_value": 18675.00,
+    "margin_requirement": 2782.50,
+    "side": "LONG",
+    "last_updated": "2025-12-16T14:30:00Z"
+}

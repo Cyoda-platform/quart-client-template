@@ -1,0 +1,18 @@
+{
+    "account_id": "ACC-5678",
+    "account_type": "INDIVIDUAL",
+    "account_status": "ACTIVE",
+    "total_balance": 500000.00,
+    "available_balance": 485000.00,
+    "margin_balance": 250000.00,
+    "cash_balance": 235000.00,
+    "risk_profile": "MODERATE",
+    "trader_id": "TRADER-001",
+    "registration_date": "2024-01-15",
+    "last_activity": "2025-12-16T14:30:00Z",
+    "trading_permissions": {
+        "equities": true,
+        "options": true,
+        "futures": false
+    }
+}

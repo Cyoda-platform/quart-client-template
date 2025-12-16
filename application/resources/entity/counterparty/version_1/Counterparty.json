@@ -1,0 +1,16 @@
+{
+    "counterparty_id": "CP-001",
+    "name": "Goldman Sachs",
+    "legal_entity_identifier": "LEIA-123456789",
+    "type": "BROKER",
+    "credit_rating": "AA",
+    "country": "US",
+    "trading_permissions": {
+        "equities": true,
+        "derivatives": true,
+        "fixed_income": true
+    },
+    "max_credit_limit": 10000000.00,
+    "current_credit_exposure": 2500000.00,
+    "last_credit_review_date": "2025-06-01"
+}

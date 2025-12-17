@@ -13,7 +13,7 @@ class PreTradeCheckProcessor(CyodaProcessor):
     """
     Processor for pre-trade checks.
     """
-    async def process(self, entity: CyodaEntity) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
         """
         Processes the order entity for pre-trade checks.
         """
@@ -26,7 +26,7 @@ class PostTradeProcessor(CyodaProcessor):
     """
     Processor for post-trade processing.
     """
-    async def process(self, entity: CyodaEntity) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
         """
         Processes the order entity for post-trade actions.
         """
@@ -88,7 +88,7 @@ class CancelOrderProcessor(CyodaProcessor):
     """
     Processor for cancelling an order.
     """
-    async def process(self, entity: CyodaEntity) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
         """
         Processes the order entity for cancellation.
         """

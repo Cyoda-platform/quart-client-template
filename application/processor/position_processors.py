@@ -8,7 +8,7 @@ class PositionReconciliationProcessor(CyodaProcessor):
     """
     Processor for reconciling positions.
     """
-    async def process(self, entity: CyodaEntity) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
         """
         Processes the position entity for reconciliation.
         """

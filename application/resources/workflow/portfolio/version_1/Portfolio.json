@@ -1,0 +1,21 @@
+{
+    "version": "1.0",
+    "name": "PortfolioLifecycle",
+    "desc": "Workflow for managing the lifecycle of a portfolio.",
+    "initialState": "initial_state",
+    "active": true,
+    "states": {
+        "initial_state": {
+            "transitions": [
+                {
+                    "name": "create",
+                    "next": "Active",
+                    "manual": false
+                }
+            ]
+        },
+        "Active": {
+            "transitions": []
+        }
+    }
+}

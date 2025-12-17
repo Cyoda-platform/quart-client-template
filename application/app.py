@@ -15,6 +15,7 @@ from application.routes.market_data_routes import market_data_routes
 from application.routes.order_routes import order_routes
 from application.routes.trade_routes import trade_routes
 from application.routes.position_routes import position_routes
+from application.routes.portfolio_routes import portfolio_routes
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,6 +26,7 @@ app.register_blueprint(market_data_routes)
 app.register_blueprint(order_routes)
 app.register_blueprint(trade_routes)
 app.register_blueprint(position_routes)
+app.register_blueprint(portfolio_routes)
 
 QuartSchema(
     app,
@@ -45,6 +47,10 @@ QuartSchema(
         {
             "name": "Positions",
             "description": "Position management endpoints",
+        },
+        {
+            "name": "Portfolios",
+            "description": "Portfolio management endpoints",
         },
         {
             "name": "ExampleEntities",

@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "name": "Position",
+  "desc": "Workflow for reconciling internal positions with external data sources.",
+  "initialState": "Unreconciled",
+  "active": true,
+  "states": {
+    "Unreconciled": {
+      "transitions": [
+        {
+          "name": "start_reconciliation",
+          "next": "Reconciling",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PositionFetchProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": { "attachEntity": true }
+            }
+          ]
+        }
+      ]
+    },
+    "Reconciling": {
+      "transitions": [
+        {
+          "name": "mark_reconciled",
+          "next": "Reconciled",
+          "manual": true
+        },
+        {
+          "name": "flag_discrepancy",
+          "next": "Discrepancy",
+          "manual": true,
+          "processors": [
+            {
+              "name": "DiscrepancyAlertProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": { "attachEntity": true }
+            }
+          ]
+        }
+      ]
+    },
+    "Reconciled": {
+      "transitions": []
+    },
+    "Discrepancy": {
+      "transitions": [
+        {
+          "name": "resolve_discrepancy",
+          "next": "Reconciled",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

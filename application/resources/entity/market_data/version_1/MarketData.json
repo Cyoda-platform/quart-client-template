@@ -1,0 +1,9 @@
+{
+  "instrumentId": "INST-123",
+  "timestamp": "2025-01-15T14:30:00Z",
+  "bid": 150.25,
+  "ask": 150.30,
+  "lastPrice": 150.28,
+  "volume": 1000000,
+  "source": "EXCHANGE_A"
+}

@@ -118,9 +118,9 @@ async def list_orders() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(
-                Order.ENTITY_NAME, condition, str(Order.ENTITY_VERSION)
-            )
+                        results = await service.search(
+                            Order.ENTITY_NAME, condition, str(Order.ENTITY_VERSION)
+                        )
         else:
             results = await service.find_all(
                 Order.ENTITY_NAME, str(Order.ENTITY_VERSION)

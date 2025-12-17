@@ -98,7 +98,8 @@ class OrderValidationProcessor(CyodaProcessor):
             return order
 
         except Exception as e:
-            self.logger.error(
-                f"Error processing order {getattr(entity, 'technical_id', 'unknown')}: {str(e)}"
-            )
+                        self.logger.error(
+                            f"Error processing order {getattr(entity, 'technical_id', 'unknown')}: "
+                            f"{str(e)}"
+                        )
             raise

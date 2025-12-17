@@ -141,6 +141,7 @@ class TradeProcessor(CyodaProcessor):
 
         except Exception as e:
             self.logger.error(
-                f"Error processing trade {getattr(entity, 'technical_id', 'unknown')}: {str(e)}"
+                f"Error processing trade {getattr(entity, 'technical_id', 'unknown')}: "
+                f"{str(e)}"
             )
             raise

@@ -117,9 +117,9 @@ async def list_risk_limits() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(
-                RiskLimit.ENTITY_NAME, condition, str(RiskLimit.ENTITY_VERSION)
-            )
+                        results = await service.search(
+                            RiskLimit.ENTITY_NAME, condition, str(RiskLimit.ENTITY_VERSION)
+                        )
         else:
             results = await service.find_all(
                 RiskLimit.ENTITY_NAME, str(RiskLimit.ENTITY_VERSION)

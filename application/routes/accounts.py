@@ -117,9 +117,9 @@ async def list_accounts() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(
-                Account.ENTITY_NAME, condition, str(Account.ENTITY_VERSION)
-            )
+                        results = await service.search(
+                            Account.ENTITY_NAME, condition, str(Account.ENTITY_VERSION)
+                        )
         else:
             results = await service.find_all(
                 Account.ENTITY_NAME, str(Account.ENTITY_VERSION)

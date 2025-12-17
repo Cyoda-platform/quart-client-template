@@ -117,9 +117,9 @@ async def list_trades() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(
-                Trade.ENTITY_NAME, condition, str(Trade.ENTITY_VERSION)
-            )
+                        results = await service.search(
+                            Trade.ENTITY_NAME, condition, str(Trade.ENTITY_VERSION)
+                        )
         else:
             results = await service.find_all(
                 Trade.ENTITY_NAME, str(Trade.ENTITY_VERSION)

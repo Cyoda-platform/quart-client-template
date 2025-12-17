@@ -117,9 +117,9 @@ async def list_positions() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(
-                Position.ENTITY_NAME, condition, str(Position.ENTITY_VERSION)
-            )
+                        results = await service.search(
+                            Position.ENTITY_NAME, condition, str(Position.ENTITY_VERSION)
+                        )
         else:
             results = await service.find_all(
                 Position.ENTITY_NAME, str(Position.ENTITY_VERSION)

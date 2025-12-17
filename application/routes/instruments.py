@@ -117,9 +117,9 @@ async def list_instruments() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(
-                Instrument.ENTITY_NAME, condition, str(Instrument.ENTITY_VERSION)
-            )
+                        results = await service.search(
+                            Instrument.ENTITY_NAME, condition, str(Instrument.ENTITY_VERSION)
+                        )
         else:
             results = await service.find_all(
                 Instrument.ENTITY_NAME, str(Instrument.ENTITY_VERSION)

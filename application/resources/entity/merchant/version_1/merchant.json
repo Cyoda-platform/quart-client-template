@@ -1,0 +1,11 @@
+{
+  "id": "m-1001",
+  "name": "Acme Store",
+  "settlement_account": "acct_123",
+  "default_currency": "USD",
+  "merchant_config": {
+    "supported_currencies": ["USD", "EUR", "GBP"],
+    "settlement_window_days": 2,
+    "routing_priority": ["processor_a", "processor_b"]
+  }
+}

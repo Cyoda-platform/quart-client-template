@@ -1,0 +1,10 @@
+{
+  "accountId": "ACC-001",
+  "limitType": "ORDER_SIZE",
+  "instrumentId": "INST-123",
+  "maxOrderQuantity": 10000,
+  "maxPositionQuantity": 50000,
+  "maxNotional": 1000000,
+  "isActive": true,
+  "breachAction": "REJECT"
+}

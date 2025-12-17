@@ -10,8 +10,10 @@ from application.entity.account.version_1.account import Account
 
 accounts_bp = Blueprint("accounts", __name__, url_prefix="/api/accounts")
 
+
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
+
 
 @accounts_bp.route("", methods=["POST"])
 @tag(["accounts"])
@@ -30,6 +32,7 @@ async def create_account(data: Account) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @accounts_bp.route("/<entity_id>", methods=["GET"])
 @tag(["accounts"])
 @operation_id("get_account")
@@ -46,6 +49,7 @@ async def get_account(entity_id: str) -> ResponseReturnValue:
         return jsonify(_to_entity_dict(response.data)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @accounts_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["accounts"])
@@ -67,6 +71,7 @@ async def update_account(entity_id: str, data: Account) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @accounts_bp.route("/<entity_id>", methods=["DELETE"])
 @tag(["accounts"])
 @operation_id("delete_account")
@@ -82,6 +87,7 @@ async def delete_account(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @accounts_bp.route("", methods=["GET"])
 @tag(["accounts"])
 @operation_id("list_accounts")
@@ -95,10 +101,14 @@ async def list_accounts() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(Account.ENTITY_NAME, condition, str(Account.ENTITY_VERSION))
+            results = await service.search(
+                Account.ENTITY_NAME, condition, str(Account.ENTITY_VERSION)
+            )
         else:
-            results = await service.find_all(Account.ENTITY_NAME, str(Account.ENTITY_VERSION))
-        
+            results = await service.find_all(
+                Account.ENTITY_NAME, str(Account.ENTITY_VERSION)
+            )
+
         entities = [_to_entity_dict(r.data) for r in results]
         return jsonify({"entities": entities, "total": len(entities)}), 200
     except Exception as e:

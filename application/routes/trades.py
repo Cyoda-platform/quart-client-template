@@ -10,8 +10,10 @@ from application.entity.trade.version_1.trade import Trade
 
 trades_bp = Blueprint("trades", __name__, url_prefix="/api/trades")
 
+
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
+
 
 @trades_bp.route("", methods=["POST"])
 @tag(["trades"])
@@ -30,6 +32,7 @@ async def create_trade(data: Trade) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @trades_bp.route("/<entity_id>", methods=["GET"])
 @tag(["trades"])
 @operation_id("get_trade")
@@ -46,6 +49,7 @@ async def get_trade(entity_id: str) -> ResponseReturnValue:
         return jsonify(_to_entity_dict(response.data)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @trades_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["trades"])
@@ -67,6 +71,7 @@ async def update_trade(entity_id: str, data: Trade) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @trades_bp.route("/<entity_id>", methods=["DELETE"])
 @tag(["trades"])
 @operation_id("delete_trade")
@@ -82,6 +87,7 @@ async def delete_trade(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @trades_bp.route("", methods=["GET"])
 @tag(["trades"])
 @operation_id("list_trades")
@@ -95,10 +101,14 @@ async def list_trades() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(Trade.ENTITY_NAME, condition, str(Trade.ENTITY_VERSION))
+            results = await service.search(
+                Trade.ENTITY_NAME, condition, str(Trade.ENTITY_VERSION)
+            )
         else:
-            results = await service.find_all(Trade.ENTITY_NAME, str(Trade.ENTITY_VERSION))
-        
+            results = await service.find_all(
+                Trade.ENTITY_NAME, str(Trade.ENTITY_VERSION)
+            )
+
         entities = [_to_entity_dict(r.data) for r in results]
         return jsonify({"entities": entities, "total": len(entities)}), 200
     except Exception as e:

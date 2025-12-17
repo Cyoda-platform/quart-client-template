@@ -10,8 +10,10 @@ from application.entity.instrument.version_1.instrument import Instrument
 
 instruments_bp = Blueprint("instruments", __name__, url_prefix="/api/instruments")
 
+
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
+
 
 @instruments_bp.route("", methods=["POST"])
 @tag(["instruments"])
@@ -30,6 +32,7 @@ async def create_instrument(data: Instrument) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @instruments_bp.route("/<entity_id>", methods=["GET"])
 @tag(["instruments"])
 @operation_id("get_instrument")
@@ -46,6 +49,7 @@ async def get_instrument(entity_id: str) -> ResponseReturnValue:
         return jsonify(_to_entity_dict(response.data)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @instruments_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["instruments"])
@@ -67,6 +71,7 @@ async def update_instrument(entity_id: str, data: Instrument) -> ResponseReturnV
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @instruments_bp.route("/<entity_id>", methods=["DELETE"])
 @tag(["instruments"])
 @operation_id("delete_instrument")
@@ -82,6 +87,7 @@ async def delete_instrument(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @instruments_bp.route("", methods=["GET"])
 @tag(["instruments"])
 @operation_id("list_instruments")
@@ -95,10 +101,14 @@ async def list_instruments() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(Instrument.ENTITY_NAME, condition, str(Instrument.ENTITY_VERSION))
+            results = await service.search(
+                Instrument.ENTITY_NAME, condition, str(Instrument.ENTITY_VERSION)
+            )
         else:
-            results = await service.find_all(Instrument.ENTITY_NAME, str(Instrument.ENTITY_VERSION))
-        
+            results = await service.find_all(
+                Instrument.ENTITY_NAME, str(Instrument.ENTITY_VERSION)
+            )
+
         entities = [_to_entity_dict(r.data) for r in results]
         return jsonify({"entities": entities, "total": len(entities)}), 200
     except Exception as e:

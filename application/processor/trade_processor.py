@@ -79,14 +79,15 @@ class TradeProcessor(CyodaProcessor):
             if orders_resp:
                 account_id = cast_entity(orders_resp[0].data, Order).account_id
             
-            if account_id:
-                search_pos = SearchConditionRequest.builder()\ 
-                    .equals("account_id", account_id)
-                    .equals("instrument_id", trade.instrument_id)
-                    .build()
-                
-                positions_resp = await entity_service.search("Position", search_pos)
-                
+                        if account_id:
+                            search_pos = (
+                                SearchConditionRequest.builder()
+                                .equals("account_id", account_id)
+                                .equals("instrument_id", trade.instrument_id)
+                                .build()
+                            )
+                            
+                            positions_resp = await entity_service.search("Position", search_pos)                
                 if positions_resp:
                     # Update existing position
                     pos_resp = positions_resp[0]

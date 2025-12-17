@@ -15,6 +15,8 @@ class Trade(CyodaEntity):
     quantity: float = Field(..., description="Trade quantity")
     price: float = Field(..., description="Trade price")
     execution_time: Optional[str] = Field(default=None, description="ISO timestamp")
-    
+
     # Internal workflow fields
-    processing_status: Optional[str] = Field(default="PENDING", description="Internal processing status")
+    processing_status: Optional[str] = Field(
+        default="PENDING", description="Internal processing status"
+    )

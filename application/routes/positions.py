@@ -10,8 +10,10 @@ from application.entity.position.version_1.position import Position
 
 positions_bp = Blueprint("positions", __name__, url_prefix="/api/positions")
 
+
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
+
 
 @positions_bp.route("", methods=["POST"])
 @tag(["positions"])
@@ -30,6 +32,7 @@ async def create_position(data: Position) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @positions_bp.route("/<entity_id>", methods=["GET"])
 @tag(["positions"])
 @operation_id("get_position")
@@ -46,6 +49,7 @@ async def get_position(entity_id: str) -> ResponseReturnValue:
         return jsonify(_to_entity_dict(response.data)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @positions_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["positions"])
@@ -67,6 +71,7 @@ async def update_position(entity_id: str, data: Position) -> ResponseReturnValue
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @positions_bp.route("/<entity_id>", methods=["DELETE"])
 @tag(["positions"])
 @operation_id("delete_position")
@@ -82,6 +87,7 @@ async def delete_position(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @positions_bp.route("", methods=["GET"])
 @tag(["positions"])
 @operation_id("list_positions")
@@ -95,10 +101,14 @@ async def list_positions() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(Position.ENTITY_NAME, condition, str(Position.ENTITY_VERSION))
+            results = await service.search(
+                Position.ENTITY_NAME, condition, str(Position.ENTITY_VERSION)
+            )
         else:
-            results = await service.find_all(Position.ENTITY_NAME, str(Position.ENTITY_VERSION))
-        
+            results = await service.find_all(
+                Position.ENTITY_NAME, str(Position.ENTITY_VERSION)
+            )
+
         entities = [_to_entity_dict(r.data) for r in results]
         return jsonify({"entities": entities, "total": len(entities)}), 200
     except Exception as e:

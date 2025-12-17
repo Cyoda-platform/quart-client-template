@@ -10,8 +10,10 @@ from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 
 risk_limits_bp = Blueprint("risk_limits", __name__, url_prefix="/api/risk-limits")
 
+
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
+
 
 @risk_limits_bp.route("", methods=["POST"])
 @tag(["risk-limits"])
@@ -30,6 +32,7 @@ async def create_risk_limit(data: RiskLimit) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @risk_limits_bp.route("/<entity_id>", methods=["GET"])
 @tag(["risk-limits"])
 @operation_id("get_risk_limit")
@@ -46,6 +49,7 @@ async def get_risk_limit(entity_id: str) -> ResponseReturnValue:
         return jsonify(_to_entity_dict(response.data)), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @risk_limits_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["risk-limits"])
@@ -67,6 +71,7 @@ async def update_risk_limit(entity_id: str, data: RiskLimit) -> ResponseReturnVa
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @risk_limits_bp.route("/<entity_id>", methods=["DELETE"])
 @tag(["risk-limits"])
 @operation_id("delete_risk_limit")
@@ -82,6 +87,7 @@ async def delete_risk_limit(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @risk_limits_bp.route("", methods=["GET"])
 @tag(["risk-limits"])
 @operation_id("list_risk_limits")
@@ -95,10 +101,14 @@ async def list_risk_limits() -> ResponseReturnValue:
                 if k not in ["limit", "offset"]:
                     builder.equals(k, v)
             condition = builder.build()
-            results = await service.search(RiskLimit.ENTITY_NAME, condition, str(RiskLimit.ENTITY_VERSION))
+            results = await service.search(
+                RiskLimit.ENTITY_NAME, condition, str(RiskLimit.ENTITY_VERSION)
+            )
         else:
-            results = await service.find_all(RiskLimit.ENTITY_NAME, str(RiskLimit.ENTITY_VERSION))
-        
+            results = await service.find_all(
+                RiskLimit.ENTITY_NAME, str(RiskLimit.ENTITY_VERSION)
+            )
+
         entities = [_to_entity_dict(r.data) for r in results]
         return jsonify({"entities": entities, "total": len(entities)}), 200
     except Exception as e:

@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "Trade Workflow",
+  "desc": "Workflow for trade lifecycle management",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "confirm",
+          "next": "confirmed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "TradeProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "confirmed": {
+      "transitions": [
+        {
+          "name": "settle",
+          "next": "settled",
+          "manual": false
+        }
+      ]
+    },
+    "settled": {
+      "transitions": []
+    }
+  }
+}
+

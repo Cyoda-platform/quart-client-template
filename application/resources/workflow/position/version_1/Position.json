@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "Position Workflow",
+  "desc": "Workflow for position lifecycle management",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PositionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": false
+        }
+      ]
+    },
+    "closed": {
+      "transitions": []
+    }
+  }
+}
+

@@ -1,0 +1,19 @@
+{
+  "clientId": "CLIENT_001",
+  "account": "ACC_12345",
+  "instrument": "AAPL",
+  "side": "BUY",
+  "quantity": 100.0,
+  "orderType": "LIMIT",
+  "price": 150.25,
+  "timeInForce": "GTC",
+  "route": "DEFAULT",
+  "clientOrderId": "CLO_20231215_001",
+  "orderId": "ORD_20231215_001",
+  "createdAt": "2023-12-15T10:30:00Z",
+  "submittedAt": "2023-12-15T10:30:05Z",
+  "filledQuantity": 50.0,
+  "remainingQuantity": 50.0,
+  "status": "PARTIALLY_FILLED"
+}
+

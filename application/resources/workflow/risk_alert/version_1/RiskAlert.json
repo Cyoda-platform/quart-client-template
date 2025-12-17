@@ -1,0 +1,63 @@
+{
+  "version": "1.0",
+  "name": "RiskAlert Workflow",
+  "desc": "Workflow for risk alert lifecycle management",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "trigger",
+          "next": "triggered",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskAlertProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "triggered": {
+      "transitions": [
+        {
+          "name": "acknowledge",
+          "next": "acknowledged",
+          "manual": true
+        },
+        {
+          "name": "resolve",
+          "next": "resolved",
+          "manual": true
+        }
+      ]
+    },
+    "acknowledged": {
+      "transitions": [
+        {
+          "name": "resolve",
+          "next": "resolved",
+          "manual": true
+        }
+      ]
+    },
+    "resolved": {
+      "transitions": []
+    }
+  }
+}
+

@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "MarketData Workflow",
+  "desc": "Workflow for market data lifecycle management",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "normalize",
+          "next": "normalized",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "normalized": {
+      "transitions": [
+        {
+          "name": "publish",
+          "next": "published",
+          "manual": false
+        }
+      ]
+    },
+    "published": {
+      "transitions": []
+    }
+  }
+}
+

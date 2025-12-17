@@ -1,0 +1,18 @@
+{
+  "instrument": "AAPL",
+  "feedSource": "NASDAQ_FEED_001",
+  "dataType": "Level1",
+  "bidPrice": 150.20,
+  "bidSize": 5000.0,
+  "askPrice": 150.30,
+  "askSize": 4500.0,
+  "lastPrice": 150.25,
+  "lastSize": 1000.0,
+  "volume": 45000000.0,
+  "high": 152.50,
+  "low": 149.75,
+  "receivedAt": "2023-12-15T10:30:00Z",
+  "normalizedAt": "2023-12-15T10:30:01Z",
+  "status": "PUBLISHED"
+}
+

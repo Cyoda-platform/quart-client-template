@@ -1,0 +1,16 @@
+{
+  "tradeId": "TRD_20231215_001",
+  "orderId": "ORD_20231215_001",
+  "instrument": "AAPL",
+  "side": "BUY",
+  "quantity": 50.0,
+  "price": 150.25,
+  "counterparty": "COUNTERPARTY_XYZ",
+  "executedAt": "2023-12-15T10:30:10Z",
+  "confirmedAt": "2023-12-15T10:30:15Z",
+  "grossAmount": 7512.50,
+  "commission": 7.51,
+  "netAmount": 7504.99,
+  "status": "CONFIRMED"
+}
+

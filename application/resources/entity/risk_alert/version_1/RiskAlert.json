@@ -1,0 +1,16 @@
+{
+  "alertType": "EXPOSURE_LIMIT",
+  "severity": "HIGH",
+  "account": "ACC_12345",
+  "orderId": "ORD_20231215_001",
+  "ruleName": "MAX_NOTIONAL_PER_ACCOUNT",
+  "ruleDescription": "Maximum notional exposure per account exceeded",
+  "currentValue": 1250000.00,
+  "thresholdValue": 1000000.00,
+  "message": "Account ACC_12345 exposure exceeds limit by $250,000",
+  "actionRequired": "REDUCE_POSITION",
+  "triggeredAt": "2023-12-15T10:30:20Z",
+  "resolvedAt": null,
+  "status": "ACTIVE"
+}
+

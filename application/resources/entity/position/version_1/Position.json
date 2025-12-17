@@ -1,0 +1,14 @@
+{
+  "account": "ACC_12345",
+  "instrument": "AAPL",
+  "quantity": 150.0,
+  "averagePrice": 150.10,
+  "currentPrice": 151.50,
+  "marketValue": 22725.00,
+  "realizedPnl": 125.50,
+  "unrealizedPnl": 210.00,
+  "openedAt": "2023-12-01T09:00:00Z",
+  "closedAt": null,
+  "status": "OPEN"
+}
+

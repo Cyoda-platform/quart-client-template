@@ -58,11 +58,6 @@ class NormalizeMarketDataProcessor(CyodaProcessor):
                 # Avoid division by zero
                 normalized_spread = (spread / mid_price) if mid_price != 0 else 0.0
 
-                # Store normalized metrics
-                market_data.spread = spread
-                market_data.mid_price = mid_price
-                market_data.normalized_spread = normalized_spread
-
                 self.logger.info(
                     f"MarketData {market_data.technical_id} normalized - "
                     f"spread: {spread:.4f}, mid_price: {mid_price:.4f}, "

@@ -61,10 +61,6 @@ class InitializePositionProcessor(CyodaProcessor):
             if position.current_price is None:
                 position.current_price = position.average_price
 
-            # Mark position as initialized
-            position.initialized = True
-            position.initialization_status = "INITIALIZED"
-
             self.logger.info(
                 f"Position {position.technical_id} initialized - "
                 f"account: {position.account_id}, instrument: {position.instrument_id}, "

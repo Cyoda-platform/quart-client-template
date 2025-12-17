@@ -58,11 +58,13 @@ class ApplyFillToPositionProcessor(CyodaProcessor):
 
             # Get the related Order to determine account_id and side
             try:
-                order_response = await entity_service.get(
+                order_response = await entity_service.get_by_id(
                     entity_id=fill.order_id,
                     entity_class=Order.ENTITY_NAME,
                     entity_version=str(Order.ENTITY_VERSION),
                 )
+                if order_response is None:
+                    raise ValueError(f"Order {fill.order_id} not found")
                 order_data = order_response.entity
                 order = Order(**order_data)
             except Exception as e:

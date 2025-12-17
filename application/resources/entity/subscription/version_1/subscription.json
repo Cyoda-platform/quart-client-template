@@ -1,0 +1,9 @@
+{
+  "id": "s-5005",
+  "customer_id": "c-2002",
+  "plan_id": "plan_monthly_1",
+  "status": "active",
+  "billing_interval": "monthly",
+  "next_billing_date": "2025-01-01",
+  "retry_policy": {"attempts": 3, "interval_days": [1,3,7]}
+}

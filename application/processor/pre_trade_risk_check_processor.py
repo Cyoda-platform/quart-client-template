@@ -8,10 +8,10 @@ RiskLimit entities to ensure orders comply with risk management rules.
 import logging
 from typing import Any, List
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaProcessor
 from application.entity.order.version_1.order import Order
 from application.entity.risk_limit.version_1.risk_limit import RiskLimit
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaEntity, CyodaProcessor
 from services.services import get_entity_service
 
 
@@ -74,9 +74,7 @@ class PreTradeRiskCheckProcessor(CyodaProcessor):
             order.risk_check_status = "PASSED"
             order.risk_check_timestamp = order.submitted_at
 
-            self.logger.info(
-                f"Order {order.technical_id} passed pre-trade risk checks"
-            )
+            self.logger.info(f"Order {order.technical_id} passed pre-trade risk checks")
 
             return order
 
@@ -85,7 +83,7 @@ class PreTradeRiskCheckProcessor(CyodaProcessor):
             self.logger.error(
                 f"Risk limit breach for Order {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
-            if hasattr(entity, 'risk_check_status'):
+            if hasattr(entity, "risk_check_status"):
                 entity.risk_check_status = "FAILED"
                 entity.risk_check_error = str(e)
             raise
@@ -112,9 +110,7 @@ class PreTradeRiskCheckProcessor(CyodaProcessor):
             # Note: In a real system, you would use proper query filters
             # to retrieve all active risk limits for the account
             # For this example, we'll return an empty list and log
-            self.logger.info(
-                f"Retrieving risk limits for account {account_id}"
-            )
+            self.logger.info(f"Retrieving risk limits for account {account_id}")
 
             # Placeholder - in production, implement proper query
             risk_limits: List[RiskLimit] = []

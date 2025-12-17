@@ -8,10 +8,10 @@ to validate execution details and ensure data consistency.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaProcessor
 from application.entity.fill.version_1.fill import Fill
 from application.entity.order.version_1.order import Order
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaEntity, CyodaProcessor
 from services.services import get_entity_service
 
 
@@ -87,9 +87,7 @@ class ReconcileFillProcessor(CyodaProcessor):
                 fill.reconciliation_status = "FAILED"
                 fill.reconciliation_error = str(e)
 
-            self.logger.info(
-                f"Fill {fill.technical_id} processed successfully"
-            )
+            self.logger.info(f"Fill {fill.technical_id} processed successfully")
 
             return fill
 

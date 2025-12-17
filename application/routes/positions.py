@@ -35,9 +35,7 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
 
-positions_bp = Blueprint(
-    "positions", __name__, url_prefix="/api/positions"
-)
+positions_bp = Blueprint("positions", __name__, url_prefix="/api/positions")
 
 
 # ---- Routes -----------------------------------------------------------------
@@ -162,9 +160,7 @@ async def update_position(entity_id: str) -> ResponseReturnValue:
         return jsonify(_to_entity_dict(response.data)), 200
 
     except ValueError as e:
-        logger.warning(
-            "Validation error updating Position %s: %s", entity_id, str(e)
-        )
+        logger.warning("Validation error updating Position %s: %s", entity_id, str(e))
         return jsonify({"error": str(e), "code": "VALIDATION_ERROR"}), 400
     except Exception as e:  # pragma: no cover
         logger.exception("Error updating Position %s: %s", entity_id, str(e))
@@ -191,11 +187,16 @@ async def delete_position(entity_id: str) -> ResponseReturnValue:
         logger.info("Deleted Position %s", entity_id)
 
         # Thin proxy: return success message
-        return jsonify({
-            "success": True,
-            "message": "Position deleted successfully",
-            "entity_id": entity_id,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Position deleted successfully",
+                    "entity_id": entity_id,
+                }
+            ),
+            200,
+        )
 
     except ValueError as e:
         logger.warning("Invalid entity ID %s: %s", entity_id, str(e))

@@ -31,7 +31,10 @@ class Position(CyodaEntity):
     instrument_id: str = Field(
         ..., alias="instrumentId", description="ID of the instrument"
     )
-    quantity: float = Field(..., description="Current position quantity (positive for long, negative for short)")
+    quantity: float = Field(
+        ...,
+        description="Current position quantity (positive for long, negative for short)",
+    )
     average_price: float = Field(
         ..., alias="averagePrice", description="Average price of the position"
     )
@@ -55,7 +58,9 @@ class Position(CyodaEntity):
 
     # Metadata
     last_updated: str = Field(
-        ..., alias="lastUpdated", description="Timestamp of last position update (ISO 8601)"
+        ...,
+        alias="lastUpdated",
+        description="Timestamp of last position update (ISO 8601)",
     )
 
     model_config = ConfigDict(

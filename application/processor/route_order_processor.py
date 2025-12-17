@@ -9,10 +9,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.audit_event.version_1.audit_event import AuditEvent
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
-from application.entity.audit_event.version_1.audit_event import AuditEvent
 from services.services import get_entity_service
 
 
@@ -65,9 +65,7 @@ class RouteOrderProcessor(CyodaProcessor):
             # Create audit event for order routing
             await self._create_routing_audit_event(order, execution_venue)
 
-            self.logger.info(
-                f"Order {order.technical_id} routed to {execution_venue}"
-            )
+            self.logger.info(f"Order {order.technical_id} routed to {execution_venue}")
 
             return order
 

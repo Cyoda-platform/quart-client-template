@@ -8,9 +8,9 @@ values and preparing positions for tracking.
 import logging
 from typing import Any
 
+from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.position.version_1.position import Position
 from services.services import get_entity_service
 
 

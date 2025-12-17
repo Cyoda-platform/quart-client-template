@@ -24,14 +24,18 @@ class RiskLimit(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     # Core risk limit fields
-    account_id: str = Field(..., alias="accountId", description="Account ID for the risk limit")
+    account_id: str = Field(
+        ..., alias="accountId", description="Account ID for the risk limit"
+    )
     limit_type: str = Field(
         ...,
         alias="limitType",
         description="Type of limit: ORDER_SIZE, POSITION, MAX_NOTIONAL, INSTRUMENT_RESTRICTION",
     )
     instrument_id: Optional[str] = Field(
-        default=None, alias="instrumentId", description="Instrument ID (if limit is instrument-specific)"
+        default=None,
+        alias="instrumentId",
+        description="Instrument ID (if limit is instrument-specific)",
     )
 
     # Limit values
@@ -39,14 +43,18 @@ class RiskLimit(CyodaEntity):
         default=None, alias="maxOrderQuantity", description="Maximum order quantity"
     )
     max_position_quantity: Optional[float] = Field(
-        default=None, alias="maxPositionQuantity", description="Maximum position quantity"
+        default=None,
+        alias="maxPositionQuantity",
+        description="Maximum position quantity",
     )
     max_notional: Optional[float] = Field(
         default=None, alias="maxNotional", description="Maximum notional value"
     )
 
     # Status
-    is_active: bool = Field(default=True, alias="isActive", description="Whether limit is active")
+    is_active: bool = Field(
+        default=True, alias="isActive", description="Whether limit is active"
+    )
     breach_action: str = Field(
         default="REJECT",
         alias="breachAction",

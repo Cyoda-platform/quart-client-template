@@ -26,15 +26,21 @@ class AuditEvent(CyodaEntity):
 
     # Core audit event fields
     event_type: str = Field(
-        ..., alias="eventType", description="Type of event (e.g., ORDER_SUBMITTED, FILL_RECEIVED)"
+        ...,
+        alias="eventType",
+        description="Type of event (e.g., ORDER_SUBMITTED, FILL_RECEIVED)",
     )
     entity_type: str = Field(
-        ..., alias="entityType", description="Type of entity involved (e.g., Order, Fill, Position)"
+        ...,
+        alias="entityType",
+        description="Type of entity involved (e.g., Order, Fill, Position)",
     )
     entity_id: str = Field(
         ..., alias="entityId", description="Identifier of the entity involved"
     )
-    actor: str = Field(..., description="User or system component that triggered the event")
+    actor: str = Field(
+        ..., description="User or system component that triggered the event"
+    )
     timestamp: str = Field(..., description="Timestamp of the event (ISO 8601)")
 
     # Optional fields

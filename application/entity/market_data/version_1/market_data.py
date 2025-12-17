@@ -29,7 +29,9 @@ class MarketData(CyodaEntity):
         ..., alias="instrumentId", description="Identifier of the instrument"
     )
     timestamp: str = Field(..., description="Timestamp of market data (ISO 8601)")
-    source: str = Field(..., description="Source of market data (e.g., EXCHANGE_A, NASDAQ)")
+    source: str = Field(
+        ..., description="Source of market data (e.g., EXCHANGE_A, NASDAQ)"
+    )
 
     # Optional price fields
     bid: Optional[float] = Field(default=None, description="Current bid price")

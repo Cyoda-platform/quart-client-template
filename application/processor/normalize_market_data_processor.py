@@ -8,9 +8,9 @@ and enriching market data with normalized metrics.
 import logging
 from typing import Any
 
+from application.entity.market_data.version_1.market_data import MarketData
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.market_data.version_1.market_data import MarketData
 from services.services import get_entity_service
 
 

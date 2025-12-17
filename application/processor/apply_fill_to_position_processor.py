@@ -9,11 +9,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.fill.version_1.fill import Fill
+from application.entity.order.version_1.order import Order
+from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.fill.version_1.fill import Fill
-from application.entity.position.version_1.position import Position
-from application.entity.order.version_1.order import Order
 from services.services import get_entity_service
 
 

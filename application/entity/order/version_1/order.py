@@ -43,7 +43,9 @@ class Order(CyodaEntity):
         ..., alias="submittedBy", description="User/system that submitted the order"
     )
     submitted_at: str = Field(
-        ..., alias="submittedAt", description="Timestamp when order was submitted (ISO 8601)"
+        ...,
+        alias="submittedAt",
+        description="Timestamp when order was submitted (ISO 8601)",
     )
 
     # Order execution tracking

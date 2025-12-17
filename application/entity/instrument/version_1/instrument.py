@@ -27,7 +27,9 @@ class Instrument(CyodaEntity):
     # Core instrument fields
     symbol: str = Field(..., description="Trading symbol/ticker")
     instrument_type: str = Field(
-        ..., alias="instrumentType", description="Instrument type: EQUITY, FUTURE, OPTION"
+        ...,
+        alias="instrumentType",
+        description="Instrument type: EQUITY, FUTURE, OPTION",
     )
     exchange: str = Field(..., description="Primary exchange where instrument trades")
     currency: str = Field(..., description="Currency of the instrument")
@@ -48,10 +50,14 @@ class Instrument(CyodaEntity):
 
     # Derivative-specific fields
     underlying_symbol: Optional[str] = Field(
-        default=None, alias="underlyingSymbol", description="Underlying symbol for derivatives"
+        default=None,
+        alias="underlyingSymbol",
+        description="Underlying symbol for derivatives",
     )
     expiry_date: Optional[str] = Field(
-        default=None, alias="expiryDate", description="Expiry date for derivatives (ISO 8601)"
+        default=None,
+        alias="expiryDate",
+        description="Expiry date for derivatives (ISO 8601)",
     )
     strike_price: Optional[float] = Field(
         default=None, alias="strikePrice", description="Strike price for options"
@@ -62,7 +68,9 @@ class Instrument(CyodaEntity):
 
     # Trading status
     is_tradable: bool = Field(
-        default=True, alias="isTradable", description="Whether instrument is currently tradable"
+        default=True,
+        alias="isTradable",
+        description="Whether instrument is currently tradable",
     )
 
     model_config = ConfigDict(

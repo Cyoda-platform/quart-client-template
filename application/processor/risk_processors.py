@@ -1,5 +1,6 @@
 import logging
 
+
 class RiskMonitoringProcessor:
     """
     Processor for monitoring risk.

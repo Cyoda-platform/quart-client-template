@@ -1,0 +1,12 @@
+{
+  "id": "c-2002",
+  "name": "Jane Doe",
+  "email": "jane@example.com",
+  "phone": "+15551234567",
+  "billing_address": {
+    "line1": "123 Main St",
+    "city": "Anytown",
+    "country": "US",
+    "postal_code": "12345"
+  }
+}

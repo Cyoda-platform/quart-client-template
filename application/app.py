@@ -11,6 +11,12 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.orders import orders_bp
+from application.routes.trades import trades_bp
+from application.routes.accounts import accounts_bp
+from application.routes.instruments import instruments_bp
+from application.routes.positions import positions_bp
+from application.routes.risk_limits import risk_limits_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,6 +43,14 @@ QuartSchema(
         }
     },
 )
+
+# Register blueprints
+app.register_blueprint(orders_bp)
+app.register_blueprint(trades_bp)
+app.register_blueprint(accounts_bp)
+app.register_blueprint(instruments_bp)
+app.register_blueprint(positions_bp)
+app.register_blueprint(risk_limits_bp)
 
 # Global holder for the background task to satisfy mypy
 # (avoid setting arbitrary attrs on app)

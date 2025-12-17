@@ -1,0 +1,9 @@
+{
+  "id": "pm-3003",
+  "type": "card",
+  "token": "tok_abc123",
+  "last4": "4242",
+  "expiry": "12/2026",
+  "card_brand": "Visa",
+  "billing_address_id": "addr-1001"
+}

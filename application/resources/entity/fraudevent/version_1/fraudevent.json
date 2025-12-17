@@ -1,0 +1,8 @@
+{
+  "id": "f-8008",
+  "transaction_id": "t-4004",
+  "score": 85,
+  "rules_triggered": ["velocity", "ip_geo_mismatch"],
+  "review_state": "pending",
+  "created_at": "2025-01-01T12:00:10Z"
+}

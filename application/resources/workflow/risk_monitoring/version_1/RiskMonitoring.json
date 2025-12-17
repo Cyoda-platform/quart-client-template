@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "name": "RiskEvent",
+  "desc": "Monitors for and manages risk limit breaches.",
+  "initialState": "dormant",
+  "active": true,
+  "states": {
+    "dormant": {
+      "transitions": [
+        {
+          "name": "trigger_breach_check",
+          "next": "monitoring",
+          "manual": false
+        }
+      ]
+    },
+    "monitoring": {
+      "transitions": [
+        {
+          "name": "detect_breach",
+          "next": "breached",
+          "manual": true,
+          "processors": [
+            {
+              "name": "RiskAlertingProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "responseTimeoutMs": 5000
+              }
+            }
+          ]
+        },
+        {
+          "name": "stand_down",
+          "next": "dormant",
+          "manual": true
+        }
+      ]
+    },
+    "breached": {
+      "transitions": [
+        {
+          "name": "acknowledge_breach",
+          "next": "acknowledged",
+          "manual": true
+        }
+      ]
+    },
+    "acknowledged": {
+      "transitions": [
+        {
+          "name": "resolve_breach",
+          "next": "dormant",
+          "manual": true
+        }
+      ]
+    }
+  }
+}

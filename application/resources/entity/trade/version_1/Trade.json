@@ -1,0 +1,10 @@
+{
+  "trade_id": "TRD-2025-12-15-00001",
+  "order_id": "ORD-2025-12-15-00001",
+  "portfolio_id": "ACC-TRD-001",
+  "instrument_id": "MSFT",
+  "side": "BUY",
+  "quantity": 50,
+  "price": 450.75,
+  "execution_timestamp": "2025-12-15T11:30:05Z"
+}

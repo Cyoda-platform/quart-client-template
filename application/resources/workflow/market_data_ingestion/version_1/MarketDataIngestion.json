@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "name": "MarketData",
+  "desc": "Workflow for ingesting and processing real-time market data.",
+  "initialState": "raw",
+  "active": true,
+  "states": {
+    "raw": {
+      "transitions": [
+        {
+          "name": "process_data",
+          "next": "processed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataNormalizationProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 1000,
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "processed": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}

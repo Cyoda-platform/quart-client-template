@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "name": "Order",
+  "desc": "Manages the lifecycle of a trading order from creation to execution or termination.",
+  "initialState": "Pending",
+  "active": true,
+  "states": {
+    "Pending": {
+      "transitions": [
+        {
+          "name": "submit_order",
+          "next": "Submitted",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PreTradeCheckProcessor",
+              "executionMode": "SYNC",
+              "config": { "attachEntity": true }
+            }
+          ]
+        }
+      ]
+    },
+    "Submitted": {
+      "transitions": [
+        {
+          "name": "report_fill",
+          "next": "PartiallyFilled",
+          "manual": true
+        },
+        {
+          "name": "report_full_fill",
+          "next": "Filled",
+          "manual": true
+        },
+        {
+          "name": "cancel_order",
+          "next": "Cancelled",
+          "manual": true
+        },
+        {
+          "name": "reject_order",
+          "next": "Rejected",
+          "manual": true
+        }
+      ]
+    },
+    "PartiallyFilled": {
+      "transitions": [
+        {
+          "name": "report_fill",
+          "next": "PartiallyFilled",
+          "manual": true
+        },
+        {
+          "name": "report_full_fill",
+          "next": "Filled",
+          "manual": true
+        },
+        {
+          "name": "cancel_order",
+          "next": "Cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "Filled": { "transitions": [] },
+    "Cancelled": { "transitions": [] },
+    "Rejected": { "transitions": [] }
+  }
+}

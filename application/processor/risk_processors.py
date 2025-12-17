@@ -1,5 +1,6 @@
 import logging
-from typing import Anyclass RiskMonitoringProcessor:
+
+class RiskMonitoringProcessor:
     """
     Processor for monitoring risk.
     """
@@ -13,6 +14,9 @@ from typing import Anyclass RiskMonitoringProcessor:
         # If a breach is detected, we would create a RiskEvent.
 
         # Example of creating a risk event:
+        # from services.services import get_entity_service
+        # from application.entity.risk_event.version_1.risk_event import RiskEvent
+        # import time
         # entity_service = get_entity_service()
         # risk_event_data = {
         #     "portfolio_id": portfolio_id,
@@ -20,6 +24,6 @@ from typing import Anyclass RiskMonitoringProcessor:
         #     "details": "Details about the breach.",
         #     "timestamp": int(time.time())
         # }
-        # await entity_service.create(RiskEvent.ENTITY_NAME, RiskEvent.ENTITY_VERSION, risk_event_data)
+        # await entity_service.save(risk_event_data, RiskEvent.ENTITY_NAME, RiskEvent.ENTITY_VERSION)
 
         pass

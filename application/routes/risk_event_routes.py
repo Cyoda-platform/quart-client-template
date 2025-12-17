@@ -1,6 +1,6 @@
 from typing import Any, Dict, Tuple
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint, request
 
 from application.entity.risk_event.version_1.risk_event import RiskEvent
 from application.processor.risk_processors import RiskMonitoringProcessor

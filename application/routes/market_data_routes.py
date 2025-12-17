@@ -1,6 +1,6 @@
 from typing import Any, Dict, Tuple
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint, request
 
 from application.entity.market_data.version_1.market_data import MarketData
 from services.services import get_entity_service

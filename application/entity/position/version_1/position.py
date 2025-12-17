@@ -1,10 +1,13 @@
 from pydantic import Field
+
 from common.entity.cyoda_entity import CyodaEntity
+
 
 class Position(CyodaEntity):
     """
     Represents the net holding of a particular financial instrument in a portfolio.
     """
+
     ENTITY_NAME = "position"
     ENTITY_VERSION = "1"
 

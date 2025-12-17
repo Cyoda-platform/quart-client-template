@@ -1,10 +1,13 @@
 from pydantic import Field
+
 from common.entity.cyoda_entity import CyodaEntity
+
 
 class Portfolio(CyodaEntity):
     """
     A collection of positions held by a trading entity.
     """
+
     ENTITY_NAME = "portfolio"
     ENTITY_VERSION = "1"
 

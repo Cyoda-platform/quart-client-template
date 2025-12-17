@@ -1,10 +1,13 @@
 from pydantic import Field
+
 from common.entity.cyoda_entity import CyodaEntity
+
 
 class MarketData(CyodaEntity):
     """
     Represents real-time market information for a financial instrument.
     """
+
     ENTITY_NAME = "market_data"
     ENTITY_VERSION = "1"
 

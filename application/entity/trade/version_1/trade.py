@@ -1,11 +1,14 @@
 from pydantic import Field
-from common.entity.cyoda_entity import CyodaEntity
+
 from application.entity.order.version_1.order import OrderSide
+from common.entity.cyoda_entity import CyodaEntity
+
 
 class Trade(CyodaEntity):
     """
     Represents an executed order or a partial fill of an order.
     """
+
     ENTITY_NAME = "trade"
     ENTITY_VERSION = "1"
 

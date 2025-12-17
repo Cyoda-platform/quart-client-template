@@ -1,13 +1,9 @@
-from common.processor.base import CyodaProcessor
-from services.services import get_entity_service
-from application.entity.risk_event.version_1.risk_event import RiskEvent
 import logging
-import time
-
-class RiskMonitoringProcessor:
+from typing import Anyclass RiskMonitoringProcessor:
     """
     Processor for monitoring risk.
     """
+
     async def check_risk(self, portfolio_id: str) -> None:
         """
         Checks for risk breaches in a portfolio.
@@ -15,7 +11,7 @@ class RiskMonitoringProcessor:
         logging.info(f"Checking risk for portfolio: {portfolio_id}")
         # In a real implementation, we would check for risk breaches.
         # If a breach is detected, we would create a RiskEvent.
-        
+
         # Example of creating a risk event:
         # entity_service = get_entity_service()
         # risk_event_data = {

@@ -1,0 +1,10 @@
+{
+  "symbol": "AAPL",
+  "instrumentType": "EQUITY",
+  "exchange": "NASDAQ",
+  "currency": "USD",
+  "description": "Apple Inc. Common Stock",
+  "lotSize": 1.0,
+  "tickSize": 0.01,
+  "isTradable": true
+}

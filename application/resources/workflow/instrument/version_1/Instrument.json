@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "Instrument Workflow",
+  "desc": "Workflow for instrument reference data management",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "suspend",
+          "next": "suspended",
+          "manual": true
+        },
+        {
+          "name": "delist",
+          "next": "delisted",
+          "manual": true
+        }
+      ]
+    },
+    "suspended": {
+      "transitions": [
+        {
+          "name": "reactivate",
+          "next": "active",
+          "manual": true
+        },
+        {
+          "name": "delist",
+          "next": "delisted",
+          "manual": true
+        }
+      ]
+    },
+    "delisted": {
+      "transitions": []
+    }
+  }
+}

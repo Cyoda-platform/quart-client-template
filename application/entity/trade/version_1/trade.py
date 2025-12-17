@@ -1,29 +1,17 @@
 from pydantic import Field
 from common.entity.cyoda_entity import CyodaEntity
-import datetime
-from enum import Enum
-
-class TradeSide(str, Enum):
-    BUY = "BUY"
-    SELL = "SELL"
+from application.entity.order.version_1.order import OrderSide
 
 class Trade(CyodaEntity):
     """
     Represents an executed order or a partial fill of an order.
     """
+    ENTITY_NAME = "trade"
+    ENTITY_VERSION = 1
 
-    # Constants
-    ENTITY_NAME: str = "Trade"
-    ENTITY_VERSION: int = 1
-
-    # Business ID
-    trade_id: str = Field(..., description="Unique identifier for the trade.", example="TRD-2025-12-15-00001")
-
-    # Trade Fields
-    order_id: str = Field(..., description="The order that this trade is part of.", example="ORD-2025-12-15-00001")
-    portfolio_id: str = Field(..., description="The portfolio this trade belongs to.", example="PORT-001")
-    instrument_id: str = Field(..., description="Identifier for the financial instrument.", example="AAPL")
-    side: TradeSide = Field(..., description="Side of the trade (BUY or SELL).")
-    quantity: int = Field(..., description="The number of units traded.", example=50)
-    price: float = Field(..., description="The price at which the trade was executed.", example=145.12)
-    execution_timestamp: datetime.datetime = Field(..., description="Timestamp of when the trade was executed.")
+    order_id: str = Field(..., description="The ID of the order that was executed.")
+    instrument_id: str = Field(..., description="ID of the financial instrument.")
+    side: OrderSide = Field(..., description="Buy or Sell.")
+    quantity: float = Field(..., description="The quantity traded.")
+    price: float = Field(..., description="The execution price.")
+    trade_time: int = Field(..., description="The time of the trade.")

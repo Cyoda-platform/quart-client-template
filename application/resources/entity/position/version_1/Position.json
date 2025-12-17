@@ -1,9 +1,6 @@
 {
-  "position_id": "ACC-TRD-001_GOOGL",
-  "portfolio_id": "ACC-TRD-001",
-  "instrument_id": "GOOGL",
-  "quantity": 25,
-  "average_price": 2830.45,
-  "market_value": 71268.75,
-  "last_updated": "2025-12-15T14:45:10Z"
+  "portfolio_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+  "instrument_id": "AAPL",
+  "quantity": 100,
+  "average_price": 170.05
 }

@@ -13,6 +13,7 @@ from services.services import get_grpc_client, initialize_services
 # Import blueprints for different route groups
 from application.routes.market_data_routes import market_data_routes
 from application.routes.order_routes import order_routes
+from application.routes.trade_routes import trade_routes
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ logger.setLevel(logging.INFO)
 app = Quart(__name__)
 app.register_blueprint(market_data_routes)
 app.register_blueprint(order_routes)
+app.register_blueprint(trade_routes)
 
 QuartSchema(
     app,
@@ -33,6 +35,10 @@ QuartSchema(
         {
             "name": "Orders",
             "description": "Order management endpoints",
+        },
+        {
+            "name": "Trades",
+            "description": "Trade management endpoints",
         },
         {
             "name": "ExampleEntities",

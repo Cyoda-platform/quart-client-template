@@ -1,0 +1,59 @@
+{
+    "version": "1.0",
+    "name": "PositionLifecycle",
+    "desc": "Workflow for managing the lifecycle of a position.",
+    "initialState": "initial_state",
+    "active": true,
+    "states": {
+        "initial_state": {
+            "transitions": [
+                {
+                    "name": "create",
+                    "next": "Active",
+                    "manual": false
+                }
+            ]
+        },
+        "Active": {
+            "transitions": [
+                {
+                    "name": "reconcile",
+                    "next": "Reconciling",
+                    "manual": true,
+                    "processors": [
+                        {
+                            "name": "PositionReconciliationProcessor",
+                            "executionMode": "SYNC",
+                            "config": {
+                                "calculationNodesTags": "cyoda_application"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "Reconciling": {
+            "transitions": [
+                {
+                    "name": "reconciliation_ok",
+                    "next": "Active",
+                    "manual": true
+                },
+                {
+                    "name": "reconciliation_fail",
+                    "next": "Discrepancy",
+                    "manual": true
+                }
+            ]
+        },
+        "Discrepancy": {
+            "transitions": [
+                {
+                    "name": "resolve",
+                    "next": "Active",
+                    "manual": true
+                }
+            ]
+        }
+    }
+}

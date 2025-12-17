@@ -1,0 +1,21 @@
+{
+    "version": "1.0",
+    "name": "TradeLifecycle",
+    "desc": "Workflow for managing the lifecycle of a trade.",
+    "initialState": "initial_state",
+    "active": true,
+    "states": {
+        "initial_state": {
+            "transitions": [
+                {
+                    "name": "create",
+                    "next": "Created",
+                    "manual": false
+                }
+            ]
+        },
+        "Created": {
+            "transitions": []
+        }
+    }
+}

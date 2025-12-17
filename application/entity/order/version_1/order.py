@@ -25,9 +25,7 @@ class Order(CyodaEntity):
     price: Optional[float] = Field(
         default=None, ge=0, description="Order price (required for LIMIT/STOP)"
     )
-    time_in_force: str = Field(
-        default="GTC", description="IOC, FOK, or GTC"
-    )
+    time_in_force: str = Field(default="GTC", description="IOC, FOK, or GTC")
     route: str = Field(default="DEFAULT", description="Execution route")
 
     client_order_id: Optional[str] = Field(
@@ -91,4 +89,3 @@ class Order(CyodaEntity):
         data = self.model_dump(by_alias=True)
         data["state"] = self.state
         return data
-

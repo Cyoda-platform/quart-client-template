@@ -1,8 +1,8 @@
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.order.version_1.order import Order
 
 
 class OrderValidationCriterion(CyodaCriteriaChecker):
@@ -35,15 +35,11 @@ class OrderValidationCriterion(CyodaCriteriaChecker):
             order = cast_entity(entity, Order)
 
             if not order.client_id or len(order.client_id.strip()) == 0:
-                self.logger.warning(
-                    f"Order {order.technical_id} has invalid client_id"
-                )
+                self.logger.warning(f"Order {order.technical_id} has invalid client_id")
                 return False
 
             if not order.account or len(order.account.strip()) == 0:
-                self.logger.warning(
-                    f"Order {order.technical_id} has invalid account"
-                )
+                self.logger.warning(f"Order {order.technical_id} has invalid account")
                 return False
 
             if not order.instrument or len(order.instrument.strip()) == 0:
@@ -76,4 +72,3 @@ class OrderValidationCriterion(CyodaCriteriaChecker):
                 f"Error validating order {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

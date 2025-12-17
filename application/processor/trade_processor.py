@@ -3,9 +3,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.trade.version_1.trade import Trade
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.trade.version_1.trade import Trade
 
 
 class TradeProcessor(CyodaProcessor):
@@ -54,9 +54,7 @@ class TradeProcessor(CyodaProcessor):
 
             trade.status = "CONFIRMED"
 
-            self.logger.info(
-                f"Trade {trade.trade_id} confirmed successfully"
-            )
+            self.logger.info(f"Trade {trade.trade_id} confirmed successfully")
 
             return trade
 
@@ -65,4 +63,3 @@ class TradeProcessor(CyodaProcessor):
                 f"Error processing trade {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

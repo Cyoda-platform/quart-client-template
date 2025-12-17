@@ -5,8 +5,8 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.position.version_1.position import Position
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -196,9 +196,15 @@ async def trigger_position_transition(entity_id: str) -> ResponseReturnValue:
             entity_version=str(Position.ENTITY_VERSION),
         )
 
-        logger.info("Executed transition '%s' on Position %s", transition_name, entity_id)
-        return jsonify({"id": response.metadata.id, "state": response.metadata.state}), 200
+        logger.info(
+            "Executed transition '%s' on Position %s", transition_name, entity_id
+        )
+        return (
+            jsonify({"id": response.metadata.id, "state": response.metadata.state}),
+            200,
+        )
     except Exception as e:
-        logger.exception("Error executing transition on Position %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error executing transition on Position %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
-

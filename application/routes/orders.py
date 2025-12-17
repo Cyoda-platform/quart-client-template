@@ -5,9 +5,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate, validate_querystring
 
+from application.entity.order.version_1.order import Order
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.order.version_1.order import Order
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +191,9 @@ async def get_order_transitions(entity_id: str) -> ResponseReturnValue:
         )
         return jsonify({"entity_id": entity_id, "transitions": transitions}), 200
     except Exception as e:
-        logger.exception("Error getting transitions for Order %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error getting transitions for Order %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
 
 
@@ -221,8 +223,12 @@ async def trigger_order_transition(entity_id: str) -> ResponseReturnValue:
         )
 
         logger.info("Executed transition '%s' on Order %s", transition_name, entity_id)
-        return jsonify({"id": response.metadata.id, "state": response.metadata.state}), 200
+        return (
+            jsonify({"id": response.metadata.id, "state": response.metadata.state}),
+            200,
+        )
     except Exception as e:
-        logger.exception("Error executing transition on Order %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error executing transition on Order %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
-

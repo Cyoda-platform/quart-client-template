@@ -3,9 +3,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
 from services.services import get_entity_service
 
 
@@ -49,9 +49,7 @@ class OrderProcessor(CyodaProcessor):
             )
             order.status = "SUBMITTED"
 
-            self.logger.info(
-                f"Order {order.order_id} submitted successfully"
-            )
+            self.logger.info(f"Order {order.order_id} submitted successfully")
 
             return order
 
@@ -60,4 +58,3 @@ class OrderProcessor(CyodaProcessor):
                 f"Error processing order {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

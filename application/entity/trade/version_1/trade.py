@@ -40,9 +40,7 @@ class Trade(CyodaEntity):
     gross_amount: Optional[float] = Field(
         default=None, alias="grossAmount", description="Gross trade amount"
     )
-    commission: Optional[float] = Field(
-        default=None, description="Commission charged"
-    )
+    commission: Optional[float] = Field(default=None, description="Commission charged")
     net_amount: Optional[float] = Field(
         default=None, alias="netAmount", description="Net trade amount"
     )
@@ -62,4 +60,3 @@ class Trade(CyodaEntity):
         data = self.model_dump(by_alias=True)
         data["state"] = self.state
         return data
-

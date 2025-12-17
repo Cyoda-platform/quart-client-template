@@ -2,9 +2,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.risk_alert.version_1.risk_alert import RiskAlert
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.risk_alert.version_1.risk_alert import RiskAlert
 
 
 class RiskAlertProcessor(CyodaProcessor):
@@ -55,4 +55,3 @@ class RiskAlertProcessor(CyodaProcessor):
                 f"Error processing risk alert {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

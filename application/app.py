@@ -5,12 +5,17 @@ from typing import Callable, Dict, Optional
 from quart import Quart, Response
 from quart_schema import QuartSchema, ResponseSchemaValidationError, hide
 
+from application.routes.market_data import market_data_bp
+
+# Import blueprints for trading platform entities
+from application.routes.orders import orders_bp
+from application.routes.positions import positions_bp
+from application.routes.risk_alerts import risk_alerts_bp
+from application.routes.trades import trades_bp
 from common.exception.exception_handler import (
     register_error_handlers as _register_error_handlers,
 )
 from services.services import get_grpc_client, initialize_services
-
-# Import blueprints for different route groups
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,13 +25,16 @@ app = Quart(__name__)
 
 QuartSchema(
     app,
-    info={"title": "Cyoda Client Application", "version": "1.0.0"},
+    info={"title": "Cyoda Trading Platform", "version": "1.0.0"},
     tags=[
         {
-            "name": "ExampleEntities",
-            "description": "ExampleEntity management endpoints",
+            "name": "orders",
+            "description": "Order management endpoints",
         },
-        {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "trades", "description": "Trade management endpoints"},
+        {"name": "positions", "description": "Position management endpoints"},
+        {"name": "risk-alerts", "description": "Risk alert management endpoints"},
+        {"name": "market-data", "description": "Market data management endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -37,6 +45,13 @@ QuartSchema(
         }
     },
 )
+
+# Register trading platform blueprints
+app.register_blueprint(orders_bp)
+app.register_blueprint(trades_bp)
+app.register_blueprint(positions_bp)
+app.register_blueprint(risk_alerts_bp)
+app.register_blueprint(market_data_bp)
 
 # Global holder for the background task to satisfy mypy
 # (avoid setting arbitrary attrs on app)

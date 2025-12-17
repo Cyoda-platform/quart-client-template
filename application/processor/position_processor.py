@@ -2,9 +2,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.position.version_1.position import Position
 
 
 class PositionProcessor(CyodaProcessor):
@@ -41,15 +41,13 @@ class PositionProcessor(CyodaProcessor):
 
             if position.quantity and position.average_price and position.current_price:
                 position.market_value = position.quantity * position.current_price
-                position.unrealized_pnl = (
-                    position.quantity * (position.current_price - position.average_price)
+                position.unrealized_pnl = position.quantity * (
+                    position.current_price - position.average_price
                 )
 
             position.status = "ACTIVE"
 
-            self.logger.info(
-                f"Position {position.instrument} activated successfully"
-            )
+            self.logger.info(f"Position {position.instrument} activated successfully")
 
             return position
 
@@ -58,4 +56,3 @@ class PositionProcessor(CyodaProcessor):
                 f"Error processing position {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

@@ -63,4 +63,3 @@ class Position(CyodaEntity):
         data = self.model_dump(by_alias=True)
         data["state"] = self.state
         return data
-

@@ -1,8 +1,8 @@
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.order.version_1.order import Order
 
 
 class RiskCheckCriterion(CyodaCriteriaChecker):
@@ -48,9 +48,7 @@ class RiskCheckCriterion(CyodaCriteriaChecker):
                     )
                     return False
 
-            self.logger.info(
-                f"Order {order.technical_id} passed all risk checks"
-            )
+            self.logger.info(f"Order {order.technical_id} passed all risk checks")
             return True
 
         except Exception as e:
@@ -58,4 +56,3 @@ class RiskCheckCriterion(CyodaCriteriaChecker):
                 f"Error performing risk checks on order {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

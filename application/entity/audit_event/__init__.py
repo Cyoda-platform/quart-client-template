@@ -1,0 +1,1 @@
+"""AuditEvent entity module."""

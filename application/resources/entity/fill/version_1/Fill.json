@@ -1,0 +1,9 @@
+{
+  "orderId": "ORD-123",
+  "instrumentId": "INST-123",
+  "quantity": 100,
+  "fillPrice": 150.25,
+  "fillTimestamp": "2025-01-15T14:30:00Z",
+  "executionVenue": "NASDAQ",
+  "commission": 5.0
+}

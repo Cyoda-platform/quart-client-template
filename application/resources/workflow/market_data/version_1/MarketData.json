@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "name": "MarketData Workflow",
+  "desc": "Workflow for market data ingestion, normalization, and publishing",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "ingest",
+          "next": "ingested",
+          "manual": false
+        }
+      ]
+    },
+    "ingested": {
+      "transitions": [
+        {
+          "name": "normalize",
+          "next": "normalized",
+          "manual": false,
+          "processors": [
+            {
+              "name": "NormalizeMarketDataProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "normalized": {
+      "transitions": [
+        {
+          "name": "publish",
+          "next": "published",
+          "manual": false
+        }
+      ]
+    },
+    "published": {
+      "transitions": []
+    }
+  }
+}

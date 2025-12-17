@@ -1,0 +1,142 @@
+{
+    "version": "1.0",
+    "name": "OrderLifecycle",
+    "desc": "Workflow for managing the lifecycle of an order.",
+    "initialState": "initial_state",
+    "active": true,
+    "states": {
+        "initial_state": {
+            "transitions": [
+                {
+                    "name": "create",
+                    "next": "Pending",
+                    "manual": false
+                }
+            ]
+        },
+        "Pending": {
+            "transitions": [
+                {
+                    "name": "submit",
+                    "next": "Submitted",
+                    "manual": true,
+                    "processors": [
+                        {
+                            "name": "PreTradeCheckProcessor",
+                            "executionMode": "SYNC",
+                            "config": {
+                                "calculationNodesTags": "cyoda_application"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "cancel",
+                    "next": "Cancelled",
+                    "manual": true,
+                    "processors": [
+                        {
+                            "name": "CancelOrderProcessor",
+                            "executionMode": "SYNC",
+                            "config": {
+                                "calculationNodesTags": "cyoda_application"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "Submitted": {
+            "transitions": [
+                {
+                    "name": "partial_fill",
+                    "next": "PartiallyFilled",
+                    "manual": true,
+                    "processors": [
+                        {
+                            "name": "PostTradeProcessor",
+                            "executionMode": "SYNC",
+                            "config": {
+                                "calculationNodesTags": "cyoda_application"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "fill",
+                    "next": "Filled",
+                    "manual": true,
+                    "processors": [
+                        {
+                            "name": "PostTradeProcessor",
+                            "executionMode": "SYNC",
+                            "config": {
+                                "calculationNodesTags": "cyoda_application"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "cancel",
+                    "next": "Cancelled",
+                    "manual": true,
+                    "processors": [
+                        {
+                            "name": "CancelOrderProcessor",
+                            "executionMode": "SYNC",
+                            "config": {
+                                "calculationNodesTags": "cyoda_application"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "reject",
+                    "next": "Rejected",
+                    "manual": true
+                }
+            ]
+        },
+        "PartiallyFilled": {
+            "transitions": [
+                {
+                    "name": "fill",
+                    "next": "Filled",
+                    "manual": true,
+                    "processors": [
+                        {
+                            "name": "PostTradeProcessor",
+                            "executionMode": "SYNC",
+                            "config": {
+                                "calculationNodesTags": "cyoda_application"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "cancel",
+                    "next": "Cancelled",
+                    "manual": true,
+                    "processors": [
+                        {
+                            "name": "CancelOrderProcessor",
+                            "executionMode": "SYNC",
+                            "config": {
+                                "calculationNodesTags": "cyoda_application"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "Filled": {
+            "transitions": []
+        },
+        "Cancelled": {
+            "transitions": []
+        },
+        "Rejected": {
+            "transitions": []
+        }
+    }
+}

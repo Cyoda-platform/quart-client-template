@@ -1,0 +1,21 @@
+{
+    "version": "1.0",
+    "name": "RiskEventLifecycle",
+    "desc": "Workflow for managing the lifecycle of a risk event.",
+    "initialState": "initial_state",
+    "active": true,
+    "states": {
+        "initial_state": {
+            "transitions": [
+                {
+                    "name": "create",
+                    "next": "Created",
+                    "manual": false
+                }
+            ]
+        },
+        "Created": {
+            "transitions": []
+        }
+    }
+}

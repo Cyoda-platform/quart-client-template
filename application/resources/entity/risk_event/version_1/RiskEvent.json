@@ -1,0 +1,15 @@
+{
+  "event_id": "RKE-2025-12-15-00001",
+  "portfolio_id": "ACC-TRD-001",
+  "risk_type": "ConcentrationLimit",
+  "level": "CRITICAL",
+  "message": "Concentration limit breached for instrument GOOGL. Current holding exceeds 25% of portfolio value.",
+  "details": {
+    "instrument_id": "GOOGL",
+    "current_value": 71268.75,
+    "portfolio_value": 2350650.75,
+    "concentration": "30.32%",
+    "limit": "25.00%"
+  },
+  "timestamp": "2025-12-15T15:00:00Z"
+}

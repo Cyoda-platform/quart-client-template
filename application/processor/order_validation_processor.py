@@ -7,13 +7,13 @@ Validates orders against accounts and risk limits.
 import logging
 from typing import Any, List, Optional
 
+from application.entity.account.version_1.account import Account
+from application.entity.order.version_1.order import Order
+from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from common.service.entity_service import SearchConditionRequest, EntityResponse
+from common.service.entity_service import EntityResponse, SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.order.version_1.order import Order
-from application.entity.account.version_1.account import Account
-from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 
 
 class OrderValidationProcessor(CyodaProcessor):
@@ -33,7 +33,7 @@ class OrderValidationProcessor(CyodaProcessor):
 
             # Default to FAIL
             validation_status = "FAIL"
-            rejection_reason = ""
+            rejection_reason: Optional[str] = ""
             status = "REJECTED"
 
             entity_service = get_entity_service()

@@ -4,9 +4,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.position.version_1.position import Position
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.position.version_1.position import Position
 
 positions_bp = Blueprint("positions", __name__, url_prefix="/api/positions")
 
@@ -18,7 +18,15 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
 @positions_bp.route("", methods=["POST"])
 @tag(["positions"])
 @operation_id("create_position")
-@validate(request=Position)
+@validate(
+    request=Position,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def create_position(data: Position) -> ResponseReturnValue:
     try:
         service = get_entity_service()
@@ -54,7 +62,15 @@ async def get_position(entity_id: str) -> ResponseReturnValue:
 @positions_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["positions"])
 @operation_id("update_position")
-@validate(request=Position)
+@validate(
+    request=Position,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def update_position(entity_id: str, data: Position) -> ResponseReturnValue:
     try:
         service = get_entity_service()

@@ -4,9 +4,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.account.version_1.account import Account
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.account.version_1.account import Account
 
 accounts_bp = Blueprint("accounts", __name__, url_prefix="/api/accounts")
 
@@ -18,7 +18,15 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
 @accounts_bp.route("", methods=["POST"])
 @tag(["accounts"])
 @operation_id("create_account")
-@validate(request=Account)
+@validate(
+    request=Account,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def create_account(data: Account) -> ResponseReturnValue:
     try:
         service = get_entity_service()
@@ -54,7 +62,15 @@ async def get_account(entity_id: str) -> ResponseReturnValue:
 @accounts_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["accounts"])
 @operation_id("update_account")
-@validate(request=Account)
+@validate(
+    request=Account,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def update_account(entity_id: str, data: Account) -> ResponseReturnValue:
     try:
         service = get_entity_service()

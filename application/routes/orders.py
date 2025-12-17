@@ -4,9 +4,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.order.version_1.order import Order
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.order.version_1.order import Order
 
 orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
 
@@ -18,7 +18,15 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
 @orders_bp.route("", methods=["POST"])
 @tag(["orders"])
 @operation_id("create_order")
-@validate(request=Order)
+@validate(
+    request=Order,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def create_order(data: Order) -> ResponseReturnValue:
     try:
         service = get_entity_service()
@@ -54,7 +62,15 @@ async def get_order(entity_id: str) -> ResponseReturnValue:
 @orders_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["orders"])
 @operation_id("update_order")
-@validate(request=Order)
+@validate(
+    request=Order,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def update_order(entity_id: str, data: Order) -> ResponseReturnValue:
     try:
         service = get_entity_service()

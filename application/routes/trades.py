@@ -4,9 +4,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.trade.version_1.trade import Trade
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.trade.version_1.trade import Trade
 
 trades_bp = Blueprint("trades", __name__, url_prefix="/api/trades")
 
@@ -18,7 +18,15 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
 @trades_bp.route("", methods=["POST"])
 @tag(["trades"])
 @operation_id("create_trade")
-@validate(request=Trade)
+@validate(
+    request=Trade,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def create_trade(data: Trade) -> ResponseReturnValue:
     try:
         service = get_entity_service()
@@ -54,7 +62,15 @@ async def get_trade(entity_id: str) -> ResponseReturnValue:
 @trades_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["trades"])
 @operation_id("update_trade")
-@validate(request=Trade)
+@validate(
+    request=Trade,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def update_trade(entity_id: str, data: Trade) -> ResponseReturnValue:
     try:
         service = get_entity_service()

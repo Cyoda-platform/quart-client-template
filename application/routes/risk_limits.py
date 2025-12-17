@@ -4,9 +4,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 
 risk_limits_bp = Blueprint("risk_limits", __name__, url_prefix="/api/risk-limits")
 
@@ -18,7 +18,15 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
 @risk_limits_bp.route("", methods=["POST"])
 @tag(["risk-limits"])
 @operation_id("create_risk_limit")
-@validate(request=RiskLimit)
+@validate(
+    request=RiskLimit,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def create_risk_limit(data: RiskLimit) -> ResponseReturnValue:
     try:
         service = get_entity_service()
@@ -54,7 +62,15 @@ async def get_risk_limit(entity_id: str) -> ResponseReturnValue:
 @risk_limits_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["risk-limits"])
 @operation_id("update_risk_limit")
-@validate(request=RiskLimit)
+@validate(
+    request=RiskLimit,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def update_risk_limit(entity_id: str, data: RiskLimit) -> ResponseReturnValue:
     try:
         service = get_entity_service()

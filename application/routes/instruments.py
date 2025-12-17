@@ -4,9 +4,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.instrument.version_1.instrument import Instrument
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.instrument.version_1.instrument import Instrument
 
 instruments_bp = Blueprint("instruments", __name__, url_prefix="/api/instruments")
 
@@ -18,7 +18,15 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
 @instruments_bp.route("", methods=["POST"])
 @tag(["instruments"])
 @operation_id("create_instrument")
-@validate(request=Instrument)
+@validate(
+    request=Instrument,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def create_instrument(data: Instrument) -> ResponseReturnValue:
     try:
         service = get_entity_service()
@@ -54,7 +62,15 @@ async def get_instrument(entity_id: str) -> ResponseReturnValue:
 @instruments_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["instruments"])
 @operation_id("update_instrument")
-@validate(request=Instrument)
+@validate(
+    request=Instrument,
+    responses={
+        200: (Dict[str, Any], None),
+        201: (Dict[str, Any], None),
+        400: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    },
+)
 async def update_instrument(entity_id: str, data: Instrument) -> ResponseReturnValue:
     try:
         service = get_entity_service()

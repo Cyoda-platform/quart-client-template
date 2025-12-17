@@ -1,0 +1,14 @@
+{
+  "id": "t-4004",
+  "merchant_id": "m-1001",
+  "customer_id": "c-2002",
+  "payment_method_id": "pm-3003",
+  "amount": 100.00,
+  "currency": "USD",
+  "converted_amount": null,
+  "converted_currency": null,
+  "status": "authorized",
+  "processor": "processor_a",
+  "processor_response": {},
+  "timestamp": "2025-01-01T12:00:00Z"
+}

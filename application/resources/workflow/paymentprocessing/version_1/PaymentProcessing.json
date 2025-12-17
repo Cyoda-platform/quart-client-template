@@ -1,0 +1,29 @@
+{
+  "version": "1.0",
+  "name": "PaymentProcessing",
+  "desc": "Handles authorization, capture, currency conversion, routing to processors, and settlement",
+  "initialState": "initiated",
+  "active": true,
+  "states": {
+    "initiated": {
+      "transitions": [
+        {"name": "authorize", "next": "authorized", "manual": false}
+      ]
+    },
+    "authorized": {
+      "transitions": [
+        {"name": "capture", "next": "captured", "manual": false},
+        {"name": "decline", "next": "declined", "manual": false}
+      ]
+    },
+    "captured": {
+      "transitions": [
+        {"name": "settle", "next": "settled", "manual": false},
+        {"name": "refund", "next": "refunded", "manual": true}
+      ]
+    },
+    "declined": {"transitions": []},
+    "refunded": {"transitions": []},
+    "settled": {"transitions": []}
+  }
+}

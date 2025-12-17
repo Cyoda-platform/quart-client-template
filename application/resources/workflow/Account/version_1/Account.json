@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "Account Workflow",
+  "desc": "Simple workflow for Account",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": []
+    }
+  }
+}

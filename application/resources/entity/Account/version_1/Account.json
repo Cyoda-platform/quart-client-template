@@ -1,0 +1,7 @@
+{
+  "account_id": "ACC-001",
+  "owner": "John Doe",
+  "balance": 10000.0,
+  "currency": "USD",
+  "is_active": true
+}

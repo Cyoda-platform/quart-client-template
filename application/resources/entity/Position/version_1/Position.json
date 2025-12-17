@@ -1,0 +1,8 @@
+{
+  "account_id": "ACC-001",
+  "instrument_id": "inst-123",
+  "quantity": 100.0,
+  "avg_price": 150.0,
+  "realized_pnl": 0.0,
+  "unrealized_pnl": 500.0
+}

@@ -1,0 +1,10 @@
+{
+  "order_id": "ORD-001",
+  "account_id": "ACC-001",
+  "instrument_id": "inst-123",
+  "side": "BUY",
+  "quantity": 10.0,
+  "price": 150.0,
+  "type": "LIMIT",
+  "status": "PENDING"
+}

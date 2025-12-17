@@ -1,0 +1,6 @@
+{
+  "account_id": "ACC-001",
+  "limit_type": "POSITION_LIMIT",
+  "threshold": 1000.0,
+  "period": "DAILY"
+}

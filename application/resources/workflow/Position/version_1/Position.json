@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "name": "Position Workflow",
+  "desc": "Simple workflow for Position",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": []
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "instrumentId": "INST-123",
+  "side": "BUY",
+  "orderType": "LIMIT",
+  "quantity": 100,
+  "price": 150.00,
+  "accountId": "ACC-001",
+  "submittedBy": "trader@example.com",
+  "submittedAt": "2025-01-15T14:30:00Z",
+  "filledQuantity": 0.0
+}

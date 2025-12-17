@@ -65,8 +65,7 @@ class ApplyFillToPositionProcessor(CyodaProcessor):
                 )
                 if order_response is None:
                     raise ValueError(f"Order {fill.order_id} not found")
-                order_data = order_response.entity
-                order = Order(**order_data)
+                order = cast_entity(order_response.data, Order)
             except Exception as e:
                 self.logger.error(
                     f"Failed to retrieve Order {fill.order_id} for Fill {fill.technical_id}: {str(e)}"

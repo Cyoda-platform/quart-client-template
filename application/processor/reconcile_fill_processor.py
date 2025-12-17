@@ -66,8 +66,7 @@ class ReconcileFillProcessor(CyodaProcessor):
                     raise ValueError(f"Order {fill.order_id} not found")
 
                 # Extract order data from response
-                order_data = order_response.entity
-                order = Order(**order_data)
+                order = cast_entity(order_response.data, Order)
 
                 # Validate fill against order
                 self._validate_fill_against_order(fill, order)

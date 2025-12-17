@@ -1,4 +1,5 @@
 {
+  "portfolio_id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
   "instrument_id": "AAPL",
   "order_type": "LIMIT",
   "side": "BUY",

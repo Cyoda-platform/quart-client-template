@@ -1,9 +1,11 @@
 from common.processor.base import CyodaProcessor
 from common.entity.cyoda_entity import CyodaEntity
 from common.entity.entity_casting import cast_entity
-from application.entity.order.version_1.order import Order
+from application.entity.order.version_1.order import Order, OrderSide
 from application.entity.trade.version_1.trade import Trade
+from application.entity.position.version_1.position import Position
 from common.service.service import get_entity_service
+from common.service.entity_service import SearchCondition, SearchOperator, SearchConditionRequest
 import logging
 import time
 
@@ -42,8 +44,40 @@ class PostTradeProcessor(CyodaProcessor):
         }
         await entity_service.create(Trade.ENTITY_NAME, Trade.ENTITY_VERSION, trade_data)
         
-        # In a real implementation, we would also update Position and Portfolio.
-        # This will be implemented later when the other entities are created.
+        # Update Position
+        search_request = SearchConditionRequest.builder() \
+            .equals("instrument_id", order.instrument_id) \
+            .equals("portfolio_id", order.portfolio_id) \
+            .build()
+        
+        positions_responses = await entity_service.search(Position.ENTITY_NAME, search_request)
+        
+        if positions_responses:
+            # Position exists, update it
+            position_response = positions_responses[0]
+            position = cast_entity(position_response.data, Position)
+            
+            if order.side == OrderSide.BUY:
+                new_quantity = position.quantity + order.quantity
+                new_avg_price = ((position.average_price * position.quantity) + (order.price * order.quantity)) / new_quantity
+            else: # SELL
+                new_quantity = position.quantity - order.quantity
+                new_avg_price = position.average_price # Average price doesn't change on sell
+
+            position.quantity = new_quantity
+            position.average_price = new_avg_price
+            
+            await entity_service.update(position_response.metadata.id, position.model_dump(exclude_unset=True))
+        else:
+            # Position does not exist, create it
+            position_data = {
+                "portfolio_id": order.portfolio_id,
+                "instrument_id": order.instrument_id,
+                "quantity": order.quantity if order.side == OrderSide.BUY else -order.quantity,
+                "average_price": order.price
+            }
+            await entity_service.create(Position.ENTITY_NAME, Position.ENTITY_VERSION, position_data)
+
         return order
 
 class CancelOrderProcessor(CyodaProcessor):

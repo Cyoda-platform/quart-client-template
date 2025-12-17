@@ -19,6 +19,7 @@ class Order(CyodaEntity):
     ENTITY_NAME = "order"
     ENTITY_VERSION = 1
 
+    portfolio_id: str = Field(..., description="The ID of the portfolio.")
     instrument_id: str = Field(..., description="ID of the financial instrument.")
     order_type: OrderType = Field(..., description="Type of the order.")
     side: OrderSide = Field(..., description="Buy or Sell.")

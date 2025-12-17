@@ -14,6 +14,7 @@ from services.services import get_grpc_client, initialize_services
 from application.routes.market_data_routes import market_data_routes
 from application.routes.order_routes import order_routes
 from application.routes.trade_routes import trade_routes
+from application.routes.position_routes import position_routes
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,6 +24,7 @@ app = Quart(__name__)
 app.register_blueprint(market_data_routes)
 app.register_blueprint(order_routes)
 app.register_blueprint(trade_routes)
+app.register_blueprint(position_routes)
 
 QuartSchema(
     app,
@@ -39,6 +41,10 @@ QuartSchema(
         {
             "name": "Trades",
             "description": "Trade management endpoints",
+        },
+        {
+            "name": "Positions",
+            "description": "Position management endpoints",
         },
         {
             "name": "ExampleEntities",

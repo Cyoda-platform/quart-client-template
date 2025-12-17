@@ -1,0 +1,8 @@
+{
+  "trade_id": "TRD-001",
+  "order_id": "ORD-001",
+  "instrument_id": "inst-123",
+  "quantity": 5.0,
+  "price": 150.0,
+  "execution_time": "2023-10-27T10:00:00Z"
+}

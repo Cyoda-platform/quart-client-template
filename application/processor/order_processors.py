@@ -9,16 +9,18 @@ from common.service.entity_service import SearchCondition, SearchOperator, Searc
 import logging
 import time
 
+from typing import Any
 class PreTradeCheckProcessor(CyodaProcessor):
     """
     Processor for pre-trade checks.
     """
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Processes the order entity for pre-trade checks.
         """
         order = cast_entity(entity, Order)
-        logging.info(f"Performing pre-trade checks for order: {entity.id}")
+        cyoda_entity = cast_entity(entity, CyodaEntity)
+        logging.info(f"Performing pre-trade checks for order: {cyoda_entity.id}")
         # In a real implementation, we would check for sufficient funds, etc.
         return order
 
@@ -26,12 +28,13 @@ class PostTradeProcessor(CyodaProcessor):
     """
     Processor for post-trade processing.
     """
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Processes the order entity for post-trade actions.
         """
         order = cast_entity(entity, Order)
-        logging.info(f"Performing post-trade processing for order: {entity.id}") # type: ignore
+        cyoda_entity = cast_entity(entity, CyodaEntity)
+        logging.info(f"Performing post-trade processing for order: {cyoda_entity.id}")
 
         entity_service = get_entity_service()
         
@@ -39,7 +42,7 @@ class PostTradeProcessor(CyodaProcessor):
         execution_price = order.price if order.price is not None else 1.0
 
         trade_data = {
-            "order_id": entity.id, # type: ignore
+            "order_id": cyoda_entity.id,
             "instrument_id": order.instrument_id,
             "side": order.side,
             "quantity": order.quantity, # In a real scenario, this could be a partial quantity
@@ -88,11 +91,12 @@ class CancelOrderProcessor(CyodaProcessor):
     """
     Processor for cancelling an order.
     """
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Processes the order entity for cancellation.
         """
         order = cast_entity(entity, Order)
-        logging.info(f"Cancelling order: {entity.id}") # type: ignore
+        cyoda_entity = cast_entity(entity, CyodaEntity)
+        logging.info(f"Cancelling order: {cyoda_entity.id}")
         # In a real implementation, we would send a cancellation request to the exchange.
         return order

@@ -11,17 +11,23 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.market_data_routes import market_data_routes
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 app = Quart(__name__)
+app.register_blueprint(market_data_routes)
 
 QuartSchema(
     app,
     info={"title": "Cyoda Client Application", "version": "1.0.0"},
     tags=[
+        {
+            "name": "MarketData",
+            "description": "MarketData management endpoints",
+        },
         {
             "name": "ExampleEntities",
             "description": "ExampleEntity management endpoints",

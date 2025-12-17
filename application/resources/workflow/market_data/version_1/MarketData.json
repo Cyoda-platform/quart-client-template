@@ -1,0 +1,39 @@
+{
+  "version": "1.0",
+  "name": "Market Data Ingestion",
+  "desc": "Workflow for ingesting market data.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "ingest",
+          "next": "ingested",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataIngestionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ingested": {
+      "transitions": []
+    }
+  }
+}

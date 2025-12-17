@@ -1,10 +1,8 @@
 {
-  "instrument_id": "GOOGL",
-  "last_price": 2850.75,
-  "bid_price": 2850.50,
-  "ask_price": 2851.00,
-  "bid_size": 100,
-  "ask_size": 150,
-  "volume": 1200000,
-  "timestamp": "2025-12-15T10:00:00Z"
+  "instrument_id": "AAPL",
+  "last_price": 170.12,
+  "bid_price": 170.10,
+  "ask_price": 170.15,
+  "volume": 100000,
+  "timestamp": 1678886400
 }

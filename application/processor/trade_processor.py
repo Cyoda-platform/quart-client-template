@@ -5,7 +5,7 @@ Processes trades, updates orders and positions.
 """
 
 import logging
-from typing import Any, List, Optional
+from typing import Any, List
 
 from application.entity.order.version_1.order import Order
 from application.entity.position.version_1.position import Position

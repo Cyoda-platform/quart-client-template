@@ -75,7 +75,10 @@ class OrderValidationProcessor(CyodaProcessor):
                         if limit.limit_type == "ORDER_SIZE_LIMIT":
                             if order.quantity > limit.threshold:
                                 limit_breached = True
-                                rejection_reason = f"Order quantity {order.quantity} exceeds limit {limit.threshold}"
+                                rejection_reason = (
+                                    f"Order quantity {order.quantity} "
+                                    f"exceeds limit {limit.threshold}"
+                                )
                                 break
                         # Add other checks as needed
 

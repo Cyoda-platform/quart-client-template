@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue

@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "name": "AuditEvent Workflow",
+  "desc": "Workflow for audit event capture and archival",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "capture",
+          "next": "captured",
+          "manual": false
+        }
+      ]
+    },
+    "captured": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": false
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}

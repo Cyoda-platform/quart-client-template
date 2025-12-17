@@ -1,0 +1,11 @@
+{
+  "eventType": "ORDER_SUBMITTED",
+  "entityType": "Order",
+  "entityId": "ORD-123",
+  "actor": "trader@example.com",
+  "timestamp": "2025-01-15T14:30:00Z",
+  "details": {
+    "side": "BUY",
+    "quantity": 100
+  }
+}

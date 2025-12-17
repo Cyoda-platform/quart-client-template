@@ -6,7 +6,7 @@ class MarketData(CyodaEntity):
     Represents real-time market information for a financial instrument.
     """
     ENTITY_NAME = "market_data"
-    ENTITY_VERSION = 1
+    ENTITY_VERSION = "1"
 
     instrument_id: str = Field(..., description="ID of the financial instrument.")
     last_price: float = Field(..., description="Last trade price.")

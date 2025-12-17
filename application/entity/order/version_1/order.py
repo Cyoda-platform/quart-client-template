@@ -17,7 +17,7 @@ class Order(CyodaEntity):
     Represents a client's instruction to buy or sell a financial instrument.
     """
     ENTITY_NAME = "order"
-    ENTITY_VERSION = 1
+    ENTITY_VERSION = "1"
 
     portfolio_id: str = Field(..., description="The ID of the portfolio.")
     instrument_id: str = Field(..., description="ID of the financial instrument.")

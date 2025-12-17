@@ -31,7 +31,7 @@ class PostTradeProcessor(CyodaProcessor):
         Processes the order entity for post-trade actions.
         """
         order = cast_entity(entity, Order)
-        logging.info(f"Performing post-trade processing for order: {entity.id}")
+        logging.info(f"Performing post-trade processing for order: {entity.id}") # type: ignore
 
         entity_service = get_entity_service()
         
@@ -39,14 +39,14 @@ class PostTradeProcessor(CyodaProcessor):
         execution_price = order.price if order.price is not None else 1.0
 
         trade_data = {
-            "order_id": entity.id,
+            "order_id": entity.id, # type: ignore
             "instrument_id": order.instrument_id,
             "side": order.side,
             "quantity": order.quantity, # In a real scenario, this could be a partial quantity
             "price": execution_price,
             "trade_time": int(time.time())
         }
-        await entity_service.create(Trade.ENTITY_NAME, Trade.ENTITY_VERSION, trade_data)
+        await entity_service.save(trade_data, Trade.ENTITY_NAME, Trade.ENTITY_VERSION)
 
         # Update Position
         search_request = SearchConditionRequest.builder() \
@@ -80,7 +80,7 @@ class PostTradeProcessor(CyodaProcessor):
                 "quantity": order.quantity if order.side == OrderSide.BUY else -order.quantity,
                 "average_price": execution_price
             }
-            await entity_service.create(Position.ENTITY_NAME, Position.ENTITY_VERSION, position_data)
+            await entity_service.save(position_data, Position.ENTITY_NAME, Position.ENTITY_VERSION)
 
         return order
 

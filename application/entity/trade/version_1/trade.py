@@ -7,7 +7,7 @@ class Trade(CyodaEntity):
     Represents an executed order or a partial fill of an order.
     """
     ENTITY_NAME = "trade"
-    ENTITY_VERSION = 1
+    ENTITY_VERSION = "1"
 
     order_id: str = Field(..., description="The ID of the order that was executed.")
     instrument_id: str = Field(..., description="ID of the financial instrument.")

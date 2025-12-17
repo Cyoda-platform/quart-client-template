@@ -16,12 +16,12 @@ async def create_market_data() -> Tuple[Dict[str, Any], int]:
     return market_data.data.model_dump(), 201
 
 @market_data_routes.route('/<entity_id>', methods=['GET'])
-async def get_market_data(entity_id: str) -> Dict[str, Any]:
+async def get_market_data(entity_id: str) -> Tuple[Dict[str, Any], int]:
     """
     Retrieves a market data entity by its ID.
     """
     entity_service = get_entity_service()
     market_data = await entity_service.get_by_id(entity_id, MarketData.ENTITY_NAME, MarketData.ENTITY_VERSION)
     if market_data:
-        return market_data.data.model_dump()
+        return market_data.data.model_dump(), 200
     return {}, 404

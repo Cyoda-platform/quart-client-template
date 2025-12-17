@@ -6,7 +6,7 @@ class Position(CyodaEntity):
     Represents the net holding of a particular financial instrument in a portfolio.
     """
     ENTITY_NAME = "position"
-    ENTITY_VERSION = 1
+    ENTITY_VERSION = "1"
 
     portfolio_id: str = Field(..., description="The ID of the portfolio.")
     instrument_id: str = Field(..., description="ID of the financial instrument.")

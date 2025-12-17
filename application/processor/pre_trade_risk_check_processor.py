@@ -64,28 +64,20 @@ class PreTradeRiskCheckProcessor(CyodaProcessor):
                 self.logger.warning(
                     f"No risk limits found for account {order.account_id}"
                 )
-                order.risk_check_status = "NO_LIMITS"
                 return order
 
             # Perform risk checks
             self._check_order_against_limits(order, risk_limits)
-
-            # Mark order as risk-checked
-            order.risk_check_status = "PASSED"
-            order.risk_check_timestamp = order.submitted_at
 
             self.logger.info(f"Order {order.technical_id} passed pre-trade risk checks")
 
             return order
 
         except ValueError as e:
-            # Risk limit breach - mark order and re-raise
+            # Risk limit breach
             self.logger.error(
                 f"Risk limit breach for Order {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
-            if hasattr(entity, "risk_check_status"):
-                entity.risk_check_status = "FAILED"
-                entity.risk_check_error = str(e)
             raise
         except Exception as e:
             self.logger.error(

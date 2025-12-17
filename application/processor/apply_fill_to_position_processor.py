@@ -126,14 +126,14 @@ class ApplyFillToPositionProcessor(CyodaProcessor):
             )
 
             position = Position(
-                account_id=account_id,
-                instrument_id=instrument_id,
+                accountId=account_id,
+                instrumentId=instrument_id,
                 quantity=0.0,
-                average_price=0.0,
-                current_price=None,
-                unrealized_pnl=0.0,
-                realized_pnl=0.0,
-                last_updated=current_timestamp,
+                averagePrice=0.0,
+                currentPrice=None,
+                unrealizedPnl=0.0,
+                realizedPnl=0.0,
+                lastUpdated=current_timestamp,
             )
 
             self.logger.info(

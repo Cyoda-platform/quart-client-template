@@ -55,13 +55,6 @@ class RouteOrderProcessor(CyodaProcessor):
             # Determine execution venue based on order type and instrument
             execution_venue = self._determine_execution_venue(order)
 
-            # Update order with routing information
-            order.execution_venue = execution_venue
-            order.routed_at = (
-                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-            )
-            order.routing_status = "ROUTED"
-
             # Create audit event for order routing
             await self._create_routing_audit_event(order, execution_venue)
 
@@ -122,9 +115,9 @@ class RouteOrderProcessor(CyodaProcessor):
 
             # Create AuditEvent
             audit_event = AuditEvent(
-                event_type="ORDER_ROUTED",
-                entity_type="Order",
-                entity_id=order.technical_id or order.entity_id or "unknown",
+                eventType="ORDER_ROUTED",
+                entityType="Order",
+                entityId=order.technical_id or order.entity_id or "unknown",
                 actor="RouteOrderProcessor",
                 timestamp=current_timestamp,
                 details={

@@ -5,7 +5,7 @@ Represents an audit event that tracks important actions and state changes
 across the trading system for compliance, debugging, and monitoring purposes.
 """
 
-from typing import ClassVar, Optional
+from typing import Any, ClassVar, Dict, Optional
 
 from pydantic import ConfigDict, Field
 
@@ -44,7 +44,7 @@ class AuditEvent(CyodaEntity):
     timestamp: str = Field(..., description="Timestamp of the event (ISO 8601)")
 
     # Optional fields
-    details: Optional[dict] = Field(
+    details: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional event details as key-value pairs"
     )
 

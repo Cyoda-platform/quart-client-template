@@ -65,7 +65,6 @@ class UpdatePositionPnLProcessor(CyodaProcessor):
                     f"No market data available for instrument {position.instrument_id} - "
                     f"skipping P&L update"
                 )
-                position.pnl_update_status = "NO_MARKET_DATA"
                 return position
 
             # Calculate unrealized P&L
@@ -75,7 +74,6 @@ class UpdatePositionPnLProcessor(CyodaProcessor):
             position.last_updated = (
                 datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             )
-            position.pnl_update_status = "UPDATED"
 
             self.logger.info(
                 f"Position {position.technical_id} P&L updated - "

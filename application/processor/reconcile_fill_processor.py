@@ -69,10 +69,6 @@ class ReconcileFillProcessor(CyodaProcessor):
                 # Validate fill against order
                 self._validate_fill_against_order(fill, order)
 
-                # Mark fill as reconciled
-                fill.reconciled = True
-                fill.reconciliation_status = "VALID"
-
                 self.logger.info(
                     f"Fill {fill.technical_id} reconciled successfully against "
                     f"Order {fill.order_id}"
@@ -83,9 +79,6 @@ class ReconcileFillProcessor(CyodaProcessor):
                     f"Failed to retrieve or validate Order {fill.order_id} for "
                     f"Fill {fill.technical_id}: {str(e)}"
                 )
-                fill.reconciled = False
-                fill.reconciliation_status = "FAILED"
-                fill.reconciliation_error = str(e)
 
             self.logger.info(f"Fill {fill.technical_id} processed successfully")
 

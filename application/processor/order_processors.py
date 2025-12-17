@@ -4,7 +4,7 @@ from common.entity.entity_casting import cast_entity
 from application.entity.order.version_1.order import Order, OrderSide
 from application.entity.trade.version_1.trade import Trade
 from application.entity.position.version_1.position import Position
-from common.service.service import get_entity_service
+from services.services import get_entity_service
 from common.service.entity_service import SearchCondition, SearchOperator, SearchConditionRequest
 import logging
 import time
@@ -13,12 +13,12 @@ class PreTradeCheckProcessor(CyodaProcessor):
     """
     Processor for pre-trade checks.
     """
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity) -> CyodaEntity:
         """
         Processes the order entity for pre-trade checks.
         """
         order = cast_entity(entity, Order)
-        logging.info(f"Performing pre-trade checks for order: {order.id}")
+        logging.info(f"Performing pre-trade checks for order: {entity.id}")
         # In a real implementation, we would check for sufficient funds, etc.
         return order
 
@@ -26,55 +26,59 @@ class PostTradeProcessor(CyodaProcessor):
     """
     Processor for post-trade processing.
     """
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity) -> CyodaEntity:
         """
         Processes the order entity for post-trade actions.
         """
         order = cast_entity(entity, Order)
-        logging.info(f"Performing post-trade processing for order: {order.id}")
-        
+        logging.info(f"Performing post-trade processing for order: {entity.id}")
+
         entity_service = get_entity_service()
+        
+        # In a real scenario, the execution price should come from the exchange
+        execution_price = order.price if order.price is not None else 1.0
+
         trade_data = {
-            "order_id": order.id,
+            "order_id": entity.id,
             "instrument_id": order.instrument_id,
             "side": order.side,
             "quantity": order.quantity, # In a real scenario, this could be a partial quantity
-            "price": order.price, # In a real scenario, this would be the actual execution price
+            "price": execution_price,
             "trade_time": int(time.time())
         }
         await entity_service.create(Trade.ENTITY_NAME, Trade.ENTITY_VERSION, trade_data)
-        
+
         # Update Position
         search_request = SearchConditionRequest.builder() \
             .equals("instrument_id", order.instrument_id) \
             .equals("portfolio_id", order.portfolio_id) \
             .build()
-        
-        positions_responses = await entity_service.search(Position.ENTITY_NAME, search_request)
-        
+
+        positions_responses = await entity_service.search(Position.ENTITY_NAME, search_request, Position.ENTITY_VERSION)
+
         if positions_responses:
             # Position exists, update it
             position_response = positions_responses[0]
             position = cast_entity(position_response.data, Position)
-            
+
             if order.side == OrderSide.BUY:
                 new_quantity = position.quantity + order.quantity
-                new_avg_price = ((position.average_price * position.quantity) + (order.price * order.quantity)) / new_quantity
+                new_avg_price = ((position.average_price * position.quantity) + (execution_price * order.quantity)) / new_quantity
             else: # SELL
                 new_quantity = position.quantity - order.quantity
                 new_avg_price = position.average_price # Average price doesn't change on sell
 
             position.quantity = new_quantity
             position.average_price = new_avg_price
-            
-            await entity_service.update(position_response.metadata.id, position.model_dump(exclude_unset=True))
+
+            await entity_service.update(position_response.get_id(), position.model_dump(exclude_unset=True), Position.ENTITY_NAME, entity_version=Position.ENTITY_VERSION)
         else:
             # Position does not exist, create it
             position_data = {
                 "portfolio_id": order.portfolio_id,
                 "instrument_id": order.instrument_id,
                 "quantity": order.quantity if order.side == OrderSide.BUY else -order.quantity,
-                "average_price": order.price
+                "average_price": execution_price
             }
             await entity_service.create(Position.ENTITY_NAME, Position.ENTITY_VERSION, position_data)
 
@@ -84,11 +88,11 @@ class CancelOrderProcessor(CyodaProcessor):
     """
     Processor for cancelling an order.
     """
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity) -> CyodaEntity:
         """
         Processes the order entity for cancellation.
         """
         order = cast_entity(entity, Order)
-        logging.info(f"Cancelling order: {order.id}")
+        logging.info(f"Cancelling order: {entity.id}")
         # In a real implementation, we would send a cancellation request to the exchange.
         return order

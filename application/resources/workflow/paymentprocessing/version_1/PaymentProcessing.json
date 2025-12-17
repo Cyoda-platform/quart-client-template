@@ -2,7 +2,7 @@
   "version": "1.0",
   "name": "PaymentProcessing",
   "desc": "Handles authorization, capture, currency conversion, routing to processors, and settlement",
-  "initialState": "initiated",
+  "initialState": "initial_state",
   "active": true,
   "states": {
     "initiated": {

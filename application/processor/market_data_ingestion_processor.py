@@ -8,7 +8,7 @@ class MarketDataIngestionProcessor(CyodaProcessor):
     """
     Processor for ingesting market data.
     """
-    async def process(self, entity: CyodaEntity) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
         """
         Processes the market data entity.
         """

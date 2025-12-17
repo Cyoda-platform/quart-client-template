@@ -4,11 +4,12 @@ from common.entity.entity_casting import cast_entity
 from application.entity.position.version_1.position import Position
 import logging
 
+from typing import Any
 class PositionReconciliationProcessor(CyodaProcessor):
     """
     Processor for reconciling positions.
     """
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Processes the position entity for reconciliation.
         """

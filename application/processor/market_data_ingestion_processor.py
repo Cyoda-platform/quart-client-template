@@ -4,11 +4,12 @@ from common.entity.entity_casting import cast_entity
 from application.entity.market_data.version_1.market_data import MarketData
 import logging
 
+from typing import Any
 class MarketDataIngestionProcessor(CyodaProcessor):
     """
     Processor for ingesting market data.
     """
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Processes the market data entity.
         """

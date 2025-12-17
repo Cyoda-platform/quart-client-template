@@ -93,6 +93,6 @@ class CancelOrderProcessor(CyodaProcessor):
         Processes the order entity for cancellation.
         """
         order = cast_entity(entity, Order)
-        logging.info(f"Cancelling order: {entity.id}")
+        logging.info(f"Cancelling order: {entity.id}") # type: ignore
         # In a real implementation, we would send a cancellation request to the exchange.
         return order

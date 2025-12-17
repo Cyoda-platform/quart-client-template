@@ -11,6 +11,13 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.audit_events import audit_events_bp
+from application.routes.fills import fills_bp
+from application.routes.instruments import instruments_bp
+from application.routes.market_data import market_data_bp
+from application.routes.orders import orders_bp
+from application.routes.positions import positions_bp
+from application.routes.risk_limits import risk_limits_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,13 +27,15 @@ app = Quart(__name__)
 
 QuartSchema(
     app,
-    info={"title": "Cyoda Client Application", "version": "1.0.0"},
+    info={"title": "Cyoda Trading Platform", "version": "1.0.0"},
     tags=[
-        {
-            "name": "ExampleEntities",
-            "description": "ExampleEntity management endpoints",
-        },
-        {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "Instruments", "description": "Instrument management endpoints"},
+        {"name": "MarketData", "description": "Market data endpoints"},
+        {"name": "Orders", "description": "Order management endpoints"},
+        {"name": "Fills", "description": "Fill management endpoints"},
+        {"name": "Positions", "description": "Position management endpoints"},
+        {"name": "RiskLimits", "description": "Risk limit management endpoints"},
+        {"name": "AuditEvents", "description": "Audit event endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -37,6 +46,15 @@ QuartSchema(
         }
     },
 )
+
+# Register trading platform blueprints
+app.register_blueprint(instruments_bp)
+app.register_blueprint(market_data_bp)
+app.register_blueprint(orders_bp)
+app.register_blueprint(fills_bp)
+app.register_blueprint(positions_bp)
+app.register_blueprint(risk_limits_bp)
+app.register_blueprint(audit_events_bp)
 
 # Global holder for the background task to satisfy mypy
 # (avoid setting arbitrary attrs on app)

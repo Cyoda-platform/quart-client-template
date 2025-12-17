@@ -68,7 +68,8 @@ class ApplyFillToPositionProcessor(CyodaProcessor):
                 order = cast_entity(order_response.data, Order)
             except Exception as e:
                 self.logger.error(
-                    f"Failed to retrieve Order {fill.order_id} for Fill {fill.technical_id}: {str(e)}"
+                    f"Failed to retrieve Order {fill.order_id} for Fill "
+                    f"{fill.technical_id}: {str(e)}"
                 )
                 raise
 

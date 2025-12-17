@@ -75,8 +75,9 @@ class PreTradeRiskCheckProcessor(CyodaProcessor):
 
         except ValueError as e:
             # Risk limit breach
+            error_id = getattr(entity, 'technical_id', '<unknown>')
             self.logger.error(
-                f"Risk limit breach for Order {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
+                f"Risk limit breach for Order {error_id}: {str(e)}"
             )
             raise
         except Exception as e:

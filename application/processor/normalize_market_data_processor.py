@@ -11,7 +11,6 @@ from typing import Any
 from application.entity.market_data.version_1.market_data import MarketData
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from services.services import get_entity_service
 
 
 class NormalizeMarketDataProcessor(CyodaProcessor):
@@ -76,7 +75,8 @@ class NormalizeMarketDataProcessor(CyodaProcessor):
             return market_data
 
         except Exception as e:
+            error_id = getattr(entity, 'technical_id', '<unknown>')
             self.logger.error(
-                f"Error processing MarketData {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
+                f"Error processing MarketData {error_id}: {str(e)}"
             )
             raise

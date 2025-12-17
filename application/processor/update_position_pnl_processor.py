@@ -27,7 +27,10 @@ class UpdatePositionPnLProcessor(CyodaProcessor):
     def __init__(self) -> None:
         super().__init__(
             name="UpdatePositionPnLProcessor",
-            description="Updates Position P&L by calculating unrealized gains/losses from market data",
+            description=(
+                "Updates Position P&L by calculating unrealized "
+                "gains/losses from market data"
+            ),
         )
         self.logger: logging.Logger = getattr(
             self, "logger", logging.getLogger(__name__)
@@ -84,8 +87,9 @@ class UpdatePositionPnLProcessor(CyodaProcessor):
             return position
 
         except Exception as e:
+            error_id = getattr(entity, 'technical_id', '<unknown>')
             self.logger.error(
-                f"Error processing Position {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
+                f"Error processing Position {error_id}: {str(e)}"
             )
             raise
 

@@ -11,7 +11,6 @@ from typing import Any
 from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from services.services import get_entity_service
 
 
 class InitializePositionProcessor(CyodaProcessor):
@@ -71,7 +70,8 @@ class InitializePositionProcessor(CyodaProcessor):
             return position
 
         except Exception as e:
+            error_id = getattr(entity, 'technical_id', '<unknown>')
             self.logger.error(
-                f"Error processing Position {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
+                f"Error processing Position {error_id}: {str(e)}"
             )
             raise

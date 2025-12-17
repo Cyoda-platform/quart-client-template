@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "name": "Position Workflow",
+  "desc": "Workflow for position lifecycle management from opening through updates to closure",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "open",
+          "next": "open",
+          "manual": false,
+          "processors": [
+            {
+              "name": "InitializePositionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "attachEntity": true,
+                "responseTimeoutMs": 5000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "open": {
+      "transitions": [
+        {
+          "name": "updated",
+          "next": "updated",
+          "manual": false,
+          "processors": [
+            {
+              "name": "UpdatePositionPnLProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "attachEntity": true,
+                "responseTimeoutMs": 5000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "updated": {
+      "transitions": [
+        {
+          "name": "updated",
+          "next": "updated",
+          "manual": true,
+          "processors": [
+            {
+              "name": "UpdatePositionPnLProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "attachEntity": true,
+                "responseTimeoutMs": 5000
+              }
+            }
+          ]
+        },
+        {
+          "name": "closed",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "closed": {
+      "transitions": []
+    }
+  }
+}

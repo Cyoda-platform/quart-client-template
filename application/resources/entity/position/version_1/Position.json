@@ -1,0 +1,10 @@
+{
+  "accountId": "ACC-001",
+  "instrumentId": "INST-123",
+  "quantity": 100,
+  "averagePrice": 150.00,
+  "currentPrice": 152.00,
+  "unrealizedPnl": 200.0,
+  "realizedPnl": 0.0,
+  "lastUpdated": "2025-01-15T14:30:00Z"
+}

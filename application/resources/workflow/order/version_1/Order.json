@@ -1,0 +1,105 @@
+{
+  "version": "1.0",
+  "name": "Order Workflow",
+  "desc": "Workflow for order lifecycle management from submission through execution or cancellation",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "new",
+          "next": "new",
+          "manual": false
+        }
+      ]
+    },
+    "new": {
+      "transitions": [
+        {
+          "name": "pending_risk_check",
+          "next": "pending_risk_check",
+          "manual": false
+        }
+      ]
+    },
+    "pending_risk_check": {
+      "transitions": [
+        {
+          "name": "acknowledged",
+          "next": "acknowledged",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PreTradeRiskCheckProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "attachEntity": true,
+                "responseTimeoutMs": 5000
+              }
+            }
+          ]
+        },
+        {
+          "name": "rejected",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "acknowledged": {
+      "transitions": [
+        {
+          "name": "partially_filled",
+          "next": "partially_filled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RouteOrderProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "attachEntity": true,
+                "responseTimeoutMs": 10000
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancelled",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "partially_filled": {
+      "transitions": [
+        {
+          "name": "partially_filled",
+          "next": "partially_filled",
+          "manual": true
+        },
+        {
+          "name": "filled",
+          "next": "filled",
+          "manual": false
+        },
+        {
+          "name": "cancelled",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "filled": {
+      "transitions": []
+    },
+    "cancelled": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    }
+  }
+}

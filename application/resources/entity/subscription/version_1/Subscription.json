@@ -1,0 +1,21 @@
+{
+  "merchant_id": "merchant_12345",
+  "customer_id": "customer_67890",
+  "payment_method_token": "tok_visa_4242",
+  "plan_name": "Premium Monthly",
+  "amount": 29.99,
+  "currency": "USD",
+  "billing_interval": "monthly",
+  "trial_period_days": 14,
+  "trial_end_date": "2025-01-01T00:00:00Z",
+  "next_billing_date": "2025-01-01T00:00:00Z",
+  "last_billing_date": null,
+  "retry_count": 0,
+  "max_retries": 3,
+  "retry_backoff_days": 1,
+  "metadata": {
+    "plan_tier": "premium",
+    "features": ["advanced_analytics", "priority_support"]
+  }
+}
+

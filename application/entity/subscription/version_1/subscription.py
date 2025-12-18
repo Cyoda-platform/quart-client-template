@@ -23,9 +23,7 @@ class Subscription(CyodaEntity):
         default="monthly", description="Interval: daily, weekly, monthly, yearly"
     )
 
-    trial_period_days: int = Field(
-        default=0, ge=0, description="Trial period in days"
-    )
+    trial_period_days: int = Field(default=0, ge=0, description="Trial period in days")
     trial_end_date: Optional[str] = Field(
         default=None, description="Trial end date (ISO 8601)"
     )
@@ -75,4 +73,3 @@ class Subscription(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

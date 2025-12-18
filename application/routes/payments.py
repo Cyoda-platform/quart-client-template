@@ -5,10 +5,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.payment.version_1.payment import Payment
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.payment.version_1.payment import Payment
-
 
 logger = logging.getLogger(__name__)
 
@@ -215,4 +214,3 @@ async def refund_payment(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error refunding Payment %s: %s", entity_id, str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

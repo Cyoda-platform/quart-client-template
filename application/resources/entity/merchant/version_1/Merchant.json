@@ -1,0 +1,20 @@
+{
+  "merchant_name": "Acme Corporation",
+  "merchant_email": "payments@acme.com",
+  "settlement_currency": "USD",
+  "kyc_status": "verified",
+  "kyc_fields": {
+    "business_registration": "12345678",
+    "tax_id": "98-7654321",
+    "country": "US"
+  },
+  "fraud_threshold": 75.0,
+  "fraud_review_threshold": 50.0,
+  "supported_currencies": ["USD", "EUR", "GBP", "JPY"],
+  "max_transaction_amount": 50000.0,
+  "daily_volume_limit": 500000.0,
+  "webhook_url": "https://acme.com/webhooks/payments",
+  "webhook_secret": "whsec_test_secret_key",
+  "is_active": true
+}
+

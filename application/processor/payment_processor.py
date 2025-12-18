@@ -3,9 +3,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.payment.version_1.payment import Payment
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.payment.version_1.payment import Payment
 from services.services import get_entity_service
 
 
@@ -52,4 +52,3 @@ class PaymentProcessor(CyodaProcessor):
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
         random_suffix = str(uuid.uuid4())[:8].upper()
         return f"AUTH-{timestamp}-{random_suffix}"
-

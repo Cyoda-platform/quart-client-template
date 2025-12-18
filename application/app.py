@@ -5,12 +5,13 @@ from typing import Callable, Dict, Optional
 from quart import Quart, Response
 from quart_schema import QuartSchema, ResponseSchemaValidationError, hide
 
+# Import blueprints for different route groups
+from application.routes.payments import payments_bp
+from application.routes.subscriptions import subscriptions_bp
 from common.exception.exception_handler import (
     register_error_handlers as _register_error_handlers,
 )
 from services.services import get_grpc_client, initialize_services
-
-# Import blueprints for different route groups
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,6 +28,8 @@ QuartSchema(
             "description": "ExampleEntity management endpoints",
         },
         {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "payments", "description": "Payment processing endpoints"},
+        {"name": "subscriptions", "description": "Subscription management endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -37,6 +40,10 @@ QuartSchema(
         }
     },
 )
+
+# Register blueprints
+app.register_blueprint(payments_bp)
+app.register_blueprint(subscriptions_bp)
 
 # Global holder for the background task to satisfy mypy
 # (avoid setting arbitrary attrs on app)

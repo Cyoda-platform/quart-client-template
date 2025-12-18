@@ -14,9 +14,7 @@ class FraudAlert(CyodaEntity):
     payment_id: str = Field(..., description="Related payment identifier")
     customer_id: str = Field(..., description="Customer identifier")
 
-    fraud_score: float = Field(
-        ..., ge=0.0, le=100.0, description="Fraud risk score"
-    )
+    fraud_score: float = Field(..., ge=0.0, le=100.0, description="Fraud risk score")
     fraud_reason: str = Field(..., description="Primary fraud detection reason")
 
     fraud_signals: Dict[str, Any] = Field(
@@ -50,9 +48,7 @@ class FraudAlert(CyodaEntity):
         .replace("+00:00", "Z"),
         description="Alert creation timestamp",
     )
-    reviewed_at: Optional[str] = Field(
-        default=None, description="Review timestamp"
-    )
+    reviewed_at: Optional[str] = Field(default=None, description="Review timestamp")
 
     @field_validator("alert_type")
     @classmethod
@@ -83,4 +79,3 @@ class FraudAlert(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

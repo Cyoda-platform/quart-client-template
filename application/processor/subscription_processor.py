@@ -3,9 +3,9 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from application.entity.subscription.version_1.subscription import Subscription
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.subscription.version_1.subscription import Subscription
 from services.services import get_entity_service
 
 
@@ -62,4 +62,3 @@ class SubscriptionProcessor(CyodaProcessor):
             next_date = now + timedelta(days=30)
 
         return next_date.isoformat().replace("+00:00", "Z")
-

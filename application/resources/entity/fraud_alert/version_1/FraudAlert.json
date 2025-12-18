@@ -1,0 +1,21 @@
+{
+  "merchant_id": "merchant_12345",
+  "payment_id": "payment_xyz789",
+  "customer_id": "customer_67890",
+  "fraud_score": 65.5,
+  "fraud_reason": "High transaction amount with currency mismatch",
+  "fraud_signals": {
+    "high_amount": true,
+    "currency_mismatch": true,
+    "payment_method": "card",
+    "timestamp": "2025-12-18T10:30:00Z"
+  },
+  "alert_type": "auto",
+  "alert_status": "open",
+  "recommended_action": "REVIEW",
+  "actual_action": null,
+  "analyst_notes": null,
+  "analyst_id": null,
+  "reviewed_at": null
+}
+

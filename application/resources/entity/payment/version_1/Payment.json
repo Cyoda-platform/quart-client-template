@@ -1,0 +1,21 @@
+{
+  "merchant_id": "merchant_12345",
+  "customer_id": "customer_67890",
+  "amount": 150.50,
+  "currency": "EUR",
+  "settlement_currency": "USD",
+  "exchange_rate": 1.08,
+  "settlement_amount": 162.54,
+  "payment_method_token": "tok_visa_4242",
+  "payment_method_type": "card",
+  "fraud_score": 0.0,
+  "fraud_action": "ALLOW",
+  "fraud_signals": {},
+  "authorization_code": null,
+  "capture_status": "pending",
+  "metadata": {
+    "order_id": "order_abc123",
+    "description": "Purchase of digital goods"
+  }
+}
+

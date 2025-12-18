@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaCriterion
 from application.entity.payment.version_1.payment import Payment
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaCriterion, CyodaEntity
 from services.services import get_entity_service
 
 
@@ -71,4 +71,3 @@ class FraudDetectionCriterion(CyodaCriterion):
             "payment_method": payment.payment_method_type,
             "timestamp": payment.created_at,
         }
-

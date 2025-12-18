@@ -1,0 +1,115 @@
+{
+  "version": "1.0",
+  "name": "Subscription Billing Workflow",
+  "desc": "Workflow for recurring billing, invoice generation, and retry management",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "start_trial",
+          "next": "trial_active",
+          "manual": false
+        },
+        {
+          "name": "skip_trial",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "trial_active": {
+      "transitions": [
+        {
+          "name": "end_trial",
+          "next": "active",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "generate_invoice",
+          "next": "invoice_generated",
+          "manual": false,
+          "processors": [
+            {
+              "name": "SubscriptionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "invoice_generated": {
+      "transitions": [
+        {
+          "name": "charge_success",
+          "next": "active",
+          "manual": false
+        },
+        {
+          "name": "charge_failed",
+          "next": "retry_pending",
+          "manual": false
+        }
+      ]
+    },
+    "retry_pending": {
+      "transitions": [
+        {
+          "name": "retry_charge",
+          "next": "invoice_generated",
+          "manual": true
+        },
+        {
+          "name": "max_retries_exceeded",
+          "next": "suspended",
+          "manual": false
+        }
+      ]
+    },
+    "suspended": {
+      "transitions": [
+        {
+          "name": "resume",
+          "next": "active",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}
+

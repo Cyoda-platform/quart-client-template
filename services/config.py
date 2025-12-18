@@ -47,6 +47,23 @@ def get_service_config() -> Dict[str, Any]:
                 "example_application.criterion",
             ],
         },
+        "trading_platform": {
+            "enabled": True,
+            "entities": [
+                "Instrument",
+                "Order",
+                "Trade",
+                "Position",
+                "Account",
+                "MarketQuote",
+                "RiskLimit",
+                "RiskAlert",
+                "ComplianceEvent",
+                "AuditLog",
+                "ExecutionReport",
+                "Portfolio",
+            ],
+        },
     }
 
     # Log configuration (without sensitive data)

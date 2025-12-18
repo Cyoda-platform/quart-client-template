@@ -7,9 +7,9 @@ Handles risk limit monitoring and alert generation.
 import logging
 from typing import Any
 
+from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 
 logger = logging.getLogger(__name__)
 
@@ -46,13 +46,16 @@ class RiskProcessor(CyodaProcessor):
 
             # Log if breached
             if limit.is_breached():
-                self.logger.warning(f"Risk limit {limit.limit_type} BREACHED: {limit.usage_percent}%")
+                self.logger.warning(
+                    f"Risk limit {limit.limit_type} BREACHED: {limit.usage_percent}%"
+                )
             elif limit.is_warning():
-                self.logger.warning(f"Risk limit {limit.limit_type} WARNING: {limit.usage_percent}%")
+                self.logger.warning(
+                    f"Risk limit {limit.limit_type} WARNING: {limit.usage_percent}%"
+                )
 
             return limit
 
         except Exception as e:
             self.logger.error(f"Error processing risk limit: {str(e)}")
             raise
-

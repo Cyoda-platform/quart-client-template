@@ -9,13 +9,13 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.account.version_1.account import Account
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.account.version_1.account import Account
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,9 @@ accounts_bp = Blueprint("accounts", __name__, url_prefix="/api/accounts")
 @accounts_bp.route("", methods=["POST"])
 @tag(["accounts"])
 @operation_id("create_account")
-@validate(request=Account, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=Account, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)}
+)
 async def create_account(data: Account) -> ResponseReturnValue:
     """Create a new account"""
     try:
@@ -91,4 +93,3 @@ async def list_accounts() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error listing accounts: {str(e)}")
         return {"error": str(e)}, 500
-

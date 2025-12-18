@@ -7,9 +7,9 @@ Handles trade capture, ledger posting, and settlement processing.
 import logging
 from typing import Any
 
+from application.entity.trade.version_1.trade import Trade
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.trade.version_1.trade import Trade
 
 logger = logging.getLogger(__name__)
 
@@ -50,4 +50,3 @@ class TradeProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error processing trade: {str(e)}")
             raise
-

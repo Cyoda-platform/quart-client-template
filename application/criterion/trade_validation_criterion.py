@@ -6,9 +6,9 @@ Validates trade data before ledger posting.
 
 from typing import Any
 
+from application.entity.trade.version_1.trade import Trade
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.trade.version_1.trade import Trade
 
 
 class TradeValidationCriterion(CyodaCriteriaChecker):
@@ -55,12 +55,16 @@ class TradeValidationCriterion(CyodaCriteriaChecker):
             # Validate amounts
             expected_gross = trade.quantity * trade.price
             if abs(trade.gross_amount - expected_gross) > 0.01:
-                self.logger.warning(f"Trade gross amount mismatch: {trade.gross_amount} vs {expected_gross}")
+                self.logger.warning(
+                    f"Trade gross amount mismatch: {trade.gross_amount} vs {expected_gross}"
+                )
                 return False
 
             expected_net = trade.gross_amount - trade.commission - trade.fees
             if abs(trade.net_amount - expected_net) > 0.01:
-                self.logger.warning(f"Trade net amount mismatch: {trade.net_amount} vs {expected_net}")
+                self.logger.warning(
+                    f"Trade net amount mismatch: {trade.net_amount} vs {expected_net}"
+                )
                 return False
 
             self.logger.info(f"Trade {trade.trade_id} validation passed")
@@ -69,4 +73,3 @@ class TradeValidationCriterion(CyodaCriteriaChecker):
         except Exception as e:
             self.logger.error(f"Error validating trade: {str(e)}")
             return False
-

@@ -6,9 +6,9 @@ Performs pre-trade risk checks against configured limits.
 
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.order.version_1.order import Order
 
 
 class RiskCheckCriterion(CyodaCriteriaChecker):
@@ -33,11 +33,13 @@ class RiskCheckCriterion(CyodaCriteriaChecker):
         """
         try:
             order = cast_entity(entity, Order)
-            self.logger.info(f"Performing risk checks for order {order.client_order_id}")
+            self.logger.info(
+                f"Performing risk checks for order {order.client_order_id}"
+            )
 
             # Calculate notional exposure
             notional = order.quantity * (order.price or 0)
-            
+
             # Basic risk checks
             if notional > 10000000:  # $10M limit for demo
                 self.logger.warning(f"Order notional {notional} exceeds limit")
@@ -53,4 +55,3 @@ class RiskCheckCriterion(CyodaCriteriaChecker):
         except Exception as e:
             self.logger.error(f"Error performing risk checks: {str(e)}")
             return False
-

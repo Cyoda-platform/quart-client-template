@@ -13,9 +13,9 @@ from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.instrument.version_1.instrument import Instrument
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.instrument.version_1.instrument import Instrument
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,10 @@ instruments_bp = Blueprint("instruments", __name__, url_prefix="/api/instruments
 @instruments_bp.route("", methods=["POST"])
 @tag(["instruments"])
 @operation_id("create_instrument")
-@validate(request=Instrument, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=Instrument,
+    responses={201: (dict, None), 400: (dict, None), 500: (dict, None)},
+)
 async def create_instrument(data: Instrument) -> ResponseReturnValue:
     """Create a new instrument"""
     try:
@@ -91,4 +94,3 @@ async def list_instruments() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error listing instruments: {str(e)}")
         return {"error": str(e)}, 500
-

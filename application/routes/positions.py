@@ -9,13 +9,13 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.position.version_1.position import Position
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.position.version_1.position import Position
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,10 @@ positions_bp = Blueprint("positions", __name__, url_prefix="/api/positions")
 @positions_bp.route("", methods=["POST"])
 @tag(["positions"])
 @operation_id("create_position")
-@validate(request=Position, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=Position,
+    responses={201: (dict, None), 400: (dict, None), 500: (dict, None)},
+)
 async def create_position(data: Position) -> ResponseReturnValue:
     """Create a new position"""
     try:
@@ -91,4 +94,3 @@ async def list_positions() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error listing positions: {str(e)}")
         return {"error": str(e)}, 500
-

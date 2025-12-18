@@ -10,13 +10,13 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.order.version_1.order import Order
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.order.version_1.order import Order
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,9 @@ orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
 @orders_bp.route("", methods=["POST"])
 @tag(["orders"])
 @operation_id("create_order")
-@validate(request=Order, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=Order, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)}
+)
 async def create_order(data: Order) -> ResponseReturnValue:
     """Create a new order"""
     try:
@@ -97,7 +99,9 @@ async def list_orders() -> ResponseReturnValue:
 @orders_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["orders"])
 @operation_id("update_order")
-@validate(request=Order, responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(
+    request=Order, responses={200: (dict, None), 404: (dict, None), 500: (dict, None)}
+)
 async def update_order(entity_id: str, data: Order) -> ResponseReturnValue:
     """Update an order"""
     try:
@@ -118,13 +122,20 @@ async def update_order(entity_id: str, data: Order) -> ResponseReturnValue:
 @orders_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["orders"])
 @operation_id("transition_order")
-@validate(responses={200: (dict, None), 400: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(
+    responses={
+        200: (dict, None),
+        400: (dict, None),
+        404: (dict, None),
+        500: (dict, None),
+    }
+)
 async def transition_order(entity_id: str) -> ResponseReturnValue:
     """Transition order to next state"""
     try:
         data = await request.get_json()
         transition_name = data.get("transition")
-        
+
         if not transition_name:
             return {"error": "transition name required"}, 400
 
@@ -139,4 +150,3 @@ async def transition_order(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error transitioning order: {str(e)}")
         return {"error": str(e)}, 500
-

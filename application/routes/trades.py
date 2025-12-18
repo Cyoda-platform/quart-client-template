@@ -9,13 +9,13 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.trade.version_1.trade import Trade
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.trade.version_1.trade import Trade
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,9 @@ trades_bp = Blueprint("trades", __name__, url_prefix="/api/trades")
 @trades_bp.route("", methods=["POST"])
 @tag(["trades"])
 @operation_id("create_trade")
-@validate(request=Trade, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=Trade, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)}
+)
 async def create_trade(data: Trade) -> ResponseReturnValue:
     """Create a new trade"""
     try:
@@ -91,4 +93,3 @@ async def list_trades() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error listing trades: {str(e)}")
         return {"error": str(e)}, 500
-

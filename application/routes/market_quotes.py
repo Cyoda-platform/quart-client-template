@@ -13,9 +13,9 @@ from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.market_quote.version_1.market_quote import MarketQuote
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.market_quote.version_1.market_quote import MarketQuote
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,10 @@ market_quotes_bp = Blueprint("market_quotes", __name__, url_prefix="/api/market-
 @market_quotes_bp.route("", methods=["POST"])
 @tag(["market-quotes"])
 @operation_id("create_market_quote")
-@validate(request=MarketQuote, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=MarketQuote,
+    responses={201: (dict, None), 400: (dict, None), 500: (dict, None)},
+)
 async def create_market_quote(data: MarketQuote) -> ResponseReturnValue:
     """Create a new market quote"""
     try:
@@ -91,4 +94,3 @@ async def list_market_quotes() -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error listing market quotes: {str(e)}")
         return {"error": str(e)}, 500
-

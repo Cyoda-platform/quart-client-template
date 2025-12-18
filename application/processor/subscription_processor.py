@@ -6,7 +6,6 @@ from typing import Any
 from application.entity.subscription.version_1.subscription import Subscription
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from services.services import get_entity_service
 
 
 class SubscriptionProcessor(CyodaProcessor):

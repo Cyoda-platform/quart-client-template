@@ -6,7 +6,6 @@ from typing import Any
 from application.entity.payment.version_1.payment import Payment
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from services.services import get_entity_service
 
 
 class PaymentProcessor(CyodaProcessor):

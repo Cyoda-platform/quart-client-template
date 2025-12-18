@@ -3,11 +3,10 @@ from typing import Any
 
 from application.entity.payment.version_1.payment import Payment
 from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaCriterion, CyodaEntity
-from services.services import get_entity_service
+from common.processor.base import CyodaCriteriaChecker, CyodaEntity
 
 
-class FraudDetectionCriterion(CyodaCriterion):
+class FraudDetectionCriterion(CyodaCriteriaChecker):
     def __init__(self) -> None:
         super().__init__(
             name="FraudDetectionCriterion",
@@ -17,7 +16,7 @@ class FraudDetectionCriterion(CyodaCriterion):
             self, "logger", logging.getLogger(__name__)
         )
 
-    async def evaluate(self, entity: CyodaEntity, **kwargs: Any) -> bool:
+    async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         try:
             self.logger.info(
                 f"Evaluating fraud for Payment {getattr(entity, 'technical_id', '<unknown>')}"

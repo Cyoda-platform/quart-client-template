@@ -1,0 +1,18 @@
+{
+  "symbol": "AAPL",
+  "exchange": "NASDAQ",
+  "bidPrice": 150.45,
+  "bidSize": 1000.0,
+  "askPrice": 150.55,
+  "askSize": 1500.0,
+  "lastPrice": 150.50,
+  "lastSize": 500.0,
+  "volume": 50000000.0,
+  "openPrice": 149.50,
+  "highPrice": 151.00,
+  "lowPrice": 149.25,
+  "closePrice": 150.00,
+  "quoteTime": "2025-01-01T10:30:00Z",
+  "sequenceNumber": 12345
+}
+

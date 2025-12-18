@@ -1,0 +1,19 @@
+{
+  "tradeId": "TRD-20250101-001",
+  "orderId": "ORD-20250101-001",
+  "accountId": "ACC-12345",
+  "symbol": "AAPL",
+  "side": "BUY",
+  "quantity": 100.0,
+  "price": 150.50,
+  "tradeTime": "2025-01-01T10:05:00Z",
+  "settlementDate": "2025-01-03",
+  "commission": 10.0,
+  "fees": 5.0,
+  "grossAmount": 15050.0,
+  "netAmount": 15035.0,
+  "counterparty": "BROKER-001",
+  "settlementStatus": "PENDING",
+  "createdAt": "2025-01-01T10:05:00Z"
+}
+

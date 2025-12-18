@@ -1,0 +1,18 @@
+{
+  "clientOrderId": "ORD-20250101-001",
+  "accountId": "ACC-12345",
+  "symbol": "AAPL",
+  "side": "BUY",
+  "quantity": 100.0,
+  "orderType": "LIMIT",
+  "price": 150.50,
+  "stopPrice": null,
+  "timeInForce": "GTC",
+  "filledQuantity": 0.0,
+  "avgFillPrice": null,
+  "status": "NEW",
+  "rejectionReason": null,
+  "createdAt": "2025-01-01T10:00:00Z",
+  "updatedAt": null
+}
+

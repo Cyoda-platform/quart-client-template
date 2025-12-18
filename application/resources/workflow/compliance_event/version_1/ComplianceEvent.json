@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "ComplianceEvent Workflow",
+  "desc": "Manages compliance event lifecycle from detection through resolution",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "detect",
+          "next": "detected",
+          "manual": false
+        }
+      ]
+    },
+    "detected": {
+      "transitions": [
+        {
+          "name": "review",
+          "next": "reviewed",
+          "manual": true
+        }
+      ]
+    },
+    "reviewed": {
+      "transitions": [
+        {
+          "name": "resolve",
+          "next": "resolved",
+          "manual": true
+        }
+      ]
+    },
+    "resolved": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

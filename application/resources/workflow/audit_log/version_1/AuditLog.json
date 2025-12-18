@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "name": "AuditLog Workflow",
+  "desc": "Manages immutable audit log lifecycle",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "log",
+          "next": "logged",
+          "manual": false
+        }
+      ]
+    },
+    "logged": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

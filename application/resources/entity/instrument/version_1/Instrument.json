@@ -1,0 +1,14 @@
+{
+  "symbol": "AAPL",
+  "instrumentType": "EQUITY",
+  "exchange": "NASDAQ",
+  "currency": "USD",
+  "tickSize": 0.01,
+  "lotSize": 1,
+  "isActive": true,
+  "underlyingSymbol": null,
+  "expiryDate": null,
+  "strikePrice": null,
+  "optionType": null
+}
+

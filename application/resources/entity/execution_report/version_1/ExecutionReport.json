@@ -1,0 +1,18 @@
+{
+  "orderId": "ORD-20250101-001",
+  "clientOrderId": "ORD-20250101-001",
+  "exchangeOrderId": "EXC-001",
+  "executionId": "EXEC-001",
+  "symbol": "AAPL",
+  "side": "BUY",
+  "orderStatus": "FILLED",
+  "filledQuantity": 100.0,
+  "cumulativeQuantity": 100.0,
+  "remainingQuantity": 0.0,
+  "executionPrice": 150.50,
+  "commission": 10.0,
+  "executionTime": "2025-01-01T10:05:00Z",
+  "rejectionReason": null,
+  "text": "Order filled at market"
+}
+

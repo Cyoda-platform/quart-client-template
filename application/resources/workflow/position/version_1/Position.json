@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "name": "Position Workflow",
+  "desc": "Manages position lifecycle from opening through closing",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "open",
+          "next": "open",
+          "manual": false
+        }
+      ]
+    },
+    "open": {
+      "transitions": [
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": false
+        }
+      ]
+    },
+    "closed": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

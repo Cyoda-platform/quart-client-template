@@ -1,0 +1,13 @@
+{
+  "accountId": "ACC-12345",
+  "alertType": "THRESHOLD_WARNING",
+  "severity": "HIGH",
+  "limitId": "LIMIT-001",
+  "currentValue": 850000.0,
+  "thresholdValue": 800000.0,
+  "message": "Account notional exposure approaching limit",
+  "actionTaken": null,
+  "createdAt": "2025-01-01T10:30:00Z",
+  "resolvedAt": null
+}
+

@@ -1,0 +1,15 @@
+{
+  "eventType": "SUSPICIOUS_PATTERN",
+  "accountId": "ACC-12345",
+  "ruleId": "RULE-001",
+  "ruleName": "Rapid Order Cancellation",
+  "severity": "MEDIUM",
+  "description": "Account cancelled 50 orders in 5 minutes",
+  "relatedOrderId": "ORD-20250101-001",
+  "relatedTradeId": null,
+  "evidence": "Order cancellation rate: 10/min",
+  "actionRequired": true,
+  "createdAt": "2025-01-01T10:15:00Z",
+  "resolvedAt": null
+}
+

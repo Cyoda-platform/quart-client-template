@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "name": "ExecutionReport Workflow",
+  "desc": "Manages execution report lifecycle from receipt through processing",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "receive",
+          "next": "received",
+          "manual": false
+        }
+      ]
+    },
+    "received": {
+      "transitions": [
+        {
+          "name": "process",
+          "next": "processed",
+          "manual": false
+        }
+      ]
+    },
+    "processed": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "Trade Workflow",
+  "desc": "Manages trade lifecycle from capture through settlement",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "capture",
+          "next": "captured",
+          "manual": false
+        }
+      ]
+    },
+    "captured": {
+      "transitions": [
+        {
+          "name": "post_ledger",
+          "next": "ledger_posted",
+          "manual": false
+        }
+      ]
+    },
+    "ledger_posted": {
+      "transitions": [
+        {
+          "name": "settle",
+          "next": "settled",
+          "manual": false
+        }
+      ]
+    },
+    "settled": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

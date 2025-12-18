@@ -1,0 +1,17 @@
+{
+  "accountNumber": "ACC-12345",
+  "accountName": "John Doe Trading Account",
+  "accountType": "INDIVIDUAL",
+  "currency": "USD",
+  "cashBalance": 100000.0,
+  "portfolioValue": 50000.0,
+  "totalEquity": 150000.0,
+  "buyingPower": 300000.0,
+  "marginUsed": 0.0,
+  "marginAvailable": 150000.0,
+  "dayTradingBuyingPower": 300000.0,
+  "isActive": true,
+  "createdAt": "2024-01-01T00:00:00Z",
+  "updatedAt": null
+}
+

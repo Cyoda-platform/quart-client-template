@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "name": "Account Workflow",
+  "desc": "Manages account lifecycle from creation through closure",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "suspend",
+          "next": "suspended",
+          "manual": true
+        }
+      ]
+    },
+    "suspended": {
+      "transitions": [
+        {
+          "name": "reactivate",
+          "next": "active",
+          "manual": true
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "closed": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

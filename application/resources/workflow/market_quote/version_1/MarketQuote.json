@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "name": "MarketQuote Workflow",
+  "desc": "Manages market quote lifecycle from publication to archival",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "publish",
+          "next": "published",
+          "manual": false
+        }
+      ]
+    },
+    "published": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

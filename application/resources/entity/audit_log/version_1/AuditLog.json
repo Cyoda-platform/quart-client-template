@@ -1,0 +1,20 @@
+{
+  "eventType": "ORDER_CREATED",
+  "userId": "USER-001",
+  "accountId": "ACC-12345",
+  "entityType": "Order",
+  "entityId": "ORD-20250101-001",
+  "action": "CREATE",
+  "oldValues": null,
+  "newValues": {
+    "clientOrderId": "ORD-20250101-001",
+    "symbol": "AAPL",
+    "side": "BUY",
+    "quantity": 100.0,
+    "price": 150.50
+  },
+  "ipAddress": "192.168.1.100",
+  "timestamp": "2025-01-01T10:00:00Z",
+  "details": "Order created via API"
+}
+

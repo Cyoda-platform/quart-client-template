@@ -1,0 +1,84 @@
+{
+  "version": "1.0",
+  "name": "Order Workflow",
+  "desc": "Manages order lifecycle from submission through execution or cancellation",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "submit",
+          "next": "submitted",
+          "manual": false
+        }
+      ]
+    },
+    "submitted": {
+      "transitions": [
+        {
+          "name": "acknowledge",
+          "next": "ack",
+          "manual": false
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": false
+        }
+      ]
+    },
+    "ack": {
+      "transitions": [
+        {
+          "name": "partial_fill",
+          "next": "partial_fill",
+          "manual": false
+        },
+        {
+          "name": "fill",
+          "next": "filled",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "partial_fill": {
+      "transitions": [
+        {
+          "name": "fill",
+          "next": "filled",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "filled": {
+      "transitions": [
+        {
+          "name": "settle",
+          "next": "settled",
+          "manual": false
+        }
+      ]
+    },
+    "settled": {
+      "transitions": []
+    },
+    "cancelled": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    }
+  }
+}
+

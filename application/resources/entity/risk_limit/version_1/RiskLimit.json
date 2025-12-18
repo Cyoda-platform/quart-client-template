@@ -1,0 +1,14 @@
+{
+  "accountId": "ACC-12345",
+  "limitType": "NOTIONAL",
+  "limitValue": 1000000.0,
+  "currency": "USD",
+  "checkFrequency": "REAL_TIME",
+  "enforcementAction": "BLOCK",
+  "currentUsage": 500000.0,
+  "usagePercent": 50.0,
+  "isActive": true,
+  "createdAt": "2025-01-01T00:00:00Z",
+  "updatedAt": null
+}
+

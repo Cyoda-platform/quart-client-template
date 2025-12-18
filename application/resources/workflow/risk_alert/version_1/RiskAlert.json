@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "RiskAlert Workflow",
+  "desc": "Manages risk alert lifecycle from triggering through resolution",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "trigger",
+          "next": "triggered",
+          "manual": false
+        }
+      ]
+    },
+    "triggered": {
+      "transitions": [
+        {
+          "name": "notify",
+          "next": "notified",
+          "manual": false
+        }
+      ]
+    },
+    "notified": {
+      "transitions": [
+        {
+          "name": "resolve",
+          "next": "resolved",
+          "manual": true
+        }
+      ]
+    },
+    "resolved": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

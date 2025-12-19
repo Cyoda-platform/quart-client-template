@@ -1,0 +1,1 @@
+{"version": "1", "name": "Workflow", "initialState": "initial", "active": true, "states": {"*": {"name": "Any State", "transitions": []}}}

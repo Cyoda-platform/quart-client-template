@@ -11,6 +11,13 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.orders import orders_bp
+from application.routes.trades import trades_bp
+from application.routes.positions import positions_bp
+from application.routes.market_data import market_data_bp
+from application.routes.accounts import accounts_bp
+from application.routes.venues import venues_bp
+from application.routes.risk_controls import risk_controls_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,13 +27,18 @@ app = Quart(__name__)
 
 QuartSchema(
     app,
-    info={"title": "Cyoda Client Application", "version": "1.0.0"},
+    info={"title": "Cyoda Trading Platform", "version": "1.0.0"},
     tags=[
         {
-            "name": "ExampleEntities",
-            "description": "ExampleEntity management endpoints",
+            "name": "orders",
+            "description": "Order management endpoints",
         },
-        {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "trades", "description": "Trade management endpoints"},
+        {"name": "positions", "description": "Position management endpoints"},
+        {"name": "market-data", "description": "Market data endpoints"},
+        {"name": "accounts", "description": "Account management endpoints"},
+        {"name": "venues", "description": "Venue management endpoints"},
+        {"name": "risk-controls", "description": "Risk control endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -37,6 +49,15 @@ QuartSchema(
         }
     },
 )
+
+# Register blueprints
+app.register_blueprint(orders_bp)
+app.register_blueprint(trades_bp)
+app.register_blueprint(positions_bp)
+app.register_blueprint(market_data_bp)
+app.register_blueprint(accounts_bp)
+app.register_blueprint(venues_bp)
+app.register_blueprint(risk_controls_bp)
 
 # Global holder for the background task to satisfy mypy
 # (avoid setting arbitrary attrs on app)

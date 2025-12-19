@@ -5,8 +5,8 @@ from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.risk_control.version_1.risk_control import RiskControl
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -73,4 +73,3 @@ async def list_risk_controls() -> ResponseReturnValue:
     except Exception as e:
         logger.exception(f"Error listing risk controls: {str(e)}")
         return {"error": str(e)}, 400
-

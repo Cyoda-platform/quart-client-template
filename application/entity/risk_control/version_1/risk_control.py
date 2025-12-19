@@ -16,15 +16,21 @@ class RiskControl(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     account_id: str = Field(..., description="Account ID")
-    rule_type: str = Field(..., description="Rule type: POSITION_LIMIT, LOSS_LIMIT, CONCENTRATION")
+    rule_type: str = Field(
+        ..., description="Rule type: POSITION_LIMIT, LOSS_LIMIT, CONCENTRATION"
+    )
     rule_name: str = Field(..., description="Human-readable rule name")
     limit_value: float = Field(..., ge=0, description="Limit threshold")
     current_value: float = Field(default=0, description="Current value against limit")
     is_active: bool = Field(default=True, description="Rule is active")
-    breach_action: str = Field(default="ALERT", description="Action on breach: ALERT, BLOCK, SUSPEND")
+    breach_action: str = Field(
+        default="ALERT", description="Action on breach: ALERT, BLOCK, SUSPEND"
+    )
     created_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Rule creation timestamp"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        description="Rule creation timestamp",
     )
     updated_at: Optional[str] = Field(None, description="Last update timestamp")
 
@@ -32,7 +38,9 @@ class RiskControl(CyodaEntity):
     @classmethod
     def validate_rule_type(cls, v: str) -> str:
         if v not in ["POSITION_LIMIT", "LOSS_LIMIT", "CONCENTRATION"]:
-            raise ValueError("rule_type must be POSITION_LIMIT, LOSS_LIMIT, or CONCENTRATION")
+            raise ValueError(
+                "rule_type must be POSITION_LIMIT, LOSS_LIMIT, or CONCENTRATION"
+            )
         return v
 
     @field_validator("breach_action")
@@ -48,4 +56,3 @@ class RiskControl(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

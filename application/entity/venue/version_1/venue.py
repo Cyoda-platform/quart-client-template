@@ -22,10 +22,14 @@ class Venue(CyodaEntity):
     trading_hours_open: str = Field(..., description="Market open time (HH:MM:SS)")
     trading_hours_close: str = Field(..., description="Market close time (HH:MM:SS)")
     is_operational: bool = Field(default=True, description="Venue operational status")
-    connection_status: str = Field(default="DISCONNECTED", description="Connection status")
+    connection_status: str = Field(
+        default="DISCONNECTED", description="Connection status"
+    )
     created_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Venue creation timestamp"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        description="Venue creation timestamp",
     )
     updated_at: Optional[str] = Field(None, description="Last update timestamp")
 
@@ -40,7 +44,9 @@ class Venue(CyodaEntity):
     @classmethod
     def validate_connection_status(cls, v: str) -> str:
         if v not in ["CONNECTED", "DISCONNECTED", "ERROR"]:
-            raise ValueError("connection_status must be CONNECTED, DISCONNECTED, or ERROR")
+            raise ValueError(
+                "connection_status must be CONNECTED, DISCONNECTED, or ERROR"
+            )
         return v
 
     model_config = ConfigDict(
@@ -49,4 +55,3 @@ class Venue(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

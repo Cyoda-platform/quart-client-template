@@ -5,8 +5,8 @@ from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.account.version_1.account import Account
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -73,4 +73,3 @@ async def list_accounts() -> ResponseReturnValue:
     except Exception as e:
         logger.exception(f"Error listing accounts: {str(e)}")
         return {"error": str(e)}, 400
-

@@ -5,9 +5,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.order.version_1.order import Order
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-from application.entity.order.version_1.order import Order
 
 logger = logging.getLogger(__name__)
 
@@ -117,4 +117,3 @@ async def delete_order(order_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception(f"Error deleting order: {str(e)}")
         return {"error": str(e)}, 400
-

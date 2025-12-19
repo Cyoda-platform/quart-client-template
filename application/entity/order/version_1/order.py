@@ -22,11 +22,17 @@ class Order(CyodaEntity):
     price: Optional[float] = Field(None, description="Limit price for LIMIT orders")
     account_id: str = Field(..., description="Account ID placing the order")
     venue_id: str = Field(..., description="Venue ID for execution")
-    filled_quantity: float = Field(default=0, ge=0, description="Quantity filled so far")
-    average_fill_price: Optional[float] = Field(None, description="Average price of fills")
+    filled_quantity: float = Field(
+        default=0, ge=0, description="Quantity filled so far"
+    )
+    average_fill_price: Optional[float] = Field(
+        None, description="Average price of fills"
+    )
     created_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Order creation timestamp"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        description="Order creation timestamp",
     )
     updated_at: Optional[str] = Field(None, description="Last update timestamp")
 
@@ -50,4 +56,3 @@ class Order(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

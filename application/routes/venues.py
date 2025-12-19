@@ -5,8 +5,8 @@ from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.venue.version_1.venue import Venue
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -73,4 +73,3 @@ async def list_venues() -> ResponseReturnValue:
     except Exception as e:
         logger.exception(f"Error listing venues: {str(e)}")
         return {"error": str(e)}, 400
-

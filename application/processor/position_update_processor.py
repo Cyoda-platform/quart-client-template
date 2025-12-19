@@ -2,9 +2,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.position.version_1.position import Position
 
 
 class PositionUpdateProcessor(CyodaProcessor):
@@ -36,9 +36,11 @@ class PositionUpdateProcessor(CyodaProcessor):
             self.logger.info(f"Updating position {position.entity_id}")
 
             position.unrealized_pnl = (
-                (position.current_price - position.average_cost) * position.quantity
+                position.current_price - position.average_cost
+            ) * position.quantity
+            position.margin_required = abs(
+                position.quantity * position.average_cost * 0.5
             )
-            position.margin_required = abs(position.quantity * position.average_cost * 0.5)
             position.updated_at = (
                 datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             )
@@ -49,4 +51,3 @@ class PositionUpdateProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error updating position: {str(e)}")
             raise
-

@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaCriterion
 from application.entity.order.version_1.order import Order
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaCriterion, CyodaEntity
 
 
 class OrderValidationCriterion(CyodaCriterion):
@@ -36,8 +36,12 @@ class OrderValidationCriterion(CyodaCriterion):
                 self.logger.warning(f"Order {order.entity_id}: Invalid quantity")
                 return False
 
-            if order.order_type == "LIMIT" and (order.price is None or order.price <= 0):
-                self.logger.warning(f"Order {order.entity_id}: LIMIT order missing price")
+            if order.order_type == "LIMIT" and (
+                order.price is None or order.price <= 0
+            ):
+                self.logger.warning(
+                    f"Order {order.entity_id}: LIMIT order missing price"
+                )
                 return False
 
             self.logger.info(f"Order {order.entity_id} validation passed")
@@ -46,4 +50,3 @@ class OrderValidationCriterion(CyodaCriterion):
         except Exception as e:
             self.logger.error(f"Error validating order: {str(e)}")
             return False
-

@@ -16,7 +16,9 @@ class Account(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     account_number: str = Field(..., description="Unique account number")
-    account_type: str = Field(..., description="Account type: INDIVIDUAL, INSTITUTIONAL")
+    account_type: str = Field(
+        ..., description="Account type: INDIVIDUAL, INSTITUTIONAL"
+    )
     owner_name: str = Field(..., description="Account owner name")
     cash_balance: float = Field(..., ge=0, description="Available cash")
     buying_power: float = Field(..., ge=0, description="Buying power")
@@ -25,8 +27,10 @@ class Account(CyodaEntity):
     risk_limit: float = Field(..., ge=0, description="Daily loss limit")
     is_margin_enabled: bool = Field(default=False, description="Margin trading enabled")
     created_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Account creation timestamp"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        description="Account creation timestamp",
     )
     updated_at: Optional[str] = Field(None, description="Last update timestamp")
 
@@ -43,4 +47,3 @@ class Account(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

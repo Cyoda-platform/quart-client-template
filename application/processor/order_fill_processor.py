@@ -2,9 +2,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
 
 
 class OrderFillProcessor(CyodaProcessor):
@@ -47,4 +47,3 @@ class OrderFillProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error processing order fill: {str(e)}")
             raise
-

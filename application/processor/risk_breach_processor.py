@@ -2,9 +2,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.risk_control.version_1.risk_control import RiskControl
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.risk_control.version_1.risk_control import RiskControl
 
 
 class RiskBreachProcessor(CyodaProcessor):
@@ -38,13 +38,10 @@ class RiskBreachProcessor(CyodaProcessor):
                 f"{risk_control.current_value} > {risk_control.limit_value}"
             )
 
-            self.logger.info(
-                f"Executing breach action: {risk_control.breach_action}"
-            )
+            self.logger.info(f"Executing breach action: {risk_control.breach_action}")
 
             return risk_control
 
         except Exception as e:
             self.logger.error(f"Error processing risk breach: {str(e)}")
             raise
-

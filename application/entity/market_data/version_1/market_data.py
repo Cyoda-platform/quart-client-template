@@ -26,8 +26,10 @@ class MarketData(CyodaEntity):
     venue_id: str = Field(..., description="Source venue ID")
     sequence_number: int = Field(..., ge=0, description="Sequence number for ordering")
     received_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Data reception timestamp"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        description="Data reception timestamp",
     )
     published_at: Optional[str] = Field(None, description="Publication timestamp")
 
@@ -44,4 +46,3 @@ class MarketData(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

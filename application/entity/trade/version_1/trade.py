@@ -25,8 +25,10 @@ class Trade(CyodaEntity):
     trade_id: str = Field(..., description="Unique trade identifier from venue")
     commission: float = Field(default=0, ge=0, description="Commission paid")
     executed_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        description="Trade execution timestamp"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        description="Trade execution timestamp",
     )
     settled_at: Optional[str] = Field(None, description="Settlement timestamp")
 
@@ -43,4 +45,3 @@ class Trade(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

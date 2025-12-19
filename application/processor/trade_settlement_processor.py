@@ -2,9 +2,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.trade.version_1.trade import Trade
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.trade.version_1.trade import Trade
 
 
 class TradeSettlementProcessor(CyodaProcessor):
@@ -45,4 +45,3 @@ class TradeSettlementProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error processing trade settlement: {str(e)}")
             raise
-

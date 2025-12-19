@@ -1,5 +1,4 @@
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.risk_control.version_1.risk_control import RiskControl

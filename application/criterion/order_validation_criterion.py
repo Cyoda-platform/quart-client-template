@@ -1,12 +1,11 @@
-import logging
 from typing import Any
 
 from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaCriterion, CyodaEntity
+from common.processor.base import CyodaCriteriaChecker, CyodaEntity
 
 
-class OrderValidationCriterion(CyodaCriterion):
+class OrderValidationCriterion(CyodaCriteriaChecker):
     """Validates order before opening for execution."""
 
     def __init__(self) -> None:
@@ -14,11 +13,8 @@ class OrderValidationCriterion(CyodaCriterion):
             name="OrderValidationCriterion",
             description="Validates order meets risk and compliance requirements",
         )
-        self.logger: logging.Logger = getattr(
-            self, "logger", logging.getLogger(__name__)
-        )
 
-    async def evaluate(self, entity: CyodaEntity, **kwargs: Any) -> bool:
+    async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         """
         Evaluate if order is valid for execution.
 

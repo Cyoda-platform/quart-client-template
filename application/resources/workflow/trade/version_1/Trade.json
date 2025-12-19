@@ -1,0 +1,48 @@
+{
+  "version": "1.0",
+  "name": "Trade Workflow",
+  "desc": "Trade lifecycle: EXECUTED -> SETTLED/FAILED",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "execute",
+          "next": "executed",
+          "manual": false
+        }
+      ]
+    },
+    "executed": {
+      "transitions": [
+        {
+          "name": "settle",
+          "next": "settled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "TradeSettlementProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "fail",
+          "next": "failed",
+          "manual": true
+        }
+      ]
+    },
+    "settled": {
+      "transitions": []
+    },
+    "failed": {
+      "transitions": []
+    }
+  }
+}
+

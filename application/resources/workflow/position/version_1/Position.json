@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "name": "Position Workflow",
+  "desc": "Position lifecycle: OPEN -> CLOSED",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "open",
+          "next": "open",
+          "manual": false
+        }
+      ]
+    },
+    "open": {
+      "transitions": [
+        {
+          "name": "update",
+          "next": "open",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PositionUpdateProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": false
+        }
+      ]
+    },
+    "closed": {
+      "transitions": []
+    }
+  }
+}
+

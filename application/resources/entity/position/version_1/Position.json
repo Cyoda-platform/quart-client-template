@@ -1,0 +1,13 @@
+{
+  "accountId": "ACC-001",
+  "symbol": "AAPL",
+  "quantity": 100.0,
+  "averageCost": 150.0,
+  "currentPrice": 152.50,
+  "realizedPnl": 250.0,
+  "unrealizedPnl": 250.0,
+  "marginRequired": 15000.0,
+  "createdAt": "2025-12-19T10:31:00Z",
+  "updatedAt": null
+}
+

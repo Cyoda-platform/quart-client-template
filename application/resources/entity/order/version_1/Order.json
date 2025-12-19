@@ -1,0 +1,14 @@
+{
+  "symbol": "AAPL",
+  "orderType": "LIMIT",
+  "side": "BUY",
+  "quantity": 100.0,
+  "price": 150.25,
+  "accountId": "ACC-001",
+  "venueId": "NYSE",
+  "filledQuantity": 0.0,
+  "averageFillPrice": null,
+  "createdAt": "2025-12-19T10:30:00Z",
+  "updatedAt": null
+}
+

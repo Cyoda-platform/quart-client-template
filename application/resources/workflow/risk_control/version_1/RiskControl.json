@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "name": "RiskControl Workflow",
+  "desc": "Risk control rule lifecycle: ACTIVE -> BREACHED/SUSPENDED",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "breach",
+          "next": "breached",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskBreachProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "suspend",
+          "next": "suspended",
+          "manual": true
+        }
+      ]
+    },
+    "breached": {
+      "transitions": [
+        {
+          "name": "reset",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    },
+    "suspended": {
+      "transitions": [
+        {
+          "name": "reactivate",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    }
+  }
+}
+

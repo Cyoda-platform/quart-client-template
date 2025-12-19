@@ -1,0 +1,12 @@
+{
+  "accountId": "ACC-001",
+  "ruleType": "LOSS_LIMIT",
+  "ruleName": "Daily Loss Limit",
+  "limitValue": 5000.0,
+  "currentValue": 1250.0,
+  "isActive": true,
+  "breachAction": "ALERT",
+  "createdAt": "2025-12-19T09:00:00Z",
+  "updatedAt": null
+}
+

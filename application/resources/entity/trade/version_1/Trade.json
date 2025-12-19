@@ -1,0 +1,14 @@
+{
+  "orderId": "ORD-001",
+  "symbol": "AAPL",
+  "side": "BUY",
+  "quantity": 50.0,
+  "price": 150.25,
+  "accountId": "ACC-001",
+  "venueId": "NYSE",
+  "tradeId": "TRD-001",
+  "commission": 5.0,
+  "executedAt": "2025-12-19T10:31:00Z",
+  "settledAt": null
+}
+

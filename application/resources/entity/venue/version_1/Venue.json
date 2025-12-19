@@ -1,0 +1,13 @@
+{
+  "venueName": "New York Stock Exchange",
+  "venueCode": "NYS",
+  "venueType": "EXCHANGE",
+  "region": "US-EAST",
+  "tradingHoursOpen": "09:30:00",
+  "tradingHoursClose": "16:00:00",
+  "isOperational": true,
+  "connectionStatus": "CONNECTED",
+  "createdAt": "2025-12-19T08:00:00Z",
+  "updatedAt": null
+}
+

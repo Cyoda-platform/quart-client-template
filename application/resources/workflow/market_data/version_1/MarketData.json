@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "MarketData Workflow",
+  "desc": "Market data pipeline: RECEIVED -> NORMALIZED -> PUBLISHED",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "receive",
+          "next": "received",
+          "manual": false
+        }
+      ]
+    },
+    "received": {
+      "transitions": [
+        {
+          "name": "normalize",
+          "next": "normalized",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataNormalizationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "normalized": {
+      "transitions": [
+        {
+          "name": "publish",
+          "next": "published",
+          "manual": false
+        }
+      ]
+    },
+    "published": {
+      "transitions": []
+    }
+  }
+}
+

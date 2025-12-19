@@ -1,0 +1,15 @@
+{
+  "symbol": "AAPL",
+  "dataType": "QUOTE",
+  "bidPrice": 150.20,
+  "askPrice": 150.30,
+  "bidSize": 1000.0,
+  "askSize": 1500.0,
+  "lastPrice": 150.25,
+  "lastSize": 100.0,
+  "venueId": "NYSE",
+  "sequenceNumber": 12345,
+  "receivedAt": "2025-12-19T10:30:00Z",
+  "publishedAt": null
+}
+

@@ -1,1 +1,88 @@
-{"name":"CustomerCRUD","initialState":"CREATED","states":{"CREATED":{"transitions":[{"name":"create_customer","to":"ACTIVE","next":"ACTIVE","manual":false,"criterion":{"type":"simple","field":"action","value":"create"},"processors":[{"name":"save_customer","type":"processor","config":{"operation":"insert","entity":"customer","calculationNodesTags":"cyoda_application"},"executionMode":"SYNC"}]}]},"ACTIVE":{"transitions":[{"name":"update_customer","to":"ACTIVE","next":"ACTIVE","manual":false,"criterion":{"type":"simple","field":"action","value":"update"},"processors":[{"name":"update_customer","type":"processor","config":{"operation":"update","entity":"customer","calculationNodesTags":"cyoda_application"},"executionMode":"SYNC"}]},{"name":"delete_customer","to":"DELETED","next":"DELETED","manual":false,"criterion":{"type":"simple","field":"action","value":"delete"},"processors":[{"name":"delete_customer","type":"processor","config":{"operation":"delete","entity":"customer","calculationNodesTags":"cyoda_application"},"executionMode":"SYNC"}]}]},"DELETED":{"transitions":[]}},"version":"1"}
+{
+  "version": "1",
+  "name": "CustomerCRUD",
+  "initialState": "CREATED",
+  "active": true,
+  "states": {
+    "ACTIVE": {
+      "transitions": [
+        {
+          "criterion": {
+            "field": "action",
+            "type": "simple",
+            "value": "update"
+          },
+          "manual": false,
+          "name": "update_customer",
+          "next": "ACTIVE",
+          "processors": [
+            {
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "entity": "customer",
+                "operation": "update"
+              },
+              "executionMode": "SYNC",
+              "name": "update_customer",
+              "type": "processor"
+            }
+          ],
+          "to": "ACTIVE"
+        },
+        {
+          "criterion": {
+            "field": "action",
+            "type": "simple",
+            "value": "delete"
+          },
+          "manual": false,
+          "name": "delete_customer",
+          "next": "DELETED",
+          "processors": [
+            {
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "entity": "customer",
+                "operation": "delete"
+              },
+              "executionMode": "SYNC",
+              "name": "delete_customer",
+              "type": "processor"
+            }
+          ],
+          "to": "DELETED"
+        }
+      ]
+    },
+    "CREATED": {
+      "transitions": [
+        {
+          "criterion": {
+            "field": "action",
+            "type": "simple",
+            "value": "create"
+          },
+          "manual": false,
+          "name": "create_customer",
+          "next": "ACTIVE",
+          "processors": [
+            {
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "entity": "customer",
+                "operation": "insert"
+              },
+              "executionMode": "SYNC",
+              "name": "save_customer",
+              "type": "processor"
+            }
+          ],
+          "to": "ACTIVE"
+        }
+      ]
+    },
+    "DELETED": {
+      "transitions": []
+    }
+  }
+}

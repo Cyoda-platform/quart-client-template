@@ -1,0 +1,1 @@
+{"id":"customer-001","firstName":"Alice","lastName":"Smith","email":"alice.smith@example.com","phone":"+1-555-0100","address":{"street":"123 Main St","city":"Anytown","state":"CA","zip":"12345"},"createdAt":"2025-01-01T12:00:00Z","status":"ACTIVE"}

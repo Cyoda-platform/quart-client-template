@@ -11,7 +11,7 @@
         {
           "name": "trigger_fetch",
           "next": "fetch_fact",
-          "manual": false
+          "manual": true
         }
       ]
     },

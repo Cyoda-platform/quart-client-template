@@ -1,0 +1,10 @@
+{
+  "id": "acct_2001",
+  "userId": "user_1001",
+  "type": "CHECKING",
+  "balance": 12500.75,
+  "currency": "USD",
+  "status": "ACTIVE",
+  "createdAt": "2025-01-02T10:20:00Z",
+  "nickName": "Everyday Checking"
+}

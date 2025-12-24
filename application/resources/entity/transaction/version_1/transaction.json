@@ -1,0 +1,15 @@
+{
+  "id": "txn_3001",
+  "accountId": "acct_2001",
+  "amount": -42.50,
+  "currency": "USD",
+  "type": "DEBIT",
+  "category": "Groceries",
+  "description": "Grocery Store - Main St",
+  "timestamp": "2025-01-03T18:45:00Z",
+  "status": "SETTLED",
+  "metadata": {
+    "merchantId": "merch_501",
+    "method": "CARD"
+  }
+}

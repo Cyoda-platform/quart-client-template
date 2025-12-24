@@ -1,0 +1,94 @@
+{
+  "version": "1.0",
+  "name": "WeeklyCatFactPublish",
+  "desc": "Weekly workflow to fetch a cat fact and email it to all subscribers",
+  "initialState": "scheduled",
+  "active": true,
+  "schedule": "0 10 * * 1",
+  "states": {
+    "scheduled": {
+      "transitions": [
+        {
+          "name": "trigger_fetch",
+          "next": "fetch_fact",
+          "manual": false
+        }
+      ]
+    },
+    "fetch_fact": {
+      "transitions": [
+        {
+          "name": "on_success",
+          "next": "save_fact",
+          "manual": false
+        },
+        {
+          "name": "on_failure",
+          "next": "retry_fetch",
+          "manual": false
+        }
+      ]
+    },
+    "retry_fetch": {
+      "transitions": [
+        {
+          "name": "retry",
+          "next": "fetch_fact",
+          "manual": false
+        },
+        {
+          "name": "fail",
+          "next": "failed",
+          "manual": false
+        }
+      ]
+    },
+    "save_fact": {
+      "transitions": [
+        {
+          "name": "saved",
+          "next": "prepare_recipients",
+          "manual": false
+        }
+      ]
+    },
+    "prepare_recipients": {
+      "transitions": [
+        {
+          "name": "ready",
+          "next": "send_emails",
+          "manual": false
+        }
+      ]
+    },
+    "send_emails": {
+      "transitions": [
+        {
+          "name": "sent",
+          "next": "record_results",
+          "manual": false
+        },
+        {
+          "name": "partial_failure",
+          "next": "record_results",
+          "manual": false
+        }
+      ]
+    },
+    "record_results": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    },
+    "failed": {
+      "transitions": []
+    }
+  }
+}

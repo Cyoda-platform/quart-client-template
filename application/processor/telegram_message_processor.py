@@ -9,7 +9,9 @@ from typing import Any
 
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.telegram_message import TelegramMessage
+from application.entity.telegram_message.version_1.telegram_message import (
+    TelegramMessage,
+)
 
 
 class TelegramMessageProcessor(CyodaProcessor):

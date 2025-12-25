@@ -80,4 +80,3 @@ class TelegramMessage(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

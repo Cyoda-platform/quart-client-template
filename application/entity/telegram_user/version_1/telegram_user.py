@@ -23,13 +23,9 @@ class TelegramUser(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     telegram_id: int = Field(..., description="Telegram user ID")
-    username: Optional[str] = Field(
-        default=None, description="Telegram username"
-    )
+    username: Optional[str] = Field(default=None, description="Telegram username")
     first_name: str = Field(..., description="User's first name")
-    last_name: Optional[str] = Field(
-        default=None, description="User's last name"
-    )
+    last_name: Optional[str] = Field(default=None, description="User's last name")
     is_bot: bool = Field(default=False, description="Whether user is a bot")
     is_active: bool = Field(default=True, description="Whether user is active")
     created_at: Optional[str] = Field(
@@ -67,4 +63,3 @@ class TelegramUser(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

@@ -11,6 +11,9 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.telegram_users import telegram_users_bp
+from application.routes.telegram_messages import telegram_messages_bp
+from application.routes.telegram_bots import telegram_bots_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -37,6 +40,11 @@ QuartSchema(
         }
     },
 )
+
+# Register Telegram bot application blueprints
+app.register_blueprint(telegram_users_bp)
+app.register_blueprint(telegram_messages_bp)
+app.register_blueprint(telegram_bots_bp)
 
 # Global holder for the background task to satisfy mypy
 # (avoid setting arbitrary attrs on app)

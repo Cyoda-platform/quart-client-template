@@ -53,4 +53,3 @@ class TelegramUserProcessor(CyodaProcessor):
                 f"Error processing entity {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

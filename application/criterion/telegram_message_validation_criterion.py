@@ -51,4 +51,3 @@ class TelegramMessageValidationCriterion(CyodaCriterion):
 
         except Exception:
             return False
-

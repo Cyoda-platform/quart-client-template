@@ -26,9 +26,7 @@ class TelegramBot(CyodaEntity):
     bot_name: str = Field(..., description="Bot name")
     bot_token: str = Field(..., description="Bot API token")
     is_active: bool = Field(default=True, description="Whether bot is active")
-    description: Optional[str] = Field(
-        default=None, description="Bot description"
-    )
+    description: Optional[str] = Field(default=None, description="Bot description")
     created_at: Optional[str] = Field(
         default_factory=lambda: datetime.now(timezone.utc)
         .isoformat()
@@ -72,4 +70,3 @@ class TelegramBot(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

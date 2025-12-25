@@ -48,4 +48,3 @@ class TelegramBotValidationCriterion(CyodaCriterion):
 
         except Exception:
             return False
-

@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "name": "TelegramBot Workflow",
+  "desc": "Workflow for managing Telegram bots",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "deactivate",
+          "next": "inactive",
+          "manual": true
+        }
+      ]
+    },
+    "inactive": {
+      "transitions": [
+        {
+          "name": "reactivate",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    }
+  }
+}
+

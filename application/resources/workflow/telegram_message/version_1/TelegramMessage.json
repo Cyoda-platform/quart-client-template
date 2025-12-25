@@ -1,0 +1,40 @@
+{
+  "version": "1.0",
+  "name": "TelegramMessage Workflow",
+  "desc": "Workflow for managing Telegram messages",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "process",
+          "next": "processed",
+          "manual": true
+        }
+      ]
+    },
+    "processed": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": true
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

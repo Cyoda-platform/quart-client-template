@@ -7,9 +7,9 @@ Handles business logic for TelegramUser entities.
 import logging
 from typing import Any
 
+from application.entity.telegram_user.version_1.telegram_user import TelegramUser
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.telegram_user.version_1.telegram_user import TelegramUser
 
 
 class TelegramUserProcessor(CyodaProcessor):

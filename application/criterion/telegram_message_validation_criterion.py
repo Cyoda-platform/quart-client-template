@@ -6,11 +6,11 @@ Validates TelegramMessage entities.
 
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaCriteriaChecker, CyodaEntity
 from application.entity.telegram_message.version_1.telegram_message import (
     TelegramMessage,
 )
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaCriteriaChecker, CyodaEntity
 
 
 class TelegramMessageValidationCriterion(CyodaCriteriaChecker):

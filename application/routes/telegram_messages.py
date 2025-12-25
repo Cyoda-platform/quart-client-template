@@ -13,10 +13,10 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.telegram_message.version_1.telegram_message import (
     TelegramMessage,
 )
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 

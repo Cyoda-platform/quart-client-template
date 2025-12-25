@@ -6,11 +6,14 @@ Validates TelegramMessage entities.
 
 from typing import Any
 
-from common.processor.base import CyodaEntity, CyodaCriterion
-from application.entity.telegram_message import TelegramMessage
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaCriteriaChecker, CyodaEntity
+from application.entity.telegram_message.version_1.telegram_message import (
+    TelegramMessage,
+)
 
 
-class TelegramMessageValidationCriterion(CyodaCriterion):
+class TelegramMessageValidationCriterion(CyodaCriteriaChecker):
     """Criterion for validating TelegramMessage entities."""
 
     def __init__(self) -> None:
@@ -19,9 +22,9 @@ class TelegramMessageValidationCriterion(CyodaCriterion):
             description="Validates TelegramMessage entities",
         )
 
-    async def evaluate(self, entity: CyodaEntity, **kwargs: Any) -> bool:
+    async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         """
-        Evaluate if TelegramMessage is valid.
+        Check if TelegramMessage is valid.
 
         Args:
             entity: The TelegramMessage to validate
@@ -31,9 +34,7 @@ class TelegramMessageValidationCriterion(CyodaCriterion):
             True if valid, False otherwise
         """
         try:
-            telegram_message = entity
-            if not isinstance(telegram_message, TelegramMessage):
-                return False
+            telegram_message = cast_entity(entity, TelegramMessage)
 
             if not telegram_message.message_id or telegram_message.message_id <= 0:
                 return False

@@ -14,7 +14,7 @@ from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
 from services.services import get_entity_service
-from application.entity.telegram_user import TelegramUser
+from application.entity.telegram_user.version_1.telegram_user import TelegramUser
 
 logger = logging.getLogger(__name__)
 

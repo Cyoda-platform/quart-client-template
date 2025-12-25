@@ -1,0 +1,15 @@
+{
+  "id": "customer-0001",
+  "name": "Customer",
+  "description": "Represents a customer in the system",
+  "version": 1,
+  "fields": {
+    "id": {"type": "string", "example": "cust_12345"},
+    "firstName": {"type": "string", "example": "Alice"},
+    "lastName": {"type": "string", "example": "Smith"},
+    "email": {"type": "string", "format": "email", "example": "alice.smith@example.com"},
+    "phone": {"type": "string", "example": "+1-555-0100"},
+    "createdAt": {"type": "string", "format": "date-time", "example": "2025-01-01T12:00:00Z"},
+    "status": {"type": "string", "example": "ACTIVE"}
+  }
+}

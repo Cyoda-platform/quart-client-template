@@ -1,4 +1,4 @@
-from typing import ClassVar, List, Optional
+from typing import ClassVar, Optional
 
 from pydantic import ConfigDict, Field, field_validator
 

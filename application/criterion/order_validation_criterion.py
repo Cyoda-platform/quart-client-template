@@ -3,10 +3,10 @@ from typing import Any
 
 from application.entity.order import Order
 from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaCriterion, CyodaEntity
+from common.processor.base import CyodaCriteriaChecker, CyodaEntity
 
 
-class OrderValidationCriterion(CyodaCriterion):
+class OrderValidationCriterion(CyodaCriteriaChecker):
     """
     Validates order for completeness and correctness.
     Checks required fields, order type validity, and amount calculations.
@@ -21,9 +21,9 @@ class OrderValidationCriterion(CyodaCriterion):
             self, "logger", logging.getLogger(__name__)
         )
 
-    async def evaluate(self, entity: CyodaEntity, **kwargs: Any) -> bool:
+    async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         """
-        Evaluate if order is valid.
+        Check if order is valid.
 
         Args:
             entity: The Order entity to validate

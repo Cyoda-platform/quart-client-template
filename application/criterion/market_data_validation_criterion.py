@@ -3,10 +3,10 @@ from typing import Any
 
 from application.entity.market_data import MarketData
 from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaCriterion, CyodaEntity
+from common.processor.base import CyodaCriteriaChecker, CyodaEntity
 
 
-class MarketDataValidationCriterion(CyodaCriterion):
+class MarketDataValidationCriterion(CyodaCriteriaChecker):
     """
     Validates market data feed for completeness and correctness.
     Checks required fields, data quality, and timestamp validity.
@@ -21,9 +21,9 @@ class MarketDataValidationCriterion(CyodaCriterion):
             self, "logger", logging.getLogger(__name__)
         )
 
-    async def evaluate(self, entity: CyodaEntity, **kwargs: Any) -> bool:
+    async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         """
-        Evaluate if market data is valid.
+        Check if market data is valid.
 
         Args:
             entity: The MarketData entity to validate

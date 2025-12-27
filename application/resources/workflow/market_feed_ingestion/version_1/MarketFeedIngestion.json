@@ -1,0 +1,111 @@
+{
+  "version": "1.0",
+  "name": "Market Feed Ingestion Workflow",
+  "desc": "Processes incoming market data from multiple sources, normalizes feeds, stores latest snapshot, and emits events to pricing processors",
+  "initialState": "received",
+  "active": true,
+  "states": {
+    "received": {
+      "transitions": [
+        {
+          "name": "validate_feed",
+          "next": "validating",
+          "manual": false
+        }
+      ]
+    },
+    "validating": {
+      "transitions": [
+        {
+          "name": "validation_passed",
+          "next": "normalizing",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "MarketDataValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "validation_failed",
+          "next": "rejected",
+          "manual": false
+        }
+      ]
+    },
+    "normalizing": {
+      "transitions": [
+        {
+          "name": "normalize_data",
+          "next": "normalized",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataNormalizationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "normalized": {
+      "transitions": [
+        {
+          "name": "store_snapshot",
+          "next": "snapshot_stored",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataSnapshotProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "snapshot_stored": {
+      "transitions": [
+        {
+          "name": "emit_event",
+          "next": "event_emitted",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataEventEmitterProcessor",
+              "executionMode": "ASYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "event_emitted": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    }
+  }
+}
+

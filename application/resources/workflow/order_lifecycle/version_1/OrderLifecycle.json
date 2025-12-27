@@ -1,0 +1,169 @@
+{
+  "version": "1.0",
+  "name": "Order Lifecycle Workflow",
+  "desc": "Handles order creation through validation, pre-trade risk checks, routing to OMS, execution report handling, and portfolio/audit log updates",
+  "initialState": "created",
+  "active": true,
+  "states": {
+    "created": {
+      "transitions": [
+        {
+          "name": "validate_order",
+          "next": "validating",
+          "manual": false
+        }
+      ]
+    },
+    "validating": {
+      "transitions": [
+        {
+          "name": "validation_passed",
+          "next": "risk_checking",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "OrderValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "validation_failed",
+          "next": "rejected",
+          "manual": false
+        }
+      ]
+    },
+    "risk_checking": {
+      "transitions": [
+        {
+          "name": "pre_trade_risk_check",
+          "next": "risk_checked",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PreTradeRiskCheckProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "risk_limit_exceeded",
+          "next": "rejected",
+          "manual": false
+        }
+      ]
+    },
+    "risk_checked": {
+      "transitions": [
+        {
+          "name": "route_to_oms",
+          "next": "routed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderRoutingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "routed": {
+      "transitions": [
+        {
+          "name": "await_execution",
+          "next": "pending_execution",
+          "manual": true
+        }
+      ]
+    },
+    "pending_execution": {
+      "transitions": [
+        {
+          "name": "execution_report_received",
+          "next": "execution_reported",
+          "manual": true
+        },
+        {
+          "name": "order_cancelled",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "execution_reported": {
+      "transitions": [
+        {
+          "name": "update_portfolio",
+          "next": "portfolio_updating",
+          "manual": false
+        }
+      ]
+    },
+    "portfolio_updating": {
+      "transitions": [
+        {
+          "name": "update_positions",
+          "next": "portfolio_updated",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PortfolioUpdateProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "portfolio_updated": {
+      "transitions": [
+        {
+          "name": "log_audit",
+          "next": "audit_logged",
+          "manual": false,
+          "processors": [
+            {
+              "name": "AuditLogProcessor",
+              "executionMode": "ASYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "audit_logged": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}
+

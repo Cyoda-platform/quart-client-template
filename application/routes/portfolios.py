@@ -6,7 +6,7 @@ from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
 from application.entity.portfolio import Portfolio
-from application.models import PortfolioRequest, PortfolioResponse, ErrorResponse
+from application.models import ErrorResponse, PortfolioRequest, PortfolioResponse
 from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
@@ -90,7 +90,9 @@ async def list_portfolios() -> ResponseReturnValue:
     request=PortfolioRequest,
     responses={200: (PortfolioResponse, None), 404: (ErrorResponse, None)},
 )
-async def update_portfolio(entity_id: str, data: PortfolioRequest) -> ResponseReturnValue:
+async def update_portfolio(
+    entity_id: str, data: PortfolioRequest
+) -> ResponseReturnValue:
     """Update portfolio."""
     try:
         entity_data = data.model_dump(by_alias=True)
@@ -129,4 +131,3 @@ async def delete_portfolio(entity_id: str) -> ResponseReturnValue:
 def _to_dict(data: Any) -> Dict[str, Any]:
     """Convert entity to dict."""
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
-

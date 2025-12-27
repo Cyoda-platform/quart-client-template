@@ -80,4 +80,3 @@ class MarketData(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

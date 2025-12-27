@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
+from application.entity.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order import Order
 
 
 class AuditLogProcessor(CyodaProcessor):
@@ -48,4 +48,3 @@ class AuditLogProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error logging audit trail: {str(e)}")
             raise
-

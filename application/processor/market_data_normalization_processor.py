@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
+from application.entity.market_data import MarketData
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.market_data import MarketData
 
 
 class MarketDataNormalizationProcessor(CyodaProcessor):
@@ -47,4 +47,3 @@ class MarketDataNormalizationProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error normalizing market data: {str(e)}")
             raise
-

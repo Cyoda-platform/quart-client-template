@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
+from application.entity.portfolio import Portfolio
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.portfolio import Portfolio
 
 
 class PortfolioUpdateProcessor(CyodaProcessor):
@@ -45,4 +45,3 @@ class PortfolioUpdateProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error updating portfolio: {str(e)}")
             raise
-

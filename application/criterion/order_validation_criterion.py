@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaCriterion
 from application.entity.order import Order
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaCriterion, CyodaEntity
 
 
 class OrderValidationCriterion(CyodaCriterion):
@@ -61,4 +61,3 @@ class OrderValidationCriterion(CyodaCriterion):
         except Exception as e:
             self.logger.error(f"Error validating order: {str(e)}")
             return False
-

@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
+from application.entity.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order import Order
 
 
 class PreTradeRiskCheckProcessor(CyodaProcessor):
@@ -36,15 +36,11 @@ class PreTradeRiskCheckProcessor(CyodaProcessor):
             order = cast_entity(entity, Order)
 
             if order.quantity > 10000:
-                self.logger.warning(
-                    f"Order {order.order_id} exceeds position limit"
-                )
+                self.logger.warning(f"Order {order.order_id} exceeds position limit")
                 raise ValueError("Position limit exceeded")
 
             if order.total_cost > 1000000:
-                self.logger.warning(
-                    f"Order {order.order_id} exceeds notional limit"
-                )
+                self.logger.warning(f"Order {order.order_id} exceeds notional limit")
                 raise ValueError("Notional limit exceeded")
 
             self.logger.info(f"Order {order.order_id} passed risk checks")
@@ -53,4 +49,3 @@ class PreTradeRiskCheckProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error in pre-trade risk check: {str(e)}")
             raise
-

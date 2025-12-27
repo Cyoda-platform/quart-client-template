@@ -70,4 +70,3 @@ class DeleteResponse(BaseModel):
     success: bool
     message: str
     entity_id: Optional[str] = Field(default=None, alias="entityId")
-

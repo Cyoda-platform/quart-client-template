@@ -23,18 +23,24 @@ class Order(CyodaEntity):
     price: float = Field(..., description="Order price")
     status: str = Field(..., description="Order status")
     created_at: str = Field(..., alias="createdAt", description="Creation timestamp")
-    executed_qty: int = Field(default=0, alias="executedQty", description="Executed quantity")
+    executed_qty: int = Field(
+        default=0, alias="executedQty", description="Executed quantity"
+    )
     executed_price: Optional[float] = Field(
         default=None, alias="executedPrice", description="Execution price"
     )
     executed_at: Optional[str] = Field(
         default=None, alias="executedAt", description="Execution timestamp"
     )
-    cancelled_qty: int = Field(default=0, alias="cancelledQty", description="Cancelled quantity")
+    cancelled_qty: int = Field(
+        default=0, alias="cancelledQty", description="Cancelled quantity"
+    )
     cancelled_at: Optional[str] = Field(
         default=None, alias="cancelledAt", description="Cancellation timestamp"
     )
-    time_in_force: str = Field(default="DAY", alias="timeInForce", description="Time in force")
+    time_in_force: str = Field(
+        default="DAY", alias="timeInForce", description="Time in force"
+    )
     limit_price: Optional[float] = Field(
         default=None, alias="limitPrice", description="Limit price"
     )
@@ -86,4 +92,3 @@ class Order(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

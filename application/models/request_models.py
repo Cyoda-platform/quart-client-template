@@ -62,4 +62,3 @@ class RiskRequest(BaseModel):
     margin_requirement: float = Field(..., alias="marginRequirement")
     margin_utilization: float = Field(..., alias="marginUtilization")
     last_checked: str = Field(..., alias="lastChecked")
-

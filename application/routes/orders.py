@@ -6,7 +6,7 @@ from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
 from application.entity.order import Order
-from application.models import OrderRequest, OrderResponse, ErrorResponse
+from application.models import ErrorResponse, OrderRequest, OrderResponse
 from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
@@ -129,4 +129,3 @@ async def delete_order(entity_id: str) -> ResponseReturnValue:
 def _to_dict(data: Any) -> Dict[str, Any]:
     """Convert entity to dict."""
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
-

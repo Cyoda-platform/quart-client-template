@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
+from application.entity.market_data import MarketData
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.market_data import MarketData
 
 
 class MarketDataEventEmitterProcessor(CyodaProcessor):
@@ -43,4 +43,3 @@ class MarketDataEventEmitterProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error emitting market data event: {str(e)}")
             raise
-

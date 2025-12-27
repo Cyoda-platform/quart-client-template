@@ -39,13 +39,19 @@ class Portfolio(CyodaEntity):
     total_pnl_percent: float = Field(
         ..., alias="totalPnlPercent", description="Total P&L %"
     )
-    margin_used: float = Field(default=0.0, alias="marginUsed", description="Margin used")
+    margin_used: float = Field(
+        default=0.0, alias="marginUsed", description="Margin used"
+    )
     margin_available: float = Field(
         ..., alias="marginAvailable", description="Available margin"
     )
-    margin_ratio: float = Field(default=0.0, alias="marginRatio", description="Margin ratio")
+    margin_ratio: float = Field(
+        default=0.0, alias="marginRatio", description="Margin ratio"
+    )
     buying_power: float = Field(..., alias="buyingPower", description="Buying power")
-    last_updated: str = Field(..., alias="lastUpdated", description="Last update timestamp")
+    last_updated: str = Field(
+        ..., alias="lastUpdated", description="Last update timestamp"
+    )
     currency: str = Field(default="USD", description="Currency")
 
     @field_validator("account_id")
@@ -68,4 +74,3 @@ class Portfolio(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

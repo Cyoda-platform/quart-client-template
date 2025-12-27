@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaCriterion
 from application.entity.market_data import MarketData
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaCriterion, CyodaEntity
 
 
 class MarketDataValidationCriterion(CyodaCriterion):
@@ -57,4 +57,3 @@ class MarketDataValidationCriterion(CyodaCriterion):
         except Exception as e:
             self.logger.error(f"Error validating market data: {str(e)}")
             return False
-

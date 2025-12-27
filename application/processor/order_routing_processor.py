@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 
+from application.entity.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order import Order
 
 
 class OrderRoutingProcessor(CyodaProcessor):
@@ -36,9 +36,7 @@ class OrderRoutingProcessor(CyodaProcessor):
             order = cast_entity(entity, Order)
 
             venue = self._determine_venue(order.symbol)
-            self.logger.info(
-                f"Routed order {order.order_id} to venue {venue}"
-            )
+            self.logger.info(f"Routed order {order.order_id} to venue {venue}")
             return order
 
         except Exception as e:
@@ -53,4 +51,3 @@ class OrderRoutingProcessor(CyodaProcessor):
             return "NYSE"
         else:
             return "DEFAULT"
-

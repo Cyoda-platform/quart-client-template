@@ -1,0 +1,60 @@
+{
+  "accountId": "ACC-12345",
+  "riskLimits": {
+    "maxPositionSize": 50000,
+    "maxPositionSizePercent": 10.0,
+    "maxNotionalExposure": 500000,
+    "maxDailyLoss": 25000,
+    "maxOrderSize": 10000,
+    "maxOrderValue": 100000,
+    "maxConcurrentOrders": 50,
+    "maxLeverage": 2.0,
+    "minMarginRatio": 0.25
+  },
+  "currentExposure": {
+    "totalNotional": 217192.50,
+    "totalLongNotional": 217192.50,
+    "totalShortNotional": 0.00,
+    "netNotional": 217192.50,
+    "grossNotional": 217192.50,
+    "leverageRatio": 0.87,
+    "marginUtilization": 0.00,
+    "dailyLoss": -1250.00,
+    "dailyGain": 6505.00,
+    "netDailyPnl": 5255.00
+  },
+  "riskMetrics": {
+    "valueAtRisk": 5429.81,
+    "expectedShortfall": 7250.00,
+    "beta": 1.15,
+    "correlation": 0.72,
+    "volatility": 0.185,
+    "sharpeRatio": 1.42,
+    "maxDrawdown": 0.08
+  },
+  "concentrationRisk": {
+    "topPosition": {
+      "symbol": "AAPL",
+      "percentOfPortfolio": 20.92,
+      "notionalValue": 97712.50
+    },
+    "sectorConcentration": {
+      "Technology": 0.65,
+      "Healthcare": 0.20,
+      "Financials": 0.15
+    }
+  },
+  "breaches": [],
+  "warnings": [
+    {
+      "type": "HIGH_CONCENTRATION",
+      "symbol": "AAPL",
+      "message": "Position concentration at 20.92% of portfolio",
+      "severity": "MEDIUM"
+    }
+  ],
+  "timestamp": "2025-12-27T14:30:45.123Z",
+  "lastReviewedAt": "2025-12-27T14:30:45.123Z",
+  "reviewedBy": "RISK_ENGINE"
+}
+

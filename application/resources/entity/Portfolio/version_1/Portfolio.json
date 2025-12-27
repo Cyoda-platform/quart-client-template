@@ -1,0 +1,54 @@
+{
+  "accountId": "ACC-12345",
+  "accountName": "John Doe Trading Account",
+  "positions": [
+    {
+      "symbol": "AAPL",
+      "quantity": 500,
+      "avgPrice": 185.50,
+      "currentPrice": 195.425,
+      "marketValue": 97712.50,
+      "costBasis": 92750.00,
+      "unrealizedPnl": 4962.50,
+      "unrealizedPnlPercent": 5.35,
+      "lastUpdated": "2025-12-27T14:30:45.123Z"
+    },
+    {
+      "symbol": "MSFT",
+      "quantity": 250,
+      "avgPrice": 380.25,
+      "currentPrice": 415.80,
+      "marketValue": 103950.00,
+      "costBasis": 95062.50,
+      "unrealizedPnl": 8887.50,
+      "unrealizedPnlPercent": 9.35,
+      "lastUpdated": "2025-12-27T14:30:42.500Z"
+    },
+    {
+      "symbol": "GOOGL",
+      "quantity": 100,
+      "avgPrice": 140.75,
+      "currentPrice": 155.30,
+      "marketValue": 15530.00,
+      "costBasis": 14075.00,
+      "unrealizedPnl": 1455.00,
+      "unrealizedPnlPercent": 10.34,
+      "lastUpdated": "2025-12-27T14:30:40.200Z"
+    }
+  ],
+  "cashBalance": 250000.00,
+  "totalMarketValue": 467192.50,
+  "totalCostBasis": 201887.50,
+  "unrealizedPnl": 15305.00,
+  "unrealizedPnlPercent": 7.58,
+  "realizedPnl": 5250.00,
+  "totalPnl": 20555.00,
+  "totalPnlPercent": 8.21,
+  "marginUsed": 0.00,
+  "marginAvailable": 250000.00,
+  "marginRatio": 0.00,
+  "buyingPower": 500000.00,
+  "lastUpdated": "2025-12-27T14:30:45.123Z",
+  "currency": "USD"
+}
+

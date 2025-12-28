@@ -1,0 +1,10 @@
+{
+  "id": "fx_20251228_0001",
+  "base_currency": "EUR",
+  "quote_currency": "USD",
+  "rate": 1.255,
+  "inverse_rate": 0.796812,
+  "valid_from": "2025-12-28T11:59:00Z",
+  "valid_to": "2025-12-28T12:59:00Z",
+  "source": "fx_provider_stub"
+}

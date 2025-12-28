@@ -1,0 +1,13 @@
+{
+  "id": "m_1001",
+  "name": "Acme Online Store",
+  "email": "payments@acme.example",
+  "status": "ACTIVE",
+  "mcc": "5311",
+  "created_at": "2022-07-01T10:00:00Z",
+  "settings": {
+    "settlement_schedule": "DAILY",
+    "currency": "USD",
+    "fee_rate": 0.015
+  }
+}

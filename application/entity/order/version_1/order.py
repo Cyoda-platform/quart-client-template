@@ -45,6 +45,9 @@ class Order(CyodaEntity):
         alias="createdAt",
         description="Creation timestamp",
     )
+    routing_venue: Optional[str] = Field(
+        default=None, alias="routingVenue", description="Routing venue"
+    )
 
     @field_validator("order_type")
     @classmethod

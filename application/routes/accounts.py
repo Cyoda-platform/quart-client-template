@@ -36,7 +36,7 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @accounts_bp.route("", methods=["POST"])
 @tag(["accounts"])
 @operation_id("create_account")
-@validate(request=Account)
+@validate(request=Account, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def create_account(data: Account) -> ResponseReturnValue:
     """Create a new Account"""
     try:
@@ -56,6 +56,7 @@ async def create_account(data: Account) -> ResponseReturnValue:
 @accounts_bp.route("/<entity_id>", methods=["GET"])
 @tag(["accounts"])
 @operation_id("get_account")
+@validate(responses={200: (Dict[str, Any], None), 404: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def get_account(entity_id: str) -> ResponseReturnValue:
     """Get an Account by ID"""
     try:
@@ -74,6 +75,7 @@ async def get_account(entity_id: str) -> ResponseReturnValue:
 @accounts_bp.route("", methods=["GET"])
 @tag(["accounts"])
 @operation_id("list_accounts")
+@validate(responses={200: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def list_accounts() -> ResponseReturnValue:
     """List all Accounts"""
     try:

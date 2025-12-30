@@ -36,7 +36,7 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @positions_bp.route("", methods=["POST"])
 @tag(["positions"])
 @operation_id("create_position")
-@validate(request=Position)
+@validate(request=Position, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def create_position(data: Position) -> ResponseReturnValue:
     """Create a new Position"""
     try:
@@ -56,6 +56,7 @@ async def create_position(data: Position) -> ResponseReturnValue:
 @positions_bp.route("/<entity_id>", methods=["GET"])
 @tag(["positions"])
 @operation_id("get_position")
+@validate(responses={200: (Dict[str, Any], None), 404: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def get_position(entity_id: str) -> ResponseReturnValue:
     """Get a Position by ID"""
     try:
@@ -74,6 +75,7 @@ async def get_position(entity_id: str) -> ResponseReturnValue:
 @positions_bp.route("", methods=["GET"])
 @tag(["positions"])
 @operation_id("list_positions")
+@validate(responses={200: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def list_positions() -> ResponseReturnValue:
     """List all Positions"""
     try:

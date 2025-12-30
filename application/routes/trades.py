@@ -36,7 +36,7 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @trades_bp.route("", methods=["POST"])
 @tag(["trades"])
 @operation_id("create_trade")
-@validate(request=Trade)
+@validate(request=Trade, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def create_trade(data: Trade) -> ResponseReturnValue:
     """Create a new Trade"""
     try:
@@ -56,6 +56,7 @@ async def create_trade(data: Trade) -> ResponseReturnValue:
 @trades_bp.route("/<entity_id>", methods=["GET"])
 @tag(["trades"])
 @operation_id("get_trade")
+@validate(responses={200: (Dict[str, Any], None), 404: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def get_trade(entity_id: str) -> ResponseReturnValue:
     """Get a Trade by ID"""
     try:
@@ -74,6 +75,7 @@ async def get_trade(entity_id: str) -> ResponseReturnValue:
 @trades_bp.route("", methods=["GET"])
 @tag(["trades"])
 @operation_id("list_trades")
+@validate(responses={200: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def list_trades() -> ResponseReturnValue:
     """List all Trades"""
     try:

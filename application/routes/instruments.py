@@ -36,7 +36,7 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @instruments_bp.route("", methods=["POST"])
 @tag(["instruments"])
 @operation_id("create_instrument")
-@validate(request=Instrument)
+@validate(request=Instrument, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def create_instrument(data: Instrument) -> ResponseReturnValue:
     """Create a new Instrument"""
     try:
@@ -56,6 +56,7 @@ async def create_instrument(data: Instrument) -> ResponseReturnValue:
 @instruments_bp.route("/<entity_id>", methods=["GET"])
 @tag(["instruments"])
 @operation_id("get_instrument")
+@validate(responses={200: (Dict[str, Any], None), 404: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def get_instrument(entity_id: str) -> ResponseReturnValue:
     """Get an Instrument by ID"""
     try:
@@ -74,6 +75,7 @@ async def get_instrument(entity_id: str) -> ResponseReturnValue:
 @instruments_bp.route("", methods=["GET"])
 @tag(["instruments"])
 @operation_id("list_instruments")
+@validate(responses={200: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def list_instruments() -> ResponseReturnValue:
     """List all Instruments"""
     try:

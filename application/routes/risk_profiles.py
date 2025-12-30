@@ -36,7 +36,7 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @risk_profiles_bp.route("", methods=["POST"])
 @tag(["risk-profiles"])
 @operation_id("create_risk_profile")
-@validate(request=RiskProfile)
+@validate(request=RiskProfile, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def create_risk_profile(data: RiskProfile) -> ResponseReturnValue:
     """Create a new RiskProfile"""
     try:

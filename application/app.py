@@ -10,7 +10,14 @@ from common.exception.exception_handler import (
 )
 from services.services import get_grpc_client, initialize_services
 
-# Import blueprints for different route groups
+# Import blueprints for trading platform entities
+from application.routes.instruments import instruments_bp
+from application.routes.orders import orders_bp
+from application.routes.trades import trades_bp
+from application.routes.positions import positions_bp
+from application.routes.accounts import accounts_bp
+from application.routes.risk_profiles import risk_profiles_bp
+from application.routes.ledger_entries import ledger_entries_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

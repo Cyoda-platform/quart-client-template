@@ -11,9 +11,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate, validate_querystring
 
+from application.entity.instrument import Instrument
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.instrument import Instrument
 
 logger = logging.getLogger(__name__)
 
@@ -84,4 +84,3 @@ async def list_instruments() -> ResponseReturnValue:
     except Exception as e:
         logger.error("Error listing instruments: %s", str(e))
         return {"error": str(e)}, 500
-

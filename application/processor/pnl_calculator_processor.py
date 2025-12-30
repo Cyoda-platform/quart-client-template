@@ -7,10 +7,10 @@ Calculates realized and unrealized P&L for trades and positions.
 import logging
 from typing import Any
 
+from application.entity.position import Position
+from application.entity.trade import Trade
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.trade import Trade
-from application.entity.position import Position
 
 
 class PnLCalculator(CyodaProcessor):
@@ -74,4 +74,3 @@ class PnLCalculator(CyodaProcessor):
             f"Calculated P&L for position {position.technical_id}: {position.unrealized_pnl}"
         )
         return position
-

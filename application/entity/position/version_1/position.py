@@ -15,7 +15,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Position(CyodaEntity):
     """
     Position represents a real-time position in an instrument.
-    
+
     State: initial_state -> active -> closed
     """
 
@@ -58,4 +58,3 @@ class Position(CyodaEntity):
         if v < 0:
             raise ValueError("Average cost cannot be negative")
         return v
-

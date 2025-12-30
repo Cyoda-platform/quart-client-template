@@ -15,7 +15,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class LedgerEntry(CyodaEntity):
     """
     LedgerEntry represents a cash accounting entry.
-    
+
     State: initial_state -> created -> settled
     """
 
@@ -55,4 +55,3 @@ class LedgerEntry(CyodaEntity):
         if v.upper() not in valid:
             raise ValueError(f"Invalid entry type: {v}")
         return v.upper()
-

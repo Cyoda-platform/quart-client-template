@@ -7,9 +7,9 @@ Calculates margin requirements for positions and accounts.
 import logging
 from typing import Any
 
+from application.entity.account import Account
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.account import Account
 
 
 class MarginCalculator(CyodaProcessor):
@@ -72,4 +72,3 @@ class MarginCalculator(CyodaProcessor):
         # Simplified margin calculation
         # In production, this would consider all positions
         return account.total_equity * 0.3 if account.total_equity else 0.0
-

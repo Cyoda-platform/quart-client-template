@@ -15,7 +15,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Trade(CyodaEntity):
     """
     Trade represents an executed trade.
-    
+
     State: initial_state -> created -> settled -> completed
     """
 
@@ -60,4 +60,3 @@ class Trade(CyodaEntity):
         if v <= 0:
             raise ValueError("Price must be positive")
         return v
-

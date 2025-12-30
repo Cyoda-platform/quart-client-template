@@ -7,9 +7,9 @@ Routes orders to appropriate execution venues based on rules.
 import logging
 from typing import Any
 
+from application.entity.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order import Order
 
 
 class OrderRouter(CyodaProcessor):
@@ -48,9 +48,7 @@ class OrderRouter(CyodaProcessor):
             routing_venue = self._determine_routing_venue(order)
             order.routing_venue = routing_venue
 
-            self.logger.info(
-                f"Order {order.technical_id} routed to {routing_venue}"
-            )
+            self.logger.info(f"Order {order.technical_id} routed to {routing_venue}")
 
             return order
 
@@ -76,4 +74,3 @@ class OrderRouter(CyodaProcessor):
             return "DARK_POOL"
         else:
             return "SMART_ROUTER"
-

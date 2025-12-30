@@ -11,13 +11,15 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.ledger_entry import LedgerEntry
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.ledger_entry import LedgerEntry
 
 logger = logging.getLogger(__name__)
 
-ledger_entries_bp = Blueprint("ledger_entries", __name__, url_prefix="/api/ledger-entries")
+ledger_entries_bp = Blueprint(
+    "ledger_entries", __name__, url_prefix="/api/ledger-entries"
+)
 
 
 class _ServiceProxy:
@@ -84,4 +86,3 @@ async def list_ledger_entries() -> ResponseReturnValue:
     except Exception as e:
         logger.error("Error listing ledger entries: %s", str(e))
         return {"error": str(e)}, 500
-

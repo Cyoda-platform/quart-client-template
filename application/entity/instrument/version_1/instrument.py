@@ -15,7 +15,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Instrument(CyodaEntity):
     """
     Instrument represents a financial instrument (equity, option, future, swap).
-    
+
     State transitions: initial_state -> active -> expired
     """
 
@@ -72,4 +72,3 @@ class Instrument(CyodaEntity):
         if v.upper() not in valid_types:
             raise ValueError(f"Invalid instrument type: {v}")
         return v.upper()
-

@@ -11,9 +11,9 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.risk_profile import RiskProfile
 from common.exception import is_not_found
 from services.services import get_entity_service
-from application.entity.risk_profile import RiskProfile
 
 logger = logging.getLogger(__name__)
 
@@ -84,4 +84,3 @@ async def list_risk_profiles() -> ResponseReturnValue:
     except Exception as e:
         logger.error("Error listing risk profiles: %s", str(e))
         return {"error": str(e)}, 500
-

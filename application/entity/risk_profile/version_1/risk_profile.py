@@ -15,7 +15,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class RiskProfile(CyodaEntity):
     """
     RiskProfile represents risk controls and limits.
-    
+
     State: initial_state -> active -> breached -> resolved
     """
 
@@ -59,4 +59,3 @@ class RiskProfile(CyodaEntity):
         if v <= 0:
             raise ValueError("Max daily loss must be positive")
         return v
-

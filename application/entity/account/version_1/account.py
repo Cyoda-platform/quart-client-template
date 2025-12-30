@@ -15,14 +15,16 @@ from common.entity.cyoda_entity import CyodaEntity
 class Account(CyodaEntity):
     """
     Account represents a trading account.
-    
+
     State: initial_state -> active -> suspended -> closed
     """
 
     ENTITY_NAME: ClassVar[str] = "Account"
     ENTITY_VERSION: ClassVar[int] = 1
 
-    account_number: str = Field(..., alias="accountNumber", description="Account number")
+    account_number: str = Field(
+        ..., alias="accountNumber", description="Account number"
+    )
     account_name: str = Field(..., alias="accountName", description="Account name")
     currency: str = Field(default="USD", description="Base currency")
     cash_balance: float = Field(
@@ -55,4 +57,3 @@ class Account(CyodaEntity):
         if not v or len(v.strip()) == 0:
             raise ValueError("Account name must be non-empty")
         return v.strip()
-

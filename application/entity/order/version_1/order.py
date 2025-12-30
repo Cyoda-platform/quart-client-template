@@ -15,7 +15,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Order(CyodaEntity):
     """
     Order represents a buy/sell order in the trading system.
-    
+
     State: initial_state -> created -> acked -> partially_filled -> filled
     """
 
@@ -67,4 +67,3 @@ class Order(CyodaEntity):
         if v <= 0:
             raise ValueError("Quantity must be positive")
         return v
-

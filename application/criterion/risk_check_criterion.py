@@ -6,9 +6,9 @@ Determines if risk checks should be performed.
 
 from typing import Any
 
+from application.entity.risk_profile import RiskProfile
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.risk_profile import RiskProfile
 
 
 class RiskCheckCriterion(CyodaCriteriaChecker):
@@ -47,4 +47,3 @@ class RiskCheckCriterion(CyodaCriteriaChecker):
 
         except Exception:
             return False
-

@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
@@ -36,7 +36,10 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @accounts_bp.route("", methods=["POST"])
 @tag(["accounts"])
 @operation_id("create_account")
-@validate(request=Account, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
+@validate(
+    request=Account,
+    responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)},
+)
 async def create_account(data: Account) -> ResponseReturnValue:
     """Create a new Account"""
     try:
@@ -56,7 +59,13 @@ async def create_account(data: Account) -> ResponseReturnValue:
 @accounts_bp.route("/<entity_id>", methods=["GET"])
 @tag(["accounts"])
 @operation_id("get_account")
-@validate(responses={200: (Dict[str, Any], None), 404: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
+@validate(
+    responses={
+        200: (Dict[str, Any], None),
+        404: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    }
+)
 async def get_account(entity_id: str) -> ResponseReturnValue:
     """Get an Account by ID"""
     try:

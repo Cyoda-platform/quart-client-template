@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
@@ -38,7 +38,10 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @ledger_entries_bp.route("", methods=["POST"])
 @tag(["ledger-entries"])
 @operation_id("create_ledger_entry")
-@validate(request=LedgerEntry)
+@validate(
+    request=LedgerEntry,
+    responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)},
+)
 async def create_ledger_entry(data: LedgerEntry) -> ResponseReturnValue:
     """Create a new LedgerEntry"""
     try:
@@ -58,6 +61,13 @@ async def create_ledger_entry(data: LedgerEntry) -> ResponseReturnValue:
 @ledger_entries_bp.route("/<entity_id>", methods=["GET"])
 @tag(["ledger-entries"])
 @operation_id("get_ledger_entry")
+@validate(
+    responses={
+        200: (Dict[str, Any], None),
+        404: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    }
+)
 async def get_ledger_entry(entity_id: str) -> ResponseReturnValue:
     """Get a LedgerEntry by ID"""
     try:
@@ -76,6 +86,7 @@ async def get_ledger_entry(entity_id: str) -> ResponseReturnValue:
 @ledger_entries_bp.route("", methods=["GET"])
 @tag(["ledger-entries"])
 @operation_id("list_ledger_entries")
+@validate(responses={200: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def list_ledger_entries() -> ResponseReturnValue:
     """List all LedgerEntries"""
     try:

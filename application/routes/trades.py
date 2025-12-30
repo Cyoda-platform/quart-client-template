@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
@@ -36,7 +36,9 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @trades_bp.route("", methods=["POST"])
 @tag(["trades"])
 @operation_id("create_trade")
-@validate(request=Trade, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
+@validate(
+    request=Trade, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)}
+)
 async def create_trade(data: Trade) -> ResponseReturnValue:
     """Create a new Trade"""
     try:
@@ -56,7 +58,13 @@ async def create_trade(data: Trade) -> ResponseReturnValue:
 @trades_bp.route("/<entity_id>", methods=["GET"])
 @tag(["trades"])
 @operation_id("get_trade")
-@validate(responses={200: (Dict[str, Any], None), 404: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
+@validate(
+    responses={
+        200: (Dict[str, Any], None),
+        404: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    }
+)
 async def get_trade(entity_id: str) -> ResponseReturnValue:
     """Get a Trade by ID"""
     try:

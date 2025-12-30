@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
@@ -36,7 +36,10 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @risk_profiles_bp.route("", methods=["POST"])
 @tag(["risk-profiles"])
 @operation_id("create_risk_profile")
-@validate(request=RiskProfile, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
+@validate(
+    request=RiskProfile,
+    responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)},
+)
 async def create_risk_profile(data: RiskProfile) -> ResponseReturnValue:
     """Create a new RiskProfile"""
     try:
@@ -56,6 +59,13 @@ async def create_risk_profile(data: RiskProfile) -> ResponseReturnValue:
 @risk_profiles_bp.route("/<entity_id>", methods=["GET"])
 @tag(["risk-profiles"])
 @operation_id("get_risk_profile")
+@validate(
+    responses={
+        200: (Dict[str, Any], None),
+        404: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    }
+)
 async def get_risk_profile(entity_id: str) -> ResponseReturnValue:
     """Get a RiskProfile by ID"""
     try:
@@ -74,6 +84,7 @@ async def get_risk_profile(entity_id: str) -> ResponseReturnValue:
 @risk_profiles_bp.route("", methods=["GET"])
 @tag(["risk-profiles"])
 @operation_id("list_risk_profiles")
+@validate(responses={200: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
 async def list_risk_profiles() -> ResponseReturnValue:
     """List all RiskProfiles"""
     try:

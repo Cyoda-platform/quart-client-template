@@ -5,11 +5,11 @@ Instrument routes for institutional trading platform.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint
 from quart.typing import ResponseReturnValue
-from quart_schema import operation_id, tag, validate, validate_querystring
+from quart_schema import operation_id, tag, validate
 
 from application.entity.instrument import Instrument
 from common.exception import is_not_found
@@ -36,7 +36,10 @@ def _to_entity_dict(data: Dict[str, Any]) -> Dict[str, Any]:
 @instruments_bp.route("", methods=["POST"])
 @tag(["instruments"])
 @operation_id("create_instrument")
-@validate(request=Instrument, responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
+@validate(
+    request=Instrument,
+    responses={201: (Dict[str, Any], None), 500: (Dict[str, Any], None)},
+)
 async def create_instrument(data: Instrument) -> ResponseReturnValue:
     """Create a new Instrument"""
     try:
@@ -56,7 +59,13 @@ async def create_instrument(data: Instrument) -> ResponseReturnValue:
 @instruments_bp.route("/<entity_id>", methods=["GET"])
 @tag(["instruments"])
 @operation_id("get_instrument")
-@validate(responses={200: (Dict[str, Any], None), 404: (Dict[str, Any], None), 500: (Dict[str, Any], None)})
+@validate(
+    responses={
+        200: (Dict[str, Any], None),
+        404: (Dict[str, Any], None),
+        500: (Dict[str, Any], None),
+    }
+)
 async def get_instrument(entity_id: str) -> ResponseReturnValue:
     """Get an Instrument by ID"""
     try:

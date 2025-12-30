@@ -1,0 +1,12 @@
+{
+  "orderId": "ORD-001",
+  "accountId": "ACC-001",
+  "instrumentId": "INST-001",
+  "side": "BUY",
+  "quantity": 100.0,
+  "price": 195.25,
+  "commission": 10.00,
+  "settlementDate": "2025-01-02",
+  "createdAt": "2025-12-30T10:20:00Z"
+}
+

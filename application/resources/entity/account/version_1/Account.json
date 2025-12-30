@@ -1,0 +1,10 @@
+{
+  "accountNumber": "ACC-001",
+  "accountName": "Institutional Trading Account",
+  "currency": "USD",
+  "cashBalance": 500000.00,
+  "marginBalance": 250000.00,
+  "totalEquity": 750000.00,
+  "createdAt": "2025-12-30T09:00:00Z"
+}
+

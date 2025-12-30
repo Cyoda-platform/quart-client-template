@@ -1,0 +1,12 @@
+{
+  "accountId": "ACC-001",
+  "instrumentId": "INST-001",
+  "orderType": "LIMIT",
+  "side": "BUY",
+  "quantity": 100.0,
+  "price": 195.00,
+  "filledQuantity": 0.0,
+  "averagePrice": null,
+  "createdAt": "2025-12-30T10:15:00Z"
+}
+

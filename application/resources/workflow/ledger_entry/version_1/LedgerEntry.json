@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "name": "Ledger Entry Workflow",
+  "desc": "Manages ledger entry creation and settlement",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "settle",
+          "next": "settled",
+          "manual": false
+        }
+      ]
+    },
+    "settled": {
+      "transitions": []
+    }
+  }
+}
+

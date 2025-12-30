@@ -1,0 +1,93 @@
+{
+  "version": "1.0",
+  "name": "Order Lifecycle Workflow",
+  "desc": "Manages the complete lifecycle of orders from creation to execution",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "validate_and_route",
+          "next": "acked",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "OrderValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          },
+          "processors": [
+            {
+              "name": "OrderRouter",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "acked": {
+      "transitions": [
+        {
+          "name": "partial_fill",
+          "next": "partially_filled",
+          "manual": true
+        },
+        {
+          "name": "fill",
+          "next": "filled",
+          "manual": true
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "canceled",
+          "manual": true
+        }
+      ]
+    },
+    "partially_filled": {
+      "transitions": [
+        {
+          "name": "fill",
+          "next": "filled",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "canceled",
+          "manual": true
+        }
+      ]
+    },
+    "filled": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    },
+    "canceled": {
+      "transitions": []
+    }
+  }
+}
+

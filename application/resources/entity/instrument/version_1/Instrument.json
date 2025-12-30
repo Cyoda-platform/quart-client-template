@@ -1,0 +1,13 @@
+{
+  "isin": "US0378331005",
+  "ticker": "AAPL",
+  "instrumentType": "EQUITY",
+  "currency": "USD",
+  "exchange": "NASDAQ",
+  "lastPrice": 195.50,
+  "bidPrice": 195.45,
+  "askPrice": 195.55,
+  "expiryDate": null,
+  "createdAt": "2025-12-30T10:00:00Z"
+}
+

@@ -1,0 +1,9 @@
+{
+  "accountId": "ACC-001",
+  "entryType": "TRADE",
+  "amount": -19525.00,
+  "currency": "USD",
+  "referenceId": "TRD-001",
+  "createdAt": "2025-12-30T10:20:00Z"
+}
+

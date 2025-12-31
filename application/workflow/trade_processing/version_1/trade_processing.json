@@ -1,0 +1,30 @@
+{
+  "version": "1",
+  "name": "trade_processing",
+  "desc": "Trade processing: match -> post_trade_reporting -> position_update -> pnl_calculation -> settlement",
+  "initialState": "matched",
+  "active": true,
+  "states": {
+    "matched": {
+      "transitions": [
+        {"name": "report", "next": "reported", "manual": false}
+      ]
+    },
+    "reported": {
+      "transitions": [
+        {"name": "update_positions", "next": "positions_updated", "manual": false}
+      ]
+    },
+    "positions_updated": {
+      "transitions": [
+        {"name": "calculate_pnl", "next": "pnl_calculated", "manual": false}
+      ]
+    },
+    "pnl_calculated": {
+      "transitions": [
+        {"name": "settle", "next": "settled", "manual": false}
+      ]
+    },
+    "settled": {"transitions": []}
+  }
+}

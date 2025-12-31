@@ -1,0 +1,10 @@
+{
+  "positionId": "POS-20251201-CL-7890-AAPL",
+  "portfolioId": "PF-001",
+  "instrument": "AAPL",
+  "quantity": 1000,
+  "avgPrice": 170.00,
+  "realizedPnL": 2500.00,
+  "unrealizedPnL": 2450.00,
+  "lastUpdated": "2025-12-01T10:16:00.000Z"
+}

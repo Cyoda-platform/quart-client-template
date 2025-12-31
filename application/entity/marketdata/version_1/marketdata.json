@@ -1,0 +1,10 @@
+{
+  "instrument": "AAPL",
+  "instrumentIsin": "US0378331005",
+  "bid": 172.40,
+  "ask": 172.50,
+  "last": 172.45,
+  "volume": 1250000,
+  "timestamp": "2025-12-01T10:15:31.000Z",
+  "exchange": "NASDAQ"
+}

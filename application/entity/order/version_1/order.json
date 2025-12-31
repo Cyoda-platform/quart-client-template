@@ -1,0 +1,16 @@
+{
+  "orderId": "ORD-20251201-0001",
+  "clientId": "CL-7890",
+  "instrument": "AAPL",
+  "instrumentIsin": "US0378331005",
+  "side": "BUY",
+  "quantity": 1000,
+  "orderType": "LIMIT",
+  "price": 172.50,
+  "timeInForce": "GTC",
+  "timestamp": "2025-12-01T10:15:30.000Z",
+  "status": "NEW",
+  "venue": "NASDAQ",
+  "parentOrderId": null,
+  "tags": ["algo-1","client-priority-high"]
+}

@@ -1,0 +1,13 @@
+{
+  "tradeId": "TRD-20251201-1001",
+  "orderId": "ORD-20251201-0001",
+  "clientId": "CL-7890",
+  "instrument": "AAPL",
+  "quantity": 1000,
+  "price": 172.45,
+  "timestamp": "2025-12-01T10:15:31.250Z",
+  "venue": "NASDAQ",
+  "counterparty": "CP-4321",
+  "fees": 12.5,
+  "executionId": "EX-987654"
+}

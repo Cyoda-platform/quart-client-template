@@ -1,0 +1,52 @@
+{
+  "version": "1",
+  "name": "order_lifecycle",
+  "desc": "Order lifecycle for institutional trading: new -> validated -> risk_checked -> routed -> acknowledged -> partially_filled/filled -> settled/cancelled",
+  "initialState": "new",
+  "active": true,
+  "states": {
+    "new": {
+      "transitions": [
+        {"name": "validate", "next": "validated", "manual": false}
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {"name": "risk_check", "next": "risk_checked", "manual": false}
+      ]
+    },
+    "risk_checked": {
+      "transitions": [
+        {"name": "route", "next": "routed", "manual": false}
+      ]
+    },
+    "routed": {
+      "transitions": [
+        {"name": "ack", "next": "acknowledged", "manual": false},
+        {"name": "partial_fill", "next": "partially_filled", "manual": false},
+        {"name": "fill", "next": "filled", "manual": false},
+        {"name": "cancel", "next": "cancelled", "manual": true}
+      ]
+    },
+    "acknowledged": {
+      "transitions": [
+        {"name": "partial_fill", "next": "partially_filled", "manual": false},
+        {"name": "fill", "next": "filled", "manual": false},
+        {"name": "cancel", "next": "cancelled", "manual": true}
+      ]
+    },
+    "partially_filled": {
+      "transitions": [
+        {"name": "fill", "next": "filled", "manual": false},
+        {"name": "cancel", "next": "cancelled", "manual": true}
+      ]
+    },
+    "filled": {
+      "transitions": [
+        {"name": "settle", "next": "settled", "manual": false}
+      ]
+    },
+    "settled": {"transitions": []},
+    "cancelled": {"transitions": []}
+  }
+}

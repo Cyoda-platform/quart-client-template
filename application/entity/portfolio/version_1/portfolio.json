@@ -1,0 +1,10 @@
+{
+  "portfolioId": "PF-001",
+  "owner": "Institutional Desk 1",
+  "holdings": [
+    {"instrument": "AAPL", "quantity": 1000, "avgPrice": 170.00},
+    {"instrument": "MSFT", "quantity": 500, "avgPrice": 320.00}
+  ],
+  "cash": 250000.00,
+  "created": "2024-06-01T08:00:00.000Z"
+}

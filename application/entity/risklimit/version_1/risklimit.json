@@ -1,0 +1,8 @@
+{
+  "limitId": "RL-001",
+  "portfolioId": "PF-001",
+  "maxNotional": 500000.00,
+  "maxPosition": 20000,
+  "maxDailyLoss": 10000.00,
+  "created": "2025-01-01T00:00:00.000Z"
+}

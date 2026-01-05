@@ -1,0 +1,1 @@
+{"name":"CustomerLifecycle","initialState":"created","states":{"created":{"transitions":[{"name":"activate","next":"active","manual":false},{"name":"archive","next":"archived","manual":true}]},"active":{"transitions":[{"name":"archive","next":"archived","manual":true}]},"archived":{"transitions":[]}}}

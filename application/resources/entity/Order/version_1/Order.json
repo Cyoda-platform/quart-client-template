@@ -1,0 +1,19 @@
+{
+  "id": "Order",
+  "modelVersion": 1,
+  "attributes": {
+    "orderId": { "type": "string" },
+    "accountId": { "type": "string" },
+    "instrument": { "type": "string" },
+    "side": { "type": "string", "enum": ["BUY", "SELL"] },
+    "orderType": { "type": "string", "enum": ["MARKET", "LIMIT", "STOP", "STOP_LIMIT", "IOC", "FOK"] },
+    "price": { "type": "number" },
+    "quantity": { "type": "number" },
+    "remainingQuantity": { "type": "number" },
+    "status": { "type": "string", "enum": ["NEW", "ACKNOWLEDGED", "WORKING", "PARTIALLY_FILLED", "FILLED", "CANCELLED", "REJECTED"] },
+    "timeInForce": { "type": "string" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "parentOrderId": { "type": "string" },
+    "tags": { "type": "object" }
+  }
+}

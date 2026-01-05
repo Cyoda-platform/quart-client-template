@@ -1,0 +1,65 @@
+{
+  "version": "3",
+  "name": "payment_flow_with_loop",
+  "description": "Payment flow: NEW -> PROCESSING (Self-loop 'retry') -> COMPLETED / FAILED",
+  "initialState": "new",
+  "active": true,
+  "states": {
+    "new": {
+      "transitions": [
+        {
+          "manual": false,
+          "name": "initiate_charge",
+          "next": "processing",
+          "processors": [
+            {
+              "executionMode": "SYNC",
+              "name": "validate_card_processor",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "processing": {
+      "transitions": [
+        {
+          "manual": false,
+          "name": "success",
+          "next": "completed"
+        },
+        {
+          "manual": false,
+          "name": "soft_decline_retry",
+          "next": "processing",
+          "description": "THIS IS THE SELF-LOOP (A -> A). Retries logic without changing state.",
+          "processors": [
+            {
+              "config": {
+                "attachEntity": true,
+                "retryCount": 3,
+                "delayMs": 2000,
+                "calculationNodesTags": "cyoda_application"
+              },
+              "executionMode": "ASYNC_NEW_TX",
+              "name": "payment_retry_processor"
+            }
+          ]
+        },
+        {
+          "manual": false,
+          "name": "hard_decline",
+          "next": "failed"
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    },
+    "failed": {
+      "transitions": []
+    }
+  }
+}

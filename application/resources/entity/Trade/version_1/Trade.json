@@ -1,0 +1,16 @@
+{
+  "id": "Trade",
+  "modelVersion": 1,
+  "attributes": {
+    "tradeId": { "type": "string" },
+    "orderId": { "type": "string" },
+    "executionId": { "type": "string" },
+    "instrument": { "type": "string" },
+    "price": { "type": "number" },
+    "quantity": { "type": "number" },
+    "side": { "type": "string", "enum": ["BUY", "SELL"] },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "venue": { "type": "string" },
+    "fees": { "type": "number" }
+  }
+}

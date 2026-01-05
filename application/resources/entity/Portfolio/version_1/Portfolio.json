@@ -1,0 +1,14 @@
+{
+  "id": "Portfolio",
+  "modelVersion": 1,
+  "attributes": {
+    "portfolioId": { "type": "string" },
+    "accountIds": { "type": "array", "items": { "type": "string" } },
+    "positions": { "type": "object" },
+    "totalPnl": { "type": "number" },
+    "realizedPnl": { "type": "number" },
+    "unrealizedPnl": { "type": "number" },
+    "currency": { "type": "string" },
+    "lastUpdated": { "type": "string", "format": "date-time" }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "id": "CLAIM-0001",
+  "policyId": "POL-123456",
+  "claimantInfo": {
+    "firstName": "Jane",
+    "lastName": "Doe",
+    "email": "jane.doe@example.com",
+    "phone": "+1-555-0100"
+  },
+  "incidentDetails": {
+    "incidentType": "Auto Collision",
+    "incidentDate": "2026-01-04T14:23:00Z",
+    "location": "123 Main St, Springfield",
+    "description": "Rear-end collision at traffic light. Vehicle drivable but rear bumper damaged."
+  },
+  "status": "NEW",
+  "assignedTo": null,
+  "reserveAmount": 0.0,
+  "createdAt": "2026-01-04T14:24:00Z",
+  "updatedAt": "2026-01-04T14:24:00Z",
+  "metadata": {
+    "source": "web",
+    "sourceIp": "203.0.113.42"
+  }
+}

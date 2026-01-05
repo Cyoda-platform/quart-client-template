@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "name": "CustomerOnboarding",
+  "desc": "KYC onboarding workflow for individual and corporate customers",
+  "initialState": "created",
+  "active": true,
+  "states": {
+    "created": {
+      "transitions": [
+        { "name": "start_identity_verification", "next": "identity_verification", "manual": false },
+        { "name": "cancel", "next": "cancelled", "manual": true }
+      ]
+    },
+    "identity_verification": {
+      "transitions": [
+        { "name": "idv_provider_response", "next": "idv_evaluation", "manual": false },
+        { "name": "fail_verification", "next": "manual_review", "manual": false }
+      ]
+    },
+    "idv_evaluation": {
+      "transitions": [
+        { "name": "proceed_to_screening", "next": "watchlist_screening", "manual": false },
+        { "name": "request_manual_review", "next": "manual_review", "manual": true }
+      ]
+    },
+    "watchlist_screening": {
+      "transitions": [
+        { "name": "screening_passed", "next": "risk_scoring", "manual": false },
+        { "name": "screening_hit", "next": "manual_review", "manual": false }
+      ]
+    },
+    "risk_scoring": {
+      "transitions": [
+        { "name": "auto_approve", "next": "verified", "manual": false },
+        { "name": "high_risk_flag", "next": "manual_review", "manual": false }
+      ]
+    },
+    "manual_review": {
+      "transitions": [
+        { "name": "approve", "next": "verified", "manual": true },
+        { "name": "reject", "next": "rejected", "manual": true }
+      ]
+    },
+    "verified": {
+      "transitions": [
+        { "name": "activate_account", "next": "active", "manual": false }
+      ]
+    },
+    "active": { "transitions": [] },
+    "rejected": { "transitions": [] },
+    "cancelled": { "transitions": [] }
+  }
+}

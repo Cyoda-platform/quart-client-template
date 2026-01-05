@@ -1,0 +1,14 @@
+{
+  "order_id": "ORD-20260105-0001",
+  "status": "NEW",
+  "instrument_id": "AAPL",
+  "side": "BUY",
+  "quantity": 1000,
+  "price": 150.25,
+  "account_id": "ACC-12345",
+  "order_type": "LIMIT",
+  "time_in_force": "GTC",
+  "created_at": "2026-01-05T12:00:00Z",
+  "last_updated": "2026-01-05T12:00:00Z",
+  "version": 1
+}

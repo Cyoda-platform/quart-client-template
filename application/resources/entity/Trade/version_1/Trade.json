@@ -1,0 +1,1 @@
+{"name":"Trade","version":1,"fields":[{"name":"tradeId","type":"string"},{"name":"orderId","type":"string"},{"name":"instrumentId","type":"string"},{"name":"side","type":"string","enum":["BUY","SELL"]},{"name":"quantity","type":"number"},{"name":"price","type":"number"},{"name":"tradeTime","type":"string","format":"date-time"}]}

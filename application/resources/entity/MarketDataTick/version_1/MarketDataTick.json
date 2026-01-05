@@ -1,0 +1,1 @@
+{"name":"MarketDataTick","version":1,"fields":[{"name":"instrumentId","type":"string"},{"name":"timestamp","type":"string","format":"date-time"},{"name":"bidPrice","type":"number"},{"name":"askPrice","type":"number"},{"name":"lastPrice","type":"number"},{"name":"volume","type":"number"}]}

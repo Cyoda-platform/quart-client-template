@@ -45,7 +45,8 @@ class CriteriaCalcRequestHandler(Handler):
         matches = None
         try:
             logger.info(
-                f"[PROCESSING] Starting {CRITERIA_CALC_REQ_EVENT_TYPE} - Criteria: {criteria_name}, EntityId: {data['entityId']}, RequestId: {data.get('requestId')}"
+                f"[PROCESSING] Starting {CRITERIA_CALC_REQ_EVENT_TYPE} - Criteria: {criteria_name}, "
+                f"EntityId: {data['entityId']}, RequestId: {data.get('requestId')}"
             )
 
             # Use processor_manager from services
@@ -60,12 +61,14 @@ class CriteriaCalcRequestHandler(Handler):
             # Convert entity back to dict for response (criteria checking might modify entity)
             data["payload"]["data"] = entity.to_dict()
             logger.info(
-                f"[PROCESSING] Success {CRITERIA_CALC_REQ_EVENT_TYPE} - Criteria: {criteria_name}, EntityId: {data['entityId']}"
+                f"[PROCESSING] Success {CRITERIA_CALC_REQ_EVENT_TYPE} - "
+                f"Criteria: {criteria_name}, EntityId: {data['entityId']}"
             )
 
         except Exception as e:
             logger.error(
-                f"[PROCESSING] Error {CRITERIA_CALC_REQ_EVENT_TYPE} - Criteria: {criteria_name}, EntityId: {data['entityId']}"
+                f"[PROCESSING] Error {CRITERIA_CALC_REQ_EVENT_TYPE} - "
+                f"Criteria: {criteria_name}, EntityId: {data['entityId']}"
             )
             logger.exception("Error processing entity", exc_info=e)
 

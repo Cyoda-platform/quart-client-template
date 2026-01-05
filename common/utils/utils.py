@@ -212,7 +212,8 @@ def parse_workflow_json(result: str) -> str:
 def main() -> None:
     # Example input
     input_data = """
-Here is an example JSON data structure for the entity `data_analysis_job`, reflecting the business app_init based on the user's requirement to analyze London Houses data using pandas:
+Here is an example JSON data structure for the entity `data_analysis_job`, reflecting the business app_init based
+on the user's requirement to analyze London Houses data using pandas:
 
 ```json
 {
@@ -308,10 +309,13 @@ Here is an example JSON data structure for the entity `data_analysis_job`, refle
 - **job_id, job_name, job_status**: Basic identifiers and status of the analysis job.
 - **input_data**: Contains references to the raw data entity that is being analyzed and where the data is sourced from.
 - **analysis_parameters**: Specifies the metrics to be calculated and any filters applied during the analysis.
-- **analysis_results**: Summarizes the outcomes of the data analysis, including total houses analyzed, distribution of prices, and visual representations of the results.
-- **report_output**: Information about the generated report, including its format, generation time, and a link to access it.
+- **analysis_results**: Summarizes the outcomes of the data analysis, including total houses analyzed, distribution
+of prices, and visual representations of the results.
+- **report_output**: Information about the generated report, including its format, generation time, and a link to
+access it.
 
-This JSON structure provides a comprehensive overview of the analysis conducted on the London Houses data, reflecting the required business app_init for the `data_analysis_job` entity.   """
+This JSON structure provides a comprehensive overview of the analysis conducted on the London Houses data,
+reflecting the required business app_init for the `data_analysis_job` entity.   """
     output_data = parse_json(input_data)
 
     logger.info(output_data)
@@ -354,7 +358,11 @@ async def validate_result(data: str, file_path: str, schema: Optional[str]) -> s
             logger.error(f"Failed to consolidate JSON errors: {e}")
             errors = [str(e)]
         raise ValidationError(
-            message=f"Failed to decode JSON: {err}, {err.msg}, {errors} . Please make sure the json returned is correct and aligns with json formatting rules. make sure you're using quotes for string values, including None"
+            message=(
+                f"Failed to decode JSON: {err}, {err.msg}, {errors} . Please make sure the json returned is "
+                f"correct and aligns with json formatting rules. make sure you're using quotes for string values, "
+                f"including None"
+            )
         )
     except Exception as err:
         logger.error(f"Unexpected error during JSON validation: {err}")

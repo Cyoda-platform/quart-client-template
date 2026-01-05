@@ -1,0 +1,108 @@
+{
+  "version": "1",
+  "name": "order_lifecycle",
+  "desc": "Order lifecycle for institutional trading: NEW -> ACK -> PARTIAL_FILL -> FILLED -> CANCELED -> REJECTED",
+  "initialState": "new",
+  "active": true,
+  "states": {
+    "new": {
+      "transitions": [
+        {
+          "name": "acknowledge",
+          "next": "ack",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ack_processor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "attachEntity": true,
+                "responseTimeoutMs": 5000
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancel",
+          "next": "canceled",
+          "manual": true
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "ack": {
+      "transitions": [
+        {
+          "name": "partial_fill",
+          "next": "partial_fill",
+          "manual": false,
+          "processors": [
+            {
+              "name": "partial_fill_processor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "attachEntity": true,
+                "responseTimeoutMs": 10000
+              }
+            }
+          ]
+        },
+        {
+          "name": "fill",
+          "next": "filled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "fill_processor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "attachEntity": true,
+                "responseTimeoutMs": 10000
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancel",
+          "next": "canceled",
+          "manual": true
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "partial_fill": {
+      "transitions": [
+        {
+          "name": "fill",
+          "next": "filled",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "canceled",
+          "manual": true
+        }
+      ]
+    },
+    "filled": {
+      "transitions": []
+    },
+    "canceled": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "riskId": "RISK-2024-001",
+  "accountId": "ACC-12345",
+  "riskType": "NOTIONAL_LIMIT",
+  "limitValue": 5000000.0,
+  "currentValue": 4200000.0,
+  "utilizationPercentage": 84.0,
+  "isBreached": false,
+  "breachAmount": 0.0,
+  "breachTimestamp": null,
+  "warningThreshold": 80.0,
+  "criticalThreshold": 95.0,
+  "actionOnBreach": "ALERT",
+  "autoRemediate": false,
+  "createdAt": "2024-01-01T08:00:00Z",
+  "updatedAt": "2024-01-15T16:00:00Z",
+  "resolvedAt": null
+}
+

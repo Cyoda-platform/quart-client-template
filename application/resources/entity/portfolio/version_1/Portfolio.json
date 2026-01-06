@@ -1,0 +1,29 @@
+{
+  "portfolioId": "PORT-2024-001",
+  "accountId": "ACC-12345",
+  "portfolioName": "Institutional Growth Portfolio",
+  "totalValue": 1000000.0,
+  "cashBalance": 150000.0,
+  "buyingPower": 300000.0,
+  "totalPnl": 25000.0,
+  "unrealizedPnl": 20000.0,
+  "realizedPnl": 5000.0,
+  "pnlPercentage": 2.5,
+  "portfolioDelta": 0.85,
+  "portfolioGamma": 0.02,
+  "portfolioVega": 0.15,
+  "portfolioTheta": -0.05,
+  "var95": 50000.0,
+  "positionCount": 25,
+  "sectorAllocation": {
+    "Technology": 35.0,
+    "Healthcare": 25.0,
+    "Financials": 20.0,
+    "Energy": 10.0,
+    "Consumer": 10.0
+  },
+  "createdAt": "2024-01-01T08:00:00Z",
+  "updatedAt": "2024-01-15T16:00:00Z",
+  "lastRebalance": "2024-01-10T10:00:00Z"
+}
+

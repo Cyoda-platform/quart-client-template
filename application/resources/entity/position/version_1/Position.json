@@ -1,0 +1,22 @@
+{
+  "positionId": "POS-2024-001",
+  "symbol": "MSFT",
+  "accountId": "ACC-12345",
+  "quantity": 50.0,
+  "costBasis": 7500.0,
+  "averageCost": 150.0,
+  "currentPrice": 155.50,
+  "marketValue": 7775.0,
+  "unrealizedPnl": 275.0,
+  "realizedPnl": 0.0,
+  "positionType": "LONG",
+  "openDate": "2024-01-10",
+  "closeDate": null,
+  "delta": null,
+  "gamma": null,
+  "vega": null,
+  "theta": null,
+  "createdAt": "2024-01-10T09:15:00Z",
+  "updatedAt": "2024-01-15T16:00:00Z"
+}
+

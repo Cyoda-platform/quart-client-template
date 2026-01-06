@@ -1,0 +1,23 @@
+{
+  "orderId": "ORD-2024-001",
+  "symbol": "AAPL",
+  "side": "BUY",
+  "orderType": "LIMIT",
+  "quantity": 100.0,
+  "price": 150.25,
+  "stopPrice": null,
+  "status": "pending",
+  "filledQuantity": 0.0,
+  "averageFillPrice": null,
+  "accountId": "ACC-12345",
+  "traderId": "TRADER-001",
+  "riskLimitCheck": false,
+  "complianceCheck": false,
+  "createdAt": "2024-01-15T10:30:00Z",
+  "submittedAt": null,
+  "executedAt": null,
+  "executionVenue": null,
+  "executionAlgorithm": null,
+  "notes": "Buy 100 shares of Apple at market limit"
+}
+

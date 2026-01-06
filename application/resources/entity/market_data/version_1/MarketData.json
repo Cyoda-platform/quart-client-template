@@ -1,0 +1,21 @@
+{
+  "symbol": "GOOGL",
+  "dataSource": "Bloomberg",
+  "feedType": "QUOTE",
+  "bidPrice": 139.50,
+  "askPrice": 139.55,
+  "lastPrice": 139.52,
+  "openPrice": 138.75,
+  "highPrice": 140.25,
+  "lowPrice": 138.50,
+  "closePrice": null,
+  "bidSize": 5000,
+  "askSize": 4500,
+  "volume": 2500000,
+  "impliedVolatility": 0.18,
+  "historicalVolatility": 0.22,
+  "timestamp": "2024-01-15T16:30:00Z",
+  "createdAt": "2024-01-15T16:30:00Z",
+  "updatedAt": "2024-01-15T16:30:00Z"
+}
+

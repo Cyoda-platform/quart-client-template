@@ -1,0 +1,94 @@
+{
+  "version": "1.0",
+  "name": "order_processing",
+  "desc": "Workflow for managing order processing lifecycle from creation to completion",
+  "initialState": "created",
+  "active": true,
+  "states": {
+    "created": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "process",
+          "next": "processing",
+          "manual": false
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "processing": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+                                  "manual": false
+        },
+        {
+          "name": "fail",
+          "next": "failed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "rejected": {
+      "transitions": [
+        {
+          "name": "resubmit",
+          "next": "created",
+          "manual": true
+        }
+      ]
+    },
+    "failed": {
+      "transitions": [
+        {
+          "name": "retry",
+          "next": "processing",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}

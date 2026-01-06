@@ -1,0 +1,15 @@
+{
+  "name": "execution",
+  "version": 1,
+  "description": "Execution entity representing fills and execution reports from venues/brokers",
+  "properties": {
+    "id": { "type": "string", "description": "UUID for the execution" },
+    "orderId": { "type": "string", "description": "Reference to the order" },
+    "executionId": { "type": "string", "description": "Venue/broker execution identifier" },
+    "quantity": { "type": "number", "description": "Quantity filled in this execution" },
+    "price": { "type": "number", "description": "Execution price" },
+    "timestamp": { "type": "string", "description": "ISO8601 timestamp of execution" },
+    "venue": { "type": "string", "description": "Execution venue or broker" },
+    "gatingInfo": { "type": "object", "description": "Any gating or routing metadata" }
+  }
+}

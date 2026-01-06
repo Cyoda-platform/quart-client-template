@@ -197,4 +197,3 @@ class AlertingProcessor(CyodaProcessor):
         )
 
         return message
-

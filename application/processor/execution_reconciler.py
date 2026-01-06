@@ -134,4 +134,3 @@ class ExecutionReconciler(CyodaProcessor):
             result["price_check"] = "FAILED"
 
         return result
-

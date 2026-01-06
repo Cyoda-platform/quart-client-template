@@ -146,9 +146,7 @@ class PnlCalculator(CyodaProcessor):
             portfolio_pnl["total_unrealized_pnl"] += position.get("unrealizedPnl", 0)
 
         portfolio_pnl["total_pnl"] = (
-            portfolio_pnl["total_realized_pnl"]
-            + portfolio_pnl["total_unrealized_pnl"]
+            portfolio_pnl["total_realized_pnl"] + portfolio_pnl["total_unrealized_pnl"]
         )
 
         return portfolio_pnl
-

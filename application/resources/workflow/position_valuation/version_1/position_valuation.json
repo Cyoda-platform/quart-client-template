@@ -36,7 +36,14 @@
         {
           "name": "publish",
           "next": "published",
-          "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },
@@ -45,7 +52,14 @@
         {
           "name": "archive",
           "next": "archived",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },

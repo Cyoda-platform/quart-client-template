@@ -103,11 +103,8 @@ class ExecutionAdapter(CyodaProcessor):
             "venue": venue,
             "status": "SENT",
             "venue_order_id": str(uuid.uuid4()),
-            "sent_at": (
-                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-            ),
+            "sent_at": (datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
         }
 
         self.logger.debug(f"Sent to {venue}: {result}")
         return result
-

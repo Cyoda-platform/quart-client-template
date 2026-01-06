@@ -183,4 +183,3 @@ class RiskEvaluator(CyodaProcessor):
         # TODO: Integrate with portfolio service for account exposure
         # TODO: Load exposure limits from configuration
         return {"passed": True, "reason": None}
-

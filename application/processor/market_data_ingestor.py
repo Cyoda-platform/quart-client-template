@@ -160,4 +160,3 @@ class MarketDataIngestor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Failed to create market_tick: {str(e)}")
             raise
-

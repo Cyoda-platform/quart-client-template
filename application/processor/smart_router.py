@@ -147,4 +147,3 @@ class SmartRouter(CyodaProcessor):
             instructions.append(instruction)
 
         return instructions
-

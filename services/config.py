@@ -41,7 +41,16 @@ def get_service_config() -> Dict[str, Any]:
         },
         "processor": {
             "modules": [
-                "application.processor",
+                "application.processor.order_validator",
+                "application.processor.risk_evaluator",
+                "application.processor.smart_router",
+                "application.processor.execution_adapter",
+                "application.processor.execution_reconciler",
+                "application.processor.position_updater",
+                "application.processor.pnl_calculator",
+                "application.processor.market_data_ingestor",
+                "application.processor.compliance_logger",
+                "application.processor.alerting_processor",
                 "application.criterion",
                 "example_application.processor",
                 "example_application.criterion",

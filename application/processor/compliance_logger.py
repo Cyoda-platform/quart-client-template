@@ -63,9 +63,7 @@ class ComplianceLogger(CyodaProcessor):
             self.logger.error(f"Error writing audit log: {str(e)}")
             raise
 
-    def _create_audit_entry(
-        self, entity: CyodaEntity, **kwargs: Any
-    ) -> Dict[str, Any]:
+    def _create_audit_entry(self, entity: CyodaEntity, **kwargs: Any) -> Dict[str, Any]:
         """
         Create an audit log entry for the entity state change.
 
@@ -129,21 +127,25 @@ class ComplianceLogger(CyodaProcessor):
         entity_type = getattr(entity, "entity_type", None)
 
         if entity_type == "order":
-            snapshot.update({
-                "accountId": getattr(entity, "accountId", None),
-                "instrumentId": getattr(entity, "instrumentId", None),
-                "side": getattr(entity, "side", None),
-                "quantity": getattr(entity, "quantity", None),
-                "price": getattr(entity, "price", None),
-            })
+            snapshot.update(
+                {
+                    "accountId": getattr(entity, "accountId", None),
+                    "instrumentId": getattr(entity, "instrumentId", None),
+                    "side": getattr(entity, "side", None),
+                    "quantity": getattr(entity, "quantity", None),
+                    "price": getattr(entity, "price", None),
+                }
+            )
         elif entity_type == "execution":
-            snapshot.update({
-                "orderId": getattr(entity, "orderId", None),
-                "executionId": getattr(entity, "executionId", None),
-                "quantity": getattr(entity, "quantity", None),
-                "price": getattr(entity, "price", None),
-                "venue": getattr(entity, "venue", None),
-            })
+            snapshot.update(
+                {
+                    "orderId": getattr(entity, "orderId", None),
+                    "executionId": getattr(entity, "executionId", None),
+                    "quantity": getattr(entity, "quantity", None),
+                    "price": getattr(entity, "price", None),
+                    "venue": getattr(entity, "venue", None),
+                }
+            )
 
         return snapshot
 
@@ -189,4 +191,3 @@ class ComplianceLogger(CyodaProcessor):
             f"{audit_entry['entity_type']} {audit_entry['entity_id']} "
             f"{audit_entry['from_state']} -> {audit_entry['to_state']}"
         )
-

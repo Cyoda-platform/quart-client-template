@@ -60,14 +60,10 @@ class OrderValidator(CyodaProcessor):
             return entity
 
         except ValueError as e:
-            self.logger.error(
-                f"Order validation failed: {str(e)}"
-            )
+            self.logger.error(f"Order validation failed: {str(e)}")
             raise
         except Exception as e:
-            self.logger.error(
-                f"Unexpected error validating order: {str(e)}"
-            )
+            self.logger.error(f"Unexpected error validating order: {str(e)}")
             raise
 
     def _validate_required_fields(self, entity: CyodaEntity) -> None:
@@ -148,4 +144,3 @@ class OrderValidator(CyodaProcessor):
             )
 
         self.logger.debug("Business rules validation passed")
-

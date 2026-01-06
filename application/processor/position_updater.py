@@ -170,4 +170,3 @@ class PositionUpdater(CyodaProcessor):
             return quantity * (market_price - entry_price)
         else:
             return quantity * (entry_price - market_price)
-

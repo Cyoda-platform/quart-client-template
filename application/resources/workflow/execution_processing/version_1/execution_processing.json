@@ -1,0 +1,61 @@
+{
+  "version": "1.0",
+  "name": "execution_processing",
+  "desc": "Workflow for handling execution reports and fills",
+  "initialState": "received",
+  "active": true,
+  "states": {
+    "received": {
+      "transitions": [
+        {
+          "name": "reconcile",
+          "next": "reconciled",
+          "manual": false
+        },
+        {
+          "name": "flag",
+          "next": "investigate",
+          "manual": true
+        }
+      ]
+    },
+    "reconciled": {
+      "transitions": [
+        {
+          "name": "apply",
+          "next": "applied",
+          "manual": false
+        }
+      ]
+    },
+    "applied": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "investigate": {
+      "transitions": [
+        {
+          "name": "resolve",
+          "next": "reconciled",
+          "manual": true
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}

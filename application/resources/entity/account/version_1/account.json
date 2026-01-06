@@ -1,0 +1,12 @@
+{
+  "entityName": "Account",
+  "modelVersion": 1,
+  "id": "account-<uuid>",
+  "ownerId": "customer-<uuid>",
+  "accountType": "CHECKING",
+  "currency": "USD",
+  "balance": 0.0,
+  "status": "ACTIVE",
+  "linkedCards": [],
+  "createdAt": "2026-01-06T00:00:00Z"
+}

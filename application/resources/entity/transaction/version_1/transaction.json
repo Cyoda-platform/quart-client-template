@@ -1,0 +1,13 @@
+{
+  "entityName": "Transaction",
+  "modelVersion": 1,
+  "id": "transaction-<uuid>",
+  "accountId": "account-<uuid>",
+  "amount": 0.0,
+  "currency": "USD",
+  "timestamp": "2026-01-06T00:00:00Z",
+  "merchant": "",
+  "category": "",
+  "status": "PENDING",
+  "metadata": {}
+}

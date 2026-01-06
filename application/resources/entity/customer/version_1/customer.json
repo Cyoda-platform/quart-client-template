@@ -1,0 +1,22 @@
+{
+  "entityName": "Customer",
+  "modelVersion": 1,
+  "id": "customer-<uuid>",
+  "createdAt": "2026-01-06T00:00:00Z",
+  "name": "",
+  "email": "",
+  "phone": "",
+  "address": {
+    "street": "",
+    "city": "",
+    "state": "",
+    "postalCode": "",
+    "country": ""
+  },
+  "kycStatus": "PENDING",
+  "linkedAccounts": [],
+  "preferences": {
+    "notifications": true,
+    "language": "en-US"
+  }
+}

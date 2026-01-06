@@ -5,18 +5,18 @@ from typing import Callable, Dict, Optional
 from quart import Quart, Response
 from quart_schema import QuartSchema, ResponseSchemaValidationError, hide
 
+from application.routes.compliance import compliance_bp
+from application.routes.market_data import market_data_bp
+
+# Import blueprints for different route groups
+from application.routes.orders import orders_bp
+from application.routes.portfolios import portfolios_bp
+from application.routes.positions import positions_bp
+from application.routes.risk_controls import risk_controls_bp
 from common.exception.exception_handler import (
     register_error_handlers as _register_error_handlers,
 )
 from services.services import get_grpc_client, initialize_services
-
-# Import blueprints for different route groups
-from application.routes.orders import orders_bp
-from application.routes.positions import positions_bp
-from application.routes.portfolios import portfolios_bp
-from application.routes.market_data import market_data_bp
-from application.routes.risk_controls import risk_controls_bp
-from application.routes.compliance import compliance_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,13 +26,17 @@ app = Quart(__name__)
 
 QuartSchema(
     app,
-    info={"title": "Cyoda Client Application", "version": "1.0.0"},
+    info={"title": "Institutional Trading Platform", "version": "1.0.0"},
     tags=[
         {
-            "name": "ExampleEntities",
-            "description": "ExampleEntity management endpoints",
+            "name": "orders",
+            "description": "Order management endpoints",
         },
-        {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "positions", "description": "Position management endpoints"},
+        {"name": "portfolios", "description": "Portfolio management endpoints"},
+        {"name": "market-data", "description": "Market data feed endpoints"},
+        {"name": "risk-controls", "description": "Risk control management endpoints"},
+        {"name": "compliance", "description": "Compliance tracking endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -127,6 +131,15 @@ async def add_cors_headers() -> None:
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
+
+
+# Register all blueprints
+app.register_blueprint(orders_bp)
+app.register_blueprint(positions_bp)
+app.register_blueprint(portfolios_bp)
+app.register_blueprint(market_data_bp)
+app.register_blueprint(risk_controls_bp)
+app.register_blueprint(compliance_bp)
 
 
 if __name__ == "__main__":

@@ -13,8 +13,8 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.compliance import Compliance
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,10 @@ compliance_bp = Blueprint("compliance", __name__, url_prefix="/api/compliance")
 @compliance_bp.route("", methods=["POST"])
 @tag(["compliance"])
 @operation_id("create_compliance")
-@validate(request=Compliance, responses={201: (Dict[str, Any], None), 400: (Dict[str, Any], None)})
+@validate(
+    request=Compliance,
+    responses={201: (Dict[str, Any], None), 400: (Dict[str, Any], None)},
+)
 async def create_compliance(data: Compliance) -> ResponseReturnValue:
     """Create a new Compliance record"""
     try:
@@ -66,16 +69,16 @@ async def get_compliance(entity_id: str) -> ResponseReturnValue:
     try:
         if not entity_id or len(entity_id.strip()) == 0:
             return {"error": "Entity ID is required", "code": "INVALID_ID"}, 400
-        
+
         response = await service.get_by_id(
             entity_id=entity_id,
             entity_class=Compliance.ENTITY_NAME,
             entity_version=str(Compliance.ENTITY_VERSION),
         )
-        
+
         if not response:
             return {"error": "Compliance not found", "code": "NOT_FOUND"}, 404
-        
+
         return _to_entity_dict(response.data), 200
     except Exception as e:
         logger.exception("Error getting Compliance %s: %s", entity_id, str(e))
@@ -103,16 +106,19 @@ async def list_compliance() -> ResponseReturnValue:
 @compliance_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["compliance"])
 @operation_id("update_compliance")
-@validate(request=Compliance, responses={200: (Dict[str, Any], None), 404: (Dict[str, Any], None)})
+@validate(
+    request=Compliance,
+    responses={200: (Dict[str, Any], None), 404: (Dict[str, Any], None)},
+)
 async def update_compliance(entity_id: str, data: Compliance) -> ResponseReturnValue:
     """Update Compliance record"""
     try:
         if not entity_id or len(entity_id.strip()) == 0:
             return {"error": "Entity ID is required", "code": "INVALID_ID"}, 400
-        
+
         entity_data: Dict[str, Any] = data.model_dump(by_alias=True)
         transition: Optional[str] = request.args.get("transition")
-        
+
         response = await service.update(
             entity_id=entity_id,
             entity=entity_data,
@@ -120,7 +126,7 @@ async def update_compliance(entity_id: str, data: Compliance) -> ResponseReturnV
             transition=transition,
             entity_version=str(Compliance.ENTITY_VERSION),
         )
-        
+
         logger.info("Updated Compliance %s", entity_id)
         return jsonify(_to_entity_dict(response.data)), 200
     except Exception as e:
@@ -137,15 +143,19 @@ async def delete_compliance(entity_id: str) -> ResponseReturnValue:
     try:
         if not entity_id or len(entity_id.strip()) == 0:
             return {"error": "Entity ID is required", "code": "INVALID_ID"}, 400
-        
+
         await service.delete_by_id(
             entity_id=entity_id,
             entity_class=Compliance.ENTITY_NAME,
             entity_version=str(Compliance.ENTITY_VERSION),
         )
-        
+
         logger.info("Deleted Compliance %s", entity_id)
-        return {"success": True, "message": "Compliance deleted successfully", "entity_id": entity_id}, 200
+        return {
+            "success": True,
+            "message": "Compliance deleted successfully",
+            "entity_id": entity_id,
+        }, 200
     except Exception as e:
         logger.exception("Error deleting Compliance %s: %s", entity_id, str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
@@ -163,9 +173,14 @@ async def get_compliance_transitions(entity_id: str) -> ResponseReturnValue:
             entity_class=Compliance.ENTITY_NAME,
             entity_version=str(Compliance.ENTITY_VERSION),
         )
-        return jsonify({"entity_id": entity_id, "available_transitions": transitions}), 200
+        return (
+            jsonify({"entity_id": entity_id, "available_transitions": transitions}),
+            200,
+        )
     except Exception as e:
-        logger.exception("Error getting transitions for Compliance %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error getting transitions for Compliance %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
 
 
@@ -179,21 +194,29 @@ async def trigger_compliance_transition(entity_id: str) -> ResponseReturnValue:
         transition_name = request.args.get("transition")
         if not transition_name:
             return {"error": "transition parameter required"}, 400
-        
+
         response = await service.execute_transition(
             entity_id=entity_id,
             transition=transition_name,
             entity_class=Compliance.ENTITY_NAME,
             entity_version=str(Compliance.ENTITY_VERSION),
         )
-        
-        logger.info("Executed transition '%s' on Compliance %s", transition_name, entity_id)
-        return jsonify({
-            "id": response.metadata.id,
-            "message": "Transition executed successfully",
-            "newState": response.metadata.state,
-        }), 200
-    except Exception as e:
-        logger.exception("Error executing transition on Compliance %s: %s", entity_id, str(e))
-        return jsonify({"error": str(e)}), 500
 
+        logger.info(
+            "Executed transition '%s' on Compliance %s", transition_name, entity_id
+        )
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "message": "Transition executed successfully",
+                    "newState": response.metadata.state,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.exception(
+            "Error executing transition on Compliance %s: %s", entity_id, str(e)
+        )
+        return jsonify({"error": str(e)}), 500

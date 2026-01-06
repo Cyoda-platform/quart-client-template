@@ -7,9 +7,9 @@ Checks position limits, notional exposure, and sector concentration.
 import logging
 from typing import Any
 
+from application.entity.order import Order
 from common.criterion.base import CyodaCriterion, CyodaEntity
 from common.entity.entity_casting import cast_entity
-from application.entity.order import Order
 
 
 class RiskCheckCriterion(CyodaCriterion):
@@ -28,25 +28,25 @@ class RiskCheckCriterion(CyodaCriterion):
         """Evaluate if order passes risk checks."""
         try:
             order = cast_entity(entity, Order)
-            
+
             # Check position limits
             if not self._check_position_limit(order):
                 self.logger.warning(f"Order {order.order_id} exceeds position limit")
                 return False
-            
+
             # Check notional exposure
             if not self._check_notional_exposure(order):
                 self.logger.warning(f"Order {order.order_id} exceeds notional limit")
                 return False
-            
+
             # Check sector concentration
             if not self._check_sector_concentration(order):
                 self.logger.warning(f"Order {order.order_id} violates sector limits")
                 return False
-            
+
             self.logger.info(f"Order {order.order_id} passed risk checks")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Error checking order risk: {str(e)}")
             return False
@@ -67,4 +67,3 @@ class RiskCheckCriterion(CyodaCriterion):
         """Check if order respects sector concentration limits."""
         # Simplified check - in production would query portfolio
         return True
-

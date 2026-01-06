@@ -9,7 +9,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class MarketData(CyodaEntity):
     """
     MarketData represents real-time market data feeds.
-    
+
     Ingests and manages market data from various sources.
     States: initial_state -> created -> active -> archived -> completed
     """
@@ -21,7 +21,7 @@ class MarketData(CyodaEntity):
     symbol: str = Field(..., description="Trading symbol")
     data_source: str = Field(..., description="Data source (e.g., Bloomberg, Reuters)")
     feed_type: str = Field(..., description="QUOTE, TRADE, DEPTH, VOLATILITY")
-    
+
     # Price data
     bid_price: float = Field(..., ge=0, description="Current bid price")
     ask_price: float = Field(..., ge=0, description="Current ask price")
@@ -30,21 +30,27 @@ class MarketData(CyodaEntity):
     high_price: float = Field(..., ge=0, description="High price")
     low_price: float = Field(..., ge=0, description="Low price")
     close_price: Optional[float] = Field(None, ge=0, description="Closing price")
-    
+
     # Volume data
     bid_size: int = Field(default=0, ge=0, description="Bid size")
     ask_size: int = Field(default=0, ge=0, description="Ask size")
     volume: int = Field(default=0, ge=0, description="Trading volume")
-    
+
     # Greeks and volatility
-    implied_volatility: Optional[float] = Field(None, ge=0, description="Implied volatility")
-    historical_volatility: Optional[float] = Field(None, ge=0, description="Historical volatility")
-    
+    implied_volatility: Optional[float] = Field(
+        None, ge=0, description="Implied volatility"
+    )
+    historical_volatility: Optional[float] = Field(
+        None, ge=0, description="Historical volatility"
+    )
+
     # Timestamps
     timestamp: str = Field(..., description="Data timestamp")
     created_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        alias="createdAt"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        alias="createdAt",
     )
     updated_at: Optional[str] = Field(None, alias="updatedAt")
 
@@ -91,4 +97,3 @@ class MarketData(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

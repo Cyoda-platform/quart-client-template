@@ -7,9 +7,9 @@ Checks order format, pricing logic, and basic compliance.
 import logging
 from typing import Any
 
+from application.entity.order import Order
 from common.criterion.base import CyodaCriterion, CyodaEntity
 from common.entity.entity_casting import cast_entity
-from application.entity.order import Order
 
 
 class OrderValidationCriterion(CyodaCriterion):
@@ -28,36 +28,40 @@ class OrderValidationCriterion(CyodaCriterion):
         """Evaluate if order is valid."""
         try:
             order = cast_entity(entity, Order)
-            
+
             # Validate order structure
             if not self._validate_order_structure(order):
-                self.logger.warning(f"Order {order.order_id} failed structure validation")
+                self.logger.warning(
+                    f"Order {order.order_id} failed structure validation"
+                )
                 return False
-            
+
             # Validate pricing logic
             if not self._validate_pricing(order):
                 self.logger.warning(f"Order {order.order_id} failed pricing validation")
                 return False
-            
+
             # Validate quantity
             if not self._validate_quantity(order):
-                self.logger.warning(f"Order {order.order_id} failed quantity validation")
+                self.logger.warning(
+                    f"Order {order.order_id} failed quantity validation"
+                )
                 return False
-            
+
             self.logger.info(f"Order {order.order_id} passed validation")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"Error validating order: {str(e)}")
             return False
 
     def _validate_order_structure(self, order: Order) -> bool:
         """Validate order has required fields."""
-        return (
-            order.order_id and
-            order.symbol and
-            order.side in ["BUY", "SELL"] and
-            order.order_type in ["MARKET", "LIMIT", "STOP", "STOP_LIMIT"]
+        return bool(
+            order.order_id
+            and order.symbol
+            and order.side in ["BUY", "SELL"]
+            and order.order_type in ["MARKET", "LIMIT", "STOP", "STOP_LIMIT"]
         )
 
     def _validate_pricing(self, order: Order) -> bool:
@@ -73,4 +77,3 @@ class OrderValidationCriterion(CyodaCriterion):
     def _validate_quantity(self, order: Order) -> bool:
         """Validate order quantity."""
         return order.quantity > 0 and order.quantity <= 1000000
-

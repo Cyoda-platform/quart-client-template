@@ -9,7 +9,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class RiskControl(CyodaEntity):
     """
     RiskControl manages risk limits and breach monitoring.
-    
+
     Tracks risk metrics and enforces trading limits.
     States: initial_state -> created -> active -> breached -> resolved -> completed
     """
@@ -20,36 +20,49 @@ class RiskControl(CyodaEntity):
     # Risk control identification
     risk_id: str = Field(..., description="Unique risk control identifier")
     account_id: str = Field(..., description="Trading account ID")
-    risk_type: str = Field(..., description="POSITION_LIMIT, NOTIONAL_LIMIT, VAR_LIMIT, SECTOR_LIMIT")
-    
+    risk_type: str = Field(
+        ..., description="POSITION_LIMIT, NOTIONAL_LIMIT, VAR_LIMIT, SECTOR_LIMIT"
+    )
+
     # Limit configuration
     limit_value: float = Field(..., ge=0, description="Risk limit value")
     current_value: float = Field(..., description="Current risk metric value")
-    utilization_percentage: float = Field(default=0, ge=0, le=100, description="Limit utilization %")
-    
+    utilization_percentage: float = Field(
+        default=0, ge=0, le=100, description="Limit utilization %"
+    )
+
     # Breach information
     is_breached: bool = Field(default=False, description="Whether limit is breached")
     breach_amount: float = Field(default=0, description="Amount over limit")
     breach_timestamp: Optional[str] = Field(None, description="When breach occurred")
-    
+
     # Thresholds
-    warning_threshold: float = Field(default=80, ge=0, le=100, description="Warning threshold %")
-    critical_threshold: float = Field(default=95, ge=0, le=100, description="Critical threshold %")
-    
+    warning_threshold: float = Field(
+        default=80, ge=0, le=100, description="Warning threshold %"
+    )
+    critical_threshold: float = Field(
+        default=95, ge=0, le=100, description="Critical threshold %"
+    )
+
     # Actions
     action_on_breach: str = Field(default="ALERT", description="ALERT, RESTRICT, BLOCK")
     auto_remediate: bool = Field(default=False, description="Auto-remediate on breach")
-    
+
     # Timestamps
     created_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        alias="createdAt"
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
+        alias="createdAt",
     )
     updated_at: Optional[str] = Field(None, alias="updatedAt")
     resolved_at: Optional[str] = Field(None, alias="resolvedAt")
 
     ALLOWED_RISK_TYPES: ClassVar[List[str]] = [
-        "POSITION_LIMIT", "NOTIONAL_LIMIT", "VAR_LIMIT", "SECTOR_LIMIT"
+        "POSITION_LIMIT",
+        "NOTIONAL_LIMIT",
+        "VAR_LIMIT",
+        "SECTOR_LIMIT",
     ]
     ALLOWED_ACTIONS: ClassVar[List[str]] = ["ALERT", "RESTRICT", "BLOCK"]
 
@@ -82,7 +95,9 @@ class RiskControl(CyodaEntity):
         self.is_breached = self.utilization_percentage > 100
         if self.is_breached:
             self.breach_amount = self.current_value - self.limit_value
-            self.breach_timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            self.breach_timestamp = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
         return self.is_breached
 
     def is_warning_level(self) -> bool:
@@ -97,4 +112,3 @@ class RiskControl(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

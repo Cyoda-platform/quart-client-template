@@ -1,0 +1,14 @@
+{
+  "id": "book",
+  "modelVersion": 1,
+  "name": "Book",
+  "description": "Entity representing a book from Fake REST API",
+  "fields": [
+    {"name": "id", "type": "integer", "description": "Unique identifier for the book"},
+    {"name": "title", "type": "string", "description": "Title of the book"},
+    {"name": "description", "type": "string", "description": "Description of the book"},
+    {"name": "pageCount", "type": "integer", "description": "Number of pages"},
+    {"name": "excerpt", "type": "string", "description": "Excerpt from the book"},
+    {"name": "publishDate", "type": "string", "format": "date-time", "description": "Publication date in ISO 8601 format"}
+  ]
+}

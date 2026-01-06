@@ -117,7 +117,7 @@ class OrderValidator(CyodaProcessor):
         # Validate price if LIMIT order
         if order_type == "LIMIT":
             price = getattr(entity, "price", None)
-            if not isinstance(price, (int, float)) or price <= 0:
+            if price is None or not isinstance(price, (int, float)) or price <= 0:
                 raise ValueError(f"Invalid price for LIMIT order: {price}")
 
     def _validate_business_rules(self, entity: CyodaEntity) -> None:

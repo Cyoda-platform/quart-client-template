@@ -61,9 +61,10 @@ class ExecutionAdapter(CyodaProcessor):
 
             # Store execution results
             if not hasattr(entity, "executionMetadata"):
-                entity.executionMetadata = {}
-            entity.executionMetadata["results"] = execution_results
-            entity.executionMetadata["sent_at"] = (
+                setattr(entity, "executionMetadata", {})
+            execution_metadata = getattr(entity, "executionMetadata")
+            execution_metadata["results"] = execution_results
+            execution_metadata["sent_at"] = (
                 datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             )
 

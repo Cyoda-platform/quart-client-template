@@ -56,10 +56,11 @@ class SmartRouter(CyodaProcessor):
 
             # Store routing information on entity
             if not hasattr(entity, "routingMetadata"):
-                entity.routingMetadata = {}
-            entity.routingMetadata["plan"] = routing_plan
-            entity.routingMetadata["instructions"] = execution_instructions
-            entity.routingMetadata["routed_at"] = (
+                setattr(entity, "routingMetadata", {})
+            routing_metadata = getattr(entity, "routingMetadata")
+            routing_metadata["plan"] = routing_plan
+            routing_metadata["instructions"] = execution_instructions
+            routing_metadata["routed_at"] = (
                 datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             )
 

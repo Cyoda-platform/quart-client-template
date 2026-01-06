@@ -58,8 +58,9 @@ class RiskEvaluator(CyodaProcessor):
 
             # Store risk evaluation metadata
             if not hasattr(entity, "riskMetadata"):
-                entity.riskMetadata = {}
-            entity.riskMetadata.update(risk_result)
+                setattr(entity, "riskMetadata", {})
+            risk_metadata = getattr(entity, "riskMetadata")
+            risk_metadata.update(risk_result)
 
             self.logger.info(f"Risk evaluation passed for order {order_id}")
             return entity

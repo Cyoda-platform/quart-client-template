@@ -1,0 +1,15 @@
+{
+  "name": "position",
+  "version": 1,
+  "description": "Position entity representing aggregated holdings per account/instrument",
+  "properties": {
+    "id": { "type": "string", "description": "UUID for the position record" },
+    "accountId": { "type": "string", "description": "Account identifier" },
+    "instrumentId": { "type": "string", "description": "Instrument identifier" },
+    "quantity": { "type": "number", "description": "Net quantity" },
+    "avgPrice": { "type": "number", "description": "Average cost basis" },
+    "realizedPnl": { "type": "number", "description": "Realized P&L" },
+    "unrealizedPnl": { "type": "number", "description": "Unrealized P&L" },
+    "lastUpdated": { "type": "string", "description": "ISO8601 timestamp" }
+  }
+}

@@ -1,0 +1,3 @@
+# Cron schedule for weekly books pipeline
+# Runs every Wednesday at 09:00 UTC
+0 9 * * 3 application/resources/workflow/books_data_extraction/version_1/books_data_extraction.json

@@ -1,0 +1,95 @@
+{
+  "version": "1.0",
+  "name": "RiskControl Workflow",
+  "desc": "Workflow for risk limit monitoring and breach management",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "RiskValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "evaluate",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskEvaluator",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "breach",
+          "next": "breached",
+          "manual": false
+        }
+      ]
+    },
+    "breached": {
+      "transitions": [
+        {
+          "name": "alert",
+          "next": "breached",
+          "manual": false,
+          "processors": [
+            {
+              "name": "AlertingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "resolve",
+          "next": "resolved",
+          "manual": true
+        }
+      ]
+    },
+    "resolved": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

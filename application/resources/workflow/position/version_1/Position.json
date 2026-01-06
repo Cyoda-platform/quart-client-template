@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "name": "Position Workflow",
+  "desc": "Workflow for position lifecycle with updates and P&L calculations",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PositionUpdater",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "update_pnl",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PnLCalculator",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "closed": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

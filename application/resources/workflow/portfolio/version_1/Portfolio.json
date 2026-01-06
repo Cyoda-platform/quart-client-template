@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "name": "Portfolio Workflow",
+  "desc": "Workflow for portfolio aggregation and risk evaluation",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PortfolioAggregator",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "evaluate_risk",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskEvaluator",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "rebalance",
+          "next": "rebalancing",
+          "manual": true
+        }
+      ]
+    },
+    "rebalancing": {
+      "transitions": [
+        {
+          "name": "complete_rebalance",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

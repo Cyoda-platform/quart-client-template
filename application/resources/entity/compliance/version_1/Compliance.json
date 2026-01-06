@@ -1,0 +1,21 @@
+{
+  "complianceId": "COMP-2024-001",
+  "entityType": "ORDER",
+  "entityId": "ORD-2024-001",
+  "accountId": "ACC-12345",
+  "checkType": "MARKET_ABUSE",
+  "checkStatus": "PENDING",
+  "regulation": "MiFID II",
+  "requirement": "Market Abuse Regulation compliance check",
+  "checkResult": null,
+  "isCompliant": false,
+  "checkedBy": "SYSTEM",
+  "approvalRequired": false,
+  "approvedBy": null,
+  "createdAt": "2024-01-15T10:30:00Z",
+  "checkedAt": null,
+  "approvedAt": null,
+  "loggedAt": null,
+  "notes": "Pending market abuse check for large order"
+}
+

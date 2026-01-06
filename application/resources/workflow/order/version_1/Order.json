@@ -1,0 +1,121 @@
+{
+  "version": "1.0",
+  "name": "Order Workflow",
+  "desc": "Workflow for order lifecycle management with validation, risk checks, and execution",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "OrderValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "check_risk",
+          "next": "risk_checked",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "RiskCheckCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "risk_checked": {
+      "transitions": [
+        {
+          "name": "submit",
+          "next": "submitted",
+          "manual": false,
+          "processors": [
+            {
+              "name": "SmartRouter",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "submitted": {
+      "transitions": [
+        {
+          "name": "execute",
+          "next": "executed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ExecutionAdapter",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "executed": {
+      "transitions": [
+        {
+          "name": "reconcile",
+          "next": "settled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ExecutionReconciler",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "settled": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

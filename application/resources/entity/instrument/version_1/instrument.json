@@ -1,0 +1,13 @@
+{
+  "name": "instrument",
+  "version": 1,
+  "description": "Instrument entity describing traded instruments (equities, options, futures)",
+  "properties": {
+    "id": { "type": "string", "description": "Instrument identifier (symbol/ISIN)" },
+    "type": { "type": "string", "description": "Equity, Option, Future, etc." },
+    "symbol": { "type": "string", "description": "Trading symbol" },
+    "exchange": { "type": "string", "description": "Primary exchange" },
+    "currency": { "type": "string", "description": "Settlement currency" },
+    "contractDetails": { "type": "object", "description": "Option/future leg info where applicable" }
+  }
+}

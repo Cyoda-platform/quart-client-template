@@ -10,12 +10,36 @@
         {
           "name": "reconcile",
           "next": "reconciled",
-          "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "ExecutionReconciler",
+              "executionMode": "SYNC",
+              "config": {}
+            },
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         },
         {
           "name": "flag",
           "next": "investigate",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "AlertingProcessor",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            },
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },
@@ -24,7 +48,24 @@
         {
           "name": "apply",
           "next": "applied",
-          "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "ExecutionAdapter",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {}
+            },
+            {
+              "name": "PositionUpdater",
+              "executionMode": "SYNC",
+              "config": {}
+            },
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },
@@ -33,7 +74,14 @@
         {
           "name": "archive",
           "next": "archived",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },
@@ -42,12 +90,26 @@
         {
           "name": "resolve",
           "next": "reconciled",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         },
         {
           "name": "cancel",
           "next": "cancelled",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },

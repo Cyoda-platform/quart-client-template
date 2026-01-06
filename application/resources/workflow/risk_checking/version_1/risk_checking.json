@@ -10,7 +10,19 @@
         {
           "name": "evaluate",
           "next": "evaluated",
-          "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskEvaluator",
+              "executionMode": "SYNC",
+              "config": {}
+            },
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },
@@ -19,12 +31,31 @@
         {
           "name": "approve",
           "next": "approved",
-          "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         },
         {
           "name": "reject",
           "next": "rejected",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "AlertingProcessor",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            },
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },

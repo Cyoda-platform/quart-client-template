@@ -10,7 +10,24 @@
         {
           "name": "calculate",
           "next": "calculated",
-          "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataIngestor",
+              "executionMode": "SYNC",
+              "config": {}
+            },
+            {
+              "name": "PositionUpdater",
+              "executionMode": "SYNC",
+              "config": {}
+            },
+            {
+              "name": "PnlCalculator",
+              "executionMode": "SYNC",
+              "config": {}
+            }
+          ]
         }
       ]
     },

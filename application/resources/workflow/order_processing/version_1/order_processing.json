@@ -10,12 +10,31 @@
         {
           "name": "validate",
           "next": "validated",
-          "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderValidator",
+              "executionMode": "SYNC",
+              "config": {}
+            },
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         },
         {
           "name": "cancel",
           "next": "cancelled",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },
@@ -24,17 +43,53 @@
         {
           "name": "process",
           "next": "processing",
-          "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskEvaluator",
+              "executionMode": "SYNC",
+              "config": {}
+            },
+            {
+              "name": "SmartRouter",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {}
+            },
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         },
         {
           "name": "reject",
           "next": "rejected",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "AlertingProcessor",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            },
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         },
         {
           "name": "cancel",
           "next": "cancelled",
-          "manual": true
+          "manual": true,
+          "processors": [
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },
@@ -43,12 +98,31 @@
         {
           "name": "complete",
           "next": "completed",
-                                  "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         },
         {
           "name": "fail",
           "next": "failed",
-          "manual": false
+          "manual": false,
+          "processors": [
+            {
+              "name": "AlertingProcessor",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            },
+            {
+              "name": "ComplianceLogger",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {}
+            }
+          ]
         }
       ]
     },

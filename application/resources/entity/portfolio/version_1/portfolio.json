@@ -1,0 +1,12 @@
+{
+  "name": "portfolio",
+  "version": 1,
+  "description": "Portfolio entity aggregating accounts and strategies",
+  "properties": {
+    "id": { "type": "string", "description": "Portfolio identifier" },
+    "name": { "type": "string", "description": "Human-readable name" },
+    "accounts": { "type": "array", "items": { "type": "string" }, "description": "List of account IDs" },
+    "strategies": { "type": "array", "items": { "type": "string" }, "description": "Associated strategy IDs" },
+    "totalPnl": { "type": "number", "description": "Aggregate P&L" }
+  }
+}

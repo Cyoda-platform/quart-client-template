@@ -9,7 +9,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict
 
-from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
 
 

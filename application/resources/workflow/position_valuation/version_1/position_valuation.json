@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "name": "position_valuation",
+  "desc": "Workflow to recalculate positions and P&L on market data updates or executions",
+  "initialState": "pending",
+  "active": true,
+  "states": {
+    "pending": {
+      "transitions": [
+        {
+          "name": "calculate",
+          "next": "calculated",
+          "manual": false
+        }
+      ]
+    },
+    "calculated": {
+      "transitions": [
+        {
+          "name": "publish",
+          "next": "published",
+          "manual": false
+        }
+      ]
+    },
+    "published": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": { "transitions": [] }
+  }
+}

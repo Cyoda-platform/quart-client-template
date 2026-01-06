@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "name": "risk_checking",
+  "desc": "Workflow for pre-trade and intra-day risk checks",
+  "initialState": "pending",
+  "active": true,
+  "states": {
+    "pending": {
+      "transitions": [
+        {
+          "name": "evaluate",
+          "next": "evaluated",
+          "manual": false
+        }
+      ]
+    },
+    "evaluated": {
+      "transitions": [
+        {
+          "name": "approve",
+          "next": "approved",
+          "manual": false
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "approved": { "transitions": [ { "name": "proceed", "next": "completed", "manual": false } ] },
+    "rejected": { "transitions": [ { "name": "notify", "next": "notified", "manual": true } ] },
+    "notified": { "transitions": [] },
+    "completed": { "transitions": [] }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "account",
+  "version": 1,
+  "description": "Account entity representing client/trading accounts",
+  "properties": {
+    "id": { "type": "string", "description": "Account identifier" },
+    "owner": { "type": "string", "description": "Account owner or firm entity" },
+    "currency": { "type": "string", "description": "Base currency" },
+    "limits": { "type": "object", "description": "Risk and order limits" },
+    "status": { "type": "string", "description": "Active, Suspended, Closed" }
+  }
+}

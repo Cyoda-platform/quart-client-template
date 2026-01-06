@@ -1,0 +1,14 @@
+{
+  "name": "market_tick",
+  "version": 1,
+  "description": "Market tick or order book snapshot for market data ingestion",
+  "properties": {
+    "instrumentId": { "type": "string", "description": "Instrument identifier" },
+    "timestamp": { "type": "string", "description": "ISO8601 timestamp" },
+    "bid": { "type": "number", "description": "Best bid price" },
+    "ask": { "type": "number", "description": "Best ask price" },
+    "lastPrice": { "type": "number", "description": "Last traded price" },
+    "bidSize": { "type": "number", "description": "Size at bid" },
+    "askSize": { "type": "number", "description": "Size at ask" }
+  }
+}

@@ -56,9 +56,10 @@ class MarketDataIngestor(CyodaProcessor):
 
             # Store ingestion metadata
             if not hasattr(entity, "ingestionMetadata"):
-                entity.ingestionMetadata = {}
-            entity.ingestionMetadata["normalized"] = normalized_data
-            entity.ingestionMetadata["ingested_at"] = (
+                setattr(entity, "ingestionMetadata", {})
+            ingestion_metadata = getattr(entity, "ingestionMetadata")
+            ingestion_metadata["normalized"] = normalized_data
+            ingestion_metadata["ingested_at"] = (
                 datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             )
 

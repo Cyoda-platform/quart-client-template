@@ -48,8 +48,9 @@ class PnlCalculator(CyodaProcessor):
 
             # Store P&L results
             if not hasattr(entity, "pnlMetadata"):
-                entity.pnlMetadata = {}
-            entity.pnlMetadata.update(pnl_metrics)
+                setattr(entity, "pnlMetadata", {})
+            pnl_metadata = getattr(entity, "pnlMetadata")
+            pnl_metadata.update(pnl_metrics)
 
             self.logger.info(
                 f"P&L calculation completed: realized={pnl_metrics.get('realized_pnl')}, "

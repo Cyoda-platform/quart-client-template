@@ -51,9 +51,10 @@ class AlertingProcessor(CyodaProcessor):
 
                 # Store alert metadata
                 if not hasattr(entity, "alertMetadata"):
-                    entity.alertMetadata = {}
-                entity.alertMetadata["last_alert"] = alert_info
-                entity.alertMetadata["alert_sent_at"] = (
+                    setattr(entity, "alertMetadata", {})
+                alert_metadata = getattr(entity, "alertMetadata")
+                alert_metadata["last_alert"] = alert_info
+                alert_metadata["alert_sent_at"] = (
                     datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
                 )
 

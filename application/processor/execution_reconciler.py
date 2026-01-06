@@ -69,9 +69,10 @@ class ExecutionReconciler(CyodaProcessor):
 
             # Store reconciliation results
             if not hasattr(entity, "reconciliationMetadata"):
-                entity.reconciliationMetadata = {}
-            entity.reconciliationMetadata.update(reconciliation)
-            entity.reconciliationMetadata["reconciled_at"] = (
+                setattr(entity, "reconciliationMetadata", {})
+            reconciliation_metadata = getattr(entity, "reconciliationMetadata")
+            reconciliation_metadata.update(reconciliation)
+            reconciliation_metadata["reconciled_at"] = (
                 datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             )
 

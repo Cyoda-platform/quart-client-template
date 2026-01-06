@@ -93,8 +93,9 @@ class PositionUpdater(CyodaProcessor):
         }
 
         if not hasattr(entity, "positionMetadata"):
-            entity.positionMetadata = {}
-        entity.positionMetadata.update(position_update)
+            setattr(entity, "positionMetadata", {})
+        position_metadata = getattr(entity, "positionMetadata")
+        position_metadata.update(position_update)
 
     async def _update_from_market_tick(self, entity: CyodaEntity) -> None:
         """
@@ -128,8 +129,9 @@ class PositionUpdater(CyodaProcessor):
         }
 
         if not hasattr(entity, "marketMetadata"):
-            entity.marketMetadata = {}
-        entity.marketMetadata.update(market_update)
+            setattr(entity, "marketMetadata", {})
+        market_metadata = getattr(entity, "marketMetadata")
+        market_metadata.update(market_update)
 
     def _calculate_realized_pnl(
         self, quantity: float, entry_price: float, exit_price: float, side: str

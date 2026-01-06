@@ -52,9 +52,10 @@ class ComplianceLogger(CyodaProcessor):
 
             # Store audit reference on entity
             if not hasattr(entity, "auditMetadata"):
-                entity.auditMetadata = {}
-            entity.auditMetadata["last_audit_id"] = audit_entry["audit_id"]
-            entity.auditMetadata["last_audit_timestamp"] = audit_entry["timestamp"]
+                setattr(entity, "auditMetadata", {})
+            audit_metadata = getattr(entity, "auditMetadata")
+            audit_metadata["last_audit_id"] = audit_entry["audit_id"]
+            audit_metadata["last_audit_timestamp"] = audit_entry["timestamp"]
 
             self.logger.info(f"Audit log entry created: {audit_entry['audit_id']}")
             return entity

@@ -10,7 +10,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
-from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
 
 
@@ -89,7 +88,6 @@ class SmartRouter(CyodaProcessor):
 
         instrument_id = getattr(entity, "instrumentId", None)
         quantity = getattr(entity, "quantity", 0)
-        side = getattr(entity, "side", None)
 
         # Simple routing: split between primary and secondary venues
         primary_qty = int(quantity * 0.7)

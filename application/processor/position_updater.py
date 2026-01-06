@@ -7,11 +7,9 @@ Used on execution_processing.transition 'apply' and position_valuation.transitio
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any
 
-from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from services.services import get_entity_service
 
 
 class PositionUpdater(CyodaProcessor):
@@ -74,7 +72,6 @@ class PositionUpdater(CyodaProcessor):
         # - Calculate realized P&L if closing position
         # - Update position entity
 
-        order_id = getattr(entity, "orderId", None)
         quantity = getattr(entity, "quantity", 0)
         price = getattr(entity, "price", 0)
 

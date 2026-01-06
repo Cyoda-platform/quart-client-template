@@ -11,6 +11,12 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.orders import orders_bp
+from application.routes.positions import positions_bp
+from application.routes.portfolios import portfolios_bp
+from application.routes.market_data import market_data_bp
+from application.routes.risk_controls import risk_controls_bp
+from application.routes.compliance import compliance_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

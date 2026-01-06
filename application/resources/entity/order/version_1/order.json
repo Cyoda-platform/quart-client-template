@@ -1,0 +1,22 @@
+{
+  "name": "order",
+  "version": 1,
+  "description": "Order entity representing client orders submitted to the OMS",
+  "properties": {
+    "id": { "type": "string", "description": "UUID for the order" },
+    "accountId": { "type": "string", "description": "Account placing the order" },
+    "instrumentId": { "type": "string", "description": "Instrument identifier (symbol or ISIN)" },
+    "side": { "type": "string", "description": "BUY or SELL" },
+    "orderType": { "type": "string", "description": "MARKET, LIMIT, STOP, etc." },
+    "price": { "type": "number", "description": "Limit or pegged price when applicable" },
+    "quantity": { "type": "number", "description": "Original order quantity" },
+    "remainingQuantity": { "type": "number", "description": "Quantity still open" },
+    "status": { "type": "string", "description": "Order lifecycle state" },
+    "timeInForce": { "type": "string", "description": "DAY, IOC, FOK, GTC" },
+    "strategyId": { "type": "string", "description": "Associated algo strategy id (if any)" },
+    "parentOrderId": { "type": "string", "description": "Parent for child/iceberg orders" },
+    "creationTimestamp": { "type": "string", "description": "ISO8601 timestamp" },
+    "updateTimestamp": { "type": "string", "description": "ISO8601 timestamp" },
+    "tags": { "type": "array", "items": { "type": "string" }, "description": "Arbitrary tags/metadata" }
+  }
+}

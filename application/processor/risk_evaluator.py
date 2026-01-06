@@ -8,7 +8,6 @@ Used by risk_checking.transition 'evaluate' and order_processing before 'process
 import logging
 from typing import Any, Dict
 
-from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
 
 

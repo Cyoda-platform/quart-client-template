@@ -8,7 +8,6 @@ Used on order_processing.transition 'validate' (SYNC).
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
 
 
@@ -138,7 +137,7 @@ class OrderValidator(CyodaProcessor):
         quantity = getattr(entity, "quantity", None)
         max_order_size = 1000000  # TODO: Load from configuration
 
-        if quantity > max_order_size:
+        if quantity is not None and quantity > max_order_size:
             raise ValueError(
                 f"Order quantity {quantity} exceeds maximum {max_order_size}"
             )

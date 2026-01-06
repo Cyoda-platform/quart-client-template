@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, ClassVar, Dict, List, Optional
+from typing import ClassVar, Dict, Optional
 
 from pydantic import ConfigDict, Field, field_validator, model_validator
 

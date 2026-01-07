@@ -56,13 +56,13 @@
     },
     "filled": {
       "id": "filled",
+      "isFinal": true,
+      "isInitial": false,
       "name": "Finished",
       "position": {
         "x": -100,
         "y": 1300
       },
-      "isInitial": false,
-      "isFinal": true,
       "transitionIds": [],
       "transitions": []
     },
@@ -101,7 +101,7 @@
         {
           "manual": false,
           "name": "fill",
-          "next": "filled"
+          "next": "test"
         },
         {
           "manual": true,

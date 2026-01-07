@@ -112,6 +112,18 @@
     },
     "rejected": {
       "transitions": []
+    },
+    "test": {
+      "id": "test",
+      "name": "Testing",
+      "position": {
+        "x": 0,
+        "y": 1000
+      },
+      "isInitial": false,
+      "isFinal": false,
+      "transitionIds": [],
+      "transitions": []
     }
   }
 }

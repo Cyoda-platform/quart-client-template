@@ -121,7 +121,7 @@
         "y": 1000
       },
       "isInitial": false,
-      "isFinal": false,
+      "isFinal": true,
       "transitionIds": [],
       "transitions": []
     }

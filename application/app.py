@@ -11,6 +11,9 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.payment_transactions import payment_transactions_bp
+from application.routes.settlements import settlements_bp
+from application.routes.audit_logs import audit_logs_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -121,6 +124,12 @@ async def add_cors_headers() -> None:
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
+
+
+# Register blueprints
+app.register_blueprint(payment_transactions_bp)
+app.register_blueprint(settlements_bp)
+app.register_blueprint(audit_logs_bp)
 
 
 if __name__ == "__main__":

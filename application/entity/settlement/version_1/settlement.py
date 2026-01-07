@@ -119,9 +119,7 @@ class Settlement(CyodaEntity):
     def validate_currency(cls, v: str) -> str:
         """Validate currency code"""
         if v not in cls.ALLOWED_CURRENCIES:
-            raise ValueError(
-                f"Currency must be one of: {cls.ALLOWED_CURRENCIES}"
-            )
+            raise ValueError(f"Currency must be one of: {cls.ALLOWED_CURRENCIES}")
         return v
 
     @field_validator("status")
@@ -129,9 +127,7 @@ class Settlement(CyodaEntity):
     def validate_status(cls, v: Optional[str]) -> Optional[str]:
         """Validate settlement status"""
         if v is not None and v not in cls.SETTLEMENT_STATUSES:
-            raise ValueError(
-                f"Status must be one of: {cls.SETTLEMENT_STATUSES}"
-            )
+            raise ValueError(f"Status must be one of: {cls.SETTLEMENT_STATUSES}")
         return v
 
     @field_validator("reconciliation_status")
@@ -166,7 +162,10 @@ class Settlement(CyodaEntity):
             self.update_timestamp()
 
     def set_reconciliation_result(
-        self, status: str, notes: Optional[str] = None, discrepancies: Optional[List[Dict[str, Any]]] = None
+        self,
+        status: str,
+        notes: Optional[str] = None,
+        discrepancies: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         """Set reconciliation results"""
         self.reconciliation_status = status
@@ -177,7 +176,9 @@ class Settlement(CyodaEntity):
     def mark_completed(self) -> None:
         """Mark settlement as completed"""
         self.status = "COMPLETED"
-        self.completed_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        self.completed_at = (
+            datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        )
         self.update_timestamp()
 
     def to_api_response(self) -> Dict[str, Any]:
@@ -192,4 +193,3 @@ class Settlement(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

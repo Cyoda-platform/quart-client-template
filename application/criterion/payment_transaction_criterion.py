@@ -39,7 +39,10 @@ class PaymentTransactionValidationCriterion(CyodaCriteriaChecker):
             transaction = cast_entity(entity, PaymentTransaction)
 
             # Validate required fields
-            if not transaction.transaction_id or len(transaction.transaction_id.strip()) == 0:
+            if (
+                not transaction.transaction_id
+                or len(transaction.transaction_id.strip()) == 0
+            ):
                 self.logger.warning(
                     f"Transaction {transaction.technical_id} has invalid transaction_id"
                 )
@@ -79,4 +82,3 @@ class PaymentTransactionValidationCriterion(CyodaCriteriaChecker):
                 f"Error validating payment transaction {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

@@ -141,13 +141,17 @@ class SettlementCreationProcessor(CyodaProcessor):
 
             # Create settlement batch
             settlement_batch_id = str(uuid.uuid4())
-            settlement_date = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            settlement_date = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
 
             settlement = Settlement(
                 settlement_batch_id=settlement_batch_id,
                 settlement_date=settlement_date,
                 currency=transaction.currency,
-                transaction_ids=[transaction.technical_id or transaction.entity_id or "unknown"],
+                transaction_ids=[
+                    transaction.technical_id or transaction.entity_id or "unknown"
+                ],
                 total_amount=transaction.amount,
                 transaction_count=1,
                 status="PENDING",
@@ -178,4 +182,3 @@ class SettlementCreationProcessor(CyodaProcessor):
                 f"Error creating settlement for transaction {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

@@ -39,13 +39,19 @@ class SettlementValidationCriterion(CyodaCriteriaChecker):
             settlement = cast_entity(entity, Settlement)
 
             # Validate required fields
-            if not settlement.settlement_batch_id or len(settlement.settlement_batch_id.strip()) == 0:
+            if (
+                not settlement.settlement_batch_id
+                or len(settlement.settlement_batch_id.strip()) == 0
+            ):
                 self.logger.warning(
                     f"Settlement {settlement.technical_id} has invalid settlement_batch_id"
                 )
                 return False
 
-            if not settlement.settlement_date or len(settlement.settlement_date.strip()) == 0:
+            if (
+                not settlement.settlement_date
+                or len(settlement.settlement_date.strip()) == 0
+            ):
                 self.logger.warning(
                     f"Settlement {settlement.technical_id} has invalid settlement_date"
                 )
@@ -87,4 +93,3 @@ class SettlementValidationCriterion(CyodaCriteriaChecker):
                 f"Error validating settlement {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

@@ -123,9 +123,7 @@ class PaymentTransaction(CyodaEntity):
     def validate_currency(cls, v: str) -> str:
         """Validate currency code"""
         if v not in cls.ALLOWED_CURRENCIES:
-            raise ValueError(
-                f"Currency must be one of: {cls.ALLOWED_CURRENCIES}"
-            )
+            raise ValueError(f"Currency must be one of: {cls.ALLOWED_CURRENCIES}")
         return v
 
     @field_validator("fraud_status")
@@ -133,9 +131,7 @@ class PaymentTransaction(CyodaEntity):
     def validate_fraud_status(cls, v: Optional[str]) -> Optional[str]:
         """Validate fraud status"""
         if v is not None and v not in cls.FRAUD_STATUSES:
-            raise ValueError(
-                f"Fraud status must be one of: {cls.FRAUD_STATUSES}"
-            )
+            raise ValueError(f"Fraud status must be one of: {cls.FRAUD_STATUSES}")
         return v
 
     @model_validator(mode="after")
@@ -194,4 +190,3 @@ class PaymentTransaction(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

@@ -105,4 +105,3 @@ class SettlementReconciliationProcessor(CyodaProcessor):
             return f"Settlement {settlement.settlement_batch_id} reconciled successfully with {settlement.transaction_count} transactions totaling {settlement.total_amount} {settlement.currency}"
         else:
             return f"Settlement {settlement.settlement_batch_id} reconciliation found {len(discrepancies)} discrepancies"
-

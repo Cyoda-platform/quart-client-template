@@ -26,10 +26,17 @@ class AuditLog(CyodaEntity):
 
     # Audit log fields
     log_id: str = Field(..., description="Unique audit log ID")
-    event_type: str = Field(..., description="Type of event (e.g., TRANSACTION_CREATED, FRAUD_CHECK)")
-    entity_type: str = Field(..., description="Type of entity affected (e.g., PaymentTransaction, Settlement)")
+    event_type: str = Field(
+        ..., description="Type of event (e.g., TRANSACTION_CREATED, FRAUD_CHECK)"
+    )
+    entity_type: str = Field(
+        ...,
+        description="Type of entity affected (e.g., PaymentTransaction, Settlement)",
+    )
     entity_id: str = Field(..., description="ID of the entity affected")
-    action: str = Field(..., description="Action performed (CREATE, UPDATE, DELETE, VALIDATE, etc.)")
+    action: str = Field(
+        ..., description="Action performed (CREATE, UPDATE, DELETE, VALIDATE, etc.)"
+    )
 
     # User/system information
     actor: str = Field(..., description="User or system that performed the action")
@@ -114,9 +121,7 @@ class AuditLog(CyodaEntity):
     def validate_event_type(cls, v: str) -> str:
         """Validate event type"""
         if v not in cls.ALLOWED_EVENT_TYPES:
-            raise ValueError(
-                f"Event type must be one of: {cls.ALLOWED_EVENT_TYPES}"
-            )
+            raise ValueError(f"Event type must be one of: {cls.ALLOWED_EVENT_TYPES}")
         return v
 
     @field_validator("action")
@@ -124,9 +129,7 @@ class AuditLog(CyodaEntity):
     def validate_action(cls, v: str) -> str:
         """Validate action"""
         if v not in cls.ALLOWED_ACTIONS:
-            raise ValueError(
-                f"Action must be one of: {cls.ALLOWED_ACTIONS}"
-            )
+            raise ValueError(f"Action must be one of: {cls.ALLOWED_ACTIONS}")
         return v
 
     @field_validator("status")
@@ -134,9 +137,7 @@ class AuditLog(CyodaEntity):
     def validate_status(cls, v: Optional[str]) -> Optional[str]:
         """Validate status"""
         if v is not None and v not in cls.ALLOWED_STATUSES:
-            raise ValueError(
-                f"Status must be one of: {cls.ALLOWED_STATUSES}"
-            )
+            raise ValueError(f"Status must be one of: {cls.ALLOWED_STATUSES}")
         return v
 
     def to_api_response(self) -> Dict[str, Any]:
@@ -151,4 +152,3 @@ class AuditLog(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

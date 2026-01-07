@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from application.entity.audit_log import AuditLog
+
 from application.entity.payment_transaction import PaymentTransaction
 from application.entity.settlement import Settlement
 from common.entity.entity_casting import cast_entity

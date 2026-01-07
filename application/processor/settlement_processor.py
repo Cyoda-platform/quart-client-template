@@ -7,9 +7,9 @@ Handles settlement reconciliation and completion.
 import logging
 from typing import Any, Dict, List
 
+from application.entity.settlement import Settlement
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.settlement import Settlement
 from services.services import get_entity_service
 
 

@@ -5,15 +5,15 @@ from typing import Callable, Dict, Optional
 from quart import Quart, Response
 from quart_schema import QuartSchema, ResponseSchemaValidationError, hide
 
-from common.exception.exception_handler import (
-    register_error_handlers as _register_error_handlers,
-)
-from services.services import get_grpc_client, initialize_services
+from application.routes.audit_logs import audit_logs_bp
 
 # Import blueprints for different route groups
 from application.routes.payment_transactions import payment_transactions_bp
 from application.routes.settlements import settlements_bp
-from application.routes.audit_logs import audit_logs_bp
+from common.exception.exception_handler import (
+    register_error_handlers as _register_error_handlers,
+)
+from services.services import get_grpc_client, initialize_services
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

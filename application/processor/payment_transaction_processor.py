@@ -9,11 +9,11 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaProcessor
+from application.entity.audit_log import AuditLog
 from application.entity.payment_transaction import PaymentTransaction
 from application.entity.settlement import Settlement
-from application.entity.audit_log import AuditLog
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaEntity, CyodaProcessor
 from services.services import get_entity_service
 
 
@@ -149,13 +149,13 @@ class SettlementCreationProcessor(CyodaProcessor):
                 settlement_batch_id=settlement_batch_id,
                 settlement_date=settlement_date,
                 currency=transaction.currency,
-                transaction_ids=[
+                transactionIds=[
                     transaction.technical_id or transaction.entity_id or "unknown"
                 ],
-                total_amount=transaction.amount,
-                transaction_count=1,
+                totalAmount=transaction.amount,
+                transactionCount=1,
                 status="PENDING",
-                reconciliation_status="NOT_STARTED",
+                reconciliationStatus="NOT_STARTED",
             )
 
             # Save settlement

@@ -13,8 +13,8 @@ from quart import Blueprint, jsonify
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.settlement import Settlement
+from services.services import get_entity_service
 
 
 class _ServiceProxy:

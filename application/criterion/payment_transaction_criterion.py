@@ -6,9 +6,9 @@ Validates payment transactions before processing.
 
 from typing import Any
 
+from application.entity.payment_transaction import PaymentTransaction
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.payment_transaction import PaymentTransaction
 
 
 class PaymentTransactionValidationCriterion(CyodaCriteriaChecker):

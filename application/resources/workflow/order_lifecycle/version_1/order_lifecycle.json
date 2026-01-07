@@ -55,6 +55,15 @@
       "transitions": []
     },
     "filled": {
+      "id": "filled",
+      "name": "Finished",
+      "position": {
+        "x": -100,
+        "y": 1300
+      },
+      "isInitial": false,
+      "isFinal": true,
+      "transitionIds": [],
       "transitions": []
     },
     "new": {

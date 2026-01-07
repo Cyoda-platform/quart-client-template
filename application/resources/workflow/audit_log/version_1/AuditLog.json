@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "name": "AuditLog Workflow",
+  "desc": "Workflow for audit log recording and tracking",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "record",
+          "next": "recorded",
+          "manual": false
+        }
+      ]
+    },
+    "recorded": {
+      "transitions": []
+    }
+  }
+}
+

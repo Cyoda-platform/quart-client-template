@@ -101,7 +101,13 @@
         {
           "manual": false,
           "name": "fill",
-          "next": "test"
+          "next": "test",
+          "criterion": {
+            "type": "simple",
+            "jsonPath": "$.remainingQuantity",
+            "operation": "GREATER_THAN",
+            "value": 0
+          }
         },
         {
           "manual": true,

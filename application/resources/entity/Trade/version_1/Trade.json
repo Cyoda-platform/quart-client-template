@@ -1,0 +1,17 @@
+{
+  "name": "Trade",
+  "modelVersion": 1,
+  "fields": {
+    "tradeId": {"type": "string", "description": "Unique trade identifier"},
+    "orderId": {"type": "string", "description": "Associated order identifier"},
+    "instrument": {"type": "string", "description": "Ticker or instrument identifier"},
+    "side": {"type": "string", "enum": ["BUY", "SELL"]},
+    "quantity": {"type": "number"},
+    "price": {"type": "number"},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "venue": {"type": "string"},
+    "fillType": {"type": "string", "description": "e.g., 'partial' or 'full'"},
+    "executionAlgo": {"type": "string", "description": "Algo name if executed by an algorithm"},
+    "fees": {"type": "number"}
+  }
+}

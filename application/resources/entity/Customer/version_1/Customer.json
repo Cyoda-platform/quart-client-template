@@ -1,0 +1,22 @@
+{
+  "name": "Customer",
+  "modelVersion": 1,
+  "attributes": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for the customer"
+    },
+    "name": {
+      "type": "string",
+      "description": "Full name of the customer"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address of the customer"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number of the customer"
+    }
+  }
+}

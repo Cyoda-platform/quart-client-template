@@ -1,0 +1,34 @@
+{
+  "name": "Customer",
+  "modelVersion": 1,
+  "description": "Represents a customer with contact information.",
+  "attributes": [
+    {
+      "name": "id",
+      "type": "string",
+      "primary": true,
+      "required": true,
+      "description": "Unique identifier for the customer"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "required": true,
+      "description": "Full name of the customer"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "required": true,
+      "description": "Email address of the customer"
+    },
+    {
+      "name": "phone",
+      "type": "string",
+      "required": false,
+      "description": "Phone number of the customer"
+    }
+  ],
+  "indexes": [],
+  "metadata": {}
+}

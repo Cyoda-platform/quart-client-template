@@ -107,7 +107,18 @@
             "jsonPath": "$.remainingQuantity",
             "operation": "GREATER_THAN",
             "value": 0
-          }
+          },
+          "processors": [
+            {
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 15000
+              },
+              "executionMode": "ASYNC_NEW_TX",
+              "name": "fill_processor_partial"
+            }
+          ]
         },
         {
           "manual": true,

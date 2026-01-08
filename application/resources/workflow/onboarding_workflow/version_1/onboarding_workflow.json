@@ -1,0 +1,52 @@
+{
+  "version": "1.0",
+  "name": "onboarding_workflow",
+  "desc": "Customer onboarding flow covering registration, KYC verification, manual reviews, activation, and suspension.",
+  "initialState": "created",
+  "active": true,
+  "states": {
+    "created": {
+      "transitions": [
+        { "name": "start_kyc", "next": "kyc_pending", "manual": false },
+        { "name": "cancel", "next": "cancelled", "manual": true }
+      ]
+    },
+    "kyc_pending": {
+      "transitions": [
+        { "name": "approve_kyc", "next": "kyc_verified", "manual": false },
+        { "name": "reject_kyc", "next": "kyc_failed", "manual": false },
+        { "name": "request_more_info", "next": "kyc_manual_review", "manual": true }
+      ]
+    },
+    "kyc_manual_review": {
+      "transitions": [
+        { "name": "approve", "next": "kyc_verified", "manual": true },
+        { "name": "reject", "next": "kyc_failed", "manual": true }
+      ]
+    },
+    "kyc_verified": {
+      "transitions": [
+        { "name": "activate_account", "next": "activated", "manual": false }
+      ]
+    },
+    "kyc_failed": {
+      "transitions": [
+        { "name": "resubmit_kyc", "next": "kyc_pending", "manual": true },
+        { "name": "cancel", "next": "cancelled", "manual": true }
+      ]
+    },
+    "activated": {
+      "transitions": [
+        { "name": "suspend", "next": "suspended", "manual": true }
+      ]
+    },
+    "suspended": {
+      "transitions": [
+        { "name": "reactivate", "next": "activated", "manual": true }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    }
+  }
+}

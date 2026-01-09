@@ -1,0 +1,10 @@
+{
+  "name": "Breed",
+  "version": 1,
+  "attributes": {
+    "id": "string",
+    "name": "string",
+    "origin": "string",
+    "description": "string"
+  }
+}

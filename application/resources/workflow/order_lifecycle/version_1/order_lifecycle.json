@@ -140,7 +140,24 @@
       "isInitial": false,
       "isFinal": true,
       "transitionIds": [],
-      "transitions": []
+      "transitions": [
+        {
+          "manual": false,
+          "name": "self_check",
+          "next": "test",
+          "processors": [
+            {
+              "config": {
+                "attachEntity": true,
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 5000
+              },
+              "executionMode": "ASYNC_NEW_TX",
+              "name": "test_self_processor"
+            }
+          ]
+        }
+      ]
     }
   }
 }

@@ -1,0 +1,13 @@
+{
+  "name": "IngestionRun",
+  "version": 1,
+  "attributes": {
+    "run_id": "string",
+    "start_time": "string",
+    "end_time": "string",
+    "images_processed": "integer",
+    "images_failed": "integer",
+    "avg_download_time_ms": "integer",
+    "status": "string"
+  }
+}

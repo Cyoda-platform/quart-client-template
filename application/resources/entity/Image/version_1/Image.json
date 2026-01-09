@@ -1,0 +1,15 @@
+{
+  "name": "Image",
+  "version": 1,
+  "attributes": {
+    "id": "string",
+    "url": "string",
+    "breed_id": "string",
+    "width": "integer",
+    "height": "integer",
+    "download_timestamp": "string",
+    "storage_path_original": "string",
+    "storage_path_thumbnail": "string",
+    "content_hash": "string"
+  }
+}

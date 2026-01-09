@@ -1,0 +1,48 @@
+{
+  "version": "1",
+  "name": "ImageIngestion",
+  "desc": "Ingest images from the Cats API: download originals, create thumbnails, compute hash, and persist metadata.",
+  "initialState": "created",
+  "active": true,
+  "states": {
+    "created": {
+      "transitions": [
+        { "name": "fetch_metadata", "next": "downloading", "manual": false },
+        { "name": "cancel", "next": "failed", "manual": true }
+      ]
+    },
+    "downloading": {
+      "transitions": [
+        { "name": "download_image", "next": "thumbnailing", "manual": false },
+        { "name": "retry_download", "next": "downloading", "manual": true },
+        { "name": "fail_download", "next": "failed", "manual": false }
+      ]
+    },
+    "thumbnailing": {
+      "transitions": [
+        { "name": "create_thumbnail", "next": "hashing", "manual": false },
+        { "name": "fail_thumbnail", "next": "failed", "manual": false }
+      ]
+    },
+    "hashing": {
+      "transitions": [
+        { "name": "compute_hash", "next": "persisting", "manual": false },
+        { "name": "fail_hash", "next": "failed", "manual": false }
+      ]
+    },
+    "persisting": {
+      "transitions": [
+        { "name": "persist_metadata", "next": "completed", "manual": false },
+        { "name": "duplicate_detected", "next": "completed", "manual": false },
+        { "name": "fail_persist", "next": "failed", "manual": false }
+      ]
+    },
+    "completed": { "transitions": [] },
+    "failed": {
+      "transitions": [
+        { "name": "retry", "next": "downloading", "manual": true },
+        { "name": "abort", "next": "failed", "manual": true }
+      ]
+    }
+  }
+}

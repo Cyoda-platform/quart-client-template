@@ -1,0 +1,11 @@
+{
+  "name": "Customer",
+  "description": "Represents a customer in the system.",
+  "version": 1,
+  "fields": [
+    {"name": "id", "type": "string", "description": "Unique customer identifier"},
+    {"name": "name", "type": "string", "description": "Full name of the customer"},
+    {"name": "email", "type": "string", "description": "Contact email of the customer"},
+    {"name": "phone", "type": "string", "description": "Contact phone number"}
+  ]
+}

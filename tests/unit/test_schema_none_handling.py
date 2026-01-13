@@ -47,8 +47,9 @@ class TestNoneEntitySerialization:
 
     def test_to_entity_dict_with_pydantic_model(self):
         """Test that _to_entity_dict handles Pydantic models."""
-        from application.routes.applicants import _to_entity_dict
         from pydantic import BaseModel
+
+        from application.routes.applicants import _to_entity_dict
 
         class TestModel(BaseModel):
             id: str

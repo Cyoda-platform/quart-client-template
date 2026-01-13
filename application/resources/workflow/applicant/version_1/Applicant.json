@@ -1,0 +1,76 @@
+{
+  "version": "1.0",
+  "name": "Applicant Workflow",
+  "desc": "Workflow for consumer credit application processing with enrichment and scoring",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "submit",
+          "next": "submitted",
+          "manual": false
+        }
+      ]
+    },
+    "submitted": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "ApplicantValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "enrich",
+          "next": "enriched",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ApplicantProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "enriched": {
+      "transitions": [
+        {
+          "name": "score",
+          "next": "scored",
+          "manual": false
+        }
+      ]
+    },
+    "scored": {
+      "transitions": [
+        {
+          "name": "decide",
+          "next": "decided",
+          "manual": false
+        }
+      ]
+    },
+    "decided": {
+      "transitions": []
+    }
+  }
+}
+

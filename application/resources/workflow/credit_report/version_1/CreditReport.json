@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "name": "CreditReport Workflow",
+  "desc": "Workflow for credit bureau report fetching and analysis",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "fetch",
+          "next": "fetched",
+          "manual": false
+        }
+      ]
+    },
+    "fetched": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "CreditReportValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "analyze",
+          "next": "analyzed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "CreditReportProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "analyzed": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

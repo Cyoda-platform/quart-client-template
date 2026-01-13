@@ -1,0 +1,95 @@
+{
+  "version": "1.0",
+  "name": "Decision Workflow",
+  "desc": "Workflow for credit decision evaluation and audit trail recording",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "initiate",
+          "next": "initiated",
+          "manual": false
+        }
+      ]
+    },
+    "initiated": {
+      "transitions": [
+        {
+          "name": "evaluate",
+          "next": "evaluated",
+          "manual": false,
+          "processors": [
+            {
+              "name": "DecisionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "evaluated": {
+      "transitions": [
+        {
+          "name": "approve",
+          "next": "approved",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "DecisionCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "decline",
+          "next": "declined",
+          "manual": false
+        },
+        {
+          "name": "refer",
+          "next": "referred",
+          "manual": false
+        }
+      ]
+    },
+    "approved": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "declined": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "referred": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

@@ -1,0 +1,81 @@
+{
+  "version": "1.0",
+  "name": "ModelVersion Workflow",
+  "desc": "Workflow for model versioning, canary deployment, and production rollout",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "register",
+          "next": "registered",
+          "manual": false
+        }
+      ]
+    },
+    "registered": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "ModelVersionValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "deploy_canary",
+          "next": "canary",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ModelDeploymentProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "canary": {
+      "transitions": [
+        {
+          "name": "promote_to_production",
+          "next": "production",
+          "manual": true
+        },
+        {
+          "name": "rollback",
+          "next": "deprecated",
+          "manual": true
+        }
+      ]
+    },
+    "production": {
+      "transitions": [
+        {
+          "name": "deprecate",
+          "next": "deprecated",
+          "manual": true
+        }
+      ]
+    },
+    "deprecated": {
+      "transitions": []
+    }
+  }
+}
+

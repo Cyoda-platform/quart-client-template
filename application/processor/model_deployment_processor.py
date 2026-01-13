@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.model_version.version_1.model_version import ModelVersion

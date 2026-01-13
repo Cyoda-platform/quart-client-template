@@ -36,6 +36,10 @@ credit_reports_bp = Blueprint(
 @validate(responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
 async def create_credit_report(data: CreditReport) -> ResponseReturnValue:
     try:
+        if data is None:
+            logger.warning("Create credit report called with None payload")
+            return {"error": "Request body is required"}, 400
+
         entity_data = data.model_dump(by_alias=True)
         response = await service.save(
             entity=entity_data,
@@ -84,6 +88,10 @@ async def update_credit_report(
     entity_id: str, data: CreditReport
 ) -> ResponseReturnValue:
     try:
+        if data is None:
+            logger.warning("Update credit report called with None payload")
+            return {"error": "Request body is required"}, 400
+
         entity_data = data.model_dump(by_alias=True)
         response = await service.update(
             entity_id=entity_id,

@@ -36,6 +36,10 @@ model_versions_bp = Blueprint(
 @validate(responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
 async def create_model_version(data: ModelVersion) -> ResponseReturnValue:
     try:
+        if data is None:
+            logger.warning("Create model version called with None payload")
+            return {"error": "Request body is required"}, 400
+
         entity_data = data.model_dump(by_alias=True)
         response = await service.save(
             entity=entity_data,
@@ -84,6 +88,10 @@ async def update_model_version(
     entity_id: str, data: ModelVersion
 ) -> ResponseReturnValue:
     try:
+        if data is None:
+            logger.warning("Update model version called with None payload")
+            return {"error": "Request body is required"}, 400
+
         entity_data = data.model_dump(by_alias=True)
         response = await service.update(
             entity_id=entity_id,

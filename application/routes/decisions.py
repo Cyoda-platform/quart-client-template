@@ -34,6 +34,10 @@ decisions_bp = Blueprint("decisions", __name__, url_prefix="/api/decisions")
 @validate(responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
 async def create_decision(data: Decision) -> ResponseReturnValue:
     try:
+        if data is None:
+            logger.warning("Create decision called with None payload")
+            return {"error": "Request body is required"}, 400
+
         entity_data = data.model_dump(by_alias=True)
         response = await service.save(
             entity=entity_data,
@@ -80,6 +84,10 @@ async def get_decision(entity_id: str) -> ResponseReturnValue:
 @validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
 async def update_decision(entity_id: str, data: Decision) -> ResponseReturnValue:
     try:
+        if data is None:
+            logger.warning("Update decision called with None payload")
+            return {"error": "Request body is required"}, 400
+
         entity_data = data.model_dump(by_alias=True)
         response = await service.update(
             entity_id=entity_id,

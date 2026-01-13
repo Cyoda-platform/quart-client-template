@@ -53,4 +53,3 @@ class TestNotFoundErrorHandling:
         data = await response.get_json()
         assert isinstance(data, dict)
         assert "error" in data
-

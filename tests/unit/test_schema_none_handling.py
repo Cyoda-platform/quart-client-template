@@ -99,4 +99,3 @@ class TestNotFoundExceptionHandling:
 
         response = await client.get("/test-404-log")
         assert response.status_code == 404
-

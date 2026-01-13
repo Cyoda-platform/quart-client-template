@@ -1,5 +1,4 @@
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, List
 
 from application.entity.credit_report.version_1.credit_report import CreditReport
 from common.entity.entity_casting import cast_entity

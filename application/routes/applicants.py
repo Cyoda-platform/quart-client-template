@@ -18,6 +18,7 @@ class _ServiceProxy:
 
 service = _ServiceProxy()
 
+
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
     if data is None:
         raise ValueError("Cannot serialize None entity to dictionary")
@@ -128,7 +129,7 @@ async def delete_applicant(entity_id: str) -> ResponseReturnValue:
 @applicants_bp.route("/<entity_id>/transitions", methods=["GET"])
 @tag(["applicants"])
 @operation_id("get_applicant_transitions")
-@validate(responses={200: (None, None), 404: (None, None), 500: (None, None)})
+@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
 async def get_transitions(entity_id: str) -> ResponseReturnValue:
     try:
         response = await service.get_available_transitions(

@@ -6,9 +6,7 @@ from typing import Any, Dict, Tuple
 logger = logging.getLogger(__name__)
 
 
-def safe_serialize(
-    resource: Any, schema: Any = None
-) -> Tuple[Dict[str, Any], int]:
+def safe_serialize(resource: Any, schema: Any = None) -> Tuple[Dict[str, Any], int]:
     """
     Safely serialize a resource with defensive guards against None/invalid inputs.
 
@@ -42,4 +40,3 @@ def safe_serialize(
     except Exception as e:
         logger.exception(f"Error during serialization: {e}")
         return {"error": "Serialization failed", "code": "SERIALIZATION_ERROR"}, 500
-

@@ -65,6 +65,44 @@ class TestNoneEntitySerialization:
         assert result["name"] == "test"
 
 
+class TestSafeSerialize:
+    """Test safe_serialize utility function."""
+
+    def test_safe_serialize_with_none_returns_404(self):
+        """Test that safe_serialize returns 404 for None resource."""
+        response, status = safe_serialize(None)
+        assert status == 404
+        assert response["error"] == "Resource not found"
+        assert response["code"] == "NOT_FOUND"
+
+    def test_safe_serialize_with_dict_returns_200(self):
+        """Test that safe_serialize returns dict as-is with 200."""
+        test_data = {"id": "123", "name": "test"}
+        response, status = safe_serialize(test_data)
+        assert status == 200
+        assert response == test_data
+
+    def test_safe_serialize_with_pydantic_model(self):
+        """Test that safe_serialize handles Pydantic models."""
+
+        class TestModel(BaseModel):
+            id: str
+            name: str
+
+        model = TestModel(id="123", name="test")
+        response, status = safe_serialize(model)
+        assert status == 200
+        assert isinstance(response, dict)
+        assert response["id"] == "123"
+        assert response["name"] == "test"
+
+    def test_safe_serialize_with_invalid_type(self):
+        """Test that safe_serialize handles invalid types gracefully."""
+        response, status = safe_serialize(12345)
+        assert status == 500
+        assert response["error"] == "Serialization failed"
+
+
 class TestNotFoundExceptionHandling:
     """Test handling of 404 NotFound exceptions."""
 

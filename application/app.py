@@ -11,6 +11,10 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.applicants import applicants_bp
+from application.routes.credit_reports import credit_reports_bp
+from application.routes.decisions import decisions_bp
+from application.routes.model_versions import model_versions_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,10 +27,21 @@ QuartSchema(
     info={"title": "Cyoda Client Application", "version": "1.0.0"},
     tags=[
         {
-            "name": "ExampleEntities",
-            "description": "ExampleEntity management endpoints",
+            "name": "applicants",
+            "description": "Applicant management endpoints",
         },
-        {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {
+            "name": "credit-reports",
+            "description": "Credit report management endpoints",
+        },
+        {
+            "name": "decisions",
+            "description": "Credit decision management endpoints",
+        },
+        {
+            "name": "model-versions",
+            "description": "Model version management endpoints",
+        },
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -37,6 +52,12 @@ QuartSchema(
         }
     },
 )
+
+# Register blueprints
+app.register_blueprint(applicants_bp)
+app.register_blueprint(credit_reports_bp)
+app.register_blueprint(decisions_bp)
+app.register_blueprint(model_versions_bp)
 
 # Global holder for the background task to satisfy mypy
 # (avoid setting arbitrary attrs on app)

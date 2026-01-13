@@ -15,7 +15,8 @@ class ErrorHandler(Handler):
         error_code = data.get("code", "UNKNOWN")
         source_event_id = data.get("sourceEventId", "Unknown")
         logger.error(
-            f"Server error event received - Code: {error_code}, Message: {error_message}, SourceEventId: {source_event_id}"
+            f"Server error event received - Code: {error_code}, Message: {error_message}, "
+            f"SourceEventId: {source_event_id}"
         )
         logger.error(f"Full error event data: {data}")
         return None

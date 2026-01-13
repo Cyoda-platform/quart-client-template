@@ -53,7 +53,8 @@ class CalcRequestHandler(Handler):
 
         try:
             logger.info(
-                f"[PROCESSING] Starting {CALC_REQ_EVENT_TYPE} - Processor: {processor_name}, EntityId: {data['entityId']}, RequestId: {data.get('requestId')}"
+                f"[PROCESSING] Starting {CALC_REQ_EVENT_TYPE} - Processor: {processor_name}, "
+                f"EntityId: {data['entityId']}, RequestId: {data.get('requestId')}"
             )
 
             # Use processor_manager from services
@@ -73,7 +74,8 @@ class CalcRequestHandler(Handler):
             # Convert entity back to dict for response
             data["payload"]["data"] = entity.to_dict()
             logger.info(
-                f"[PROCESSING] Success {CALC_REQ_EVENT_TYPE} - Processor: {processor_name}, EntityId: {data['entityId']}"
+                f"[PROCESSING] Success {CALC_REQ_EVENT_TYPE} - "
+                f"Processor: {processor_name}, EntityId: {data['entityId']}"
             )
 
         except Exception as e:

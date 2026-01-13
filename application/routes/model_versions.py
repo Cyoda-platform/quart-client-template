@@ -6,6 +6,7 @@ from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
 from application.entity.model_version.version_1.model_version import ModelVersion
+from common.utils.serialization import safe_serialize
 from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ async def get_model_version(entity_id: str) -> ResponseReturnValue:
         if not response:
             return {"error": "ModelVersion not found"}, 404
 
-        return _to_entity_dict(response.data), 200
+        return safe_serialize(response.data)
     except Exception as e:
         logger.exception("Error getting model version: %s", str(e))
         return {"error": str(e)}, 500

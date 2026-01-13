@@ -4,13 +4,16 @@ Tests for None schema handling and 404 error handling.
 Tests the fixes for:
 1. TypeError when attempting to serialize None entities
 2. 404 NotFound exceptions returning concise JSON responses
+3. safe_serialize utility function
 """
 
 import pytest
+from pydantic import BaseModel
 from quart import Quart
 from werkzeug.exceptions import NotFound
 
 from common.exception.exception_handler import register_error_handlers
+from common.utils.serialization import safe_serialize
 
 
 @pytest.fixture

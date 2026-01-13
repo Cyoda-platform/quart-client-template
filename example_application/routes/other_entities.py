@@ -22,6 +22,7 @@ from common.exception import is_not_found
 from common.service.entity_service import (
     SearchConditionRequest,
 )
+from common.utils.serialization import safe_serialize
 from services.services import get_entity_service
 
 # Imported for entity constants
@@ -145,7 +146,7 @@ async def get_other_entity(entity_id: str) -> Tuple[Dict[str, Any], int]:
             return {"error": "OtherEntity not found", "code": "NOT_FOUND"}, 404
 
         # Thin proxy: return the entity directly
-        return _to_entity_dict(response.data), 200
+        return safe_serialize(response.data)
 
     except ValueError as e:
         logger.warning("Invalid entity ID %s: %s", entity_id, str(e))

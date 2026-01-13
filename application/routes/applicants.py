@@ -19,6 +19,8 @@ class _ServiceProxy:
 service = _ServiceProxy()
 
 def _to_entity_dict(data: Any) -> Dict[str, Any]:
+    if data is None:
+        raise ValueError("Cannot serialize None entity to dictionary")
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
 

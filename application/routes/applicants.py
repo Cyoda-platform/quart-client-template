@@ -150,7 +150,7 @@ async def get_transitions(entity_id: str) -> ResponseReturnValue:
 @applicants_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["applicants"])
 @operation_id("trigger_applicant_transition")
-@validate(responses={200: (None, None), 404: (None, None), 500: (None, None)})
+@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
 async def trigger_transition(entity_id: str) -> ResponseReturnValue:
     try:
         data = await request.get_json()

@@ -1,0 +1,32 @@
+{
+  "modelName": "credit_scorer",
+  "version": "1.0.0",
+  "modelType": "ONNX",
+  "modelPath": "s3://models/credit_scorer/v1.0.0/model.onnx",
+  "modelHash": "sha256:abc123def456",
+  "trainingDate": "2024-01-01",
+  "trainingDatasetVersion": "dataset_v2.1",
+  "performanceMetrics": {
+    "auc": 0.92,
+    "precision": 0.89,
+    "recall": 0.85,
+    "f1_score": 0.87
+  },
+  "featureList": [
+    "credit_score",
+    "annual_income",
+    "employment_years",
+    "credit_utilization",
+    "delinquency_count",
+    "inquiry_count"
+  ],
+  "deploymentStatus": "PRODUCTION",
+  "canaryTrafficPercent": null,
+  "inferenceLatencyP95Ms": 50,
+  "metadata": {
+    "author": "ML Team",
+    "description": "Production credit scoring model",
+    "tags": ["production", "credit_scoring"]
+  }
+}
+

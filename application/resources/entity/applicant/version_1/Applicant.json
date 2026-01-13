@@ -1,0 +1,20 @@
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "email": "john.smith@example.com",
+  "phone": "+1-555-123-4567",
+  "dateOfBirth": "1985-06-15",
+  "ssnLastFour": "5678",
+  "address": "123 Main Street",
+  "city": "San Francisco",
+  "state": "CA",
+  "zipCode": "94105",
+  "country": "US",
+  "annualIncome": 85000.00,
+  "employmentStatus": "EMPLOYED",
+  "employmentYears": 5,
+  "loanAmount": 25000.00,
+  "loanPurpose": "AUTO",
+  "loanTermMonths": 60
+}
+

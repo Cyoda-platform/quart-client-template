@@ -1,0 +1,20 @@
+{
+  "applicantId": "app_001",
+  "creditScore": 720,
+  "bureauName": "EQUIFAX",
+  "reportDate": "2024-01-10",
+  "accountsOpen": 8,
+  "accountsClosed": 2,
+  "totalCreditLimit": 45000.00,
+  "totalCreditUsed": 12500.00,
+  "creditUtilizationPercent": 27.78,
+  "delinquencies30Days": 0,
+  "delinquencies60Days": 0,
+  "delinquencies90Days": 0,
+  "publicRecords": 0,
+  "inquiriesLast6Months": 2,
+  "averageAccountAgeMonths": 84,
+  "oldestAccountMonths": 156,
+  "riskIndicators": []
+}
+

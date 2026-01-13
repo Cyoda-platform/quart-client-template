@@ -1,0 +1,35 @@
+{
+  "applicantId": "app_001",
+  "creditReportId": "cr_001",
+  "decisionOutcome": "APPROVED",
+  "creditScore": 720,
+  "modelScore": 0.87,
+  "modelVersionId": "mv_001",
+  "decisionLatencyMs": 145,
+  "explanation": "Approved based on strong credit profile and stable employment history",
+  "approvedAmount": 25000.00,
+  "approvedRate": 4.5,
+  "auditTrail": [
+    {
+      "timestamp": "2024-01-10T14:30:00Z",
+      "event": "decision_initiated",
+      "details": "Application received"
+    },
+    {
+      "timestamp": "2024-01-10T14:30:05Z",
+      "event": "credit_report_fetched",
+      "details": "Credit score: 720"
+    },
+    {
+      "timestamp": "2024-01-10T14:30:10Z",
+      "event": "model_inference",
+      "details": "Model score: 0.87"
+    },
+    {
+      "timestamp": "2024-01-10T14:30:12Z",
+      "event": "decision_made",
+      "details": "APPROVED"
+    }
+  ]
+}
+

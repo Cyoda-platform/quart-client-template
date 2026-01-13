@@ -30,9 +30,13 @@ applicants_bp = Blueprint("applicants", __name__, url_prefix="/api/applicants")
 @applicants_bp.route("", methods=["POST"])
 @tag(["applicants"])
 @operation_id("create_applicant")
-@validate(responses={201: (None, None), 400: (None, None), 500: (None, None)})
+@validate(responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
 async def create_applicant(data: Applicant) -> ResponseReturnValue:
     try:
+        if data is None:
+            logger.warning("Create applicant called with None payload")
+            return {"error": "Request body is required"}, 400
+
         entity_data = data.model_dump(by_alias=True)
         response = await service.save(
             entity=entity_data,
@@ -52,7 +56,7 @@ async def create_applicant(data: Applicant) -> ResponseReturnValue:
 @applicants_bp.route("/<entity_id>", methods=["GET"])
 @tag(["applicants"])
 @operation_id("get_applicant")
-@validate(responses={200: (None, None), 404: (None, None), 500: (None, None)})
+@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
 async def get_applicant(entity_id: str) -> ResponseReturnValue:
     try:
         if not entity_id or len(entity_id.strip()) == 0:
@@ -76,9 +80,13 @@ async def get_applicant(entity_id: str) -> ResponseReturnValue:
 @applicants_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["applicants"])
 @operation_id("update_applicant")
-@validate(responses={200: (None, None), 404: (None, None), 500: (None, None)})
+@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
 async def update_applicant(entity_id: str, data: Applicant) -> ResponseReturnValue:
     try:
+        if data is None:
+            logger.warning("Update applicant called with None payload")
+            return {"error": "Request body is required"}, 400
+
         entity_data = data.model_dump(by_alias=True)
         response = await service.update(
             entity_id=entity_id,
@@ -99,7 +107,7 @@ async def update_applicant(entity_id: str, data: Applicant) -> ResponseReturnVal
 @applicants_bp.route("/<entity_id>", methods=["DELETE"])
 @tag(["applicants"])
 @operation_id("delete_applicant")
-@validate(responses={200: (None, None), 404: (None, None), 500: (None, None)})
+@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
 async def delete_applicant(entity_id: str) -> ResponseReturnValue:
     try:
         success = await service.delete(

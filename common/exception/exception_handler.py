@@ -3,6 +3,7 @@ import logging
 from typing import Any, Tuple
 
 from quart import Quart, jsonify
+from werkzeug.exceptions import NotFound
 
 from common.exception.exceptions import ChatNotFoundError, UnauthorizedAccessError
 
@@ -21,6 +22,11 @@ def register_error_handlers(app: Quart) -> None:
         error: ChatNotFoundError,
     ) -> Tuple[Any, int]:
         return jsonify({"error": str(error)}), 404
+
+    @app.errorhandler(NotFound)
+    async def handle_not_found_exception(error: NotFound) -> Tuple[Any, int]:
+        logger.debug("404 Not Found: %s", error.description)
+        return jsonify({"error": "Not found", "code": "NOT_FOUND"}), 404
 
     @app.errorhandler(Exception)
     async def handle_any_exception(error: Exception) -> Tuple[Any, int]:

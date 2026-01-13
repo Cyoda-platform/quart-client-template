@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
+from application.entity.decision.version_1.decision import Decision
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.decision.version_1.decision import Decision
 
 
 class DecisionProcessor(CyodaProcessor):
@@ -15,7 +15,9 @@ class DecisionProcessor(CyodaProcessor):
 
     async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         try:
-            self.logger.info(f"Processing Decision {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Processing Decision {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             decision = cast_entity(entity, Decision)
 
@@ -30,7 +32,9 @@ class DecisionProcessor(CyodaProcessor):
             raise
 
     def _build_audit_trail(self, decision: Decision) -> List[Dict[str, Any]]:
-        current_timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        current_timestamp = (
+            datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        )
 
         trail: List[Dict[str, Any]] = [
             {
@@ -41,24 +45,29 @@ class DecisionProcessor(CyodaProcessor):
         ]
 
         if decision.credit_report_id:
-            trail.append({
-                "timestamp": current_timestamp,
-                "event": "credit_report_retrieved",
-                "details": f"Credit report {decision.credit_report_id} retrieved",
-            })
+            trail.append(
+                {
+                    "timestamp": current_timestamp,
+                    "event": "credit_report_retrieved",
+                    "details": f"Credit report {decision.credit_report_id} retrieved",
+                }
+            )
 
         if decision.model_version_id:
-            trail.append({
-                "timestamp": current_timestamp,
-                "event": "model_inference",
-                "details": f"Model {decision.model_version_id} inference completed with score {decision.model_score}",
-            })
+            trail.append(
+                {
+                    "timestamp": current_timestamp,
+                    "event": "model_inference",
+                    "details": f"Model {decision.model_version_id} inference completed with score {decision.model_score}",
+                }
+            )
 
-        trail.append({
-            "timestamp": current_timestamp,
-            "event": "decision_made",
-            "details": f"Decision outcome: {decision.decision_outcome}",
-        })
+        trail.append(
+            {
+                "timestamp": current_timestamp,
+                "event": "decision_made",
+                "details": f"Decision outcome: {decision.decision_outcome}",
+            }
+        )
 
         return trail
-

@@ -1,8 +1,8 @@
 from typing import Any
 
+from application.entity.model_version.version_1.model_version import ModelVersion
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.model_version.version_1.model_version import ModelVersion
 
 
 class ModelVersionValidationCriterion(CyodaCriteriaChecker):
@@ -14,7 +14,9 @@ class ModelVersionValidationCriterion(CyodaCriteriaChecker):
 
     async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         try:
-            self.logger.info(f"Validating model version {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Validating model version {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             model = cast_entity(entity, ModelVersion)
 
@@ -45,12 +47,18 @@ class ModelVersionValidationCriterion(CyodaCriteriaChecker):
                     self.logger.warning(f"Invalid AUC: {metrics['auc']}")
                     return False
 
-                if "precision" in metrics and (metrics["precision"] < 0 or metrics["precision"] > 1):
+                if "precision" in metrics and (
+                    metrics["precision"] < 0 or metrics["precision"] > 1
+                ):
                     self.logger.warning(f"Invalid precision: {metrics['precision']}")
                     return False
 
-            if model.canary_traffic_percent and (model.canary_traffic_percent < 0 or model.canary_traffic_percent > 100):
-                self.logger.warning(f"Invalid canary traffic: {model.canary_traffic_percent}")
+            if model.canary_traffic_percent and (
+                model.canary_traffic_percent < 0 or model.canary_traffic_percent > 100
+            ):
+                self.logger.warning(
+                    f"Invalid canary traffic: {model.canary_traffic_percent}"
+                )
                 return False
 
             self.logger.info(f"Model version {model.technical_id} passed validation")
@@ -59,4 +67,3 @@ class ModelVersionValidationCriterion(CyodaCriteriaChecker):
         except Exception as e:
             self.logger.error(f"Error validating model version: {str(e)}")
             return False
-

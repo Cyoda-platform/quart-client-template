@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List
 
+from application.entity.credit_report.version_1.credit_report import CreditReport
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.credit_report.version_1.credit_report import CreditReport
 
 
 class CreditReportProcessor(CyodaProcessor):
@@ -15,14 +15,18 @@ class CreditReportProcessor(CyodaProcessor):
 
     async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         try:
-            self.logger.info(f"Processing CreditReport {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Processing CreditReport {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             credit_report = cast_entity(entity, CreditReport)
 
             risk_indicators = self._analyze_credit_report(credit_report)
             credit_report.risk_indicators = risk_indicators
 
-            self.logger.info(f"CreditReport {credit_report.technical_id} analyzed successfully")
+            self.logger.info(
+                f"CreditReport {credit_report.technical_id} analyzed successfully"
+            )
             return credit_report
 
         except Exception as e:
@@ -54,4 +58,3 @@ class CreditReportProcessor(CyodaProcessor):
             indicators.append("NEW_CREDIT_ACCOUNTS")
 
         return indicators
-

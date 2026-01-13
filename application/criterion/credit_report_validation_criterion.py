@@ -1,8 +1,8 @@
 from typing import Any
 
+from application.entity.credit_report.version_1.credit_report import CreditReport
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.credit_report.version_1.credit_report import CreditReport
 
 
 class CreditReportValidationCriterion(CyodaCriteriaChecker):
@@ -14,7 +14,9 @@ class CreditReportValidationCriterion(CyodaCriteriaChecker):
 
     async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         try:
-            self.logger.info(f"Validating credit report {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Validating credit report {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             report = cast_entity(entity, CreditReport)
 
@@ -31,12 +33,19 @@ class CreditReportValidationCriterion(CyodaCriteriaChecker):
                 self.logger.warning(f"Invalid bureau: {report.bureau_name}")
                 return False
 
-            if report.credit_score and (report.credit_score < 300 or report.credit_score > 850):
+            if report.credit_score and (
+                report.credit_score < 300 or report.credit_score > 850
+            ):
                 self.logger.warning(f"Invalid credit score: {report.credit_score}")
                 return False
 
-            if report.credit_utilization_percent < 0 or report.credit_utilization_percent > 100:
-                self.logger.warning(f"Invalid utilization: {report.credit_utilization_percent}")
+            if (
+                report.credit_utilization_percent < 0
+                or report.credit_utilization_percent > 100
+            ):
+                self.logger.warning(
+                    f"Invalid utilization: {report.credit_utilization_percent}"
+                )
                 return False
 
             if report.accounts_open < 0 or report.accounts_closed < 0:
@@ -53,4 +62,3 @@ class CreditReportValidationCriterion(CyodaCriteriaChecker):
         except Exception as e:
             self.logger.error(f"Error validating credit report: {str(e)}")
             return False
-

@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from application.entity.applicant.version_1.applicant import Applicant
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.applicant.version_1.applicant import Applicant
 
 
 class ApplicantProcessor(CyodaProcessor):
@@ -15,14 +15,18 @@ class ApplicantProcessor(CyodaProcessor):
 
     async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         try:
-            self.logger.info(f"Processing Applicant {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Processing Applicant {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             applicant = cast_entity(entity, Applicant)
 
             enrichment_data = await self._enrich_applicant(applicant)
             applicant.enrichment_data = enrichment_data
 
-            self.logger.info(f"Applicant {applicant.technical_id} enriched successfully")
+            self.logger.info(
+                f"Applicant {applicant.technical_id} enriched successfully"
+            )
             return applicant
 
         except Exception as e:
@@ -30,7 +34,9 @@ class ApplicantProcessor(CyodaProcessor):
             raise
 
     async def _enrich_applicant(self, applicant: Applicant) -> Dict[str, Any]:
-        current_timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        current_timestamp = (
+            datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        )
 
         enrichment_data: Dict[str, Any] = {
             "enriched_at": current_timestamp,
@@ -58,4 +64,3 @@ class ApplicantProcessor(CyodaProcessor):
         }
 
         return enrichment_data
-

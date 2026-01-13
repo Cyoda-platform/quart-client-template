@@ -1,8 +1,8 @@
 from typing import Any
 
+from application.entity.applicant.version_1.applicant import Applicant
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.applicant.version_1.applicant import Applicant
 
 
 class ApplicantValidationCriterion(CyodaCriteriaChecker):
@@ -14,7 +14,9 @@ class ApplicantValidationCriterion(CyodaCriteriaChecker):
 
     async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         try:
-            self.logger.info(f"Validating applicant {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Validating applicant {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             applicant = cast_entity(entity, Applicant)
 
@@ -48,7 +50,9 @@ class ApplicantValidationCriterion(CyodaCriteriaChecker):
 
             valid_statuses = ["EMPLOYED", "SELF_EMPLOYED", "UNEMPLOYED", "RETIRED"]
             if applicant.employment_status not in valid_statuses:
-                self.logger.warning(f"Invalid employment status: {applicant.employment_status}")
+                self.logger.warning(
+                    f"Invalid employment status: {applicant.employment_status}"
+                )
                 return False
 
             valid_purposes = ["PERSONAL", "AUTO", "HOME", "BUSINESS"]
@@ -62,4 +66,3 @@ class ApplicantValidationCriterion(CyodaCriteriaChecker):
         except Exception as e:
             self.logger.error(f"Error validating applicant: {str(e)}")
             return False
-

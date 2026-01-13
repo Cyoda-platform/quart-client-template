@@ -5,8 +5,8 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.applicant.version_1.applicant import Applicant
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -160,4 +160,3 @@ async def trigger_transition(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error triggering transition: %s", str(e))
         return {"error": str(e)}, 500
-

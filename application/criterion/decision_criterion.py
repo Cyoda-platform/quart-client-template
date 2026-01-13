@@ -1,8 +1,8 @@
 from typing import Any
 
+from application.entity.decision.version_1.decision import Decision
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.decision.version_1.decision import Decision
 
 
 class DecisionCriterion(CyodaCriteriaChecker):
@@ -14,7 +14,9 @@ class DecisionCriterion(CyodaCriteriaChecker):
 
     async def check(self, entity: CyodaEntity, **kwargs: Any) -> bool:
         try:
-            self.logger.info(f"Evaluating decision {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Evaluating decision {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             decision = cast_entity(entity, Decision)
 
@@ -24,7 +26,9 @@ class DecisionCriterion(CyodaCriteriaChecker):
 
             valid_outcomes = ["APPROVED", "DECLINED", "REFERRED"]
             if decision.decision_outcome not in valid_outcomes:
-                self.logger.warning(f"Invalid decision outcome: {decision.decision_outcome}")
+                self.logger.warning(
+                    f"Invalid decision outcome: {decision.decision_outcome}"
+                )
                 return False
 
             if decision.decision_outcome == "APPROVED":
@@ -41,7 +45,9 @@ class DecisionCriterion(CyodaCriteriaChecker):
                     self.logger.warning("Declined decision missing decline_reason")
                     return False
 
-            if decision.model_score and (decision.model_score < 0 or decision.model_score > 1):
+            if decision.model_score and (
+                decision.model_score < 0 or decision.model_score > 1
+            ):
                 self.logger.warning(f"Invalid model score: {decision.model_score}")
                 return False
 
@@ -51,4 +57,3 @@ class DecisionCriterion(CyodaCriteriaChecker):
         except Exception as e:
             self.logger.error(f"Error evaluating decision: {str(e)}")
             return False
-

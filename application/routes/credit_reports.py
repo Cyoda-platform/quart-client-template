@@ -5,8 +5,8 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.credit_report.version_1.credit_report import CreditReport
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,9 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
 
-credit_reports_bp = Blueprint("credit_reports", __name__, url_prefix="/api/credit-reports")
+credit_reports_bp = Blueprint(
+    "credit_reports", __name__, url_prefix="/api/credit-reports"
+)
 
 
 @credit_reports_bp.route("", methods=["POST"])
@@ -76,7 +78,9 @@ async def get_credit_report(entity_id: str) -> ResponseReturnValue:
 @tag(["credit-reports"])
 @operation_id("update_credit_report")
 @validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
-async def update_credit_report(entity_id: str, data: CreditReport) -> ResponseReturnValue:
+async def update_credit_report(
+    entity_id: str, data: CreditReport
+) -> ResponseReturnValue:
     try:
         entity_data = data.model_dump(by_alias=True)
         response = await service.update(
@@ -118,4 +122,3 @@ async def trigger_transition(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error triggering transition: %s", str(e))
         return {"error": str(e)}, 500
-

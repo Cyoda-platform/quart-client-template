@@ -6,6 +6,7 @@ from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
 from application.entity.applicant.version_1.applicant import Applicant
+from application.models import ErrorResponse, EntityResponse, SuccessResponse
 from common.utils.serialization import safe_serialize
 from services.services import get_entity_service
 
@@ -32,7 +33,7 @@ applicants_bp = Blueprint("applicants", __name__, url_prefix="/api/applicants")
 @applicants_bp.route("", methods=["POST"])
 @tag(["applicants"])
 @operation_id("create_applicant")
-@validate(responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(responses={201: (EntityResponse, None), 400: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def create_applicant(data: Applicant) -> ResponseReturnValue:
     try:
         if data is None:
@@ -58,7 +59,7 @@ async def create_applicant(data: Applicant) -> ResponseReturnValue:
 @applicants_bp.route("/<entity_id>", methods=["GET"])
 @tag(["applicants"])
 @operation_id("get_applicant")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (EntityResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def get_applicant(entity_id: str) -> ResponseReturnValue:
     try:
         if not entity_id or len(entity_id.strip()) == 0:
@@ -82,7 +83,7 @@ async def get_applicant(entity_id: str) -> ResponseReturnValue:
 @applicants_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["applicants"])
 @operation_id("update_applicant")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (EntityResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def update_applicant(entity_id: str, data: Applicant) -> ResponseReturnValue:
     try:
         if data is None:
@@ -109,7 +110,7 @@ async def update_applicant(entity_id: str, data: Applicant) -> ResponseReturnVal
 @applicants_bp.route("/<entity_id>", methods=["DELETE"])
 @tag(["applicants"])
 @operation_id("delete_applicant")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (SuccessResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def delete_applicant(entity_id: str) -> ResponseReturnValue:
     try:
         success = await service.delete(
@@ -130,7 +131,7 @@ async def delete_applicant(entity_id: str) -> ResponseReturnValue:
 @applicants_bp.route("/<entity_id>/transitions", methods=["GET"])
 @tag(["applicants"])
 @operation_id("get_applicant_transitions")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (SuccessResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def get_transitions(entity_id: str) -> ResponseReturnValue:
     try:
         response = await service.get_available_transitions(
@@ -151,7 +152,7 @@ async def get_transitions(entity_id: str) -> ResponseReturnValue:
 @applicants_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["applicants"])
 @operation_id("trigger_applicant_transition")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (EntityResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def trigger_transition(entity_id: str) -> ResponseReturnValue:
     try:
         data = await request.get_json()

@@ -6,6 +6,7 @@ from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
 from application.entity.credit_report.version_1.credit_report import CreditReport
+from application.models import ErrorResponse, EntityResponse
 from common.utils.serialization import safe_serialize
 from services.services import get_entity_service
 
@@ -34,7 +35,7 @@ credit_reports_bp = Blueprint(
 @credit_reports_bp.route("", methods=["POST"])
 @tag(["credit-reports"])
 @operation_id("create_credit_report")
-@validate(responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(responses={201: (EntityResponse, None), 400: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def create_credit_report(data: CreditReport) -> ResponseReturnValue:
     try:
         if data is None:
@@ -60,7 +61,7 @@ async def create_credit_report(data: CreditReport) -> ResponseReturnValue:
 @credit_reports_bp.route("/<entity_id>", methods=["GET"])
 @tag(["credit-reports"])
 @operation_id("get_credit_report")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (EntityResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def get_credit_report(entity_id: str) -> ResponseReturnValue:
     try:
         if not entity_id or len(entity_id.strip()) == 0:
@@ -84,7 +85,7 @@ async def get_credit_report(entity_id: str) -> ResponseReturnValue:
 @credit_reports_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["credit-reports"])
 @operation_id("update_credit_report")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (EntityResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def update_credit_report(
     entity_id: str, data: CreditReport
 ) -> ResponseReturnValue:
@@ -113,7 +114,7 @@ async def update_credit_report(
 @credit_reports_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["credit-reports"])
 @operation_id("trigger_credit_report_transition")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (EntityResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def trigger_transition(entity_id: str) -> ResponseReturnValue:
     try:
         data = await request.get_json()

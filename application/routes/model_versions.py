@@ -6,6 +6,7 @@ from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
 from application.entity.model_version.version_1.model_version import ModelVersion
+from application.models import ErrorResponse, EntityResponse
 from common.utils.serialization import safe_serialize
 from services.services import get_entity_service
 
@@ -34,7 +35,7 @@ model_versions_bp = Blueprint(
 @model_versions_bp.route("", methods=["POST"])
 @tag(["model-versions"])
 @operation_id("create_model_version")
-@validate(responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(responses={201: (EntityResponse, None), 400: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def create_model_version(data: ModelVersion) -> ResponseReturnValue:
     try:
         if data is None:
@@ -60,7 +61,7 @@ async def create_model_version(data: ModelVersion) -> ResponseReturnValue:
 @model_versions_bp.route("/<entity_id>", methods=["GET"])
 @tag(["model-versions"])
 @operation_id("get_model_version")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (EntityResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def get_model_version(entity_id: str) -> ResponseReturnValue:
     try:
         if not entity_id or len(entity_id.strip()) == 0:
@@ -84,7 +85,7 @@ async def get_model_version(entity_id: str) -> ResponseReturnValue:
 @model_versions_bp.route("/<entity_id>", methods=["PUT"])
 @tag(["model-versions"])
 @operation_id("update_model_version")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (EntityResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def update_model_version(
     entity_id: str, data: ModelVersion
 ) -> ResponseReturnValue:
@@ -113,7 +114,7 @@ async def update_model_version(
 @model_versions_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["model-versions"])
 @operation_id("trigger_model_version_transition")
-@validate(responses={200: (dict, None), 404: (dict, None), 500: (dict, None)})
+@validate(responses={200: (EntityResponse, None), 404: (ErrorResponse, None), 500: (ErrorResponse, None)})
 async def trigger_transition(entity_id: str) -> ResponseReturnValue:
     try:
         data = await request.get_json()

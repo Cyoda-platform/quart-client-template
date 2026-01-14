@@ -1,0 +1,81 @@
+{
+  "version": "1",
+  "name": "document_approval_flow",
+  "description": "Lifecycle for internal document approval: DRAFT -> REVIEW -> PUBLISHED / REWORK",
+  "initialState": "draft",
+  "active": true,
+  "states": {
+    "draft": {
+      "transitions": [
+        {
+          "manual": true,
+          "name": "submit_for_review",
+          "next": "in_review",
+          "processors": [
+            {
+              "config": {
+                "attachEntity": true,
+                "notificationTarget": "manager_role",
+                "responseTimeoutMs": 2000,
+                "calculationNodesTags": "cyoda_application"
+              },
+              "executionMode": "SYNC",
+              "name": "notify_manager_processor"
+            }
+          ]
+        },
+        {
+          "manual": true,
+          "name": "archive",
+          "next": "archived"
+        }
+      ]
+    },
+    "in_review": {
+      "transitions": [
+        {
+          "manual": true,
+          "name": "approve",
+          "next": "published",
+          "processors": [
+            {
+              "config": {
+                "attachEntity": true,
+                "publishSystem": "cms_core",
+                "responseTimeoutMs": 10000,
+                "calculationNodesTags": "cyoda_application"
+              },
+              "executionMode": "ASYNC_NEW_TX",
+              "name": "publish_document_processor"
+            }
+          ]
+        },
+        {
+          "manual": true,
+          "name": "request_changes",
+          "next": "draft",
+          "processors": [
+            {
+              "config": {
+                "reasonRequired": true,
+                "calculationNodesTags": "cyoda_application"
+              },
+              "executionMode": "SYNC",
+              "name": "add_comment_processor"
+            }
+          ]
+        }
+      ]
+    },
+    "published": {
+      "isFinal": true,
+      "name": "Published",
+      "transitions": []
+    },
+    "archived": {
+      "isFinal": true,
+      "name": "Archived",
+      "transitions": []
+    }
+  }
+}

@@ -1,0 +1,103 @@
+{
+  "version": "1",
+  "name": "incident_management",
+  "description": "ITSM Ticket Lifecycle: NEW -> IN_PROGRESS -> RESOLVED <-> CLOSED",
+  "initialState": "new",
+  "active": true,
+  "states": {
+    "new": {
+      "transitions": [
+        {
+          "manual": true,
+          "name": "assign_agent",
+          "next": "in_progress",
+          "processors": [
+            {
+              "config": {
+                "updateAssignee": true,
+                "calculationNodesTags": "cyoda_application"
+              },
+              "executionMode": "SYNC",
+              "name": "assignment_processor"
+            }
+          ]
+        },
+        {
+          "manual": false,
+          "name": "auto_close_spam",
+          "next": "closed",
+          "criterion": {
+            "type": "simple",
+            "jsonPath": "$.isSpam",
+            "operation": "EQUALS",
+            "value": true
+          }
+        }
+      ]
+    },
+    "in_progress": {
+      "transitions": [
+        {
+          "manual": true,
+          "name": "resolve_ticket",
+          "next": "resolved",
+          "processors": [
+            {
+              "config": {
+                "sendEmail": true,
+                "template": "ticket_resolved_en",
+                "calculationNodesTags": "cyoda_application"
+              },
+              "executionMode": "ASYNC_NEW_TX",
+              "name": "notify_user_processor"
+            }
+          ]
+        },
+        {
+          "manual": true,
+          "name": "escalate",
+          "next": "in_progress",
+          "processors": [
+            {
+              "config": {
+                "level": "L2_SUPPORT",
+                "calculationNodesTags": "cyoda_application"
+              },
+              "executionMode": "SYNC",
+              "name": "escalation_processor"
+            }
+          ]
+        }
+      ]
+    },
+    "resolved": {
+      "transitions": [
+        {
+          "manual": true,
+          "name": "user_confirms",
+          "next": "closed"
+        },
+        {
+          "manual": true,
+          "name": "user_rejects",
+          "next": "in_progress",
+          "processors": [
+            {
+              "config": {
+                "priorityBump": true,
+                "calculationNodesTags": "cyoda_application"
+              },
+              "executionMode": "SYNC",
+              "name": "reopen_processor"
+            }
+          ]
+        }
+      ]
+    },
+    "closed": {
+      "isFinal": true,
+      "name": "Closed",
+      "transitions": []
+    }
+  }
+}

@@ -120,4 +120,3 @@ class Claim(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

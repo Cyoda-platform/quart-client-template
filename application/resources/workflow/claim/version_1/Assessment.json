@@ -1,0 +1,92 @@
+{
+  "version": "1.0",
+  "name": "Claim Assessment Workflow",
+  "desc": "Workflow for claim assessment with fraud review decision and approval/denial paths",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "start_assessment",
+          "next": "in_assessment",
+          "manual": false
+        }
+      ]
+    },
+    "in_assessment": {
+      "transitions": [
+        {
+          "name": "complete_assessment",
+          "next": "assessment_complete",
+          "manual": true
+        }
+      ]
+    },
+    "assessment_complete": {
+      "transitions": [
+        {
+          "name": "check_fraud_flag",
+          "next": "fraud_decision",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "FraudFlagCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "fraud_decision": {
+      "transitions": [
+        {
+          "name": "requires_fraud_review",
+          "next": "requires_fraud_review",
+          "manual": false
+        },
+        {
+          "name": "no_fraud_concerns",
+          "next": "ready_for_approval",
+          "manual": false
+        }
+      ]
+    },
+    "requires_fraud_review": {
+      "transitions": [
+        {
+          "name": "move_to_fraud_review",
+          "next": "fraud_review_initiated",
+          "manual": false
+        }
+      ]
+    },
+    "fraud_review_initiated": {
+      "transitions": []
+    },
+    "ready_for_approval": {
+      "transitions": [
+        {
+          "name": "approve_claim",
+          "next": "approved",
+          "manual": true
+        },
+        {
+          "name": "deny_claim",
+          "next": "denied",
+          "manual": true
+        }
+      ]
+    },
+    "approved": {
+      "transitions": []
+    },
+    "denied": {
+      "transitions": []
+    }
+  }
+}
+

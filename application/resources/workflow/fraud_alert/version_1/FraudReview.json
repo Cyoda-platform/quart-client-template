@@ -1,0 +1,87 @@
+{
+  "version": "1.0",
+  "name": "Fraud Review Workflow",
+  "desc": "Workflow for fraud investigation with FraudAlert entity creation and status transitions",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_fraud_alert",
+          "next": "open",
+          "manual": false,
+          "processors": [
+            {
+              "name": "FraudAlertCreationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "open": {
+      "transitions": [
+        {
+          "name": "assign_investigator",
+          "next": "investigating",
+          "manual": true
+        }
+      ]
+    },
+    "investigating": {
+      "transitions": [
+        {
+          "name": "add_investigation_notes",
+          "next": "investigating",
+          "manual": true
+        },
+        {
+          "name": "complete_investigation",
+          "next": "investigation_complete",
+          "manual": true
+        }
+      ]
+    },
+    "investigation_complete": {
+      "transitions": [
+        {
+          "name": "determine_fraud_status",
+          "next": "fraud_determination",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "FraudDeterminationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "fraud_determination": {
+      "transitions": [
+        {
+          "name": "confirm_fraud",
+          "next": "resolved",
+          "manual": true
+        },
+        {
+          "name": "clear_fraud",
+          "next": "resolved",
+          "manual": true
+        }
+      ]
+    },
+    "resolved": {
+      "transitions": []
+    }
+  }
+}
+

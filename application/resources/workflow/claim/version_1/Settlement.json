@@ -1,0 +1,115 @@
+{
+  "version": "1.0",
+  "name": "Claim Settlement Workflow",
+  "desc": "Workflow for claim settlement with approval/denial decision and payment instruction",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "initiate_settlement",
+          "next": "settlement_pending",
+          "manual": false
+        }
+      ]
+    },
+    "settlement_pending": {
+      "transitions": [
+        {
+          "name": "review_settlement",
+          "next": "under_review",
+          "manual": true
+        }
+      ]
+    },
+    "under_review": {
+      "transitions": [
+        {
+          "name": "approve_settlement",
+          "next": "approved",
+          "manual": true
+        },
+        {
+          "name": "deny_settlement",
+          "next": "denied",
+          "manual": true
+        }
+      ]
+    },
+    "approved": {
+      "transitions": [
+        {
+          "name": "create_payment_instruction",
+          "next": "payment_instruction_created",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PaymentInstructionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "payment_instruction_created": {
+      "transitions": [
+        {
+          "name": "process_payment",
+          "next": "payment_processed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PaymentProcessingProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "EXPONENTIAL",
+                "responseTimeoutMs": 30000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "payment_processed": {
+      "transitions": [
+        {
+          "name": "settle_claim",
+          "next": "settled",
+          "manual": false
+        }
+      ]
+    },
+    "settled": {
+      "transitions": []
+    },
+    "denied": {
+      "transitions": [
+        {
+          "name": "send_denial_notice",
+          "next": "denial_notified",
+          "manual": false,
+          "processors": [
+            {
+              "name": "DenialNotificationProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "EXPONENTIAL"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "denial_notified": {
+      "transitions": []
+    }
+  }
+}
+

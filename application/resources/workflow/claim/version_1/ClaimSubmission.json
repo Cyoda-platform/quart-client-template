@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "name": "Claim Submission Workflow",
+  "desc": "Workflow for initial claim submission, validation, and preparation for triage queue",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "submit_claim",
+          "next": "submitted",
+          "manual": false
+        }
+      ]
+    },
+    "submitted": {
+      "transitions": [
+        {
+          "name": "validate_claim",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "ClaimValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "check_fraud_rules",
+          "next": "fraud_check_complete",
+          "manual": false,
+          "processors": [
+            {
+              "name": "FraudDetectionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "fraud_check_complete": {
+      "transitions": [
+        {
+          "name": "ready_for_triage",
+          "next": "ready_for_triage",
+          "manual": false
+        }
+      ]
+    },
+    "ready_for_triage": {
+      "transitions": [
+        {
+          "name": "move_to_triage",
+          "next": "in_review",
+          "manual": true
+        }
+      ]
+    },
+    "in_review": {
+      "transitions": []
+    }
+  }
+}
+

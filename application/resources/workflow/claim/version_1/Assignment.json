@@ -1,0 +1,75 @@
+{
+  "version": "1.0",
+  "name": "Claim Assignment Workflow",
+  "desc": "Workflow for assigning claims to adjusters with assignment history tracking",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "initiate_assignment",
+          "next": "assignment_pending",
+          "manual": false
+        }
+      ]
+    },
+    "assignment_pending": {
+      "transitions": [
+        {
+          "name": "assign_to_adjuster",
+          "next": "assigned_to_adjuster",
+          "manual": true
+        }
+      ]
+    },
+    "assigned_to_adjuster": {
+      "transitions": [
+        {
+          "name": "record_assignment",
+          "next": "assignment_recorded",
+          "manual": false,
+          "processors": [
+            {
+              "name": "AssignmentHistoryProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assignment_recorded": {
+      "transitions": [
+        {
+          "name": "notify_adjuster",
+          "next": "adjuster_notified",
+          "manual": false,
+          "processors": [
+            {
+              "name": "NotificationProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "EXPONENTIAL"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "adjuster_notified": {
+      "transitions": [
+        {
+          "name": "reassign",
+          "next": "assignment_pending",
+          "manual": true
+        }
+      ]
+    }
+  }
+}
+

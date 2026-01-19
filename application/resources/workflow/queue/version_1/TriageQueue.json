@@ -1,0 +1,78 @@
+{
+  "version": "1.0",
+  "name": "Triage Queue Workflow",
+  "desc": "Workflow for managing claims in triage queue with queue selection logic and manual assignment",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "queue_claim",
+          "next": "queued",
+          "manual": false
+        }
+      ]
+    },
+    "queued": {
+      "transitions": [
+        {
+          "name": "select_queue",
+          "next": "queue_selected",
+          "manual": false,
+          "processors": [
+            {
+              "name": "QueueSelectionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "queue_selected": {
+      "transitions": [
+        {
+          "name": "assign_handler",
+          "next": "assigned",
+          "manual": true
+        }
+      ]
+    },
+    "assigned": {
+      "transitions": [
+        {
+          "name": "update_assignment_history",
+          "next": "assignment_recorded",
+          "manual": false,
+          "processors": [
+            {
+              "name": "AssignmentHistoryProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "FIXED"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "assignment_recorded": {
+      "transitions": [
+        {
+          "name": "complete_triage",
+          "next": "triage_complete",
+          "manual": false
+        }
+      ]
+    },
+    "triage_complete": {
+      "transitions": []
+    }
+  }
+}
+

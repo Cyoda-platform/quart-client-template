@@ -5,7 +5,7 @@
   "file_name": "police_report_2024_01_15.pdf",
   "file_size_bytes": 245678,
   "mime_type": "application/pdf",
-  "storage_reference": "s3://claims-documents/2024/01/550e8400-e29b-41d4-a716-446655440000/police_report_2024_01_15.pdf",
+  "storage_reference": "documents/2024/01/550e8400-e29b-41d4-a716-446655440000/police_report_2024_01_15.pdf",
   "thumbnail_reference": null,
   "uploaded_by_id": "USR-2024-009876",
   "upload_timestamp": "2024-01-15T15:50:00Z",

@@ -1,0 +1,18 @@
+{
+  "id": "FRD-2024-000042",
+  "claim_id": "550e8400-e29b-41d4-a716-446655440000",
+  "alert_type": "DUPLICATE_CLAIM",
+  "severity": "HIGH",
+  "status": "Open",
+  "description": "Potential duplicate claim detected. Same claimant and policy with similar incident date and location within 30 days.",
+  "related_claim_ids": [
+    "550e8400-e29b-41d4-a716-446655440003"
+  ],
+  "rule_triggered": "duplicate_claim_detection",
+  "confidence_score": 0.87,
+  "assigned_investigator_id": null,
+  "investigation_notes": [],
+  "created_at": "2024-01-15T16:15:00Z",
+  "updated_at": "2024-01-15T16:15:00Z"
+}
+

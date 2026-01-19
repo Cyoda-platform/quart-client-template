@@ -1,0 +1,22 @@
+{
+  "id": "QUE-2024-000001",
+  "queue_name": "Auto Claims Triage",
+  "queue_type": "TRIAGE",
+  "claim_type_filter": "AUTO",
+  "severity_filter": null,
+  "region_filter": "MIDWEST",
+  "priority": 1,
+  "status": "ACTIVE",
+  "assigned_handler_ids": [
+    "USR-2024-010001",
+    "USR-2024-010002"
+  ],
+  "pending_claim_ids": [
+    "550e8400-e29b-41d4-a716-446655440000",
+    "550e8400-e29b-41d4-a716-446655440002"
+  ],
+  "sla_hours": 24,
+  "created_at": "2024-01-01T08:00:00Z",
+  "updated_at": "2024-01-15T16:30:00Z"
+}
+

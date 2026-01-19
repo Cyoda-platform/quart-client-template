@@ -1,0 +1,25 @@
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "claim_number": "CLM-2024-001234",
+  "policy_id": "POL-2024-005678",
+  "claimant_id": "USR-2024-009876",
+  "incident_date": "2024-01-15T14:30:00Z",
+  "incident_location": "123 Main Street, Springfield, IL 62701",
+  "incident_description": "Vehicle collision at intersection. Other vehicle ran red light. Police report filed.",
+  "claim_type": "AUTO",
+  "claim_amount": 15000.00,
+  "status": "Submitted",
+  "assigned_adjuster_id": null,
+  "assigned_queue_id": null,
+  "fraud_alert_id": null,
+  "document_ids": [
+    "DOC-2024-000001",
+    "DOC-2024-000002",
+    "DOC-2024-000003"
+  ],
+  "notes": [],
+  "validation_errors": [],
+  "created_at": "2024-01-15T15:45:00Z",
+  "updated_at": "2024-01-15T15:45:00Z"
+}
+

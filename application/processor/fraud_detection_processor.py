@@ -106,13 +106,13 @@ class FraudDetectionProcessor(CyodaProcessor):
         entity_service = get_entity_service()
 
         fraud_alert = FraudAlert(
-            claim_id=claim.technical_id or claim.entity_id or "unknown",
-            alert_type="DUPLICATE_CLAIM",
+            claimId=claim.technical_id or claim.entity_id or "unknown",
+            alertType="DUPLICATE_CLAIM",
             severity="MEDIUM",
             status="Open",
             description=f"Fraud alert for claim {claim.claim_number}",
-            rule_triggered="DUPLICATE_CLAIM_RULE",
-            confidence_score=0.75,
+            ruleTriggered="DUPLICATE_CLAIM_RULE",
+            confidenceScore=0.75,
         )
 
         fraud_alert_data = fraud_alert.model_dump(by_alias=True)

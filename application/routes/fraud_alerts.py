@@ -263,7 +263,8 @@ async def get_fraud_alert_transitions(entity_id: str) -> ResponseReturnValue:
 async def trigger_fraud_alert_transition(entity_id: str) -> ResponseReturnValue:
     """Trigger a specific workflow transition"""
     try:
-        transition_name = request.json.get("transition_name") if request.json else None
+        json_data = await request.json
+        transition_name = json_data.get("transition_name") if json_data else None
         if not transition_name:
             return {
                 "error": "transition_name is required",

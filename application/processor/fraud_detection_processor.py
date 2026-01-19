@@ -6,8 +6,7 @@ Creates FraudAlert entities when fraud is detected.
 """
 
 import logging
-import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any
 
 from application.entity.claim import Claim

@@ -7,9 +7,9 @@ Determines fraud status by analyzing investigation notes.
 import logging
 from typing import Any
 
+from application.entity.fraud_alert import FraudAlert
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.fraud_alert import FraudAlert
 
 
 class FraudDeterminationProcessor(CyodaProcessor):

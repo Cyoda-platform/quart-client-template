@@ -4,8 +4,8 @@ Contains all criteria checker implementations for entity validation and conditio
 """
 
 from .claim_validation_criterion import ClaimValidationCriterion
-from .fraud_flag_criterion import FraudFlagCriterion
 from .fraud_determination_criterion import FraudDeterminationCriterion
+from .fraud_flag_criterion import FraudFlagCriterion
 
 __all__ = [
     "ClaimValidationCriterion",

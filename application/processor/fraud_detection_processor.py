@@ -10,10 +10,10 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaProcessor
 from application.entity.claim import Claim
 from application.entity.fraud_alert import FraudAlert
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaEntity, CyodaProcessor
 from services.services import get_entity_service
 
 

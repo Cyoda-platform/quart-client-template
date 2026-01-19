@@ -8,9 +8,9 @@ import logging
 import uuid
 from typing import Any
 
+from application.entity.claim import Claim
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.claim import Claim
 
 
 class QueueSelectionProcessor(CyodaProcessor):

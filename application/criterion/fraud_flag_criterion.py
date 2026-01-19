@@ -7,9 +7,9 @@ Checks if a Claim has a fraud alert flag set.
 import logging
 from typing import Any
 
+from application.entity.claim import Claim
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.claim import Claim
 
 
 class FraudFlagCriterion(CyodaCriteriaChecker):

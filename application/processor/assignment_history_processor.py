@@ -9,9 +9,9 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict
 
+from application.entity.claim import Claim
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.claim import Claim
 
 
 class AssignmentHistoryProcessor(CyodaProcessor):

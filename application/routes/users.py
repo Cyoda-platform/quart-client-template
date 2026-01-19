@@ -8,7 +8,7 @@ as specified in functional requirements.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue

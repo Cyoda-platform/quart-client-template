@@ -16,10 +16,7 @@ from quart_schema import (
     operation_id,
     tag,
     validate,
-    validate_querystring,
 )
-
-from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
 
 from ..entity.claim import Claim

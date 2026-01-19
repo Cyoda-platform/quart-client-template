@@ -234,13 +234,20 @@ async def get_claim_transitions(entity_id: str) -> ResponseReturnValue:
             entity_version=str(Claim.ENTITY_VERSION),
         )
 
-        return jsonify({
-            "entity_id": entity_id,
-            "available_transitions": transitions,
-            "current_state": None,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "entity_id": entity_id,
+                    "available_transitions": transitions,
+                    "current_state": None,
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        logger.exception("Error getting transitions for Claim %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error getting transitions for Claim %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
 
 
@@ -260,7 +267,10 @@ async def trigger_claim_transition(entity_id: str) -> ResponseReturnValue:
     try:
         transition_name = request.json.get("transition_name") if request.json else None
         if not transition_name:
-            return {"error": "transition_name is required", "code": "MISSING_FIELD"}, 400
+            return {
+                "error": "transition_name is required",
+                "code": "MISSING_FIELD",
+            }, 400
 
         current_entity = await service.get_by_id(
             entity_id=entity_id,
@@ -282,13 +292,19 @@ async def trigger_claim_transition(entity_id: str) -> ResponseReturnValue:
 
         logger.info("Executed transition '%s' on Claim %s", transition_name, entity_id)
 
-        return jsonify({
-            "id": response.metadata.id,
-            "message": "Transition executed successfully",
-            "previousState": previous_state,
-            "newState": response.metadata.state,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "message": "Transition executed successfully",
+                    "previousState": previous_state,
+                    "newState": response.metadata.state,
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        logger.exception("Error executing transition on Claim %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error executing transition on Claim %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
-

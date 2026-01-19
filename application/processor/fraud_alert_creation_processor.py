@@ -81,7 +81,4 @@ class FraudAlertCreationProcessor(CyodaProcessor):
         if not fraud_alert.description:
             raise ValueError("FraudAlert must have a description")
 
-        self.logger.debug(
-            f"FraudAlert {fraud_alert.technical_id} properties validated"
-        )
-
+        self.logger.debug(f"FraudAlert {fraud_alert.technical_id} properties validated")

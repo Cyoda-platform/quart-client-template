@@ -48,9 +48,7 @@ class PaymentProcessingProcessor(CyodaProcessor):
 
             self._log_payment_processing(claim)
 
-            self.logger.info(
-                f"Payment processed for claim {claim.technical_id}"
-            )
+            self.logger.info(f"Payment processed for claim {claim.technical_id}")
 
             return claim
 
@@ -81,4 +79,3 @@ class PaymentProcessingProcessor(CyodaProcessor):
         self.logger.debug(
             f"Logged payment processing for claim {claim.technical_id} at {timestamp}"
         )
-

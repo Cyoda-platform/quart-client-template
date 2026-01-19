@@ -61,4 +61,3 @@ class ClaimValidationCriterion(CyodaCriteriaChecker):
                 f"Error validating claim {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

@@ -48,9 +48,7 @@ class DenialNotificationProcessor(CyodaProcessor):
 
             self._log_denial_notification(claim)
 
-            self.logger.info(
-                f"Denial notification sent for claim {claim.technical_id}"
-            )
+            self.logger.info(f"Denial notification sent for claim {claim.technical_id}")
 
             return claim
 
@@ -80,4 +78,3 @@ class DenialNotificationProcessor(CyodaProcessor):
         self.logger.debug(
             f"Logged denial notification for claim {claim.technical_id} at {timestamp}"
         )
-

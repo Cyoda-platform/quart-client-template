@@ -48,9 +48,7 @@ class NotificationProcessor(CyodaProcessor):
 
             self._log_notification_event(claim)
 
-            self.logger.info(
-                f"Notifications sent for claim {claim.technical_id}"
-            )
+            self.logger.info(f"Notifications sent for claim {claim.technical_id}")
 
             return claim
 
@@ -80,4 +78,3 @@ class NotificationProcessor(CyodaProcessor):
         self.logger.debug(
             f"Logged notification event for claim {claim.technical_id} at {timestamp}"
         )
-

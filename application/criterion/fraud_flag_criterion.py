@@ -51,9 +51,7 @@ class FraudFlagCriterion(CyodaCriteriaChecker):
                 )
                 return True
             else:
-                self.logger.debug(
-                    f"Claim {claim.technical_id} has no fraud alert"
-                )
+                self.logger.debug(f"Claim {claim.technical_id} has no fraud alert")
                 return False
 
         except Exception as e:
@@ -61,4 +59,3 @@ class FraudFlagCriterion(CyodaCriteriaChecker):
                 f"Error checking fraud flag for claim {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

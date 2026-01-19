@@ -11,6 +11,14 @@ from common.exception.exception_handler import (
 from services.services import get_grpc_client, initialize_services
 
 # Import blueprints for different route groups
+from application.routes.claims import bp as claims_bp
+from application.routes.claim_documents import bp as claim_documents_bp
+from application.routes.fraud_alerts import bp as fraud_alerts_bp
+from application.routes.policies import bp as policies_bp
+from application.routes.queues import bp as queues_bp
+from application.routes.users import bp as users_bp
+from example_application.routes.example_entities import bp as example_entities_bp
+from example_application.routes.other_entities import bp as other_entities_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,6 +30,30 @@ QuartSchema(
     app,
     info={"title": "Cyoda Client Application", "version": "1.0.0"},
     tags=[
+        {
+            "name": "Claims",
+            "description": "Claim management endpoints",
+        },
+        {
+            "name": "ClaimDocuments",
+            "description": "Claim document management endpoints",
+        },
+        {
+            "name": "FraudAlerts",
+            "description": "Fraud alert management endpoints",
+        },
+        {
+            "name": "Policies",
+            "description": "Policy management endpoints",
+        },
+        {
+            "name": "Queues",
+            "description": "Queue management endpoints",
+        },
+        {
+            "name": "Users",
+            "description": "User management endpoints",
+        },
         {
             "name": "ExampleEntities",
             "description": "ExampleEntity management endpoints",
@@ -121,6 +153,19 @@ async def add_cors_headers() -> None:
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
+
+
+# Register blueprints for claims platform entities
+app.register_blueprint(claims_bp)
+app.register_blueprint(claim_documents_bp)
+app.register_blueprint(fraud_alerts_bp)
+app.register_blueprint(policies_bp)
+app.register_blueprint(queues_bp)
+app.register_blueprint(users_bp)
+
+# Register blueprints for example application entities
+app.register_blueprint(example_entities_bp)
+app.register_blueprint(other_entities_bp)
 
 
 if __name__ == "__main__":

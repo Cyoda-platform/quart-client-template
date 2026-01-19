@@ -85,9 +85,6 @@ class FraudDeterminationProcessor(CyodaProcessor):
                 )
             elif "not fraud" in conclusion or "cleared" in conclusion:
                 fraud_alert.status = "Resolved"
-                self.logger.debug(
-                    f"Fraud cleared for alert {fraud_alert.technical_id}"
-                )
+                self.logger.debug(f"Fraud cleared for alert {fraud_alert.technical_id}")
 
         fraud_alert.update_timestamp()
-

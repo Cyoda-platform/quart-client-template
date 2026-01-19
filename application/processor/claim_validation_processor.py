@@ -82,12 +82,16 @@ class ClaimValidationProcessor(CyodaProcessor):
     def _validate_incident_date(self, claim: Claim) -> None:
         """Validate that incident_date is not in the future."""
         try:
-            incident_dt = datetime.fromisoformat(claim.incident_date.replace("Z", "+00:00"))
+            incident_dt = datetime.fromisoformat(
+                claim.incident_date.replace("Z", "+00:00")
+            )
             now = datetime.now(timezone.utc)
             if incident_dt > now:
                 claim.validation_errors.append("incident_date cannot be in the future")
         except ValueError:
-            claim.validation_errors.append("incident_date must be valid ISO 8601 format")
+            claim.validation_errors.append(
+                "incident_date must be valid ISO 8601 format"
+            )
 
     def _validate_claim_amount(self, claim: Claim) -> None:
         """Validate that claim_amount is positive."""
@@ -98,7 +102,4 @@ class ClaimValidationProcessor(CyodaProcessor):
         """Validate that claim_type is valid."""
         valid_types = ["AUTO", "HOME", "LIFE", "HEALTH"]
         if claim.claim_type not in valid_types:
-            claim.validation_errors.append(
-                f"claim_type must be one of {valid_types}"
-            )
-
+            claim.validation_errors.append(f"claim_type must be one of {valid_types}")

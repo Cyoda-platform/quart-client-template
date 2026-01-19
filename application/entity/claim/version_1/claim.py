@@ -24,7 +24,9 @@ class Claim(CyodaEntity):
     ENTITY_NAME: ClassVar[str] = "Claim"
     ENTITY_VERSION: ClassVar[int] = 1
 
-    claim_number: str = Field(..., alias="claimNumber", description="Unique claim number")
+    claim_number: str = Field(
+        ..., alias="claimNumber", description="Unique claim number"
+    )
     policy_id: str = Field(..., alias="policyId", description="Associated policy ID")
     claimant_id: str = Field(..., alias="claimantId", description="ID of the claimant")
     incident_date: str = Field(

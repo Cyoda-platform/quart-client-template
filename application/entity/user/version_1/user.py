@@ -31,7 +31,9 @@ class User(CyodaEntity):
     role: str = Field(..., alias="role", description="User role")
     status: str = Field(default="ACTIVE", alias="status", description="User status")
     organization_id: Optional[str] = Field(
-        default=None, alias="organizationId", description="Organization ID if applicable"
+        default=None,
+        alias="organizationId",
+        description="Organization ID if applicable",
     )
     department: Optional[str] = Field(default=None, description="Department")
     is_verified: bool = Field(

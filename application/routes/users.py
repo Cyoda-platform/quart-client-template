@@ -209,4 +209,3 @@ async def delete_user(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error deleting User %s: %s", entity_id, str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

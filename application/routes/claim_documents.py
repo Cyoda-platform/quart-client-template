@@ -151,7 +151,9 @@ async def list_claim_documents() -> ResponseReturnValue:
         500: (Dict[str, Any], None),
     },
 )
-async def update_claim_document(entity_id: str, data: ClaimDocument) -> ResponseReturnValue:
+async def update_claim_document(
+    entity_id: str, data: ClaimDocument
+) -> ResponseReturnValue:
     """Update ClaimDocument and optionally trigger workflow transition"""
     try:
         if not entity_id or len(entity_id.strip()) == 0:
@@ -171,7 +173,9 @@ async def update_claim_document(entity_id: str, data: ClaimDocument) -> Response
         logger.info("Updated ClaimDocument %s", entity_id)
         return jsonify(_to_entity_dict(response.data)), 200
     except ValueError as e:
-        logger.warning("Validation error updating ClaimDocument %s: %s", entity_id, str(e))
+        logger.warning(
+            "Validation error updating ClaimDocument %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e), "code": "VALIDATION_ERROR"}), 400
     except Exception as e:
         logger.exception("Error updating ClaimDocument %s: %s", entity_id, str(e))
@@ -234,13 +238,20 @@ async def get_claim_document_transitions(entity_id: str) -> ResponseReturnValue:
             entity_version=str(ClaimDocument.ENTITY_VERSION),
         )
 
-        return jsonify({
-            "entity_id": entity_id,
-            "available_transitions": transitions,
-            "current_state": None,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "entity_id": entity_id,
+                    "available_transitions": transitions,
+                    "current_state": None,
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        logger.exception("Error getting transitions for ClaimDocument %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error getting transitions for ClaimDocument %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
 
 
@@ -260,7 +271,10 @@ async def trigger_claim_document_transition(entity_id: str) -> ResponseReturnVal
     try:
         transition_name = request.json.get("transition_name") if request.json else None
         if not transition_name:
-            return {"error": "transition_name is required", "code": "MISSING_FIELD"}, 400
+            return {
+                "error": "transition_name is required",
+                "code": "MISSING_FIELD",
+            }, 400
 
         current_entity = await service.get_by_id(
             entity_id=entity_id,
@@ -280,15 +294,23 @@ async def trigger_claim_document_transition(entity_id: str) -> ResponseReturnVal
             entity_version=str(ClaimDocument.ENTITY_VERSION),
         )
 
-        logger.info("Executed transition '%s' on ClaimDocument %s", transition_name, entity_id)
+        logger.info(
+            "Executed transition '%s' on ClaimDocument %s", transition_name, entity_id
+        )
 
-        return jsonify({
-            "id": response.metadata.id,
-            "message": "Transition executed successfully",
-            "previousState": previous_state,
-            "newState": response.metadata.state,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "message": "Transition executed successfully",
+                    "previousState": previous_state,
+                    "newState": response.metadata.state,
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        logger.exception("Error executing transition on ClaimDocument %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error executing transition on ClaimDocument %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
-

@@ -22,7 +22,9 @@ class Policy(CyodaEntity):
     ENTITY_NAME: ClassVar[str] = "Policy"
     ENTITY_VERSION: ClassVar[int] = 1
 
-    policy_number: str = Field(..., alias="policyNumber", description="Unique policy number")
+    policy_number: str = Field(
+        ..., alias="policyNumber", description="Unique policy number"
+    )
     policyholder_id: str = Field(
         ..., alias="policyholderID", description="ID of policyholder"
     )

@@ -61,4 +61,3 @@ class FraudDeterminationCriterion(CyodaCriteriaChecker):
                 f"Error checking investigation status for alert {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

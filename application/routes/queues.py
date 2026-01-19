@@ -209,4 +209,3 @@ async def delete_queue(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error deleting Queue %s: %s", entity_id, str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

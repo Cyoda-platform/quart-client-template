@@ -81,4 +81,3 @@ class PaymentInstructionProcessor(CyodaProcessor):
         self.logger.debug(
             f"Logged payment instruction for claim {claim.technical_id} at {timestamp}"
         )
-

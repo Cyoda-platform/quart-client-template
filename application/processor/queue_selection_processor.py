@@ -49,9 +49,7 @@ class QueueSelectionProcessor(CyodaProcessor):
             queue_id = self._select_queue(claim)
             claim.assigned_queue_id = queue_id
 
-            self.logger.info(
-                f"Claim {claim.technical_id} assigned to queue {queue_id}"
-            )
+            self.logger.info(f"Claim {claim.technical_id} assigned to queue {queue_id}")
 
             return claim
 
@@ -98,4 +96,3 @@ class QueueSelectionProcessor(CyodaProcessor):
         }
 
         return queue_mapping.get(claim_type, "general_claims")
-

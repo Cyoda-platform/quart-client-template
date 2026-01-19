@@ -90,4 +90,3 @@ class AssignmentHistoryProcessor(CyodaProcessor):
         self.logger.debug(
             f"Logged assignment event for claim {claim.technical_id} at {timestamp}"
         )
-

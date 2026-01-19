@@ -209,4 +209,3 @@ async def delete_policy(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error deleting Policy %s: %s", entity_id, str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

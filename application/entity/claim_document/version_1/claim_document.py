@@ -23,7 +23,9 @@ class ClaimDocument(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     claim_id: str = Field(..., alias="claimId", description="Associated claim ID")
-    document_type: str = Field(..., alias="documentType", description="Type of document")
+    document_type: str = Field(
+        ..., alias="documentType", description="Type of document"
+    )
     file_name: str = Field(..., alias="fileName", description="Name of the file")
     file_size_bytes: int = Field(
         ..., alias="fileSizeBytes", description="File size in bytes"
@@ -50,7 +52,9 @@ class ClaimDocument(CyodaEntity):
     document_date: Optional[str] = Field(
         default=None, alias="documentDate", description="Date of the document"
     )
-    status: str = Field(default="VERIFIED", alias="status", description="Document status")
+    status: str = Field(
+        default="VERIFIED", alias="status", description="Document status"
+    )
     created_at: Optional[str] = Field(
         default_factory=lambda: datetime.now(timezone.utc)
         .isoformat()

@@ -61,9 +61,7 @@ class FraudDetectionProcessor(CyodaProcessor):
                     f"Fraud detected for claim {claim.technical_id}, alert {fraud_alert_id} created"
                 )
             else:
-                self.logger.info(
-                    f"No fraud detected for claim {claim.technical_id}"
-                )
+                self.logger.info(f"No fraud detected for claim {claim.technical_id}")
 
             return claim
 
@@ -126,4 +124,3 @@ class FraudDetectionProcessor(CyodaProcessor):
         )
 
         return response.metadata.id
-

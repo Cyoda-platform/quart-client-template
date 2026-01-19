@@ -232,13 +232,20 @@ async def get_fraud_alert_transitions(entity_id: str) -> ResponseReturnValue:
             entity_version=str(FraudAlert.ENTITY_VERSION),
         )
 
-        return jsonify({
-            "entity_id": entity_id,
-            "available_transitions": transitions,
-            "current_state": None,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "entity_id": entity_id,
+                    "available_transitions": transitions,
+                    "current_state": None,
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        logger.exception("Error getting transitions for FraudAlert %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error getting transitions for FraudAlert %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
 
 
@@ -258,7 +265,10 @@ async def trigger_fraud_alert_transition(entity_id: str) -> ResponseReturnValue:
     try:
         transition_name = request.json.get("transition_name") if request.json else None
         if not transition_name:
-            return {"error": "transition_name is required", "code": "MISSING_FIELD"}, 400
+            return {
+                "error": "transition_name is required",
+                "code": "MISSING_FIELD",
+            }, 400
 
         current_entity = await service.get_by_id(
             entity_id=entity_id,
@@ -278,15 +288,23 @@ async def trigger_fraud_alert_transition(entity_id: str) -> ResponseReturnValue:
             entity_version=str(FraudAlert.ENTITY_VERSION),
         )
 
-        logger.info("Executed transition '%s' on FraudAlert %s", transition_name, entity_id)
+        logger.info(
+            "Executed transition '%s' on FraudAlert %s", transition_name, entity_id
+        )
 
-        return jsonify({
-            "id": response.metadata.id,
-            "message": "Transition executed successfully",
-            "previousState": previous_state,
-            "newState": response.metadata.state,
-        }), 200
+        return (
+            jsonify(
+                {
+                    "id": response.metadata.id,
+                    "message": "Transition executed successfully",
+                    "previousState": previous_state,
+                    "newState": response.metadata.state,
+                }
+            ),
+            200,
+        )
     except Exception as e:
-        logger.exception("Error executing transition on FraudAlert %s: %s", entity_id, str(e))
+        logger.exception(
+            "Error executing transition on FraudAlert %s: %s", entity_id, str(e)
+        )
         return jsonify({"error": str(e)}), 500
-

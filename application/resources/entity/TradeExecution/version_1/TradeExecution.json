@@ -1,0 +1,11 @@
+{
+  "entityName": "TradeExecution",
+  "modelVersion": 1,
+  "id": "exec_0001",
+  "orderId": "order_0001",
+  "market": "NYSE",
+  "executedAt": null,
+  "executionId": null,
+  "status": "pending",
+  "details": {}
+}

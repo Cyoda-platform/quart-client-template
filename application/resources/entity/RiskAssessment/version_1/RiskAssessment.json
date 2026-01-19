@@ -1,0 +1,14 @@
+{
+  "entityName": "RiskAssessment",
+  "modelVersion": 1,
+  "id": "ra_0001",
+  "orderId": "order_0001",
+  "riskScore": 45,
+  "factors": {
+    "exposure": 0.7,
+    "instrumentRisk": 0.4,
+    "counterpartyRisk": 0.2
+  },
+  "engineVersion": "risk_v2",
+  "lastComputedAt": "2026-01-19T12:01:00Z"
+}

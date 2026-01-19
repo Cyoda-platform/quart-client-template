@@ -1,0 +1,13 @@
+{
+  "entityName": "Officer",
+  "modelVersion": 1,
+  "id": "officer_21",
+  "name": "Jordan Blake",
+  "role": "Compliance Officer",
+  "contact": {
+    "email": "jordan.blake@example.com",
+    "phone": "+44-20-5555-0101"
+  },
+  "assignedOrders": ["order_0001"],
+  "lastActiveAt": "2026-01-19T11:59:00Z"
+}

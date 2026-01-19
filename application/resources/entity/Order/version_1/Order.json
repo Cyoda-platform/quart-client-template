@@ -1,0 +1,17 @@
+{
+  "entityName": "Order",
+  "modelVersion": 1,
+  "id": "order_0001",
+  "amount": 125000.50,
+  "riskScore": 45,
+  "kycStatus": "PENDING",
+  "traderRegion": "EMEA",
+  "status": "new",
+  "dataChanged": false,
+  "metadata": {
+    "notes": [],
+    "submittedBy": "trader_007"
+  },
+  "createdAt": "2026-01-19T12:00:00Z",
+  "updatedAt": "2026-01-19T12:00:00Z"
+}

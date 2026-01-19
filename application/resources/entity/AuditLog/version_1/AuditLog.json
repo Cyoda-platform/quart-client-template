@@ -1,0 +1,10 @@
+{
+  "entityName": "AuditLog",
+  "modelVersion": 1,
+  "entryId": "audit_0001",
+  "orderId": "order_0001",
+  "level": "CRITICAL",
+  "message": "Order exceeded threshold and failed risk checks",
+  "createdBy": "system",
+  "createdAt": "2026-01-19T12:02:00Z"
+}

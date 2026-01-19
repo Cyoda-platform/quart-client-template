@@ -76,11 +76,10 @@ class FraudDetectionProcessor(CyodaProcessor):
             incident_dt = datetime.fromisoformat(
                 claim.incident_date.replace("Z", "+00:00")
             )
-            thirty_days_ago = incident_dt - timedelta(days=30)
 
             self.logger.debug(
                 f"Checking for duplicate claims for claimant {claim.claimant_id} "
-                f"within 30 days of {claim.incident_date}"
+                f"within 30 days of {incident_dt}"
             )
 
             return False

@@ -22,14 +22,14 @@ class User(CyodaEntity):
     ENTITY_NAME: ClassVar[str] = "User"
     ENTITY_VERSION: ClassVar[int] = 1
 
-    email: str = Field(..., description="User email address")
+    email: str = Field(..., alias="email", description="User email address")
     first_name: str = Field(..., alias="firstName", description="First name")
     last_name: str = Field(..., alias="lastName", description="Last name")
     phone_number: Optional[str] = Field(
         default=None, alias="phoneNumber", description="Phone number"
     )
-    role: str = Field(..., description="User role")
-    status: str = Field(default="ACTIVE", description="User status")
+    role: str = Field(..., alias="role", description="User role")
+    status: str = Field(default="ACTIVE", alias="status", description="User status")
     organization_id: Optional[str] = Field(
         default=None, alias="organizationId", description="Organization ID if applicable"
     )

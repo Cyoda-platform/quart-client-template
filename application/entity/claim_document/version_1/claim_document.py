@@ -50,7 +50,7 @@ class ClaimDocument(CyodaEntity):
     document_date: Optional[str] = Field(
         default=None, alias="documentDate", description="Date of the document"
     )
-    status: str = Field(default="VERIFIED", description="Document status")
+    status: str = Field(default="VERIFIED", alias="status", description="Document status")
     created_at: Optional[str] = Field(
         default_factory=lambda: datetime.now(timezone.utc)
         .isoformat()

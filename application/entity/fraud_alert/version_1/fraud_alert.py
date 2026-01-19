@@ -25,8 +25,10 @@ class FraudAlert(CyodaEntity):
     claim_id: str = Field(..., alias="claimId", description="Associated claim ID")
     alert_type: str = Field(..., alias="alertType", description="Type of fraud alert")
     severity: str = Field(..., description="Severity level (LOW, MEDIUM, HIGH)")
-    status: str = Field(default="Open", description="Alert status")
-    description: str = Field(..., description="Description of the fraud alert")
+    status: str = Field(default="Open", alias="status", description="Alert status")
+    description: str = Field(
+        ..., alias="description", description="Description of the fraud alert"
+    )
     related_claim_ids: List[str] = Field(
         default_factory=list,
         alias="relatedClaimIds",

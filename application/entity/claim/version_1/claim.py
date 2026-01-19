@@ -24,14 +24,22 @@ class Claim(CyodaEntity):
     ENTITY_NAME: ClassVar[str] = "Claim"
     ENTITY_VERSION: ClassVar[int] = 1
 
-    claim_number: str = Field(..., description="Unique claim number")
-    policy_id: str = Field(..., description="Associated policy ID")
-    claimant_id: str = Field(..., description="ID of the claimant")
-    incident_date: str = Field(..., description="Date/time of incident (ISO 8601)")
-    incident_location: str = Field(..., description="Location of incident")
-    incident_description: str = Field(..., description="Description of incident")
-    claim_type: str = Field(..., description="Type of claim (AUTO, HOME, etc.)")
-    claim_amount: float = Field(..., description="Claimed amount")
+    claim_number: str = Field(..., alias="claimNumber", description="Unique claim number")
+    policy_id: str = Field(..., alias="policyId", description="Associated policy ID")
+    claimant_id: str = Field(..., alias="claimantId", description="ID of the claimant")
+    incident_date: str = Field(
+        ..., alias="incidentDate", description="Date/time of incident (ISO 8601)"
+    )
+    incident_location: str = Field(
+        ..., alias="incidentLocation", description="Location of incident"
+    )
+    incident_description: str = Field(
+        ..., alias="incidentDescription", description="Description of incident"
+    )
+    claim_type: str = Field(
+        ..., alias="claimType", description="Type of claim (AUTO, HOME, etc.)"
+    )
+    claim_amount: float = Field(..., alias="claimAmount", description="Claimed amount")
     status: str = Field(default="Submitted", description="Current claim status")
     assigned_adjuster_id: Optional[str] = Field(
         default=None, alias="assignedAdjusterId", description="ID of assigned adjuster"

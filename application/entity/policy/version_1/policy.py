@@ -37,11 +37,11 @@ class Policy(CyodaEntity):
     premium_amount: float = Field(
         ..., alias="premiumAmount", description="Premium amount"
     )
-    deductible: float = Field(..., description="Deductible amount")
+    deductible: float = Field(..., alias="deductible", description="Deductible amount")
     coverage_limit: float = Field(
         ..., alias="coverageLimit", description="Coverage limit"
     )
-    status: str = Field(default="ACTIVE", description="Policy status")
+    status: str = Field(default="ACTIVE", alias="status", description="Policy status")
     vehicle_vin: Optional[str] = Field(
         default=None, alias="vehicleVIN", description="Vehicle VIN"
     )

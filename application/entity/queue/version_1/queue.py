@@ -33,8 +33,8 @@ class Queue(CyodaEntity):
     region_filter: Optional[str] = Field(
         default=None, alias="regionFilter", description="Region filter"
     )
-    priority: int = Field(default=1, description="Queue priority")
-    status: str = Field(default="ACTIVE", description="Queue status")
+    priority: int = Field(default=1, alias="priority", description="Queue priority")
+    status: str = Field(default="ACTIVE", alias="status", description="Queue status")
     assigned_handler_ids: List[str] = Field(
         default_factory=list,
         alias="assignedHandlerIds",

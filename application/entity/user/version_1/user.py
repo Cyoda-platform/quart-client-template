@@ -99,4 +99,3 @@ class User(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

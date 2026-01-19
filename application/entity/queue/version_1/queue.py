@@ -126,4 +126,3 @@ class Queue(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

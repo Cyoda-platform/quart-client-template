@@ -1,0 +1,139 @@
+{
+  "name": "TradeLifecycle",
+  "version": "1",
+  "metadata": {
+    "description": "Capture executed trades, enrich them, send confirmations (FIX/REST), support novation workflows, and persist settlement instructions.",
+    "executionMode": "event"
+  },
+  "initialState": "TradeCaptured",
+  "states": {
+    "TradeCaptured": {
+      "transitions": [
+        {
+          "name": "to_enrich",
+          "next": "EnrichTrade",
+          "manual": false
+        },
+        {
+          "name": "discard",
+          "next": "Completed",
+          "manual": true
+        }
+      ],
+      "processors": [
+        {
+          "name": "trade_capture_processor",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 2000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "EnrichTrade": {
+      "transitions": [
+        {
+          "name": "enriched",
+          "next": "Confirmations",
+          "manual": false
+        },
+        {
+          "name": "enrich_failed",
+          "next": "Completed",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "trade_enricher",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 3000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "Confirmations": {
+      "transitions": [
+        {
+          "name": "confirmed",
+          "next": "SettlementInstruction",
+          "manual": false
+        },
+        {
+          "name": "confirm_failed",
+          "next": "Novation",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "confirmation_sender",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 15000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "Novation": {
+      "transitions": [
+        {
+          "name": "novation_requested",
+          "next": "SettlementInstruction",
+          "manual": false
+        },
+        {
+          "name": "novation_failed",
+          "next": "Completed",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "novation_processor",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 10000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "SettlementInstruction": {
+      "transitions": [
+        {
+          "name": "settlement_recorded",
+          "next": "Completed",
+          "manual": false
+        },
+        {
+          "name": "settlement_failed",
+          "next": "Completed",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "settlement_allocator",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 5000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "Completed": {
+      "transitions": []
+    }
+  }
+}

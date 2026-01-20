@@ -1,0 +1,166 @@
+{
+  "name": "OrderRouting",
+  "version": "1",
+  "metadata": {
+    "description": "Accept new orders, run pre-trade checks, enrich orders, select execution venues, send via FIX sessions, handle execution reports, and finalize order status.",
+    "executionMode": "event"
+  },
+  "initialState": "NewOrder",
+  "states": {
+    "NewOrder": {
+      "transitions": [
+        {
+          "name": "to_pre_trade_checks",
+          "next": "PreTradeChecks",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "Finalize",
+          "manual": true
+        }
+      ]
+    },
+    "PreTradeChecks": {
+      "transitions": [
+        {
+          "name": "risk_passed",
+          "next": "EnrichOrder",
+          "manual": false
+        },
+        {
+          "name": "risk_failed",
+          "next": "Finalize",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "risk_check_processor",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 5000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "EnrichOrder": {
+      "transitions": [
+        {
+          "name": "enriched",
+          "next": "RouteOrder",
+          "manual": false
+        },
+        {
+          "name": "enrich_failed",
+          "next": "Finalize",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "route_selector_processor",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 3000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "RouteOrder": {
+      "transitions": [
+        {
+          "name": "venue_selected",
+          "next": "AwaitExecutionReports",
+          "manual": false
+        },
+        {
+          "name": "route_failed",
+          "next": "Finalize",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "fix_outbound_processor",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 10000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "AwaitExecutionReports": {
+      "transitions": [
+        {
+          "name": "execution_report_received",
+          "next": "FillHandling",
+          "manual": false
+        },
+        {
+          "name": "cancel_received",
+          "next": "CancelHandling",
+          "manual": false
+        },
+        {
+          "name": "timeout",
+          "next": "Finalize",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "execution_report_processor",
+          "executionMode": "ASYNC_SAME_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 60000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "FillHandling": {
+      "transitions": [
+        {
+          "name": "partially_filled",
+          "next": "AwaitExecutionReports",
+          "manual": false
+        },
+        {
+          "name": "filled",
+          "next": "Finalize",
+          "manual": false
+        },
+        {
+          "name": "reject",
+          "next": "Finalize",
+          "manual": false
+        }
+      ]
+    },
+    "CancelHandling": {
+      "transitions": [
+        {
+          "name": "cancel_acknowledged",
+          "next": "Finalize",
+          "manual": false
+        },
+        {
+          "name": "cancel_rejected",
+          "next": "FillHandling",
+          "manual": false
+        }
+      ]
+    },
+    "Finalize": {
+      "transitions": []
+    }
+  }
+}

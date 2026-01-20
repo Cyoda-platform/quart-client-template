@@ -1,0 +1,162 @@
+{
+  "name": "MarginCalculation",
+  "version": "1",
+  "metadata": {
+    "description": "Periodic and on-demand margin calculation for accounts and portfolios. Supports event-driven and scheduled modes.",
+    "executionMode": "scheduled"
+  },
+  "initialState": "Trigger",
+  "states": {
+    "Trigger": {
+      "transitions": [
+        {
+          "name": "gather_positions",
+          "next": "GatherPositions",
+          "manual": false
+        }
+      ]
+    },
+    "GatherPositions": {
+      "transitions": [
+        {
+          "name": "positions_gathered",
+          "next": "MarketDataEnrichment",
+          "manual": false
+        },
+        {
+          "name": "gather_failed",
+          "next": "Completed",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "position_aggregator",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 5000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "MarketDataEnrichment": {
+      "transitions": [
+        {
+          "name": "md_enriched",
+          "next": "ComputeMargins",
+          "manual": false
+        },
+        {
+          "name": "md_failed",
+          "next": "Completed",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "market_data_adapter",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 10000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "ComputeMargins": {
+      "transitions": [
+        {
+          "name": "margins_computed",
+          "next": "GenerateMarginRequest",
+          "manual": false
+        },
+        {
+          "name": "compute_failed",
+          "next": "Completed",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "margin_engine",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 15000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "GenerateMarginRequest": {
+      "transitions": [
+        {
+          "name": "request_generated",
+          "next": "AwaitPBResponse",
+          "manual": false
+        },
+        {
+          "name": "request_failed",
+          "next": "Completed",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "pb_margin_api_client",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 20000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "AwaitPBResponse": {
+      "transitions": [
+        {
+          "name": "pb_responded",
+          "next": "ApplyCollateral",
+          "manual": false
+        },
+        {
+          "name": "pb_timeout",
+          "next": "Completed",
+          "manual": false
+        }
+      ]
+    },
+    "ApplyCollateral": {
+      "transitions": [
+        {
+          "name": "collateral_applied",
+          "next": "Completed",
+          "manual": false
+        },
+        {
+          "name": "apply_failed",
+          "next": "Completed",
+          "manual": false
+        }
+      ],
+      "processors": [
+        {
+          "name": "position_aggregator",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "responseTimeoutMs": 5000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "Completed": {
+      "transitions": []
+    }
+  }
+}

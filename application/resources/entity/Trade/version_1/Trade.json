@@ -1,0 +1,14 @@
+{
+  "id": "e1faffb3-45e0-4f4b-a9c1-234567890abc",
+  "orderId": "d3b07384-d9a1-4a7b-9c5b-1234567890ab",
+  "instrumentId": "AAPL-202601-150-C",
+  "tradeDate": "2026-01-20T09:31:12Z",
+  "quantity": 100.0,
+  "price": 150.20,
+  "counterpartyId": "CP-2001",
+  "venueTradeId": "NAS-TRD-00012345",
+  "executionVenueId": "NASDAQ",
+  "settlementDate": "2026-01-22",
+  "currency": "USD",
+  "tradeType": "EXCHANGE"
+}

@@ -1,0 +1,17 @@
+{
+  "id": "d3b07384-d9a1-4a7b-9c5b-1234567890ab",
+  "clientOrderId": "CL-20260120-0001",
+  "accountId": "ACC-1001",
+  "instrumentId": "AAPL-202601-150-C",
+  "side": "BUY",
+  "orderType": "LIMIT",
+  "quantity": 100.0,
+  "price": 150.25,
+  "timeInForce": "GTC",
+  "status": "NEW",
+  "createdAt": "2026-01-20T09:30:00Z",
+  "updatedAt": "2026-01-20T09:30:00Z",
+  "route": "SMART_ROUTER",
+  "executionVenueId": "NASDAQ",
+  "strategyId": null
+}

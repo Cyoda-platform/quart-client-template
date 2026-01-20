@@ -1,0 +1,7 @@
+{
+  "id": "NASDAQ",
+  "name": "NASDAQ Stock Market",
+  "type": "EXCHANGE",
+  "supportedFixVersions": ["FIX.4.2", "FIX.4.4", "FIX.5.0"],
+  "marketDataFeed": "NASDAQ-ITCH"
+}

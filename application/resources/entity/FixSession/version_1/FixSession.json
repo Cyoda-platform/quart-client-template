@@ -1,0 +1,10 @@
+{
+  "id": "fs-6001",
+  "partyId": "GBRK01",
+  "targetCompId": "NASDAQ",
+  "senderCompId": "CYODA_APP",
+  "fixVersion": "FIX.4.4",
+  "isInitiator": true,
+  "connected": false,
+  "lastHeartbeat": "2026-01-20T09:29:00Z"
+}

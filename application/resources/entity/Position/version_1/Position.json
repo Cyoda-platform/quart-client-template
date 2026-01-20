@@ -1,0 +1,10 @@
+{
+  "id": "pos-3001",
+  "accountId": "ACC-1001",
+  "instrumentId": "AAPL-202601-150-C",
+  "quantity": 100.0,
+  "averagePrice": 149.75,
+  "unrealizedPnl": 45.0,
+  "realizedPnl": 0.0,
+  "asOf": "2026-01-20T16:00:00Z"
+}

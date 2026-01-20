@@ -1,0 +1,10 @@
+{
+  "id": "AAPL-202601-150-C",
+  "symbol": "AAPL",
+  "instrumentType": "OPTION",
+  "underlyingId": "AAPL",
+  "expirationDate": "2026-01-15",
+  "currency": "USD",
+  "tickSize": 0.01,
+  "lotSize": 100
+}

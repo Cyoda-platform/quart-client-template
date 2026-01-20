@@ -1,0 +1,10 @@
+{
+  "id": "pf-4001",
+  "name": "Alpha Trading Desk",
+  "ownerAccountId": "ACC-1001",
+  "currency": "USD",
+  "positions": ["pos-3001"],
+  "totalUnrealizedPnl": 45.0,
+  "totalRealizedPnl": 0.0,
+  "createdAt": "2026-01-01T09:00:00Z"
+}

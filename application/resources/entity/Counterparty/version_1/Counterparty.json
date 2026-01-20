@@ -1,0 +1,9 @@
+{
+  "id": "cp-2001",
+  "name": "Global Brokers LLC",
+  "type": "BROKER",
+  "legalEntityId": "LE-GB-001",
+  "contactEmail": "ops@globalbrokers.example.com",
+  "fixPartyId": "GBRK01",
+  "defaultSettlementAccount": "SETT-GB-01"
+}

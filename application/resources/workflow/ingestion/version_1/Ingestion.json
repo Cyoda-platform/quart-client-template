@@ -1,0 +1,119 @@
+{
+  "version": "1.0",
+  "name": "Ingestion",
+  "desc": "Handles batch and API ingestion of customer and credit bureau data, with validation, normalization and raw artifact storage. Emits event to trigger feature engineering.",
+  "initialState": "receive",
+  "active": true,
+  "states": {
+    "receive": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validate",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Receive batch files or API payloads and enqueue for validation. Processor: processors/ingest/receiver"
+    },
+    "validate": {
+      "transitions": [
+        {
+          "name": "store_raw",
+          "next": "store_raw",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Run schema validation, field checks, and basic enrichment. Processor: processors/ingest/csv_validator",
+      "processors": [
+        {
+          "name": "csv_validator",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 30000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "store_raw": {
+      "transitions": [
+        {
+          "name": "emit_event",
+          "next": "emit_event",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Persist raw payloads and metadata for lineage and reprocessing. Processor: processors/storage/save_raw",
+      "processors": [
+        {
+          "name": "save_raw",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 60000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "emit_event": {
+      "transitions": [
+        {
+          "name": "done",
+          "next": "done",
+          "manual": false
+        }
+      ],
+      "description": "Emit event to trigger FeatureEngineering workflow. Processor: processors/events/publish",
+      "processors": [
+        {
+          "name": "publish_event",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": false,
+            "responseTimeoutMs": 20000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "done": {
+      "transitions": [],
+      "description": "Terminal success state"
+    },
+    "error": {
+      "transitions": [
+        {
+          "name": "retry",
+          "next": "receive",
+          "manual": true
+        },
+        {
+          "name": "abort",
+          "next": "done",
+          "manual": true
+        }
+      ],
+      "description": "Error handling state. Processor: processors/ingest/error_handler"
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "00000000-0000-0000-0000-000000000001",
+  "title": "Sample ticket: Service outage in region A",
+  "description": "Users in region A report that the service is unavailable. Initial investigation points to network connectivity issues.",
+  "reporterId": "11111111-1111-1111-1111-111111111111",
+  "assigneeId": null,
+  "priority": "HIGH",
+  "status": "NEW",
+  "createdAt": "2026-01-21T10:00:00Z",
+  "updatedAt": "2026-01-21T10:00:00Z",
+  "slaId": "22222222-2222-2222-2222-222222222222",
+  "tags": ["outage", "region-A"],
+  "metadata": {
+    "source": "monitoring",
+    "impact": "service_down"
+  }
+}

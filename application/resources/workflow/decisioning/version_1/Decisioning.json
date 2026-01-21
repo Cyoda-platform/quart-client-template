@@ -1,0 +1,153 @@
+{
+  "version": "1.0",
+  "name": "Decisioning",
+  "desc": "Apply business rules and score thresholds to approve/decline/refer, support manual overrides and write decisions to case management. Trigger Monitoring/Alerting for declines/overrides.",
+  "initialState": "start",
+  "active": true,
+  "states": {
+    "start": {
+      "transitions": [
+        {
+          "name": "evaluate_rules",
+          "next": "evaluate_rules",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Entry point when ScorecardScoring emits an event. Processor: processors/decision/event_consumer"
+    },
+    "evaluate_rules": {
+      "transitions": [
+        {
+          "name": "create_case",
+          "next": "create_case",
+          "manual": false
+        },
+        {
+          "name": "notify",
+          "next": "notify",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Apply score thresholds and business rules. Processor: processors/decision/rule_engine",
+      "processors": [
+        {
+          "name": "rule_engine",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 5000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ],
+      "criterion": {
+        "type": "function",
+        "function": {
+          "name": "evaluate_score_thresholds",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 2000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      }
+    },
+    "create_case": {
+      "transitions": [
+        {
+          "name": "notify",
+          "next": "notify",
+          "manual": false
+        }
+      ],
+      "description": "Write decision outcome and any manual override flags to case management. Processor: processors/case/create_case",
+      "processors": [
+        {
+          "name": "create_case",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 20000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "notify": {
+      "transitions": [
+        {
+          "name": "emit_event",
+          "next": "emit_event",
+          "manual": false
+        }
+      ],
+      "description": "Notify downstream systems and trigger Monitoring/Alerting if needed. Processor: processors/notification/notify",
+      "processors": [
+        {
+          "name": "notify",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": false,
+            "responseTimeoutMs": 10000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "emit_event": {
+      "transitions": [
+        {
+          "name": "done",
+          "next": "done",
+          "manual": false
+        }
+      ],
+      "description": "Emit event for Monitoring/Alerting. Processor: processors/events/publish",
+      "processors": [
+        {
+          "name": "publish_event",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": false,
+            "responseTimeoutMs": 20000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "done": {
+      "transitions": [],
+      "description": "Terminal success state"
+    },
+    "error": {
+      "transitions": [
+        {
+          "name": "retry",
+          "next": "start",
+          "manual": true
+        },
+        {
+          "name": "abort",
+          "next": "done",
+          "manual": true
+        }
+      ],
+      "description": "Error handling state. Processor: processors/decision/error_handler"
+    }
+  }
+}

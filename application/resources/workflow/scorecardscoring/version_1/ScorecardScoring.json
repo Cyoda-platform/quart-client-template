@@ -1,0 +1,141 @@
+{
+  "version": "1.0",
+  "name": "ScorecardScoring",
+  "desc": "Load engineered features, apply logistic regression scorecard to produce score, PD and feature contributions, persist Scorecard entity and trigger Decisioning.",
+  "initialState": "start",
+  "active": true,
+  "states": {
+    "start": {
+      "transitions": [
+        {
+          "name": "load_features",
+          "next": "load_features",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Triggered by FeatureEngineering event. Processor: processors/scoring/event_consumer"
+    },
+    "load_features": {
+      "transitions": [
+        {
+          "name": "score",
+          "next": "score",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Load feature vector from feature store. Processor: processors/scoring/feature_loader",
+      "processors": [
+        {
+          "name": "feature_loader",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 30000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "score": {
+      "transitions": [
+        {
+          "name": "store_scorecard",
+          "next": "store_scorecard",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Apply logistic regression scorecard and compute PD. Processor: processors/scoring/logistic_scorecard",
+      "processors": [
+        {
+          "name": "logistic_scorecard",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 5000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "store_scorecard": {
+      "transitions": [
+        {
+          "name": "emit_event",
+          "next": "emit_event",
+          "manual": false
+        }
+      ],
+      "description": "Persist score and contributions as Scorecard entity. Processor: processors/scoring/persist_scorecard",
+      "processors": [
+        {
+          "name": "persist_scorecard",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 20000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "emit_event": {
+      "transitions": [
+        {
+          "name": "done",
+          "next": "done",
+          "manual": false
+        }
+      ],
+      "description": "Emit event to trigger Decisioning. Processor: processors/events/publish",
+      "processors": [
+        {
+          "name": "publish_event",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": false,
+            "responseTimeoutMs": 20000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "done": {
+      "transitions": [],
+      "description": "Terminal success state"
+    },
+    "error": {
+      "transitions": [
+        {
+          "name": "retry",
+          "next": "start",
+          "manual": true
+        },
+        {
+          "name": "abort",
+          "next": "done",
+          "manual": true
+        }
+      ],
+      "description": "Error handling state. Processor: processors/scoring/error_handler"
+    }
+  }
+}

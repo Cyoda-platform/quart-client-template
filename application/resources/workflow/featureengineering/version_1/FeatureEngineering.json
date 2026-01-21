@@ -1,0 +1,141 @@
+{
+  "version": "1.0",
+  "name": "FeatureEngineering",
+  "desc": "Consume validated raw data, compute derived features and WoE transformations, persist engineered features and trigger ScorecardScoring.",
+  "initialState": "start",
+  "active": true,
+  "states": {
+    "start": {
+      "transitions": [
+        {
+          "name": "compute_features",
+          "next": "compute_features",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Entry point when FeatureEngineering event is received. Processor: processors/fe/ingest_consumer"
+    },
+    "compute_features": {
+      "transitions": [
+        {
+          "name": "apply_woe",
+          "next": "apply_woe",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Compute delinquencies, utilization, age_of_credit and other derived features. Processor: processors/fe/feature_computer",
+      "processors": [
+        {
+          "name": "feature_computer",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 60000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "apply_woe": {
+      "transitions": [
+        {
+          "name": "persist_features",
+          "next": "persist_features",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Apply Weight-of-Evidence transformations and binning. Processor: processors/fe/woe_transform",
+      "processors": [
+        {
+          "name": "woe_transform",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 30000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "persist_features": {
+      "transitions": [
+        {
+          "name": "emit_event",
+          "next": "emit_event",
+          "manual": false
+        }
+      ],
+      "description": "Persist engineered features to Feature store. Processor: processors/fe/feature_persister",
+      "processors": [
+        {
+          "name": "feature_persister",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": true,
+            "responseTimeoutMs": 60000,
+            "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "emit_event": {
+      "transitions": [
+        {
+          "name": "done",
+          "next": "done",
+          "manual": false
+        }
+      ],
+      "description": "Emit event to trigger ScorecardScoring. Processor: processors/events/publish",
+      "processors": [
+        {
+          "name": "publish_event",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": false,
+            "responseTimeoutMs": 20000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "done": {
+      "transitions": [],
+      "description": "Terminal success state"
+    },
+    "error": {
+      "transitions": [
+        {
+          "name": "retry",
+          "next": "start",
+          "manual": true
+        },
+        {
+          "name": "abort",
+          "next": "done",
+          "manual": true
+        }
+      ],
+      "description": "Error handling state. Processor: processors/fe/error_handler"
+    }
+  }
+}

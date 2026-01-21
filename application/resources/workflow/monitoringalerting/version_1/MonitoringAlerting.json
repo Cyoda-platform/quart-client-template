@@ -1,0 +1,146 @@
+{
+  "version": "1.0",
+  "name": "MonitoringAlerting",
+  "desc": "Listen for events from Ingestion/FeatureEngineering/ScorecardScoring/Decisioning and run model performance checks, data drift detection, and alerting.",
+  "initialState": "start",
+  "active": true,
+  "states": {
+    "start": {
+      "transitions": [
+        {
+          "name": "collect_metrics",
+          "next": "collect_metrics",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Triggered by events from upstream workflows. Processor: processors/monitor/event_consumer"
+    },
+    "collect_metrics": {
+      "transitions": [
+        {
+          "name": "evaluate_thresholds",
+          "next": "evaluate_thresholds",
+          "manual": false
+        },
+        {
+          "name": "error",
+          "next": "error",
+          "manual": false
+        }
+      ],
+      "description": "Collect model metrics, data distributions and operational telemetry. Processor: processors/monitor/metrics_collector",
+      "processors": [
+        {
+          "name": "metrics_collector",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": false,
+            "responseTimeoutMs": 60000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "evaluate_thresholds": {
+      "transitions": [
+        {
+          "name": "send_alerts",
+          "next": "send_alerts",
+          "manual": false
+        },
+        {
+          "name": "log_incident",
+          "next": "log_incident",
+          "manual": false
+        },
+        {
+          "name": "done",
+          "next": "done",
+          "manual": false
+        }
+      ],
+      "description": "Evaluate thresholds for drift, performance degradation, and SLA breaches. Processor: processors/monitor/evaluator",
+      "processors": [
+        {
+          "name": "evaluator",
+          "executionMode": "SYNC",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": false,
+            "responseTimeoutMs": 20000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "send_alerts": {
+      "transitions": [
+        {
+          "name": "log_incident",
+          "next": "log_incident",
+          "manual": false
+        }
+      ],
+      "description": "Send alerts to monitoring channels and paging. Processor: processors/monitor/alerter",
+      "processors": [
+        {
+          "name": "alerter",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+            "attachEntity": false,
+            "responseTimeoutMs": 10000,
+            "retryPolicy": "FIXED"
+          }
+        }
+      ]
+    },
+    "log_incident": {
+      "transitions": [
+        {
+          "name": "done",
+          "next": "done",
+          "manual": false
+        }
+      ],
+      "description": "Persist incident and alert metadata for audit. Processor: processors/monitor/log_incident",
+      "processors": [
+        {
+          "name": "log_incident",
+          "executionMode": "ASYNC_NEW_TX",
+          "config": {
+            "calculationNodesTags": "cyoda_application",
+ "attachEntity": false,
+                                    "responseTimeoutMs": 20000,
+                                    "retryPolicy": "EXPONENTIAL"
+          }
+        }
+      ]
+    },
+    "done": {
+      "transitions": [],
+      "description": "Terminal success state"
+    },
+    "error": {
+      "transitions": [
+        {
+          "name": "retry",
+          "next": "start",
+          "manual": true
+        },
+        {
+          "name": "abort",
+          "next": "done",
+          "manual": true
+        }
+      ],
+      "description": "Error handling state. Processor: processors/monitor/error_handler"
+    }
+  }
+}

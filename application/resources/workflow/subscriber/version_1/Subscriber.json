@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "name": "Subscriber Workflow",
+  "desc": "Manages the lifecycle of newsletter subscribers from signup to unsubscribe",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "unsubscribe",
+          "next": "unsubscribed",
+          "manual": true
+        }
+      ]
+    },
+    "unsubscribed": {
+      "transitions": []
+    }
+  }
+}

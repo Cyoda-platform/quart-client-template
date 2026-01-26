@@ -1,0 +1,85 @@
+{
+  "version": "1",
+  "name": "WeeklyIngestionAndEmailSend",
+  "desc": "Scheduled workflow that fetches a weekly cat fact, stores it, and sends emails to confirmed subscribers.",
+  "initialState": "scheduled",
+  "active": true,
+  "states": {
+    "scheduled": {
+      "transitions": [
+        {
+          "name": "fetch_fact",
+          "next": "fetched",
+          "manual": false,
+          "processors": [
+            {
+              "name": "fetch_cat_fact",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 30000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "fetched": {
+      "transitions": [
+        {
+          "name": "store_fact",
+          "next": "stored",
+          "manual": false,
+          "processors": [
+            {
+              "name": "store_cat_fact",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "stored": {
+      "transitions": [
+        {
+          "name": "send_emails",
+          "next": "sending",
+          "manual": false,
+          "processors": [
+            {
+              "name": "enqueue_emails",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "EXPONENTIAL"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "sending": {
+      "transitions": [
+        {
+          "name": "mark_sent",
+          "next": "sent",
+          "manual": false
+        },
+        {
+          "name": "fail",
+          "next": "failed",
+          "manual": false
+        }
+      ]
+    },
+    "sent": {
+      "transitions": []
+    },
+    "failed": {
+      "transitions": []
+    }
+  }
+}

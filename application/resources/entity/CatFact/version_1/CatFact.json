@@ -1,0 +1,11 @@
+{
+  "id": "catfact",
+  "modelVersion": 1,
+  "attributes": {
+    "id": {"type": "uuid", "description": "Unique fact id"},
+    "text": {"type": "string", "description": "Cat fact text"},
+    "source": {"type": "string", "description": "Source of the fact (e.g., catfact.ninja)"},
+    "length": {"type": "integer", "description": "Character length of the fact"},
+    "fetched_at": {"type": "string", "format": "date-time", "description": "Timestamp when fact was fetched"}
+  }
+}

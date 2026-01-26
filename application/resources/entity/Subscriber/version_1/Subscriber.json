@@ -1,0 +1,11 @@
+{
+  "id": "subscriber",
+  "modelVersion": 1,
+  "attributes": {
+    "id": {"type": "uuid", "description": "Unique subscriber id"},
+    "email": {"type": "string", "description": "Subscriber email address"},
+    "name": {"type": "string", "description": "Optional subscriber name"},
+    "status": {"type": "string", "description": "subscription status: pending, confirmed, unsubscribed"},
+    "created_at": {"type": "string", "format": "date-time", "description": "Timestamp when subscribed"}
+  }
+}

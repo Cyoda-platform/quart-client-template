@@ -7,6 +7,7 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -14,15 +15,16 @@ _sym_db = _symbol_database.Default()
 
 import cloudevents_pb2 as cloudevents__pb2
 
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x63yoda-cloud-api.proto\x12\x18org.cyoda.cloud.api.grpc\x1a\x11\x63loudevents.proto2\x8b\x04\n\x12\x43loudEventsService\x12R\n\x0estartStreaming\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent(\x01\x30\x01\x12Q\n\x11\x65ntityModelManage\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent\x12L\n\x0c\x65ntityManage\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent\x12X\n\x16\x65ntityManageCollection\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent0\x01\x12L\n\x0c\x65ntitySearch\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent\x12X\n\x16\x65ntitySearchCollection\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent0\x01\x42\x02P\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b"\n\x15\x63yoda-cloud-api.proto\x12\x18org.cyoda.cloud.api.grpc\x1a\x11\x63loudevents.proto2\x8b\x04\n\x12\x43loudEventsService\x12R\n\x0estartStreaming\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent(\x01\x30\x01\x12Q\n\x11\x65ntityModelManage\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent\x12L\n\x0c\x65ntityManage\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent\x12X\n\x16\x65ntityManageCollection\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent0\x01\x12L\n\x0c\x65ntitySearch\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent\x12X\n\x16\x65ntitySearchCollection\x12\x1d.io.cloudevents.v1.CloudEvent\x1a\x1d.io.cloudevents.v1.CloudEvent0\x01\x42\x02P\x01\x62\x06proto3"
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'cyoda_cloud_api_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "cyoda_cloud_api_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  _globals['DESCRIPTOR']._loaded_options = None
-  _globals['DESCRIPTOR']._serialized_options = b'P\001'
-  _globals['_CLOUDEVENTSSERVICE']._serialized_start=71
-  _globals['_CLOUDEVENTSSERVICE']._serialized_end=594
+    _globals["DESCRIPTOR"]._loaded_options = None
+    _globals["DESCRIPTOR"]._serialized_options = b"P\001"
+    _globals["_CLOUDEVENTSSERVICE"]._serialized_start = 71
+    _globals["_CLOUDEVENTSSERVICE"]._serialized_end = 594
 # @@protoc_insertion_point(module_scope)

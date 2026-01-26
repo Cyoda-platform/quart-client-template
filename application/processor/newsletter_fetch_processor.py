@@ -9,9 +9,9 @@ from typing import Any
 
 import aiohttp
 
+from application.entity.newsletter import Newsletter
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.newsletter import Newsletter
 
 
 class NewsletterFetchProcessor(CyodaProcessor):

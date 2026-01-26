@@ -7,10 +7,10 @@ Sends the newsletter to all active subscribers and tracks delivery status.
 import logging
 from typing import Any
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaProcessor
 from application.entity.newsletter import Newsletter
 from application.entity.subscriber import Subscriber
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaEntity, CyodaProcessor
 from services.services import get_entity_service
 
 

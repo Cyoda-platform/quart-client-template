@@ -1,0 +1,9 @@
+{
+  "csvUrl": "https://raw.githubusercontent.com/Cyoda-platform/cyoda-ai/refs/heads/ai-2.x/data/test-inputs/v1/connections/london_houses.csv",
+  "fileName": "london_houses.csv",
+  "rowCount": 13580,
+  "columnCount": 13,
+  "columns": ["price", "area", "rooms", "type", "postcode", "date", "latitude", "longitude", "duration", "new", "leasehold", "furnished", "agent"],
+  "status": "pending"
+}
+

@@ -5,12 +5,12 @@ from typing import Callable, Dict, Optional
 from quart import Quart, Response
 from quart_schema import QuartSchema, ResponseSchemaValidationError, hide
 
+from application.routes.data_analyses import data_analyses_bp
+from application.routes.subscribers import subscribers_bp
 from common.exception.exception_handler import (
     register_error_handlers as _register_error_handlers,
 )
 from services.services import get_grpc_client, initialize_services
-
-# Import blueprints for different route groups
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -129,9 +129,6 @@ async def add_cors_headers() -> None:
 
 
 # Register application blueprints
-from application.routes.data_analyses import data_analyses_bp
-from application.routes.subscribers import subscribers_bp
-
 app.register_blueprint(data_analyses_bp)
 app.register_blueprint(subscribers_bp)
 

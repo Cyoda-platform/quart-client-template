@@ -1,0 +1,46 @@
+{
+  "version": "1.0",
+  "name": "Subscriber Workflow",
+  "desc": "Workflow for email subscriber management",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "deactivate",
+          "next": "inactive",
+          "manual": true
+        }
+      ]
+    },
+    "inactive": {
+      "transitions": [
+        {
+          "name": "reactivate",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    }
+  }
+}
+

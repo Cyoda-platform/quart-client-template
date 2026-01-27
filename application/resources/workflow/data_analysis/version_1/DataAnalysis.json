@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "name": "DataAnalysis Workflow",
+  "desc": "Workflow for CSV analysis and report generation",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "DataAnalysisValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "analyze",
+          "next": "analyzed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "DataAnalysisProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "analyzed": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

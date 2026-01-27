@@ -54,4 +54,3 @@ class SubscriberValidationCriterion(CyodaCriteriaChecker):
         except Exception as e:
             logger.exception(f"Error validating Subscriber: {str(e)}")
             return False
-

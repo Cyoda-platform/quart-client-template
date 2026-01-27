@@ -62,4 +62,3 @@ class SubscriberProcessor(CyodaProcessor):
         except Exception as e:
             logger.exception(f"Error processing Subscriber: {str(e)}")
             return entity
-

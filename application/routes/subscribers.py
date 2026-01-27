@@ -169,4 +169,3 @@ async def delete_subscriber(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error deleting Subscriber: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

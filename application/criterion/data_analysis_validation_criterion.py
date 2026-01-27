@@ -68,4 +68,3 @@ class DataAnalysisValidationCriterion(CyodaCriteriaChecker):
         except Exception as e:
             logger.exception(f"Error validating DataAnalysis: {str(e)}")
             return False
-

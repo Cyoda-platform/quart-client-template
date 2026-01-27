@@ -92,4 +92,3 @@ class DataAnalysisProcessor(CyodaProcessor):
             data_analysis.status = "failed"
             data_analysis.update_timestamp()
             return data_analysis
-

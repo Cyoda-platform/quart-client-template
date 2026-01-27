@@ -31,9 +31,7 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
 
-data_analyses_bp = Blueprint(
-    "data_analyses", __name__, url_prefix="/api/data-analyses"
-)
+data_analyses_bp = Blueprint("data_analyses", __name__, url_prefix="/api/data-analyses")
 
 
 @data_analyses_bp.route("", methods=["POST"])
@@ -142,4 +140,3 @@ async def delete_data_analysis(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error deleting DataAnalysis: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

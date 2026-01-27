@@ -27,6 +27,11 @@ QuartSchema(
             "description": "ExampleEntity management endpoints",
         },
         {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {
+            "name": "data-analyses",
+            "description": "DataAnalysis CSV analysis endpoints",
+        },
+        {"name": "subscribers", "description": "Subscriber email management endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -121,6 +126,14 @@ async def add_cors_headers() -> None:
         response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         return response
+
+
+# Register application blueprints
+from application.routes.data_analyses import data_analyses_bp
+from application.routes.subscribers import subscribers_bp
+
+app.register_blueprint(data_analyses_bp)
+app.register_blueprint(subscribers_bp)
 
 
 if __name__ == "__main__":

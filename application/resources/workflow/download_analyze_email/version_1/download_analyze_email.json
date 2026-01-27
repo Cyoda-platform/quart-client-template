@@ -1,0 +1,44 @@
+{
+  "version": "1",
+  "name": "download_analyze_email",
+  "desc": "Workflow to download CSV, analyze with pandas, generate report, and email subscribers",
+  "initialState": "created",
+  "active": true,
+  "states": {
+    "created": {
+      "transitions": [
+        { "name": "start_download", "next": "downloading", "manual": false },
+        { "name": "cancel", "next": "cancelled", "manual": true }
+      ]
+    },
+    "downloading": {
+      "transitions": [
+        { "name": "download_success", "next": "analyzing", "manual": false },
+        { "name": "download_fail_retry", "next": "downloading", "manual": false },
+        { "name": "download_fail", "next": "failed", "manual": true }
+      ]
+    },
+    "analyzing": {
+      "transitions": [
+        { "name": "analysis_complete", "next": "generating_report", "manual": false },
+        { "name": "analysis_fail", "next": "failed", "manual": false }
+      ]
+    },
+    "generating_report": {
+      "transitions": [
+        { "name": "report_generated", "next": "emailing", "manual": false },
+        { "name": "report_fail", "next": "failed", "manual": false }
+      ]
+    },
+    "emailing": {
+      "transitions": [
+        { "name": "emails_sent", "next": "completed", "manual": false },
+        { "name": "email_partial_failure", "next": "completed_with_errors", "manual": false }
+      ]
+    },
+    "completed": { "transitions": [] },
+    "completed_with_errors": { "transitions": [] },
+    "failed": { "transitions": [ { "name": "retry", "next": "downloading", "manual": true }, { "name": "abort", "next": "cancelled", "manual": true } ] },
+    "cancelled": { "transitions": [] }
+  }
+}

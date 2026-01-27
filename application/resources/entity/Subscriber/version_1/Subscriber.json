@@ -1,0 +1,11 @@
+{
+  "name": "Subscriber",
+  "version": 1,
+  "id": "subscriber_id",
+  "fields": {
+    "subscriber_id": { "type": "string", "description": "Unique subscriber identifier" },
+    "email": { "type": "string", "description": "Subscriber email address" },
+    "name": { "type": "string", "description": "Subscriber full name" },
+    "preferences": { "type": "object", "description": "Subscriber preferences for report frequency/format" }
+  }
+}

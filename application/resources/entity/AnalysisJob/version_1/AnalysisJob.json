@@ -1,0 +1,13 @@
+{
+  "name": "AnalysisJob",
+  "version": 1,
+  "id": "job_id",
+  "fields": {
+    "job_id": { "type": "string", "description": "Unique job identifier" },
+    "started_at": { "type": "string", "format": "date-time", "description": "Job start time" },
+    "finished_at": { "type": "string", "format": "date-time", "description": "Job finish time" },
+    "status": { "type": "string", "description": "Status: queued, running, succeeded, failed" },
+    "error": { "type": "string", "description": "Error message if failed" },
+    "rows_processed": { "type": "integer", "description": "Number of CSV rows processed" }
+  }
+}

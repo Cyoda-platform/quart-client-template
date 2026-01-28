@@ -185,9 +185,9 @@ async def trigger_transition(
 ) -> Tuple[Dict[str, Any], int]:
     """Trigger a workflow transition for an ActivityReport."""
     try:
-        response = await service.transition(
+        response = await service.execute_transition(
             entity_id=entity_id,
-            transition_name=transition_name,
+            transition=transition_name,
             entity_class=ActivityReport.ENTITY_NAME,
             entity_version=str(ActivityReport.ENTITY_VERSION),
         )

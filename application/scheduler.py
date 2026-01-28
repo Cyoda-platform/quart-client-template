@@ -72,9 +72,9 @@ class ActivityTrackerScheduler:
         for transition in transitions:
             try:
                 logger.info(f"Triggering transition: {transition}")
-                await self.service.transition(
+                await self.service.execute_transition(
                     entity_id=entity_id,
-                    transition_name=transition,
+                    transition=transition,
                     entity_class=ActivityReport.ENTITY_NAME,
                     entity_version=str(ActivityReport.ENTITY_VERSION),
                 )

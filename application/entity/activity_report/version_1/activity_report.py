@@ -40,8 +40,7 @@ class ActivityReport(CyodaEntity):
     flagged_anomalies: List[Dict[str, Any]] = Field(
         default_factory=list,
         description=(
-            "List of flagged anomalies (user IDs or activity types "
-            "with z-score > 3)"
+            "List of flagged anomalies (user IDs or activity types " "with z-score > 3)"
         ),
     )
     raw_data_location: Optional[str] = Field(

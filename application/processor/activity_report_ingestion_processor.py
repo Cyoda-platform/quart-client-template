@@ -33,9 +33,7 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
             description="Fetches activity data from Fakerest API",
         )
 
-    async def process(
-        self, entity: CyodaEntity, **kwargs: Any
-    ) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Fetch activity data from Fakerest API and populate the report.
 
@@ -56,9 +54,7 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
             self.logger.info(f"Fetched {len(activities)} activities from API")
 
             report.total_activities = len(activities)
-            report.raw_data_location = (
-                f"memory://activities/{report.report_date}"
-            )
+            report.raw_data_location = f"memory://activities/{report.report_date}"
 
             processing_metadata = {
                 "ingestionStartTime": report.created_at,
@@ -76,9 +72,8 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
             return report
 
         except Exception as e:
-            self.logger.error(
-                f"Error ingesting data for entity {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
-            )
+            tech_id = getattr(entity, "technical_id", "<unknown>")
+            self.logger.error(f"Error ingesting data for entity {tech_id}: {str(e)}")
             raise
 
     async def _fetch_all_activities(self) -> List[Dict[str, Any]]:
@@ -113,14 +108,10 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
                             )
                             await asyncio.sleep(backoff)
                         else:
-                            self.logger.error(
-                                f"API returned status {response.status}"
-                            )
+                            self.logger.error(f"API returned status {response.status}")
                             retry_count += 1
                             if retry_count < MAX_RETRIES:
-                                backoff = (
-                                    INITIAL_BACKOFF * (2 ** (retry_count - 1))
-                                )
+                                backoff = INITIAL_BACKOFF * (2 ** (retry_count - 1))
                                 await asyncio.sleep(backoff)
 
             except asyncio.TimeoutError:

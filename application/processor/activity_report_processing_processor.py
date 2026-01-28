@@ -183,14 +183,16 @@ class ActivityReportProcessingProcessor(CyodaProcessor):
         Returns:
             List of trend highlight strings
         """
-        seven_day_avg = int(total * 0.92)
-        change_pct = round(((total - seven_day_avg) / seven_day_avg) * 100, 1)
-
         trends = []
-        if change_pct > 0:
-            trends.append(f"+{change_pct}% increase vs 7-day average")
+        seven_day_avg = int(total * 0.92)
+        if seven_day_avg > 0:
+            change_pct = round(((total - seven_day_avg) / seven_day_avg) * 100, 1)
+            if change_pct > 0:
+                trends.append(f"+{change_pct}% increase vs 7-day average")
+            else:
+                trends.append(f"{change_pct}% change vs 7-day average")
         else:
-            trends.append(f"{change_pct}% change vs 7-day average")
+            trends.append("No 7-day average available")
 
         trends.append("Peak activity at 14:30 UTC")
         trends.append(f"Total activities processed: {total}")

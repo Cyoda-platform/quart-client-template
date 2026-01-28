@@ -1,0 +1,61 @@
+{
+  "reportDate": "2026-01-28",
+  "totalActivities": 1250,
+  "topActivityTypes": [
+    {
+      "type": "login",
+      "count": 450
+    },
+    {
+      "type": "view_page",
+      "count": 380
+    },
+    {
+      "type": "click_button",
+      "count": 220
+    },
+    {
+      "type": "submit_form",
+      "count": 150
+    },
+    {
+      "type": "download_file",
+      "count": 50
+    }
+  ],
+  "trendHighlights": [
+    "+15% increase in login activities vs 7-day average",
+    "-8% decrease in form submissions vs 7-day average",
+    "Peak activity at 14:30 UTC"
+  ],
+  "flaggedAnomalies": [
+    {
+      "type": "user",
+      "id": "user_42",
+      "zScore": 3.5,
+      "reason": "Unusual spike in activity count"
+    },
+    {
+      "type": "activity_type",
+      "id": "download_file",
+      "zScore": 3.2,
+      "reason": "Significantly higher frequency than normal"
+    }
+  ],
+  "rawDataLocation": "s3://activity-tracker/raw/2026-01-28/",
+  "processingMetadata": {
+    "ingestionStartTime": "2026-01-28T02:00:00Z",
+    "ingestionEndTime": "2026-01-28T02:15:30Z",
+    "processingStartTime": "2026-01-28T02:16:00Z",
+    "processingEndTime": "2026-01-28T02:18:45Z",
+    "apiCallsAttempted": 50,
+    "apiCallsSuccessful": 50,
+    "apiCallsFailed": 0,
+    "retryCount": 2
+  },
+  "reportContentHtml": "<html><body><h1>Daily Activity Report</h1>...</body></html>",
+  "reportContentText": "Daily Activity Report\n\nTotal Activities: 1250\n...",
+  "emailSentAt": "2026-01-28T02:20:00Z",
+  "emailRecipient": "admin@example.com"
+}
+

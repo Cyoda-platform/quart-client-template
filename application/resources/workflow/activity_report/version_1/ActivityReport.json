@@ -1,0 +1,76 @@
+{
+  "version": "1.0",
+  "name": "ActivityReport Workflow",
+  "desc": "Workflow for daily activity report generation, processing, and email publishing",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "ingest",
+          "next": "ingested",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ActivityReportIngestionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ingested": {
+      "transitions": [
+        {
+          "name": "process",
+          "next": "processed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ActivityReportProcessingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "processed": {
+      "transitions": [
+        {
+          "name": "report",
+          "next": "reported",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ActivityReportPublishingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "reported": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

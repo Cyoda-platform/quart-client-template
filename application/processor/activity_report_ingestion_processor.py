@@ -11,11 +11,11 @@ from typing import Any, Dict, List
 
 import aiohttp
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaProcessor
 from application.entity.activity_report.version_1.activity_report import (
     ActivityReport,
 )
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaEntity, CyodaProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -109,9 +109,7 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
                             )
                             await asyncio.sleep(backoff)
                         else:
-                            self.logger.error(
-                                f"API returned status {response.status}"
-                            )
+                            self.logger.error(f"API returned status {response.status}")
                             retry_count += 1
                             if retry_count < MAX_RETRIES:
                                 backoff = INITIAL_BACKOFF * (2 ** (retry_count - 1))
@@ -138,8 +136,9 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
                     )
                     await asyncio.sleep(backoff)
                 else:
-                    self.logger.error(f"Failed to fetch activities after retries: {str(e)}")
+                    self.logger.error(
+                        f"Failed to fetch activities after retries: {str(e)}"
+                    )
                     raise
 
         return activities
-

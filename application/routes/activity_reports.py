@@ -10,10 +10,10 @@ from typing import Any, Dict, Tuple
 from quart import Blueprint, request
 from quart_schema import validate
 
-from services.services import get_entity_service
 from application.entity.activity_report.version_1.activity_report import (
     ActivityReport,
 )
+from services.services import get_entity_service
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +177,9 @@ async def get_transitions(entity_id: str) -> Tuple[Dict[str, Any], int]:
         return {"error": str(e)}, 500
 
 
-@activity_reports_bp.route("/<entity_id>/transition/<transition_name>", methods=["POST"])
+@activity_reports_bp.route(
+    "/<entity_id>/transition/<transition_name>", methods=["POST"]
+)
 async def trigger_transition(
     entity_id: str, transition_name: str
 ) -> Tuple[Dict[str, Any], int]:
@@ -204,4 +206,3 @@ async def trigger_transition(
             str(e),
         )
         return {"error": str(e)}, 500
-

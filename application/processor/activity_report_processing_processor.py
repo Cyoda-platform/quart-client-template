@@ -11,11 +11,11 @@ from datetime import datetime, timezone
 from statistics import mean, stdev
 from typing import Any, Dict, List
 
-from common.entity.entity_casting import cast_entity
-from common.processor.base import CyodaEntity, CyodaProcessor
 from application.entity.activity_report.version_1.activity_report import (
     ActivityReport,
 )
+from common.entity.entity_casting import cast_entity
+from common.processor.base import CyodaEntity, CyodaProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -199,4 +199,3 @@ class ActivityReportProcessingProcessor(CyodaProcessor):
         trends.append(f"Total activities processed: {total}")
 
         return trends
-

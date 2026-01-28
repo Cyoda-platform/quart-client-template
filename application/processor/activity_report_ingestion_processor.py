@@ -33,7 +33,9 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
             description="Fetches activity data from Fakerest API",
         )
 
-    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
+    async def process(
+        self, entity: CyodaEntity, **kwargs: Any
+    ) -> CyodaEntity:
         """
         Fetch activity data from Fakerest API and populate the report.
 
@@ -55,7 +57,9 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
             self.logger.info(f"Fetched {len(activities)} activities from API")
 
             report.total_activities = len(activities)
-            report.raw_data_location = f"memory://activities/{report.report_date}"
+            report.raw_data_location = (
+                f"memory://activities/{report.report_date}"
+            )
 
             processing_metadata = {
                 "ingestionStartTime": report.created_at,
@@ -94,7 +98,7 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
                     async with session.get(
                         f"{FAKEREST_API_BASE}/api/v1/Activities",
                         timeout=aiohttp.ClientTimeout(total=30),
-                    ) as response:
+                    ) as response:  # noqa: E501
                         if response.status == 200:
                             activities = await response.json()
                             self.logger.info(
@@ -105,14 +109,19 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
                             retry_count += 1
                             backoff = INITIAL_BACKOFF * (2 ** (retry_count - 1))
                             self.logger.warning(
-                                f"Rate limited. Retrying in {backoff}s (attempt {retry_count}/{MAX_RETRIES})"
+                                f"Rate limited. Retrying in {backoff}s "
+                                f"(attempt {retry_count}/{MAX_RETRIES})"
                             )
                             await asyncio.sleep(backoff)
                         else:
-                            self.logger.error(f"API returned status {response.status}")
+                            self.logger.error(
+                                f"API returned status {response.status}"
+                            )
                             retry_count += 1
                             if retry_count < MAX_RETRIES:
-                                backoff = INITIAL_BACKOFF * (2 ** (retry_count - 1))
+                                backoff = (
+                                    INITIAL_BACKOFF * (2 ** (retry_count - 1))
+                                )
                                 await asyncio.sleep(backoff)
 
             except asyncio.TimeoutError:

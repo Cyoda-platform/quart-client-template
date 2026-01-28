@@ -7,7 +7,7 @@ Provides CRUD operations and workflow transitions for ActivityReport entities.
 import logging
 from typing import Any, Dict, Tuple
 
-from quart import Blueprint, request
+from quart import Blueprint
 from quart_schema import validate
 
 from application.entity.activity_report.version_1.activity_report import (

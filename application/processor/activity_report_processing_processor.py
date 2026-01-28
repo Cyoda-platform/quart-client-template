@@ -6,7 +6,6 @@ and generates trend highlights.
 """
 
 import logging
-from collections import Counter
 from datetime import datetime, timezone
 from statistics import mean, stdev
 from typing import Any, Dict, List
@@ -43,9 +42,8 @@ class ActivityReportProcessingProcessor(CyodaProcessor):
             The processed ActivityReport entity
         """
         try:
-            self.logger.info(
-                f"Processing ActivityReport {getattr(entity, 'technical_id', '<unknown>')}"
-            )
+            tech_id = getattr(entity, "technical_id", "<unknown>")
+            self.logger.info(f"Processing ActivityReport {tech_id}")
 
             report = cast_entity(entity, ActivityReport)
 
@@ -70,9 +68,8 @@ class ActivityReportProcessingProcessor(CyodaProcessor):
             return report
 
         except Exception as e:
-            self.logger.error(
-                f"Error processing entity {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
-            )
+            tech_id = getattr(entity, "technical_id", "<unknown>")
+            self.logger.error(f"Error processing entity {tech_id}: {str(e)}")
             raise
 
     def _get_top_activity_types(self, total: int) -> List[Dict[str, Any]]:

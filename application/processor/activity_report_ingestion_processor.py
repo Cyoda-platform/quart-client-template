@@ -47,9 +47,8 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
             The populated ActivityReport entity
         """
         try:
-            self.logger.info(
-                f"Starting ingestion for ActivityReport {getattr(entity, 'technical_id', '<unknown>')}"
-            )
+            tech_id = getattr(entity, "technical_id", "<unknown>")
+            self.logger.info(f"Starting ingestion for ActivityReport {tech_id}")
 
             report = cast_entity(entity, ActivityReport)
 
@@ -129,7 +128,8 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
                 if retry_count < MAX_RETRIES:
                     backoff = INITIAL_BACKOFF * (2 ** (retry_count - 1))
                     self.logger.warning(
-                        f"Timeout. Retrying in {backoff}s (attempt {retry_count}/{MAX_RETRIES})"
+                        f"Timeout. Retrying in {backoff}s "
+                        f"(attempt {retry_count}/{MAX_RETRIES})"
                     )
                     await asyncio.sleep(backoff)
                 else:
@@ -141,7 +141,8 @@ class ActivityReportIngestionProcessor(CyodaProcessor):
                 if retry_count < MAX_RETRIES:
                     backoff = INITIAL_BACKOFF * (2 ** (retry_count - 1))
                     self.logger.warning(
-                        f"Error fetching activities: {str(e)}. Retrying in {backoff}s"
+                        f"Error fetching activities: {str(e)}. "
+                        f"Retrying in {backoff}s"
                     )
                     await asyncio.sleep(backoff)
                 else:

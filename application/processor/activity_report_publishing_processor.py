@@ -42,9 +42,8 @@ class ActivityReportPublishingProcessor(CyodaProcessor):
             The published ActivityReport entity
         """
         try:
-            self.logger.info(
-                f"Publishing ActivityReport {getattr(entity, 'technical_id', '<unknown>')}"
-            )
+            tech_id = getattr(entity, "technical_id", "<unknown>")
+            self.logger.info(f"Publishing ActivityReport {tech_id}")
 
             report = cast_entity(entity, ActivityReport)
 
@@ -73,9 +72,8 @@ class ActivityReportPublishingProcessor(CyodaProcessor):
             return report
 
         except Exception as e:
-            self.logger.error(
-                f"Error publishing entity {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
-            )
+            tech_id = getattr(entity, "technical_id", "<unknown>")
+            self.logger.error(f"Error publishing entity {tech_id}: {str(e)}")
             raise
 
     def _generate_html_report(self, report: ActivityReport) -> str:

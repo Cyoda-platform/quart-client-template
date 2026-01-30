@@ -120,4 +120,3 @@ class Interaction(CyodaEntity):
     def update_timestamp(self) -> None:
         """Update the updated_at timestamp to current time"""
         self.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-

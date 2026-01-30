@@ -1,0 +1,11 @@
+{
+  "catfactId": "550e8400-e29b-41d4-a716-446655440000",
+  "scheduledFor": "2024-01-29T09:00:00Z",
+  "sentAt": "2024-01-29T09:15:30Z",
+  "totalRecipients": 1250,
+  "successCount": 1235,
+  "failureCount": 15,
+  "status": "completed",
+  "errorDetails": null
+}
+

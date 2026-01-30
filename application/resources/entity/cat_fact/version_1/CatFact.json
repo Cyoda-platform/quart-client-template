@@ -1,0 +1,12 @@
+{
+  "factText": "Cats have over 20 different vocalizations, including the meow, purr, hiss, growl, yowl, caterwaul, chirp, and ggurgle.",
+  "retrievedAt": "2024-01-22T08:00:00Z",
+  "sendDate": "2024-01-29",
+  "sourceUrl": "https://catfact.ninja/",
+  "metadata": {
+    "length": 127,
+    "category": "behavior",
+    "api_version": "1.0"
+  }
+}
+

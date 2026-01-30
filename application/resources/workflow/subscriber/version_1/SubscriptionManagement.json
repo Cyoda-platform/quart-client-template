@@ -1,0 +1,101 @@
+{
+  "version": "1.0",
+  "name": "SubscriptionManagement Workflow",
+  "desc": "Handle user signups, validation, duplicate prevention, and unsubscribe flow initiation (generate unsubscribe_token). Validates email format, enforces unique constraint, creates Subscriber entity, and optionally sends confirmation email.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "receive_signup",
+          "next": "signup_received",
+          "manual": false
+        }
+      ]
+    },
+    "signup_received": {
+      "transitions": [
+        {
+          "name": "validate_signup",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "SubscriptionValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "validation_failed",
+          "next": "validation_failed",
+          "manual": false
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "activate_subscription",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "SubscriptionActivationProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 30000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "request_unsubscribe",
+          "next": "unsubscribe_requested",
+          "manual": true
+        }
+      ]
+    },
+    "validation_failed": {
+      "transitions": [
+        {
+          "name": "retry_validation",
+          "next": "signup_received",
+          "manual": true
+        }
+      ]
+    },
+    "unsubscribe_requested": {
+      "transitions": [
+        {
+          "name": "process_unsubscribe",
+          "next": "unsubscribed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "UnsubscribeProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 15000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "unsubscribed": {
+      "transitions": []
+    }
+  }
+}
+

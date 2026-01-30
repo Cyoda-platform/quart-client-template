@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "name": "WeeklyIngestion Workflow",
+  "desc": "Scheduled weekly job that fetches a random cat fact from the Cat Fact API, validates response, persists CatFact entity with retrieved_at and metadata, and marks send_date=null initially. Includes exponential backoff retry policy on failures.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "schedule_fetch",
+          "next": "scheduled",
+          "manual": false
+        }
+      ]
+    },
+    "scheduled": {
+      "transitions": [
+        {
+          "name": "start_fetch",
+          "next": "fetching",
+          "manual": false,
+          "processors": [
+            {
+              "name": "WeeklyIngestionProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "EXPONENTIAL",
+                "responseTimeoutMs": 30000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "fetching": {
+      "transitions": [
+        {
+          "name": "validate_response",
+          "next": "saved",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "WeeklyIngestionValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "fetch_failed",
+          "next": "error",
+          "manual": false
+        }
+      ]
+    },
+    "saved": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "error": {
+      "transitions": [
+        {
+          "name": "retry_fetch",
+          "next": "scheduled",
+          "manual": true
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

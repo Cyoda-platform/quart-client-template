@@ -1,0 +1,98 @@
+{
+  "version": "1.0",
+  "name": "WeeklySend Workflow",
+  "desc": "Create EmailSend job for the latest unsent CatFact, build batches of Subscribers, send emails via SMTP (env-configured), record per-batch progress, update EmailSend status and CatFact.send_date when fully dispatched. Includes configurable batch_size with exponential retry per recipient and backoff for transient SMTP errors.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create_send_job",
+          "next": "scheduled",
+          "manual": false
+        }
+      ]
+    },
+    "scheduled": {
+      "transitions": [
+        {
+          "name": "prepare_batches",
+          "next": "preparing_batch",
+          "manual": false,
+          "processors": [
+            {
+              "name": "WeeklySendBatchPreparationProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 60000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "preparing_batch": {
+      "transitions": [
+        {
+          "name": "start_sending",
+          "next": "sending",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "WeeklySendBatchReadyCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "no_recipients",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "sending": {
+      "transitions": [
+        {
+          "name": "batch_sent",
+          "next": "completed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "WeeklySendEmailProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "EXPONENTIAL",
+                "responseTimeoutMs": 120000
+              }
+            }
+          ]
+        },
+        {
+          "name": "send_failed",
+          "next": "failed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    },
+    "failed": {
+      "transitions": [
+        {
+          "name": "retry_send",
+          "next": "sending",
+          "manual": true
+        }
+      ]
+    }
+  }
+}
+

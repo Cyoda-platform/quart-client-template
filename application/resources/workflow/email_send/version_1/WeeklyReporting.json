@@ -1,0 +1,73 @@
+{
+  "version": "1.0",
+  "name": "WeeklyReporting Workflow",
+  "desc": "Aggregate metrics weekly/daily: subscriber counts, opens, CTR, send success rates. Produce a report entity or file and store in reports directory. Aggregates data from Subscriber, EmailSend, and Interaction entities to generate comprehensive reporting metrics.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "schedule_report",
+          "next": "scheduled",
+          "manual": false
+        }
+      ]
+    },
+    "scheduled": {
+      "transitions": [
+        {
+          "name": "start_aggregation",
+          "next": "aggregating",
+          "manual": false,
+          "processors": [
+            {
+              "name": "WeeklyReportingAggregationProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 120000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "aggregating": {
+      "transitions": [
+        {
+          "name": "generate_report",
+          "next": "completed",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "WeeklyReportingCompletionCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "aggregation_failed",
+          "next": "failed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    },
+    "failed": {
+      "transitions": [
+        {
+          "name": "retry_aggregation",
+          "next": "aggregating",
+          "manual": true
+        }
+      ]
+    }
+  }
+}
+

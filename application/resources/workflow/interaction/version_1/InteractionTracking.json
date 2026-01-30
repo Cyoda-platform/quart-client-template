@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "name": "InteractionTracking Workflow",
+  "desc": "Process tracking pixel and click URL events, deduplicate events, record opened_at and clicked_at in Interaction entity, capture ip_address and user_agent. Implements idempotent processing with deduplication by event id and subscriber + email_send combination.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "receive_event",
+          "next": "event_received",
+          "manual": false
+        }
+      ]
+    },
+    "event_received": {
+      "transitions": [
+        {
+          "name": "validate_event",
+          "next": "validate",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "InteractionEventValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "invalid_event",
+          "next": "discarded",
+          "manual": false
+        }
+      ]
+    },
+    "validate": {
+      "transitions": [
+        {
+          "name": "check_duplicate",
+          "next": "recorded",
+          "manual": false,
+          "processors": [
+            {
+              "name": "InteractionTrackingProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 10000
+              }
+            }
+          ]
+        },
+        {
+          "name": "duplicate_event",
+          "next": "discarded",
+          "manual": false
+        }
+      ]
+    },
+    "recorded": {
+      "transitions": []
+    },
+    "discarded": {
+      "transitions": []
+    }
+  }
+}
+

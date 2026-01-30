@@ -1,0 +1,76 @@
+{
+  "version": "1.0",
+  "name": "UnsubscribeHandler Workflow",
+  "desc": "Process unsubscribe clicks from emails, validate unsubscribe_token, update Subscriber.status, and log Interaction (unsubscribe_clicked=true). Handles token verification and invalid token scenarios.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "receive_click",
+          "next": "click_received",
+          "manual": false
+        }
+      ]
+    },
+    "click_received": {
+      "transitions": [
+        {
+          "name": "verify_token",
+          "next": "verify_token",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "UnsubscribeTokenVerificationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "invalid_token",
+          "next": "invalid_token",
+          "manual": false
+        }
+      ]
+    },
+    "verify_token": {
+      "transitions": [
+        {
+          "name": "process_unsubscribe",
+          "next": "unsubscribed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "UnsubscribeHandlerProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "responseTimeoutMs": 15000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "unsubscribed": {
+      "transitions": []
+    },
+    "invalid_token": {
+      "transitions": [
+        {
+          "name": "log_invalid_attempt",
+          "next": "completed",
+          "manual": false
+        }
+      ]
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

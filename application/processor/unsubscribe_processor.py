@@ -8,9 +8,9 @@ and recording the unsubscribe timestamp.
 import logging
 from typing import Any
 
+from application.entity.subscriber.version_1.subscriber import Subscriber
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.subscriber.version_1.subscriber import Subscriber
 
 
 class UnsubscribeProcessor(CyodaProcessor):
@@ -60,4 +60,3 @@ class UnsubscribeProcessor(CyodaProcessor):
                 f"Error processing unsubscribe {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

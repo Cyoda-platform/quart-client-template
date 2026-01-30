@@ -10,13 +10,12 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict
 
-from quart import Blueprint, jsonify, request
+from quart import Blueprint
 from quart.typing import ResponseReturnValue
-from quart_schema import operation_id, tag, validate, validate_querystring
+from quart_schema import operation_id, tag, validate
 
-from common.exception import is_not_found
-from services.services import get_entity_service
 from application.entity.cat_fact.version_1.cat_fact import CatFact
+from services.services import get_entity_service
 
 
 class _ServiceProxy:
@@ -122,4 +121,3 @@ async def delete_cat_fact(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error deleting CatFact: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

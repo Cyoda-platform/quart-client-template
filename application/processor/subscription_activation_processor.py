@@ -9,9 +9,9 @@ import logging
 import uuid
 from typing import Any
 
+from application.entity.subscriber.version_1.subscriber import Subscriber
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.subscriber.version_1.subscriber import Subscriber
 
 
 class SubscriptionActivationProcessor(CyodaProcessor):
@@ -65,4 +65,3 @@ class SubscriptionActivationProcessor(CyodaProcessor):
                 f"Error activating subscription {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

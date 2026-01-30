@@ -15,8 +15,8 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.subscriber.version_1.subscriber import Subscriber
+from services.services import get_entity_service
 
 
 class _ServiceProxy:
@@ -126,4 +126,3 @@ async def delete_subscriber(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error deleting Subscriber: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

@@ -14,8 +14,8 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.email_send.version_1.email_send import EmailSend
+from services.services import get_entity_service
 
 
 class _ServiceProxy:
@@ -121,4 +121,3 @@ async def delete_email_send(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error deleting EmailSend: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

@@ -5,12 +5,15 @@ from typing import Callable, Dict, Optional
 from quart import Quart, Response
 from quart_schema import QuartSchema, ResponseSchemaValidationError, hide
 
+# Import blueprints for different route groups
+from application.routes.cat_facts import cat_facts_bp
+from application.routes.email_sends import email_sends_bp
+from application.routes.interactions import interactions_bp
+from application.routes.subscribers import subscribers_bp
 from common.exception.exception_handler import (
     register_error_handlers as _register_error_handlers,
 )
 from services.services import get_grpc_client, initialize_services
-
-# Import blueprints for different route groups
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,6 +30,10 @@ QuartSchema(
             "description": "ExampleEntity management endpoints",
         },
         {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "cat-facts", "description": "CatFact management endpoints"},
+        {"name": "subscribers", "description": "Subscriber management endpoints"},
+        {"name": "email-sends", "description": "EmailSend management endpoints"},
+        {"name": "interactions", "description": "Interaction tracking endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -57,6 +64,12 @@ _register_error_handlers_typed: Callable[[Quart], None] = (  # type: ignore[assi
     _register_error_handlers
 )
 _register_error_handlers_typed(app)
+
+# Register blueprints for Weekly Cat Fact Subscription application
+app.register_blueprint(cat_facts_bp)
+app.register_blueprint(subscribers_bp)
+app.register_blueprint(email_sends_bp)
+app.register_blueprint(interactions_bp)
 
 
 @app.route("/favicon.ico")

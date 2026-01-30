@@ -8,9 +8,9 @@ including counting active subscribers and setting up batch metadata.
 import logging
 from typing import Any
 
+from application.entity.email_send.version_1.email_send import EmailSend
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.email_send.version_1.email_send import EmailSend
 
 
 class WeeklySendBatchPreparationProcessor(CyodaProcessor):
@@ -64,4 +64,3 @@ class WeeklySendBatchPreparationProcessor(CyodaProcessor):
                 f"Error preparing batches {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

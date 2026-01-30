@@ -14,8 +14,8 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
-from services.services import get_entity_service
 from application.entity.interaction.version_1.interaction import Interaction
+from services.services import get_entity_service
 
 
 class _ServiceProxy:
@@ -121,4 +121,3 @@ async def delete_interaction(entity_id: str) -> ResponseReturnValue:
     except Exception as e:
         logger.exception("Error deleting Interaction: %s", str(e))
         return {"error": str(e), "code": "INTERNAL_ERROR"}, 500
-

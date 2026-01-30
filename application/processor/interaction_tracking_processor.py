@@ -8,9 +8,9 @@ with deduplication and metadata capture.
 import logging
 from typing import Any
 
+from application.entity.interaction.version_1.interaction import Interaction
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.interaction.version_1.interaction import Interaction
 
 
 class InteractionTrackingProcessor(CyodaProcessor):
@@ -62,4 +62,3 @@ class InteractionTrackingProcessor(CyodaProcessor):
                 f"Error recording interaction {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

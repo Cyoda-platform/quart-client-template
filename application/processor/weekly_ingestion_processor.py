@@ -8,9 +8,9 @@ validates the response, and stores it in the CatFact entity.
 import logging
 from typing import Any
 
+from application.entity.cat_fact.version_1.cat_fact import CatFact
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.cat_fact.version_1.cat_fact import CatFact
 
 
 class WeeklyIngestionProcessor(CyodaProcessor):
@@ -52,9 +52,7 @@ class WeeklyIngestionProcessor(CyodaProcessor):
 
             cat_fact.update_timestamp()
 
-            self.logger.info(
-                f"CatFact {cat_fact.technical_id} processed successfully"
-            )
+            self.logger.info(f"CatFact {cat_fact.technical_id} processed successfully")
 
             return cat_fact
 
@@ -63,4 +61,3 @@ class WeeklyIngestionProcessor(CyodaProcessor):
                 f"Error processing entity {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

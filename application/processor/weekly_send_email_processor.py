@@ -8,9 +8,9 @@ and updating the EmailSend entity with send results.
 import logging
 from typing import Any
 
+from application.entity.email_send.version_1.email_send import EmailSend
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.email_send.version_1.email_send import EmailSend
 
 
 class WeeklySendEmailProcessor(CyodaProcessor):
@@ -68,4 +68,3 @@ class WeeklySendEmailProcessor(CyodaProcessor):
                 f"Error sending emails {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

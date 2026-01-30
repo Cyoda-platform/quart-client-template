@@ -7,9 +7,9 @@ before proceeding to the saved state.
 
 from typing import Any
 
+from application.entity.cat_fact.version_1.cat_fact import CatFact
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.cat_fact.version_1.cat_fact import CatFact
 
 
 class WeeklyIngestionValidationCriterion(CyodaCriteriaChecker):
@@ -54,12 +54,9 @@ class WeeklyIngestionValidationCriterion(CyodaCriteriaChecker):
                 )
                 return False
 
-            self.logger.info(
-                f"Entity {cat_fact.technical_id} validation passed"
-            )
+            self.logger.info(f"Entity {cat_fact.technical_id} validation passed")
             return True
 
         except Exception as e:
             self.logger.error(f"Validation error: {str(e)}")
             return False
-

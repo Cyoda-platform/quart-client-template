@@ -7,9 +7,9 @@ before proceeding to activation.
 
 from typing import Any
 
+from application.entity.subscriber.version_1.subscriber import Subscriber
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.subscriber.version_1.subscriber import Subscriber
 
 
 class SubscriptionValidationCriterion(CyodaCriteriaChecker):
@@ -55,12 +55,9 @@ class SubscriptionValidationCriterion(CyodaCriteriaChecker):
                 )
                 return False
 
-            self.logger.info(
-                f"Entity {subscriber.technical_id} validation passed"
-            )
+            self.logger.info(f"Entity {subscriber.technical_id} validation passed")
             return True
 
         except Exception as e:
             self.logger.error(f"Validation error: {str(e)}")
             return False
-

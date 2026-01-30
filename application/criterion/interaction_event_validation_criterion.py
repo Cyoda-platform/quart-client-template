@@ -7,9 +7,9 @@ email_send_id) before recording the interaction.
 
 from typing import Any
 
+from application.entity.interaction.version_1.interaction import Interaction
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.interaction.version_1.interaction import Interaction
 
 
 class InteractionEventValidationCriterion(CyodaCriteriaChecker):
@@ -54,12 +54,9 @@ class InteractionEventValidationCriterion(CyodaCriteriaChecker):
                 )
                 return False
 
-            self.logger.info(
-                f"Entity {interaction.technical_id} validation passed"
-            )
+            self.logger.info(f"Entity {interaction.technical_id} validation passed")
             return True
 
         except Exception as e:
             self.logger.error(f"Validation error: {str(e)}")
             return False
-

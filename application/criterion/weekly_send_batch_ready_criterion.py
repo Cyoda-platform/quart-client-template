@@ -7,9 +7,9 @@ for the sending phase.
 
 from typing import Any
 
+from application.entity.email_send.version_1.email_send import EmailSend
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.email_send.version_1.email_send import EmailSend
 
 
 class WeeklySendBatchReadyCriterion(CyodaCriteriaChecker):
@@ -55,12 +55,9 @@ class WeeklySendBatchReadyCriterion(CyodaCriteriaChecker):
                 )
                 return False
 
-            self.logger.info(
-                f"Entity {email_send.technical_id} batches are ready"
-            )
+            self.logger.info(f"Entity {email_send.technical_id} batches are ready")
             return True
 
         except Exception as e:
             self.logger.error(f"Batch readiness check error: {str(e)}")
             return False
-

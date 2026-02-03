@@ -24,18 +24,30 @@ class Order(CyodaEntity):
 
     account_id: str = Field(..., description="Account ID placing the order")
     instrument_id: str = Field(..., description="Security identifier (ticker/ISIN)")
-    order_type: str = Field(..., alias="orderType", description="Order type: LIMIT, MARKET, IOC, FOK, GTC")
+    order_type: str = Field(
+        ..., alias="orderType", description="Order type: LIMIT, MARKET, IOC, FOK, GTC"
+    )
     side: str = Field(..., description="BUY or SELL")
     quantity: float = Field(..., gt=0, description="Order quantity")
-    price: Optional[float] = Field(default=None, description="Limit price (null for market orders)")
-    filled_quantity: float = Field(default=0.0, alias="filledQuantity", description="Quantity filled so far")
-    avg_fill_price: Optional[float] = Field(default=None, alias="avgFillPrice", description="Average fill price")
+    price: Optional[float] = Field(
+        default=None, description="Limit price (null for market orders)"
+    )
+    filled_quantity: float = Field(
+        default=0.0, alias="filledQuantity", description="Quantity filled so far"
+    )
+    avg_fill_price: Optional[float] = Field(
+        default=None, alias="avgFillPrice", description="Average fill price"
+    )
     created_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="createdAt",
         description="Order creation timestamp",
     )
-    updated_at: Optional[str] = Field(default=None, alias="updatedAt", description="Last update timestamp")
+    updated_at: Optional[str] = Field(
+        default=None, alias="updatedAt", description="Last update timestamp"
+    )
 
     ORDER_TYPES: ClassVar[List[str]] = ["LIMIT", "MARKET", "IOC", "FOK", "GTC"]
     SIDES: ClassVar[List[str]] = ["BUY", "SELL"]
@@ -54,5 +66,6 @@ class Order(CyodaEntity):
             raise ValueError(f"Side must be one of: {cls.SIDES}")
         return v
 
-    model_config = ConfigDict(populate_by_name=True, validate_assignment=True, extra="allow")
-
+    model_config = ConfigDict(
+        populate_by_name=True, validate_assignment=True, extra="allow"
+    )

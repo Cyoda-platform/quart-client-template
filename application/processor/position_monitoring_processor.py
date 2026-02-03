@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.position.version_1.position import Position
 
 
 class PositionMonitoringProcessor(CyodaProcessor):
@@ -32,16 +32,22 @@ class PositionMonitoringProcessor(CyodaProcessor):
             The processed position entity
         """
         try:
-            self.logger.info(f"Monitoring position {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Monitoring position {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             position = cast_entity(entity, Position)
 
             # Check position limits
             position_value = abs(position.quantity * position.current_price)
             if position_value > 100000000:  # $100M limit
-                self.logger.warning(f"Position {position.technical_id} exceeds size limit")
+                self.logger.warning(
+                    f"Position {position.technical_id} exceeds size limit"
+                )
 
-            position.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            position.updated_at = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
 
             self.logger.info(f"Position {position.technical_id} monitored")
             return position
@@ -49,4 +55,3 @@ class PositionMonitoringProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error monitoring position: {str(e)}")
             raise
-

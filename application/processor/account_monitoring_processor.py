@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.account.version_1.account import Account
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.account.version_1.account import Account
 
 
 class AccountMonitoringProcessor(CyodaProcessor):
@@ -32,19 +32,27 @@ class AccountMonitoringProcessor(CyodaProcessor):
             The processed account entity
         """
         try:
-            self.logger.info(f"Monitoring account {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Monitoring account {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             account = cast_entity(entity, Account)
 
             # Check margin requirement
             if account.margin_requirement > account.total_equity * 0.5:
-                self.logger.warning(f"Account {account.technical_id} margin requirement high")
+                self.logger.warning(
+                    f"Account {account.technical_id} margin requirement high"
+                )
 
             # Check buying power
             if account.buying_power < 0:
-                self.logger.warning(f"Account {account.technical_id} insufficient buying power")
+                self.logger.warning(
+                    f"Account {account.technical_id} insufficient buying power"
+                )
 
-            account.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            account.updated_at = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
 
             self.logger.info(f"Account {account.technical_id} monitored")
             return account
@@ -52,4 +60,3 @@ class AccountMonitoringProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error monitoring account: {str(e)}")
             raise
-

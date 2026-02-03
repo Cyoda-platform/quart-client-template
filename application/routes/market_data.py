@@ -13,10 +13,11 @@ from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.market_data_tick.version_1.market_data_tick import (
+    MarketDataTick,
+)
 from common.exception import is_not_found
 from services.services import get_entity_service
-
-from application.entity.market_data_tick.version_1.market_data_tick import MarketDataTick
 
 
 class _ServiceProxy:
@@ -38,7 +39,10 @@ market_data_bp = Blueprint("market_data", __name__, url_prefix="/api/market-data
 @market_data_bp.route("", methods=["POST"])
 @tag(["market-data"])
 @operation_id("create_market_data_tick")
-@validate(request=MarketDataTick, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=MarketDataTick,
+    responses={201: (dict, None), 400: (dict, None), 500: (dict, None)},
+)
 async def create_market_data_tick(data: MarketDataTick) -> ResponseReturnValue:
     """Create a new market data tick"""
     try:
@@ -87,7 +91,9 @@ async def list_market_data_ticks() -> ResponseReturnValue:
             limit=100,
             offset=0,
         )
-        return {"marketDataTicks": [_to_entity_dict(item) for item in response.data]}, 200
+        return {
+            "marketDataTicks": [_to_entity_dict(item) for item in response.data]
+        }, 200
     except Exception as e:
         logger.error(f"Error listing market data ticks: {str(e)}")
         return {"error": str(e)}, 500
@@ -96,8 +102,12 @@ async def list_market_data_ticks() -> ResponseReturnValue:
 @market_data_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["market-data"])
 @operation_id("transition_market_data_tick")
-@validate(request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)})
-async def transition_market_data_tick(entity_id: str, data: dict) -> ResponseReturnValue:
+@validate(
+    request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)}
+)
+async def transition_market_data_tick(
+    entity_id: str, data: Dict[str, Any]
+) -> ResponseReturnValue:
     """Trigger a workflow transition on a market data tick"""
     try:
         transition_name = data.get("transitionName")
@@ -114,4 +124,3 @@ async def transition_market_data_tick(entity_id: str, data: dict) -> ResponseRet
     except Exception as e:
         logger.error(f"Error transitioning market data tick: {str(e)}")
         return {"error": str(e)}, 500
-

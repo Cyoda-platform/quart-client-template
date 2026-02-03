@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.position.version_1.position import Position
 
 
 class PositionOpenProcessor(CyodaProcessor):
@@ -32,7 +32,9 @@ class PositionOpenProcessor(CyodaProcessor):
             The processed position entity
         """
         try:
-            self.logger.info(f"Opening position {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Opening position {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             position = cast_entity(entity, Position)
 
@@ -43,12 +45,15 @@ class PositionOpenProcessor(CyodaProcessor):
             if position.avg_cost <= 0:
                 raise ValueError("Average cost must be positive")
 
-            position.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            position.updated_at = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
 
-            self.logger.info(f"Position {position.technical_id} opened: {position.quantity} shares")
+            self.logger.info(
+                f"Position {position.technical_id} opened: {position.quantity} shares"
+            )
             return position
 
         except Exception as e:
             self.logger.error(f"Error opening position: {str(e)}")
             raise
-

@@ -23,21 +23,30 @@ class ExecutionReport(CyodaEntity):
 
     order_id: str = Field(..., alias="orderId", description="Related order ID")
     account_id: str = Field(..., alias="accountId", description="Account ID")
-    instrument_id: str = Field(..., alias="instrumentId", description="Security identifier")
-    fill_quantity: float = Field(..., alias="fillQuantity", gt=0, description="Quantity filled")
+    instrument_id: str = Field(
+        ..., alias="instrumentId", description="Security identifier"
+    )
+    fill_quantity: float = Field(
+        ..., alias="fillQuantity", gt=0, description="Quantity filled"
+    )
     fill_price: float = Field(..., alias="fillPrice", ge=0, description="Fill price")
     venue: str = Field(..., description="Execution venue")
     exec_time: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="execTime",
         description="Execution timestamp",
     )
     commission: float = Field(default=0.0, description="Commission charged")
     created_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="createdAt",
         description="Report creation timestamp",
     )
 
-    model_config = ConfigDict(populate_by_name=True, validate_assignment=True, extra="allow")
-
+    model_config = ConfigDict(
+        populate_by_name=True, validate_assignment=True, extra="allow"
+    )

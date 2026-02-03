@@ -13,10 +13,9 @@ from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.position.version_1.position import Position
 from common.exception import is_not_found
 from services.services import get_entity_service
-
-from application.entity.position.version_1.position import Position
 
 
 class _ServiceProxy:
@@ -38,7 +37,10 @@ positions_bp = Blueprint("positions", __name__, url_prefix="/api/positions")
 @positions_bp.route("", methods=["POST"])
 @tag(["positions"])
 @operation_id("create_position")
-@validate(request=Position, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=Position,
+    responses={201: (dict, None), 400: (dict, None), 500: (dict, None)},
+)
 async def create_position(data: Position) -> ResponseReturnValue:
     """Create a new position"""
     try:
@@ -96,8 +98,12 @@ async def list_positions() -> ResponseReturnValue:
 @positions_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["positions"])
 @operation_id("transition_position")
-@validate(request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)})
-async def transition_position(entity_id: str, data: dict) -> ResponseReturnValue:
+@validate(
+    request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)}
+)
+async def transition_position(
+    entity_id: str, data: Dict[str, Any]
+) -> ResponseReturnValue:
     """Trigger a workflow transition on a position"""
     try:
         transition_name = data.get("transitionName")
@@ -114,4 +120,3 @@ async def transition_position(entity_id: str, data: dict) -> ResponseReturnValue
     except Exception as e:
         logger.error(f"Error transitioning position: {str(e)}")
         return {"error": str(e)}, 500
-

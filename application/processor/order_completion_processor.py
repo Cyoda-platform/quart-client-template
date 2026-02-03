@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
 
 
 class OrderCompletionProcessor(CyodaProcessor):
@@ -32,7 +32,9 @@ class OrderCompletionProcessor(CyodaProcessor):
             The processed order entity
         """
         try:
-            self.logger.info(f"Completing order {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Completing order {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             order = cast_entity(entity, Order)
 
@@ -40,7 +42,9 @@ class OrderCompletionProcessor(CyodaProcessor):
             if order.filled_quantity < order.quantity:
                 self.logger.warning(f"Order {order.technical_id} not fully filled")
 
-            order.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            order.updated_at = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
 
             self.logger.info(f"Order {order.technical_id} completed")
             return order
@@ -48,4 +52,3 @@ class OrderCompletionProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error completing order: {str(e)}")
             raise
-

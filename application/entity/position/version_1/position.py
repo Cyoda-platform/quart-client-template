@@ -23,18 +23,30 @@ class Position(CyodaEntity):
 
     account_id: str = Field(..., description="Account ID holding the position")
     instrument_id: str = Field(..., description="Security identifier")
-    quantity: float = Field(..., description="Position quantity (positive=long, negative=short)")
+    quantity: float = Field(
+        ..., description="Position quantity (positive=long, negative=short)"
+    )
     avg_cost: float = Field(..., alias="avgCost", description="Average cost per unit")
-    current_price: float = Field(..., alias="currentPrice", description="Current market price")
-    realized_pnl: float = Field(default=0.0, alias="realizedPnl", description="Realized P&L")
-    unrealized_pnl: float = Field(default=0.0, alias="unrealizedPnl", description="Unrealized P&L")
+    current_price: float = Field(
+        ..., alias="currentPrice", description="Current market price"
+    )
+    realized_pnl: float = Field(
+        default=0.0, alias="realizedPnl", description="Realized P&L"
+    )
+    unrealized_pnl: float = Field(
+        default=0.0, alias="unrealizedPnl", description="Unrealized P&L"
+    )
     currency: str = Field(default="USD", description="Position currency")
     created_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="createdAt",
         description="Position creation timestamp",
     )
-    updated_at: Optional[str] = Field(default=None, alias="updatedAt", description="Last update timestamp")
+    updated_at: Optional[str] = Field(
+        default=None, alias="updatedAt", description="Last update timestamp"
+    )
 
     @field_validator("quantity")
     @classmethod
@@ -50,5 +62,6 @@ class Position(CyodaEntity):
             raise ValueError("Price cannot be negative")
         return v
 
-    model_config = ConfigDict(populate_by_name=True, validate_assignment=True, extra="allow")
-
+    model_config = ConfigDict(
+        populate_by_name=True, validate_assignment=True, extra="allow"
+    )

@@ -13,10 +13,11 @@ from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.execution_report.version_1.execution_report import (
+    ExecutionReport,
+)
 from common.exception import is_not_found
 from services.services import get_entity_service
-
-from application.entity.execution_report.version_1.execution_report import ExecutionReport
 
 
 class _ServiceProxy:
@@ -32,13 +33,18 @@ def _to_entity_dict(data: Any) -> Dict[str, Any]:
     return data.model_dump(by_alias=True) if hasattr(data, "model_dump") else data
 
 
-execution_reports_bp = Blueprint("execution_reports", __name__, url_prefix="/api/execution-reports")
+execution_reports_bp = Blueprint(
+    "execution_reports", __name__, url_prefix="/api/execution-reports"
+)
 
 
 @execution_reports_bp.route("", methods=["POST"])
 @tag(["execution-reports"])
 @operation_id("create_execution_report")
-@validate(request=ExecutionReport, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=ExecutionReport,
+    responses={201: (dict, None), 400: (dict, None), 500: (dict, None)},
+)
 async def create_execution_report(data: ExecutionReport) -> ResponseReturnValue:
     """Create a new execution report"""
     try:
@@ -87,7 +93,9 @@ async def list_execution_reports() -> ResponseReturnValue:
             limit=100,
             offset=0,
         )
-        return {"executionReports": [_to_entity_dict(item) for item in response.data]}, 200
+        return {
+            "executionReports": [_to_entity_dict(item) for item in response.data]
+        }, 200
     except Exception as e:
         logger.error(f"Error listing execution reports: {str(e)}")
         return {"error": str(e)}, 500
@@ -96,8 +104,12 @@ async def list_execution_reports() -> ResponseReturnValue:
 @execution_reports_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["execution-reports"])
 @operation_id("transition_execution_report")
-@validate(request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)})
-async def transition_execution_report(entity_id: str, data: dict) -> ResponseReturnValue:
+@validate(
+    request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)}
+)
+async def transition_execution_report(
+    entity_id: str, data: Dict[str, Any]
+) -> ResponseReturnValue:
     """Trigger a workflow transition on an execution report"""
     try:
         transition_name = data.get("transitionName")
@@ -114,4 +126,3 @@ async def transition_execution_report(entity_id: str, data: dict) -> ResponseRet
     except Exception as e:
         logger.error(f"Error transitioning execution report: {str(e)}")
         return {"error": str(e)}, 500
-

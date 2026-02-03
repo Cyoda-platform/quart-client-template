@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 
 
 class RiskLimitConfigurationProcessor(CyodaProcessor):
@@ -32,7 +32,9 @@ class RiskLimitConfigurationProcessor(CyodaProcessor):
             The processed risk limit entity
         """
         try:
-            self.logger.info(f"Configuring risk limit {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Configuring risk limit {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             limit = cast_entity(entity, RiskLimit)
 
@@ -43,10 +45,11 @@ class RiskLimitConfigurationProcessor(CyodaProcessor):
             if limit.current_usage > limit.limit_value:
                 raise ValueError("Current usage cannot exceed limit value")
 
-            self.logger.info(f"Risk limit {limit.technical_id} configured: {limit.limit_type}")
+            self.logger.info(
+                f"Risk limit {limit.technical_id} configured: {limit.limit_type}"
+            )
             return limit
 
         except Exception as e:
             self.logger.error(f"Error configuring risk limit: {str(e)}")
             raise
-

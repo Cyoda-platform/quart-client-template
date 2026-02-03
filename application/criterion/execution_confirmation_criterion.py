@@ -7,9 +7,11 @@ Confirms execution reports are ready for settlement.
 import logging
 from typing import Any
 
+from application.entity.execution_report.version_1.execution_report import (
+    ExecutionReport,
+)
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.execution_report.version_1.execution_report import ExecutionReport
 
 
 class ExecutionConfirmationCriterion(CyodaCriteriaChecker):
@@ -34,18 +36,24 @@ class ExecutionConfirmationCriterion(CyodaCriteriaChecker):
             True if execution is confirmed, False otherwise
         """
         try:
-            self.logger.info(f"Confirming execution {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Confirming execution {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             report = cast_entity(entity, ExecutionReport)
 
             # Validate required fields
             if not report.order_id or not report.account_id:
-                self.logger.warning(f"Execution {report.technical_id} missing required fields")
+                self.logger.warning(
+                    f"Execution {report.technical_id} missing required fields"
+                )
                 return False
 
             # Validate execution data
             if report.fill_quantity <= 0 or report.fill_price < 0:
-                self.logger.warning(f"Execution {report.technical_id} invalid fill data")
+                self.logger.warning(
+                    f"Execution {report.technical_id} invalid fill data"
+                )
                 return False
 
             # Validate venue
@@ -59,4 +67,3 @@ class ExecutionConfirmationCriterion(CyodaCriteriaChecker):
         except Exception as e:
             self.logger.error(f"Error confirming execution: {str(e)}")
             return False
-

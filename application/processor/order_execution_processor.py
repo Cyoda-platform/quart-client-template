@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
 
 
 class OrderExecutionProcessor(CyodaProcessor):
@@ -32,7 +32,9 @@ class OrderExecutionProcessor(CyodaProcessor):
             The processed order entity
         """
         try:
-            self.logger.info(f"Processing order execution {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Processing order execution {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             order = cast_entity(entity, Order)
 
@@ -45,12 +47,15 @@ class OrderExecutionProcessor(CyodaProcessor):
                 order.filled_quantity = min(order.quantity * 0.5, order.quantity)
                 order.avg_fill_price = order.price
 
-            order.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            order.updated_at = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
 
-            self.logger.info(f"Order {order.technical_id} executed: {order.filled_quantity} shares")
+            self.logger.info(
+                f"Order {order.technical_id} executed: {order.filled_quantity} shares"
+            )
             return order
 
         except Exception as e:
             self.logger.error(f"Error processing order execution: {str(e)}")
             raise
-

@@ -21,7 +21,9 @@ class MarketDataTick(CyodaEntity):
     ENTITY_NAME: ClassVar[str] = "MarketDataTick"
     ENTITY_VERSION: ClassVar[int] = 1
 
-    instrument_id: str = Field(..., alias="instrumentId", description="Security identifier")
+    instrument_id: str = Field(
+        ..., alias="instrumentId", description="Security identifier"
+    )
     bid: float = Field(..., ge=0, description="Best bid price")
     ask: float = Field(..., ge=0, description="Best ask price")
     last: Optional[float] = Field(default=None, ge=0, description="Last trade price")
@@ -29,11 +31,15 @@ class MarketDataTick(CyodaEntity):
     ask_size: float = Field(default=0.0, alias="askSize", ge=0, description="Ask size")
     venue: str = Field(..., description="Data source venue")
     timestamp: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         description="Quote timestamp",
     )
     created_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="createdAt",
         description="Ingestion timestamp",
     )
@@ -45,5 +51,6 @@ class MarketDataTick(CyodaEntity):
             raise ValueError("Bid/Ask cannot be negative")
         return v
 
-    model_config = ConfigDict(populate_by_name=True, validate_assignment=True, extra="allow")
-
+    model_config = ConfigDict(
+        populate_by_name=True, validate_assignment=True, extra="allow"
+    )

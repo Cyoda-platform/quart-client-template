@@ -13,10 +13,9 @@ from quart import Blueprint
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate
 
+from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 from common.exception import is_not_found
 from services.services import get_entity_service
-
-from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 
 
 class _ServiceProxy:
@@ -38,7 +37,10 @@ risk_limits_bp = Blueprint("risk_limits", __name__, url_prefix="/api/risk-limits
 @risk_limits_bp.route("", methods=["POST"])
 @tag(["risk-limits"])
 @operation_id("create_risk_limit")
-@validate(request=RiskLimit, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=RiskLimit,
+    responses={201: (dict, None), 400: (dict, None), 500: (dict, None)},
+)
 async def create_risk_limit(data: RiskLimit) -> ResponseReturnValue:
     """Create a new risk limit"""
     try:
@@ -96,7 +98,9 @@ async def list_risk_limits() -> ResponseReturnValue:
 @risk_limits_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["risk-limits"])
 @operation_id("transition_risk_limit")
-@validate(request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)}
+)
 async def transition_risk_limit(entity_id: str, data: dict) -> ResponseReturnValue:
     """Trigger a workflow transition on a risk limit"""
     try:
@@ -114,4 +118,3 @@ async def transition_risk_limit(entity_id: str, data: dict) -> ResponseReturnVal
     except Exception as e:
         logger.error(f"Error transitioning risk limit: {str(e)}")
         return {"error": str(e)}, 500
-

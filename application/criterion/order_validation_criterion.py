@@ -7,9 +7,9 @@ Validates orders before acceptance.
 import logging
 from typing import Any
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.order.version_1.order import Order
 
 
 class OrderValidationCriterion(CyodaCriteriaChecker):
@@ -34,13 +34,17 @@ class OrderValidationCriterion(CyodaCriteriaChecker):
             True if order is valid, False otherwise
         """
         try:
-            self.logger.info(f"Validating order {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Validating order {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             order = cast_entity(entity, Order)
 
             # Validate required fields
             if not order.account_id or not order.instrument_id:
-                self.logger.warning(f"Order {order.technical_id} missing required fields")
+                self.logger.warning(
+                    f"Order {order.technical_id} missing required fields"
+                )
                 return False
 
             # Validate order type
@@ -59,7 +63,9 @@ class OrderValidationCriterion(CyodaCriteriaChecker):
                 return False
 
             # Validate price for limit orders
-            if order.order_type == "LIMIT" and (order.price is None or order.price <= 0):
+            if order.order_type == "LIMIT" and (
+                order.price is None or order.price <= 0
+            ):
                 self.logger.warning(f"Order {order.technical_id} invalid limit price")
                 return False
 
@@ -69,4 +75,3 @@ class OrderValidationCriterion(CyodaCriteriaChecker):
         except Exception as e:
             self.logger.error(f"Error validating order: {str(e)}")
             return False
-

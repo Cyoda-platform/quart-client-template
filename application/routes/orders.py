@@ -14,11 +14,10 @@ from quart import Blueprint, jsonify, request
 from quart.typing import ResponseReturnValue
 from quart_schema import operation_id, tag, validate, validate_querystring
 
+from application.entity.order.version_1.order import Order
 from common.exception import is_not_found
 from common.service.entity_service import SearchConditionRequest
 from services.services import get_entity_service
-
-from application.entity.order.version_1.order import Order
 
 
 class _ServiceProxy:
@@ -40,7 +39,9 @@ orders_bp = Blueprint("orders", __name__, url_prefix="/api/orders")
 @orders_bp.route("", methods=["POST"])
 @tag(["orders"])
 @operation_id("create_order")
-@validate(request=Order, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)})
+@validate(
+    request=Order, responses={201: (dict, None), 400: (dict, None), 500: (dict, None)}
+)
 async def create_order(data: Order) -> ResponseReturnValue:
     """Create a new order"""
     try:
@@ -99,8 +100,12 @@ async def list_orders() -> ResponseReturnValue:
 @orders_bp.route("/<entity_id>/transition", methods=["POST"])
 @tag(["orders"])
 @operation_id("transition_order")
-@validate(request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)})
-async def transition_order(entity_id: str, data: dict) -> ResponseReturnValue:
+@validate(
+    request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)}
+)
+async def transition_order(
+    entity_id: str, data: Dict[str, Any]
+) -> ResponseReturnValue:
     """Trigger a workflow transition on an order"""
     try:
         transition_name = data.get("transitionName")
@@ -117,4 +122,3 @@ async def transition_order(entity_id: str, data: dict) -> ResponseReturnValue:
     except Exception as e:
         logger.error(f"Error transitioning order: {str(e)}")
         return {"error": str(e)}, 500
-

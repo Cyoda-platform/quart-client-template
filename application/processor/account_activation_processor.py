@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.account.version_1.account import Account
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.account.version_1.account import Account
 
 
 class AccountActivationProcessor(CyodaProcessor):
@@ -32,7 +32,9 @@ class AccountActivationProcessor(CyodaProcessor):
             The processed account entity
         """
         try:
-            self.logger.info(f"Activating account {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Activating account {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             account = cast_entity(entity, Account)
 
@@ -44,7 +46,9 @@ class AccountActivationProcessor(CyodaProcessor):
                 raise ValueError("Total equity must be positive")
 
             account.is_active = True
-            account.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            account.updated_at = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
 
             self.logger.info(f"Account {account.technical_id} activated")
             return account
@@ -52,4 +56,3 @@ class AccountActivationProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error activating account: {str(e)}")
             raise
-

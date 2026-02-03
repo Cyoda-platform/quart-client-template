@@ -4,7 +4,7 @@ from pathlib import Path
 
 def validate_workflow(workflow_path):
     """Basic validation of workflow against schema requirements"""
-    with open(workflow_path, 'r') as f:
+    with open(workflow_path, "r") as f:
         workflow = json.load(f)
 
     errors = []
@@ -17,7 +17,9 @@ def validate_workflow(workflow_path):
 
     # Check initialState value
     if workflow.get("initialState") != "initial_state":
-        errors.append(f"initialState must be 'initial_state', got '{workflow.get('initialState')}'")
+        errors.append(
+            f"initialState must be 'initial_state', got '{workflow.get('initialState')}'"
+        )
 
     # Check states structure
     if "states" in workflow:
@@ -31,11 +33,17 @@ def validate_workflow(workflow_path):
             else:
                 for transition in state_config["transitions"]:
                     if "name" not in transition:
-                        errors.append(f"Transition in state '{state_name}' missing 'name'")
+                        errors.append(
+                            f"Transition in state '{state_name}' missing 'name'"
+                        )
                     if "next" not in transition:
-                        errors.append(f"Transition in state '{state_name}' missing 'next'")
+                        errors.append(
+                            f"Transition in state '{state_name}' missing 'next'"
+                        )
                     if "manual" not in transition:
-                        errors.append(f"Transition in state '{state_name}' missing 'manual'")
+                        errors.append(
+                            f"Transition in state '{state_name}' missing 'manual'"
+                        )
 
                     # Check processors if present
                     if "processors" in transition:
@@ -50,17 +58,21 @@ def validate_workflow(workflow_path):
                             if "config" not in processor:
                                 errors.append(f"Processor missing 'config'")
                             elif "calculationNodesTags" not in processor["config"]:
-                                errors.append(f"Processor config missing 'calculationNodesTags'")
+                                errors.append(
+                                    f"Processor config missing 'calculationNodesTags'"
+                                )
 
     return errors
 
 
-workflow_dir = Path("/tmp/cyoda_builds/0b194e7b-dae1-48df-be6c-f1b2379dadf5/application/resources/workflow")
+workflow_dir = Path(
+    "/tmp/cyoda_builds/0b194e7b-dae1-48df-be6c-f1b2379dadf5/application/resources/workflow"
+)
 
 workflows = [
     workflow_dir / "orderlifecycle/version_1/OrderLifecycle.json",
     workflow_dir / "pretraderiskcheck/version_1/PreTradeRiskCheck.json",
-    workflow_dir / "tradesettlement/version_1/TradeSettlement.json"
+    workflow_dir / "tradesettlement/version_1/TradeSettlement.json",
 ]
 
 all_valid = True
@@ -83,4 +95,3 @@ if all_valid:
     print("\n✅ All workflows are valid!")
 else:
     print("\n❌ Some workflows have validation errors")
-

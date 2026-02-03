@@ -8,9 +8,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.execution_report.version_1.execution_report import (
+    ExecutionReport,
+)
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.execution_report.version_1.execution_report import ExecutionReport
 
 
 class ExecutionReportingProcessor(CyodaProcessor):
@@ -32,7 +34,9 @@ class ExecutionReportingProcessor(CyodaProcessor):
             The processed execution report entity
         """
         try:
-            self.logger.info(f"Generating execution report {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Generating execution report {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             report = cast_entity(entity, ExecutionReport)
 
@@ -49,4 +53,3 @@ class ExecutionReportingProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error generating execution report: {str(e)}")
             raise
-

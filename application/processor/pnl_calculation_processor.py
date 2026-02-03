@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.position.version_1.position import Position
 
 
 class PnLCalculationProcessor(CyodaProcessor):
@@ -32,19 +32,26 @@ class PnLCalculationProcessor(CyodaProcessor):
             The processed position entity
         """
         try:
-            self.logger.info(f"Calculating P&L for position {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Calculating P&L for position {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             position = cast_entity(entity, Position)
 
             # Calculate unrealized P&L
-            position.unrealized_pnl = position.quantity * (position.current_price - position.avg_cost)
+            position.unrealized_pnl = position.quantity * (
+                position.current_price - position.avg_cost
+            )
 
-            position.updated_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            position.updated_at = (
+                datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+            )
 
-            self.logger.info(f"Position {position.technical_id} P&L: {position.unrealized_pnl}")
+            self.logger.info(
+                f"Position {position.technical_id} P&L: {position.unrealized_pnl}"
+            )
             return position
 
         except Exception as e:
             self.logger.error(f"Error calculating P&L: {str(e)}")
             raise
-

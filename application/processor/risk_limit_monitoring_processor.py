@@ -8,9 +8,9 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.risk_limit.version_1.risk_limit import RiskLimit
 
 
 class RiskLimitMonitoringProcessor(CyodaProcessor):
@@ -32,20 +32,29 @@ class RiskLimitMonitoringProcessor(CyodaProcessor):
             The processed risk limit entity
         """
         try:
-            self.logger.info(f"Monitoring risk limit {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Monitoring risk limit {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             limit = cast_entity(entity, RiskLimit)
 
             # Check usage percentage
-            usage_pct = (limit.current_usage / limit.limit_value) * 100 if limit.limit_value > 0 else 0
+            usage_pct = (
+                (limit.current_usage / limit.limit_value) * 100
+                if limit.limit_value > 0
+                else 0
+            )
 
             if usage_pct > 90:
-                self.logger.warning(f"Risk limit {limit.technical_id} at {usage_pct:.1f}% utilization")
+                self.logger.warning(
+                    f"Risk limit {limit.technical_id} at {usage_pct:.1f}% utilization"
+                )
 
-            self.logger.info(f"Risk limit {limit.technical_id} monitored: {usage_pct:.1f}% used")
+            self.logger.info(
+                f"Risk limit {limit.technical_id} monitored: {usage_pct:.1f}% used"
+            )
             return limit
 
         except Exception as e:
             self.logger.error(f"Error monitoring risk limit: {str(e)}")
             raise
-

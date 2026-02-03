@@ -8,9 +8,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from application.entity.market_data_tick.version_1.market_data_tick import (
+    MarketDataTick,
+)
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.market_data_tick.version_1.market_data_tick import MarketDataTick
 
 
 class MarketDataNormalizationProcessor(CyodaProcessor):
@@ -32,7 +34,9 @@ class MarketDataNormalizationProcessor(CyodaProcessor):
             The processed market data tick entity
         """
         try:
-            self.logger.info(f"Normalizing market data {getattr(entity, 'technical_id', '<unknown>')}")
+            self.logger.info(
+                f"Normalizing market data {getattr(entity, 'technical_id', '<unknown>')}"
+            )
 
             tick = cast_entity(entity, MarketDataTick)
 
@@ -51,4 +55,3 @@ class MarketDataNormalizationProcessor(CyodaProcessor):
         except Exception as e:
             self.logger.error(f"Error normalizing market data: {str(e)}")
             raise
-

@@ -1,8 +1,9 @@
 import json
 from pathlib import Path
+from typing import Any, Dict, List
 
 
-def validate_workflow(workflow_path):
+def validate_workflow(workflow_path: str) -> List[str]:
     """Basic validation of workflow against schema requirements"""
     with open(workflow_path, "r") as f:
         workflow = json.load(f)
@@ -82,7 +83,7 @@ for workflow_path in workflows:
         all_valid = False
         continue
 
-    errors = validate_workflow(workflow_path)
+    errors = validate_workflow(str(workflow_path))
     if errors:
         print(f"❌ {workflow_path.name}:")
         for error in errors:

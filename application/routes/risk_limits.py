@@ -101,7 +101,9 @@ async def list_risk_limits() -> ResponseReturnValue:
 @validate(
     request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)}
 )
-async def transition_risk_limit(entity_id: str, data: dict) -> ResponseReturnValue:
+async def transition_risk_limit(
+    entity_id: str, data: Dict[str, Any]
+) -> ResponseReturnValue:
     """Trigger a workflow transition on a risk limit"""
     try:
         transition_name = data.get("transitionName")

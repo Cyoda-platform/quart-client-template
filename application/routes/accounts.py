@@ -100,7 +100,9 @@ async def list_accounts() -> ResponseReturnValue:
 @validate(
     request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)}
 )
-async def transition_account(entity_id: str, data: dict) -> ResponseReturnValue:
+async def transition_account(
+    entity_id: str, data: Dict[str, Any]
+) -> ResponseReturnValue:
     """Trigger a workflow transition on an account"""
     try:
         transition_name = data.get("transitionName")

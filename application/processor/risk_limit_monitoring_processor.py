@@ -5,7 +5,6 @@ Monitors risk limit usage and triggers alerts on breaches.
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.risk_limit.version_1.risk_limit import RiskLimit

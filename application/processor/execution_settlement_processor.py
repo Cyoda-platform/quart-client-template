@@ -5,7 +5,6 @@ Settles executed trades and updates account balances.
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.execution_report.version_1.execution_report import (

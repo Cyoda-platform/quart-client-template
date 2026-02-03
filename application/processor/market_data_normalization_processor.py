@@ -5,7 +5,6 @@ Normalizes market data from different venues to internal schema.
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.market_data_tick.version_1.market_data_tick import (

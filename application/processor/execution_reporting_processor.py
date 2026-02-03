@@ -5,7 +5,6 @@ Generates and validates execution reports from order fills.
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.execution_report.version_1.execution_report import (

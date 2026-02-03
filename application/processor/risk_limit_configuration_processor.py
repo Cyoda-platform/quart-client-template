@@ -5,7 +5,6 @@ Configures and validates risk limit parameters.
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.risk_limit.version_1.risk_limit import RiskLimit

@@ -5,7 +5,6 @@ Publishes normalized market data to internal event bus.
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.market_data_tick.version_1.market_data_tick import (

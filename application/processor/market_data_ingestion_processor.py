@@ -5,7 +5,6 @@ Ingests and validates market data from multiple venues.
 """
 
 import logging
-from datetime import datetime, timezone
 from typing import Any
 
 from application.entity.market_data_tick.version_1.market_data_tick import (

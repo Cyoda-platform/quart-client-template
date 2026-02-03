@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import List
 
 
 def validate_workflow(workflow_path: str) -> List[str]:
@@ -50,17 +50,17 @@ def validate_workflow(workflow_path: str) -> List[str]:
                     if "processors" in transition:
                         for processor in transition["processors"]:
                             if "name" not in processor:
-                                errors.append(f"Processor missing 'name'")
+                                errors.append("Processor missing 'name'")
                             if "executionMode" not in processor:
-                                errors.append(f"Processor missing 'executionMode'")
+                                errors.append("Processor missing 'executionMode'")
                             mode = processor.get("executionMode")
                             if mode not in ["SYNC", "ASYNC_NEW_TX", "ASYNC_SAME_TX"]:
                                 errors.append(f"Invalid executionMode: {mode}")
                             if "config" not in processor:
-                                errors.append(f"Processor missing 'config'")
+                                errors.append("Processor missing 'config'")
                             elif "calculationNodesTags" not in processor["config"]:
                                 errors.append(
-                                    f"Processor config missing 'calculationNodesTags'"
+                                    "Processor config missing 'calculationNodesTags'"
                                 )
 
     return errors

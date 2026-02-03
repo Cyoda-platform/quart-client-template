@@ -1,0 +1,77 @@
+{
+  "version": "1.0",
+  "name": "Position Workflow",
+  "desc": "Position lifecycle: opening through monitoring to closure",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "open",
+          "next": "open",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PositionOpenProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "open": {
+      "transitions": [
+        {
+          "name": "monitor",
+          "next": "monitored",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PositionMonitoringProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "monitored": {
+      "transitions": [
+        {
+          "name": "update_pnl",
+          "next": "monitored",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PnLCalculationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "closed": {
+      "transitions": []
+    }
+  }
+}
+

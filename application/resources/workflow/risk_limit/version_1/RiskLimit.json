@@ -1,0 +1,86 @@
+{
+  "version": "1.0",
+  "name": "RiskLimit Workflow",
+  "desc": "Risk limit lifecycle: configuration through enforcement",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "configure",
+          "next": "configured",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskLimitConfigurationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "configured": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "RiskLimitActivationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "monitor",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskLimitMonitoringProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "breach",
+          "next": "breached",
+          "manual": false
+        },
+        {
+          "name": "deactivate",
+          "next": "inactive",
+          "manual": true
+        }
+      ]
+    },
+    "breached": {
+      "transitions": [
+        {
+          "name": "remediate",
+          "next": "active",
+          "manual": true
+        }
+      ]
+    },
+    "inactive": {
+      "transitions": []
+    }
+  }
+}
+

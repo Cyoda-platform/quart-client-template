@@ -1,0 +1,73 @@
+{
+  "version": "1.0",
+  "name": "Account Workflow",
+  "desc": "Account lifecycle: activation through suspension to closure",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "AccountActivationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "monitor",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "AccountMonitoringProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "suspend",
+          "next": "suspended",
+          "manual": true
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "suspended": {
+      "transitions": [
+        {
+          "name": "reactivate",
+          "next": "active",
+          "manual": true
+        },
+        {
+          "name": "close",
+          "next": "closed",
+          "manual": true
+        }
+      ]
+    },
+    "closed": {
+      "transitions": []
+    }
+  }
+}
+

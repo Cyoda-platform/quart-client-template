@@ -1,0 +1,120 @@
+{
+  "version": "1.0",
+  "name": "Order Workflow",
+  "desc": "Order lifecycle management: submission through execution to completion",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "submit",
+          "next": "submitted",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderSubmissionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "submitted": {
+      "transitions": [
+        {
+          "name": "validate",
+          "next": "accepted",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "OrderValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "accepted": {
+      "transitions": [
+        {
+          "name": "fill",
+          "next": "filled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderExecutionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "partial_fill",
+          "next": "partially_filled",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "partially_filled": {
+      "transitions": [
+        {
+          "name": "fill_remaining",
+          "next": "filled",
+          "manual": false
+        },
+        {
+          "name": "cancel_remaining",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "filled": {
+      "transitions": [
+        {
+          "name": "complete",
+          "next": "completed",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderCompletionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}
+

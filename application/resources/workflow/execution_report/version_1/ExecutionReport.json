@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "name": "ExecutionReport Workflow",
+  "desc": "Execution report lifecycle: reporting through settlement",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "report",
+          "next": "reported",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ExecutionReportingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "reported": {
+      "transitions": [
+        {
+          "name": "confirm",
+          "next": "confirmed",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "ExecutionConfirmationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "confirmed": {
+      "transitions": [
+        {
+          "name": "settle",
+          "next": "settled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ExecutionSettlementProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "settled": {
+      "transitions": []
+    }
+  }
+}
+

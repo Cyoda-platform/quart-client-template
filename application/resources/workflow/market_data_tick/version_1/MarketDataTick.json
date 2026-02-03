@@ -1,0 +1,67 @@
+{
+  "version": "1.0",
+  "name": "MarketDataTick Workflow",
+  "desc": "Market data lifecycle: ingestion through normalization to publication",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "ingest",
+          "next": "ingested",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataIngestionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "ingested": {
+      "transitions": [
+        {
+          "name": "normalize",
+          "next": "normalized",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataNormalizationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "normalized": {
+      "transitions": [
+        {
+          "name": "publish",
+          "next": "published",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataPublicationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "published": {
+      "transitions": []
+    }
+  }
+}
+

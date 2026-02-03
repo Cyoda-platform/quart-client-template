@@ -1,0 +1,193 @@
+{
+  "version": "1.0",
+  "name": "OrderLifecycle Workflow",
+  "desc": "Manages the complete lifecycle of trading orders from submission through execution and settlement. Handles order validation, routing to execution venues, execution report ingestion, and position updates.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "submitOrder",
+          "next": "new",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ValidateOrderProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "new": {
+      "transitions": [
+        {
+          "name": "acceptOrder",
+          "next": "accepted",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "OrderValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "rejectOrder",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "accepted": {
+      "transitions": [
+        {
+          "name": "persistOrder",
+          "next": "working",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PersistOrderProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "cancelOrder",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "working": {
+      "transitions": [
+        {
+          "name": "routeToExecution",
+          "next": "working",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RouteToExecutionProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "EXPONENTIAL",
+                "responseTimeoutMs": 5000
+              }
+            }
+          ]
+        },
+        {
+          "name": "handlePartialFill",
+          "next": "partiallyfilled",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "PartialFillCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "handleFullFill",
+          "next": "filled",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "FullFillCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "cancelOrder",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "partiallyfilled": {
+      "transitions": [
+        {
+          "name": "continueWorking",
+          "next": "working",
+          "manual": false
+        },
+        {
+          "name": "completeFill",
+          "next": "filled",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "FullFillCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "cancelOrder",
+          "next": "cancelled",
+          "manual": true
+        }
+      ]
+    },
+    "filled": {
+      "transitions": [
+        {
+          "name": "publishExecutionReport",
+          "next": "filled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "PublishExecutionReportProcessor",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "updatePosition",
+          "next": "filled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "UpdatePositionOnFillProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "cancelled": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    }
+  }
+}
+

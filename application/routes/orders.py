@@ -102,9 +102,7 @@ async def list_orders() -> ResponseReturnValue:
 @validate(
     request=dict, responses={200: (dict, None), 400: (dict, None), 500: (dict, None)}
 )
-async def transition_order(
-    entity_id: str, data: Dict[str, Any]
-) -> ResponseReturnValue:
+async def transition_order(entity_id: str, data: Dict[str, Any]) -> ResponseReturnValue:
     """Trigger a workflow transition on an order"""
     try:
         transition_name = data.get("transitionName")

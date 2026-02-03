@@ -26,13 +26,14 @@ app = Quart(__name__)
 
 QuartSchema(
     app,
-    info={"title": "Cyoda Client Application", "version": "1.0.0"},
+    info={"title": "Institutional Trading Platform", "version": "1.0.0"},
     tags=[
-        {
-            "name": "ExampleEntities",
-            "description": "ExampleEntity management endpoints",
-        },
-        {"name": "OtherEntities", "description": "OtherEntity management endpoints"},
+        {"name": "orders", "description": "Order management endpoints"},
+        {"name": "positions", "description": "Position tracking endpoints"},
+        {"name": "execution-reports", "description": "Execution report endpoints"},
+        {"name": "market-data", "description": "Market data ingestion endpoints"},
+        {"name": "risk-limits", "description": "Risk control endpoints"},
+        {"name": "accounts", "description": "Account management endpoints"},
         {"name": "System", "description": "System and health endpoints"},
     ],
     security=[{"bearerAuth": []}],
@@ -43,6 +44,14 @@ QuartSchema(
         }
     },
 )
+
+# Register trading platform blueprints
+app.register_blueprint(orders_bp)
+app.register_blueprint(positions_bp)
+app.register_blueprint(execution_reports_bp)
+app.register_blueprint(market_data_bp)
+app.register_blueprint(risk_limits_bp)
+app.register_blueprint(accounts_bp)
 
 # Global holder for the background task to satisfy mypy
 # (avoid setting arbitrary attrs on app)

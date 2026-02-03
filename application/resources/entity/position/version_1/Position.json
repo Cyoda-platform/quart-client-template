@@ -1,0 +1,12 @@
+{
+  "id": "POS-20250203-001",
+  "account_id": "ACC-12345",
+  "instrument_id": "AAPL",
+  "quantity": 2500,
+  "avg_price": 194.75,
+  "realized_pnl": 1250.50,
+  "unrealized_pnl": 1875.25,
+  "last_updated": "2025-02-03T14:35:00Z",
+  "currency": "USD"
+}
+

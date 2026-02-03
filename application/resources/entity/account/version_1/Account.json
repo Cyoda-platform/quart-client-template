@@ -1,0 +1,10 @@
+{
+  "id": "ACC-12345",
+  "name": "Institutional Trading Account - Alpha Fund",
+  "type": "Institutional",
+  "primary_currency": "USD",
+  "credit_limit": 50000000.00,
+  "margin_account": true,
+  "status": "Active"
+}
+

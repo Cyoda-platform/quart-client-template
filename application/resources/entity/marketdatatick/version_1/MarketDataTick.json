@@ -1,0 +1,14 @@
+{
+  "id": "MDT-20250203-001",
+  "instrument_id": "AAPL",
+  "bid": 195.48,
+  "bid_size": 5000,
+  "ask": 195.52,
+  "ask_size": 3500,
+  "last": 195.50,
+  "last_size": 1000,
+  "timestamp": "2025-02-03T14:35:45Z",
+  "venue": "NASDAQ",
+  "sequence": 1234567890
+}
+

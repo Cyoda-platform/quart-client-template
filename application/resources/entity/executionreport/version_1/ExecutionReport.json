@@ -1,0 +1,13 @@
+{
+  "id": "EXEC-20250203-001",
+  "order_id": "ORD-20250203-001",
+  "exec_id": "EX-20250203-001",
+  "fill_qty": 500,
+  "fill_price": 195.45,
+  "venue": "NASDAQ",
+  "exec_time": "2025-02-03T14:31:15Z",
+  "remaining_qty": 500,
+  "cumulative_qty": 500,
+  "last_liquidity_indicator": "MAKER"
+}
+

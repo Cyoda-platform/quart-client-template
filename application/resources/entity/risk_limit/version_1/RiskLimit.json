@@ -1,0 +1,9 @@
+{
+  "accountId": "ACC-2024-001",
+  "limitType": "CREDIT",
+  "limitValue": 10000000,
+  "currentUsage": 2500000,
+  "currency": "USD",
+  "isActive": true
+}
+

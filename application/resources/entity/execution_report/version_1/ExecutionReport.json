@@ -1,0 +1,10 @@
+{
+  "orderId": "ORD-2024-001",
+  "accountId": "ACC-2024-001",
+  "instrumentId": "AAPL",
+  "fillQuantity": 500,
+  "fillPrice": 150.25,
+  "venue": "NYSE",
+  "commission": 50.00
+}
+

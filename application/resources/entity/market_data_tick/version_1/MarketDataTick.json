@@ -1,0 +1,10 @@
+{
+  "instrumentId": "AAPL",
+  "bid": 150.20,
+  "ask": 150.30,
+  "last": 150.25,
+  "bidSize": 10000,
+  "askSize": 15000,
+  "venue": "NYSE"
+}
+

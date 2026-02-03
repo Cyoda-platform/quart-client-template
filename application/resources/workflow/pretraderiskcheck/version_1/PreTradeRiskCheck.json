@@ -1,0 +1,147 @@
+{
+  "version": "1.0",
+  "name": "PreTradeRiskCheck Workflow",
+  "desc": "Evaluates trading orders against pre-trade risk controls including credit limits, position limits, price limits, and kill-switch checks. Provides quick approval or rejection with detailed policy metadata and reason codes.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "receiveOrder",
+          "next": "received",
+          "manual": false
+        }
+      ]
+    },
+    "received": {
+      "transitions": [
+        {
+          "name": "startChecking",
+          "next": "checking",
+          "manual": false,
+          "processors": [
+            {
+              "name": "CheckKillSwitchProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "checking": {
+      "transitions": [
+        {
+          "name": "evaluateCreditLimits",
+          "next": "checking",
+          "manual": false,
+          "processors": [
+            {
+              "name": "EvaluateCreditLimitsProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluatePositionLimits",
+          "next": "checking",
+          "manual": false,
+          "processors": [
+            {
+              "name": "EvaluatePositionLimitsProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "evaluatePriceLimits",
+          "next": "checking",
+          "manual": false,
+          "processors": [
+            {
+              "name": "EvaluatePriceLimitsProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "approveOrder",
+          "next": "approved",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "RiskApprovalCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "blockOrder",
+          "next": "blocked",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "RiskBlockCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "approved": {
+      "transitions": [
+        {
+          "name": "logApproval",
+          "next": "approved",
+          "manual": false,
+          "processors": [
+            {
+              "name": "LogRiskApprovalProcessor",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "blocked": {
+      "transitions": [
+        {
+          "name": "logRejection",
+          "next": "blocked",
+          "manual": false,
+          "processors": [
+            {
+              "name": "LogRiskRejectionProcessor",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+

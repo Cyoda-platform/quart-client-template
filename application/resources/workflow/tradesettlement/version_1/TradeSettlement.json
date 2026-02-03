@@ -1,0 +1,157 @@
+{
+  "version": "1.0",
+  "name": "TradeSettlement Workflow",
+  "desc": "Manages the settlement lifecycle of executed trades from capture through clearing, settlement confirmation, and reconciliation with custody. Includes retry logic for clearing failures and reconciliation discrepancies.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "captureTrade",
+          "next": "captured",
+          "manual": false,
+          "processors": [
+            {
+              "name": "CaptureTradeProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "captured": {
+      "transitions": [
+        {
+          "name": "sendToClearing",
+          "next": "cleared",
+          "manual": false,
+          "processors": [
+            {
+              "name": "SendToClearingProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "EXPONENTIAL",
+                "responseTimeoutMs": 10000
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "cleared": {
+      "transitions": [
+        {
+          "name": "confirmSettlement",
+          "next": "settled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ConfirmSettlementProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "LINEAR",
+                "responseTimeoutMs": 8000
+              }
+            }
+          ]
+        },
+        {
+          "name": "retryClearingOnFailure",
+          "next": "cleared",
+          "manual": true,
+          "processors": [
+            {
+              "name": "SendToClearingProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "EXPONENTIAL",
+                "responseTimeoutMs": 10000
+              }
+            }
+          ]
+        },
+        {
+          "name": "markClearingFailed",
+          "next": "failed",
+          "manual": true
+        }
+      ]
+    },
+    "settled": {
+      "transitions": [
+        {
+          "name": "reconcileWithCustody",
+          "next": "reconciled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ReconcileWithCustodyProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "LINEAR",
+                "responseTimeoutMs": 12000
+              }
+            }
+          ]
+        },
+        {
+          "name": "retrySettlementOnFailure",
+          "next": "settled",
+          "manual": true,
+          "processors": [
+            {
+              "name": "ConfirmSettlementProcessor",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application",
+                "retryPolicy": "LINEAR",
+                "responseTimeoutMs": 8000
+              }
+            }
+          ]
+        },
+        {
+          "name": "markSettlementFailed",
+          "next": "failed",
+          "manual": true
+        }
+      ]
+    },
+    "reconciled": {
+      "transitions": [
+        {
+          "name": "logReconciliation",
+          "next": "reconciled",
+          "manual": false,
+          "processors": [
+            {
+              "name": "LogReconciliationProcessor",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "failed": {
+      "transitions": [
+        {
+          "name": "retryFromFailed",
+          "next": "captured",
+          "manual": true
+        }
+      ]
+    }
+  }
+}
+

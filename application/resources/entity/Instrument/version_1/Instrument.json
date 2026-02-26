@@ -1,10 +1,10 @@
 {
-  "id": "AAPL-202601-150-C",
-  "symbol": "AAPL",
-  "instrumentType": "OPTION",
-  "underlyingId": "AAPL",
-  "expirationDate": "2026-01-15",
+  "id": "EURUSD-202606",
+  "symbol": "EUR/USD",
+  "instrumentType": "FX_FORWARD",
+  "underlyingId": null,
+  "expirationDate": "2026-06-30",
   "currency": "USD",
-  "tickSize": 0.01,
-  "lotSize": 100
+  "tickSize": 0.0001,
+  "lotSize": 100000
 }

@@ -1,17 +1,34 @@
 {
-  "id": "d3b07384-d9a1-4a7b-9c5b-1234567890ab",
-  "clientOrderId": "CL-20260120-0001",
-  "accountId": "ACC-1001",
-  "instrumentId": "AAPL-202601-150-C",
+  "id": "6f1e2d9a-3b1a-4d5f-9f9c-1a2b3c4d5e6f",
+  "clientOrderId": "CLORD-20260226-0001",
+  "accountId": "ACCT-1001",
+  "instrumentId": "EURUSD-202606",
   "side": "BUY",
-  "orderType": "LIMIT",
-  "quantity": 100.0,
-  "price": 150.25,
+  "orderType": "TWAP",
+  "quantity": 100000.00,
+  "price": null,
   "timeInForce": "GTC",
   "status": "NEW",
-  "createdAt": "2026-01-20T09:30:00Z",
-  "updatedAt": "2026-01-20T09:30:00Z",
-  "route": "SMART_ROUTER",
-  "executionVenueId": "NASDAQ",
-  "strategyId": null
+  "createdAt": "2026-02-26T10:15:30Z",
+  "updatedAt": "2026-02-26T10:15:30Z",
+  "route": "SmartRouterV1",
+  "executionVenueId": "CME-ECN-1",
+  "strategyId": null,
+  "executionInstruction": {
+    "childOrders": [
+      "b1e2c3d4-5f6a-7b8c-9d0e-1f2a3b4c5d6e",
+      "c2d3e4f5-6a7b-8c9d-0e1f-2a3b4c5d6e7f"
+    ],
+    "sliceParams": {
+      "sliceSize": 20000.00,
+      "sliceIntervalMs": 60000,
+      "maxSlices": 5
+    },
+    "parentOrderId": null,
+    "algoMetadata": {
+      "tolerancePips": 0.5,
+      "participationRatePercent": 10,
+      "maxSlippageUsd": 500
+    }
+  }
 }

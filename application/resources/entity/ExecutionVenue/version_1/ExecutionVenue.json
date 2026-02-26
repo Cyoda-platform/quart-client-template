@@ -1,7 +1,7 @@
 {
-  "id": "NASDAQ",
-  "name": "NASDAQ Stock Market",
-  "type": "EXCHANGE",
+  "id": "CME-ECN-1",
+  "name": "CME FX ECN",
+  "type": "ECN",
   "supportedFixVersions": ["FIX.4.2", "FIX.4.4", "FIX.5.0"],
-  "marketDataFeed": "NASDAQ-ITCH"
+  "marketDataFeed": "CME-MD-FEED-1"
 }

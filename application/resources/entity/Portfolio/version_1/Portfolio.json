@@ -1,10 +1,10 @@
 {
-  "id": "pf-4001",
-  "name": "Alpha Trading Desk",
-  "ownerAccountId": "ACC-1001",
+  "id": "pf-2001",
+  "name": "Global Macro - EUR Strategies",
+  "ownerAccountId": "ACCT-1001",
   "currency": "USD",
   "positions": ["pos-3001"],
-  "totalUnrealizedPnl": 45.0,
-  "totalRealizedPnl": 0.0,
-  "createdAt": "2026-01-01T09:00:00Z"
+  "totalUnrealizedPnl": 200.00,
+  "totalRealizedPnl": 150.00,
+  "createdAt": "2025-12-01T09:00:00Z"
 }

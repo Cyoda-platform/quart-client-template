@@ -1,9 +1,9 @@
 {
-  "id": "cp-2001",
-  "name": "Global Brokers LLC",
-  "type": "BROKER",
-  "legalEntityId": "LE-GB-001",
-  "contactEmail": "ops@globalbrokers.example.com",
-  "fixPartyId": "GBRK01",
-  "defaultSettlementAccount": "SETT-GB-01"
+  "id": "cpb-1001",
+  "name": "PrimeBroker Alpha",
+  "type": "PRIME_BROKER",
+  "legalEntityId": "LE-567890",
+  "contactEmail": "ops@primealpha.com",
+  "fixPartyId": "PRIMEALPHA",
+  "defaultSettlementAccount": "PB-ACCT-9001"
 }

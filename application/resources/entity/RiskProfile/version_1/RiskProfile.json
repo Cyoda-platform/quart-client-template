@@ -1,11 +1,11 @@
 {
-  "id": "rp-5001",
-  "accountId": "ACC-1001",
-  "maxNotional": 10000000.00,
-  "maxLeverage": 5.0,
+  "id": "rp-4001",
+  "accountId": "ACCT-1001",
+  "maxNotional": 5000000.00,
+  "maxLeverage": 10.0,
   "instrumentLimits": {
-    "AAPL-202601-150-C": 500000.00,
-    "SPX-FUT-202603": 1000000.00
+    "EURUSD-202606": 1000000.00,
+    "AAPL-202603": 500000.00
   },
   "blocked": false
 }

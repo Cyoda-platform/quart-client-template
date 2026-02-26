@@ -1,10 +1,10 @@
 {
-  "id": "fs-6001",
-  "partyId": "GBRK01",
-  "targetCompId": "NASDAQ",
-  "senderCompId": "CYODA_APP",
+  "id": "fs-5001",
+  "partyId": "TRDR-ACCT-01",
+  "targetCompId": "CME-ECN-1",
+  "senderCompId": "TRADER-01",
   "fixVersion": "FIX.4.4",
   "isInitiator": true,
-  "connected": false,
-  "lastHeartbeat": "2026-01-20T09:29:00Z"
+  "connected": true,
+  "lastHeartbeat": "2026-02-26T10:21:00Z"
 }

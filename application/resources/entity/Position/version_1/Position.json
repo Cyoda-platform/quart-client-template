@@ -1,0 +1,27 @@
+{
+  "id": "position-0001-ghi789",
+  "accountId": "acct-789",
+  "instrument": {
+    "symbol": "AAPL",
+    "isin": "US0378331005",
+    "instrumentType": "EQUITY"
+  },
+  "quantity": 50000,
+  "avgPrice": 150.275,
+  "marketPrice": 151.00,
+  "unrealizedPnl": 36250.0,
+  "realizedPnl": 0.0,
+  "pnl": 36250.0,
+  "lastUpdated": "2026-02-27T14:12:05Z",
+  "owner": "pm-desk-1",
+  "allocations": [
+    {"subAccount": "sub-1", "qty": 30000},
+    {"subAccount": "sub-2", "qty": 20000}
+  ],
+  "audit": {
+    "createdBy": "positions-service",
+    "createdAt": "2026-02-27T14:10:00Z",
+    "lastModifiedBy": "positions-service",
+    "lastModifiedAt": "2026-02-27T14:12:05Z"
+  }
+}

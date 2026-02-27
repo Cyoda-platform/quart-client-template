@@ -1,0 +1,21 @@
+{
+  "id": "acct-789",
+  "name": "Global Institutional Fund",
+  "owner": "client-123",
+  "type": "INST",
+  "custodyReference": "cust-456",
+  "defaultCurrency": "USD",
+  "contacts": [
+    {"name": "Alice Trader", "email": "alice.trader@example.com"}
+  ],
+  "audit": {
+    "createdBy": "onboarding-service",
+    "createdAt": "2026-01-10T09:00:00Z",
+    "lastModifiedBy": "onboarding-service",
+    "lastModifiedAt": "2026-01-10T09:00:00Z"
+  },
+  "compliance": {
+    "kycStatus": "VERIFIED",
+    "entityType": "INSTITUTIONAL"
+  }
+}

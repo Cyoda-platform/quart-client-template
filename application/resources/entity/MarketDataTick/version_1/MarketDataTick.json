@@ -1,0 +1,20 @@
+{
+  "id": "md-0001-jkl012",
+  "timestamp": "2026-02-27T14:11:59.500Z",
+  "instrument": {
+    "symbol": "AAPL",
+    "isin": "US0378331005",
+    "instrumentType": "EQUITY"
+  },
+  "bid": 150.20,
+  "ask": 150.25,
+  "last": 150.22,
+  "volume": 12500,
+  "venue": "NASDAQ",
+  "source": "direct_feed_nasdaq",
+  "snapshotRef": "application/resources/workflow/orderlifecycle/version_1/market_snapshot_0001.json",
+  "audit": {
+    "ingestedBy": "md-ingest-service",
+    "ingestedAt": "2026-02-27T14:11:59.500Z"
+  }
+}

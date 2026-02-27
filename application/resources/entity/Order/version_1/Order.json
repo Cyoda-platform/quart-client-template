@@ -1,0 +1,36 @@
+{
+  "id": "order-0001-abc123",
+  "idempotencyKey": "order-0001-abc123-idemp",
+  "createdAt": "2026-02-27T14:12:00Z",
+  "updatedAt": "2026-02-27T14:12:00Z",
+  "instrument": {
+    "symbol": "AAPL",
+    "isin": "US0378331005",
+    "instrumentType": "EQUITY"
+  },
+  "side": "BUY",
+  "orderType": "LIMIT",
+  "quantity": 100000,
+  "remainingQty": 100000,
+  "price": 150.25,
+  "status": "NEW",
+  "venue": "NASDAQ",
+  "routeHints": ["NYSE-PRIMARY", "CBOE-SECONDARY"],
+  "owner": "desk-technology",
+  "accountId": "acct-789",
+  "executionReports": [],
+  "audit": {
+    "createdBy": "trading-api",
+    "createdAt": "2026-02-27T14:12:00Z",
+    "lastModifiedBy": "trading-api",
+    "lastModifiedAt": "2026-02-27T14:12:00Z"
+  },
+  "attachments": ["application/resources/workflow/orderlifecycle/version_1/execution_snapshot_0001.json"],
+  "regulatory": {
+    "oats_fields": {
+      "reportingSide": "B",
+      "orderId": "order-0001-abc123"
+    },
+    "cat_ready": true
+  }
+}

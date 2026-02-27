@@ -1,0 +1,37 @@
+{
+  "id": "trade-0001-def456",
+  "orderId": "order-0001-abc123",
+  "tradeTimestamp": "2026-02-27T14:12:01Z",
+  "instrument": {
+    "symbol": "AAPL",
+    "isin": "US0378331005",
+    "instrumentType": "EQUITY"
+  },
+  "side": "BUY",
+  "quantity": 50000,
+  "price": 150.30,
+  "venue": "NASDAQ",
+  "executionReports": [
+    {
+      "execId": "exec-0001",
+      "filledQty": 50000,
+      "price": 150.30,
+      "timestamp": "2026-02-27T14:12:01Z"
+    }
+  ],
+  "pnl": 0.0,
+  "audit": {
+    "createdBy": "execution-engine",
+    "createdAt": "2026-02-27T14:12:01Z",
+    "lastModifiedBy": "execution-engine",
+    "lastModifiedAt": "2026-02-27T14:12:01Z"
+  },
+  "attachments": ["application/resources/workflow/orderlifecycle/version_1/market_snapshot_0001.json"],
+  "regulatory": {
+    "oats_fields": {
+      "reportingSide": "B",
+      "tradeId": "trade-0001-def456"
+    },
+    "cat_ready": true
+  }
+}

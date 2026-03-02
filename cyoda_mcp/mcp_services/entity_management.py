@@ -1,12 +1,9 @@
-"""
-Entity Management Service for MCP
+# ABOUTME: MCP service layer for Cyoda entity management operations
+# ABOUTME: wraps EntityService and provides bulk/delete_all/changes support via auth_service
 
-This service provides entity management functionality for the MCP server,
-using the existing dependency injection system.
-"""
-
+import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from common.config.config import ENTITY_VERSION
 from common.service.entity_service import (
@@ -16,6 +13,7 @@ from common.service.entity_service import (
     SearchConditionRequest,
     SearchOperator,
 )
+from common.utils.utils import send_cyoda_request
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +21,9 @@ logger = logging.getLogger(__name__)
 class EntityManagementService:
     """Service class for entity management operations."""
 
-    def __init__(self, entity_service: EntityService):
-        """
-        Initialize the entity management service.
-
-        Args:
-            entity_service: The injected entity service
-        """
+    def __init__(self, entity_service: EntityService, auth_service: Any) -> None:
         self.entity_service = entity_service
+        self._auth_service = auth_service
         logger.info("EntityManagementService initialized")
 
     async def get_entity(
@@ -375,3 +368,92 @@ class EntityManagementService:
                 operator_type, SearchOperator.EQUALS
             )
             builder.add_condition(field, search_operator, value)
+
+    async def delete_all_entities(
+        self, entity_model: str, entity_version: str = ENTITY_VERSION
+    ) -> Dict[str, Any]:
+        """Delete all entities of a given model via DELETE /entity/{name}/{version}."""
+        try:
+            path = f"entity/{entity_model}/{entity_version}"
+            resp = await send_cyoda_request(
+                cyoda_auth_service=self._auth_service, method="delete", path=path
+            )
+            success = resp.get("status") in (200, 204)
+            return {"success": success, "entity_model": entity_model}
+        except Exception as e:
+            logger.exception("delete_all_entities")
+            return {"success": False, "error": str(e), "entity_model": entity_model}
+
+    async def bulk_create_entities(
+        self,
+        entity_model: str,
+        entities_data: List[Dict[str, Any]],
+        entity_version: str = ENTITY_VERSION,
+    ) -> Dict[str, Any]:
+        """Bulk-create entities via POST /entity/JSON/{name}/{version} with a list body."""
+        try:
+            path = f"entity/JSON/{entity_model}/{entity_version}"
+            data = json.dumps(entities_data)
+            resp = await send_cyoda_request(
+                cyoda_auth_service=self._auth_service,
+                method="post",
+                path=path,
+                data=data,
+            )
+            success = resp.get("status") == 200
+            return {
+                "success": success,
+                "entity_model": entity_model,
+                "created_count": len(entities_data),
+                "response": resp.get("json"),
+            }
+        except Exception as e:
+            logger.exception("bulk_create_entities")
+            return {"success": False, "error": str(e), "entity_model": entity_model}
+
+    async def bulk_update_entities(
+        self,
+        entity_model: str,
+        entities_data: Any,
+        entity_version: str = ENTITY_VERSION,
+    ) -> Dict[str, Any]:
+        """Bulk-update entities via PUT /entity/JSON with caller-supplied body."""
+        try:
+            path = "entity/JSON"
+            data = json.dumps(entities_data)
+            resp = await send_cyoda_request(
+                cyoda_auth_service=self._auth_service,
+                method="put",
+                path=path,
+                data=data,
+            )
+            success = resp.get("status") == 200
+            return {
+                "success": success,
+                "entity_model": entity_model,
+                "response": resp.get("json"),
+            }
+        except Exception as e:
+            logger.exception("bulk_update_entities")
+            return {"success": False, "error": str(e), "entity_model": entity_model}
+
+    async def get_entity_changes(
+        self,
+        entity_id: str,
+        point_in_time: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Get change history for an entity via GET /entity/{id}/changes."""
+        try:
+            path = f"entity/{entity_id}/changes"
+            if point_in_time:
+                path = f"{path}?pointInTime={point_in_time}"
+            resp = await send_cyoda_request(
+                cyoda_auth_service=self._auth_service, method="get", path=path
+            )
+            changes = resp.get("json", [])
+            if not isinstance(changes, list):
+                changes = []
+            return {"success": True, "entity_id": entity_id, "changes": changes}
+        except Exception as e:
+            logger.exception("get_entity_changes")
+            return {"success": False, "error": str(e), "entity_id": entity_id}

@@ -1,12 +1,9 @@
-"""
-Entity Management MCP Presentation Layer
-
-This module provides FastMCP tools for entity management operations.
-"""
+# ABOUTME: MCP tools for Cyoda entity management operations
+# ABOUTME: exposes CRUD, bulk create/update, delete_all, and changes tools
 
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastmcp import Context, FastMCP
 
@@ -152,3 +149,110 @@ async def delete_entity_tool(
     return await entity_management_service.delete_entity(
         entity_model, entity_id, entity_version
     )
+
+
+@mcp.tool
+async def delete_all_entities_tool(
+    entity_model: str,
+    entity_version: str = ENTITY_VERSION,
+    ctx: Optional[Context] = None,
+) -> Dict[str, Any]:
+    """
+    Delete all entities of a specific model type.
+
+    Args:
+        entity_model: The type of entity (e.g., 'exampleentity')
+        entity_version: The entity model version
+        ctx: FastMCP context for logging
+
+    Returns:
+        Deletion result or error information
+    """
+    if ctx:
+        await ctx.info(f"Deleting all {entity_model} entities")
+
+    entity_management_service = get_entity_management_service()
+    return await entity_management_service.delete_all_entities(
+        entity_model, entity_version
+    )
+
+
+@mcp.tool
+async def bulk_create_entities_tool(
+    entity_model: str,
+    entities_data: List[Dict[str, Any]],
+    entity_version: str = ENTITY_VERSION,
+    ctx: Optional[Context] = None,
+) -> Dict[str, Any]:
+    """
+    Create multiple entities of the same model in a single request.
+
+    Args:
+        entity_model: The type of entity to create
+        entities_data: List of entity data dictionaries
+        entity_version: The entity model version
+        ctx: FastMCP context for logging
+
+    Returns:
+        Bulk creation result or error information
+    """
+    if ctx:
+        await ctx.info(f"Bulk-creating {len(entities_data)} {entity_model} entities")
+
+    entity_management_service = get_entity_management_service()
+    return await entity_management_service.bulk_create_entities(
+        entity_model, entities_data, entity_version
+    )
+
+
+@mcp.tool
+async def bulk_update_entities_tool(
+    entity_model: str,
+    entities_data: Any,
+    entity_version: str = ENTITY_VERSION,
+    ctx: Optional[Context] = None,
+) -> Dict[str, Any]:
+    """
+    Bulk-update entities via PUT /entity/JSON.
+    The entities_data should be in the format expected by the Cyoda API.
+
+    Args:
+        entity_model: The entity model name (used only for logging/context)
+        entities_data: Entities to update in Cyoda bulk-update format
+        entity_version: The entity model version (used only for logging/context)
+        ctx: FastMCP context for logging
+
+    Returns:
+        Bulk update result or error information
+    """
+    if ctx:
+        await ctx.info(f"Bulk-updating {entity_model} entities")
+
+    entity_management_service = get_entity_management_service()
+    return await entity_management_service.bulk_update_entities(
+        entity_model, entities_data, entity_version
+    )
+
+
+@mcp.tool
+async def get_entity_changes_tool(
+    entity_id: str,
+    point_in_time: Optional[str] = None,
+    ctx: Optional[Context] = None,
+) -> Dict[str, Any]:
+    """
+    Get the change history for a specific entity.
+
+    Args:
+        entity_id: The technical UUID of the entity
+        point_in_time: Optional ISO 8601 datetime to query changes up to that point
+        ctx: FastMCP context for logging
+
+    Returns:
+        List of change metadata entries or error information
+    """
+    if ctx:
+        await ctx.info(f"Getting changes for entity {entity_id}")
+
+    entity_management_service = get_entity_management_service()
+    return await entity_management_service.get_entity_changes(entity_id, point_in_time)

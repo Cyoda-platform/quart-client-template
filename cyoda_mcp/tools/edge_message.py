@@ -1,12 +1,9 @@
-"""
-Edge Message MCP Presentation Layer
-
-This module provides FastMCP tools for edge message operations.
-"""
+# ABOUTME: MCP tools for Cyoda edge message operations
+# ABOUTME: exposes send, get, delete, and bulk-delete edge message tools
 
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from fastmcp import Context, FastMCP
 
@@ -92,3 +89,45 @@ async def send_edge_message_tool(
         content_length=content_length,
         content_type=content_type,
     )
+
+
+@mcp.tool
+async def delete_edge_message_tool(
+    message_id: str, ctx: Optional[Context] = None
+) -> Dict[str, Any]:
+    """
+    Delete a single edge message by ID.
+
+    Args:
+        message_id: The UUID of the message to delete
+        ctx: FastMCP context for logging
+
+    Returns:
+        Dictionary with success status
+    """
+    if ctx:
+        await ctx.info(f"Deleting edge message: {message_id}")
+
+    edge_message_service = get_edge_message_service()
+    return await edge_message_service.delete_message(message_id)
+
+
+@mcp.tool
+async def bulk_delete_edge_messages_tool(
+    message_ids: List[str], ctx: Optional[Context] = None
+) -> Dict[str, Any]:
+    """
+    Delete multiple edge messages in a single request.
+
+    Args:
+        message_ids: List of message UUIDs to delete
+        ctx: FastMCP context for logging
+
+    Returns:
+        Dictionary with success status and count
+    """
+    if ctx:
+        await ctx.info(f"Bulk-deleting {len(message_ids)} edge messages")
+
+    edge_message_service = get_edge_message_service()
+    return await edge_message_service.bulk_delete_messages(message_ids)

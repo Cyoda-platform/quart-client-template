@@ -511,7 +511,8 @@ async def send_request(
                 else response.text
             )
         elif method == "DELETE":
-            response = await client.delete(url, headers=headers)
+            # httpx 0.28.x shortcut delete() does not accept a body; use request() instead
+            response = await client.request("DELETE", url, headers=headers, content=data)
             content = (
                 response.json()
                 if "application/json" in response.headers.get("Content-Type", "")

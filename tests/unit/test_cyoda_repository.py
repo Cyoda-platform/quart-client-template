@@ -314,7 +314,7 @@ class TestCyodaRepository:
 
     @pytest.mark.asyncio
     async def test_update_success(self, repository, sample_meta, sample_entity_data):
-        """Test updating entity successfully."""
+        """Test updating entity successfully using loopback endpoint (no transition)."""
         with patch(
             "common.repository.cyoda.cyoda_repository.send_cyoda_request"
         ) as mock_request:
@@ -328,6 +328,32 @@ class TestCyodaRepository:
             )
 
             assert result == "test-id-123"
+            # No update_transition in meta — must use loopback path (no transition segment)
+            called_path = mock_request.call_args.kwargs["path"]
+            assert "test-id-123" in called_path
+            assert called_path.startswith("entity/JSON/test-id-123?")
+
+    @pytest.mark.asyncio
+    async def test_update_uses_transition_path_when_specified(
+        self, repository, sample_meta, sample_entity_data
+    ):
+        """Test that update uses the transition path when update_transition is in meta."""
+        with patch(
+            "common.repository.cyoda.cyoda_repository.send_cyoda_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": {"entityIds": ["test-id-123"]},
+                "status": 200,
+            }
+
+            meta_with_transition = {**sample_meta, "update_transition": "my_transition"}
+            result = await repository.update(
+                meta_with_transition, "test-id-123", sample_entity_data
+            )
+
+            assert result == "test-id-123"
+            called_path = mock_request.call_args.kwargs["path"]
+            assert "entity/JSON/test-id-123/my_transition" in called_path
 
     @pytest.mark.asyncio
     async def test_update_with_transition(self, repository, sample_meta):

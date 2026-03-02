@@ -12,9 +12,31 @@ import jsonschema
 from jsonschema import validate
 
 from common.auth.cyoda_auth import CyodaAuthService
-from common.config.config import CYODA_API_URL
+from common.config.config import CYODA_API_URL, CYODA_VERIFY_SSL
 
 logger = logging.getLogger(__name__)
+
+
+def create_http_client(timeout: float = 150.0) -> httpx.AsyncClient:
+    """
+    Create an HTTP client with appropriate SSL configuration.
+
+    Args:
+        timeout: Request timeout in seconds
+
+    Returns:
+        Configured httpx.AsyncClient instance
+    """
+    # Configure SSL verification based on environment variable
+    verify_ssl = CYODA_VERIFY_SSL
+
+    if not verify_ssl:
+        logger.warning(
+            "SSL verification is disabled (CYODA_VERIFY_SSL=false). "
+            "This should only be used in development environments with self-signed certificates."
+        )
+
+    return httpx.AsyncClient(timeout=timeout, verify=verify_ssl)
 
 
 class ValidationError(Exception):
@@ -461,7 +483,7 @@ async def send_request(
     data: Optional[Any] = None,
     json: Optional[Any] = None,
 ) -> Any:
-    async with httpx.AsyncClient(timeout=150.0) as client:
+    async with create_http_client() as client:
         method = method.upper()
         if method == "GET":
             response = await client.get(url, headers=headers)

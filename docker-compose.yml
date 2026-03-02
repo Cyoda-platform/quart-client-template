@@ -19,6 +19,7 @@ services:
       - CYODA_HOST=${CYODA_HOST}
       - CYODA_CLIENT_ID=${CYODA_CLIENT_ID}
       - CYODA_CLIENT_SECRET=${CYODA_CLIENT_SECRET}
+      - CYODA_VERIFY_SSL=${CYODA_VERIFY_SSL:-true}
       - CHAT_ID=${CHAT_ID}
     volumes:
       - ./config:/app/config:ro

@@ -32,6 +32,13 @@ def get_env(key: str) -> str:
 
 
 SKIP_SSL = os.getenv("SKIP_SSL", False)
+# Whether to verify SSL certificates in HTTP requests. Set CYODA_VERIFY_SSL=false
+# for self-signed certificates in development; defaults to True (verify).
+CYODA_VERIFY_SSL: bool = os.getenv("CYODA_VERIFY_SSL", "true").lower() not in (
+    "false",
+    "0",
+    "no",
+)
 CYODA_HOST = get_env("CYODA_HOST")
 CYODA_CLIENT_ID = get_env("CYODA_CLIENT_ID")
 CYODA_CLIENT_SECRET = get_env("CYODA_CLIENT_SECRET")

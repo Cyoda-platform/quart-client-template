@@ -170,7 +170,7 @@ class TestEdgeMessageRepository:
 
     @pytest.mark.asyncio
     async def test_send_message_success(self, repository):
-        """Test sending message successfully."""
+        """Test sending message successfully with dict response (legacy shape)."""
         with patch(
             "common.repository.cyoda.edge_message_repository.send_request"
         ) as mock_request:
@@ -195,6 +195,31 @@ class TestEdgeMessageRepository:
             assert result.entity_ids == ["msg-new-123"]
             assert result.success is True
             mock_request.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_send_message_success_list_response(self, repository):
+        """Test sending message successfully with list response (current Cyoda API shape)."""
+        with patch(
+            "common.repository.cyoda.edge_message_repository.send_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": [{"entityIds": ["msg-list-456"], "success": True}],
+                "status": 200,
+            }
+
+            content = {"data": "test message"}
+            result = await repository.send_message(
+                subject="Test Subject",
+                content=content,
+            )
+
+            from common.repository.cyoda.edge_message_repository import (
+                SendMessageResponse,
+            )
+
+            assert isinstance(result, SendMessageResponse)
+            assert result.entity_ids == ["msg-list-456"]
+            assert result.success is True
 
     @pytest.mark.asyncio
     async def test_send_message_with_all_headers(self, repository):
@@ -302,9 +327,12 @@ class TestEdgeMessageRepository:
 
             assert isinstance(result, SendMessageResponse)
             assert result.success is True
-            # Verify content was serialized
+            # Verify content is wrapped in payload field per Cyoda API spec
             call_args = mock_request.call_args
-            assert call_args is not None
+            import json as _json
+            sent_body = _json.loads(call_args.kwargs["data"])
+            assert "payload" in sent_body
+            assert sent_body["payload"] == content
 
     @pytest.mark.asyncio
     async def test_send_message_with_string_content(self, repository):

@@ -414,11 +414,15 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             await self._launch_transition(meta=meta, technical_id=str(technical_id))
             return None
 
-        transition: str = meta.get("update_transition", UPDATE_TRANSITION)
-        path = (
-            f"entity/JSON/{technical_id}/{transition}"
-            "?transactional=true&waitForConsistencyAfter=true"
-        )
+        transition: Optional[str] = meta.get("update_transition")
+        if transition:
+            path = (
+                f"entity/JSON/{technical_id}/{transition}"
+                "?transactional=true&waitForConsistencyAfter=true"
+            )
+        else:
+            # Use loopback endpoint (stays in same workflow state) when no transition specified
+            path = f"entity/JSON/{technical_id}?transactional=true&waitForConsistencyAfter=true"
         data = json.dumps(entity, default=custom_serializer)
         resp: Dict[str, Any] = await send_cyoda_request(
             cyoda_auth_service=self._cyoda_auth_service,

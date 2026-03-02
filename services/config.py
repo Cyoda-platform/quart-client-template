@@ -13,6 +13,7 @@ from common.config.config import (
     CYODA_CLIENT_ID,
     CYODA_CLIENT_SECRET,
     CYODA_TOKEN_URL,
+    CYODA_VERIFY_SSL,
     SKIP_SSL,
 )
 
@@ -33,7 +34,7 @@ def get_service_config() -> Dict[str, Any]:
             "client_id": CYODA_CLIENT_ID,
             "client_secret": CYODA_CLIENT_SECRET,
             "token_url": CYODA_TOKEN_URL,
-            "skip_ssl": SKIP_SSL,
+            "skip_ssl": not CYODA_VERIFY_SSL,
             "scope": "read write",
         },
         "repository": {

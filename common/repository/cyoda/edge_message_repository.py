@@ -84,12 +84,19 @@ class SendMessageResponse:
     success: bool
 
     @classmethod
-    def from_api_response(cls, response_data: Dict[str, Any]) -> "SendMessageResponse":
-        """Create SendMessageResponse from API response data."""
-        return cls(
-            entity_ids=response_data.get("entityIds", []),
-            success=response_data.get("success", False),
-        )
+    def from_api_response(
+        cls, response_data: Any
+    ) -> "SendMessageResponse":
+        """Create SendMessageResponse from API response data.
+
+        The Cyoda API returns a list of transaction result objects; take the first entry.
+        When the API omits the 'success' field, infer it from the presence of entity IDs.
+        """
+        if isinstance(response_data, list):
+            response_data = response_data[0] if response_data else {}
+        entity_ids: list[str] = response_data.get("entityIds", [])
+        success: bool = response_data.get("success") or len(entity_ids) > 0
+        return cls(entity_ids=entity_ids, success=success)
 
 
 class EdgeMessageRepository:
@@ -187,7 +194,7 @@ class EdgeMessageRepository:
             Exception: If the API request fails
         """
         try:
-            path = f"message/get/{message_id}"
+            path = f"message/{message_id}"
 
             logger.info(f"Retrieving edge message with ID: {message_id}")
 
@@ -266,11 +273,13 @@ class EdgeMessageRepository:
                 headers["X-Correlation-ID"] = correlation_id
             if content_encoding:
                 headers["Content-Encoding"] = content_encoding
-            if content_length:
-                headers["Content-Length"] = str(content_length)
 
-            # Convert content to JSON string
-            content_json = json.dumps(content)
+            # Wrap content in payload field per Cyoda API spec
+            message_body = {"payload": content}
+            content_json = json.dumps(message_body)
+
+            # Content-Length is required per API spec; use computed value unless caller overrides
+            headers["Content-Length"] = str(content_length or len(content_json.encode("utf-8")))
 
             logger.info(f"Sending edge message with subject: {subject}")
 

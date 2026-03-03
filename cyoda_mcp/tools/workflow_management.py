@@ -32,16 +32,52 @@ async def export_workflows_to_file_tool(
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
     """
-    Export entity workflows to a JSON file.
+    Export all workflow configurations for an entity model to a local JSON file.
+
+    Calls GET /model/{entityName}/{modelVersion}/workflow/export. Because a
+    single entity type can have multiple workflows (Cyoda selects the applicable
+    one at runtime using each workflow's top-level `criterion`), the response is
+    always a collection — even if only one workflow is configured.
+
+    The exported file contains a JSON array of WorkflowConfiguration objects.
+    Each configuration includes:
+      - name / desc       : human-readable identity (name is unique per model)
+      - version           : schema version (currently "1.0")
+      - initialState      : the state assigned to a new entity entering the workflow
+      - active            : whether the workflow is live
+      - criterion         : optional condition that selects which entities use this
+                            workflow (simple / group / function QueryCondition)
+      - states            : map of state-code → state definition, where each state
+                            lists the transitions available from it:
+          - name     : transition identifier (used when calling update_entity_tool)
+          - next     : target state after the transition
+          - manual   : true = caller must trigger; false = Cyoda fires automatically
+          - disabled : optional flag to suppress a transition without deleting it
+          - criterion: optional condition that must be satisfied for the transition
+                       to fire (supports simple / group / function types)
+          - processors: zero or more processors to execute on the transition:
+              - externalized: calls out to your gRPC processor with execution
+                              modes SYNC, ASYNC_SAME_TX, or ASYNC_NEW_TX
+              - scheduled   : fires a delayed automatic transition after delayMs
+
+    The file is written as a pretty-printed JSON array. Relative `file_path`
+    values are resolved from the project root. Parent directories are created
+    automatically if they do not exist. The file can be edited and re-imported
+    with `import_workflows_from_file_tool`.
 
     Args:
-        entity_name: Name of the entity
-        model_version: Version of the model
-        file_path: Path where to save the workflow file (relative to project root or absolute)
-        ctx: FastMCP context for logging
+        entity_name: Name of the entity model (e.g. "Customer").
+        model_version: Version of the entity model (e.g. "1").
+        file_path: Destination path for the JSON file. Relative paths resolve
+                   from the project root (e.g. "application/resources/workflow/customer/version_1/workflow.json").
+        ctx: FastMCP context for logging.
 
     Returns:
-        Dictionary containing export result or error information
+        Dictionary with:
+          - success: True on success
+          - file_path: absolute path the file was written to
+          - workflows_count: number of workflows exported
+          - entity_name / model_version: echoed back
     """
     try:
         if ctx:
@@ -118,17 +154,58 @@ async def import_workflows_from_file_tool(
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
     """
-    Import entity workflows from a JSON file.
+    Import workflow configurations from a local JSON file into Cyoda.
+
+    Calls POST /model/{entityName}/{modelVersion}/workflow/import. Workflow
+    names are unique per entity model: importing a workflow whose name already
+    exists updates that workflow; importing a new name creates it.
+
+    The file must contain a JSON array of WorkflowConfiguration objects (a
+    single object is also accepted and wrapped automatically). Required fields
+    per workflow: `version`, `name`, `initialState`, `states`.
+
+    Use `validate_workflow_file_tool` to check the file structure before
+    importing. Use `export_workflows_to_file_tool` to obtain a valid template
+    from an existing entity model.
+
+    Import modes
+    ------------
+    REPLACE  (default) — Removes all existing workflows for the entity and
+             keeps only the imported ones. Also deletes any processors and
+             criteria that are no longer referenced by any workflow.
+             Use when you want the Cyoda configuration to exactly match the
+             file, with no leftover artefacts.
+
+    ACTIVATE — Like REPLACE, but deactivates other workflows and transitions
+               instead of deleting them. Unused processors and criteria are
+               preserved. Use when you need a clean active set but want to
+               retain history or the ability to reactivate old workflows.
+
+    MERGE    — Performs an incremental update of only the workflows listed in
+               the file. Workflows not mentioned remain completely unchanged.
+               Use for targeted changes to a subset of an entity's workflows.
+
+    *** REPLACE deletes data — use with caution on production environments.
+    Export first to create a backup if needed. ***
+
+    File path resolution: relative paths are resolved from the project root.
+    The conventional layout is:
+      application/resources/workflow/{entityName}/version_{version}/workflow.json
 
     Args:
-        entity_name: Name of the entity
-        model_version: Version of the model
-        file_path: Path to the workflow file (relative to project root or absolute)
-        import_mode: Import mode ("REPLACE" or other supported modes)
-        ctx: FastMCP context for logging
+        entity_name: Name of the entity model (e.g. "Customer").
+        model_version: Version of the entity model (e.g. "1").
+        file_path: Path to the JSON workflow file. Relative paths resolve from
+                   the project root.
+        import_mode: One of "REPLACE" (default), "ACTIVATE", or "MERGE".
+        ctx: FastMCP context for logging.
 
     Returns:
-        Dictionary containing import result or error information
+        Dictionary with:
+          - success: True on success
+          - file_path: absolute path the file was read from
+          - workflows_loaded: number of workflow definitions sent to Cyoda
+          - entity_name / model_version: echoed back
     """
     try:
         if ctx:
@@ -220,14 +297,37 @@ async def list_workflow_files_tool(
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
     """
-    List available workflow files in the specified directory.
+    List workflow JSON files on the local filesystem under a base directory.
+
+    This is a local file operation — it does not contact the Cyoda API. Use it
+    to discover which workflow files are available for import, or to confirm
+    that an export landed where expected.
+
+    Files are discovered recursively. For each `.json` file found the tool
+    reports:
+      - file_path / relative_path / file_name: location on disk
+      - size_bytes: file size
+      - entity_name / model_version: inferred from the directory structure when
+        the path follows the convention
+        `{base}/{entityName}/version_{version}/...`
+      - workflows_count: number of workflow objects in the file
+      - workflow_name / workflow_version: taken from the first workflow object
+
+    The conventional base directory used by this project is
+    "application/resources/workflow". Relative `base_path` values are resolved
+    from the project root.
 
     Args:
-        base_path: Base directory to search for workflow files (relative to project root or absolute)
-        ctx: FastMCP context for logging
+        base_path: Directory to search (default "application/resources/workflow").
+                   Relative paths resolve from the project root.
+        ctx: FastMCP context for logging.
 
     Returns:
-        Dictionary containing list of workflow files or error information
+        Dictionary with:
+          - success: True on success
+          - base_path: absolute path that was searched
+          - files_count: total number of JSON files found
+          - workflow_files: list of file descriptor objects (see above)
     """
     try:
         if ctx:
@@ -326,14 +426,44 @@ async def validate_workflow_file_tool(
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
     """
-    Validate a workflow file for correct JSON structure and required fields.
+    Validate a local workflow JSON file for structural correctness before importing.
+
+    This is a local file operation — it does not contact the Cyoda API.
+    Run this before `import_workflows_from_file_tool` to catch obvious errors
+    early and avoid a failed import.
+
+    Checks performed:
+      - File exists and contains valid JSON
+      - Top-level value is a workflow object or array of workflow objects
+      - Each workflow contains the required fields: `name` and `states`
+      - Each state definition is a dictionary
+      - Each state's `transitions` value (if present) is an array
+
+    Note: this tool validates local structure only. It does not check that
+    referenced processor names, criterion functions, or state names are
+    registered in Cyoda. A file that passes this check may still be rejected
+    by the API if, for example, `initialState` references a state not defined
+    in `states`, or a processor name does not match any registered gRPC handler.
+
+    Required fields per workflow (per the Cyoda schema):
+      - version      : workflow configuration schema version (use "1.0")
+      - name         : unique identifier within the entity model
+      - initialState : state code assigned to newly created entities
+      - states       : map of state-code → {transitions: [...]}
 
     Args:
-        file_path: Path to the workflow file (relative to project root or absolute)
-        ctx: FastMCP context for logging
+        file_path: Path to the workflow JSON file. Relative paths resolve from
+                   the project root.
+        ctx: FastMCP context for logging.
 
     Returns:
-        Dictionary containing validation result or error information
+        Dictionary with:
+          - success / is_valid: True if no structural errors were found
+          - workflows_count: number of workflow objects detected
+          - structure: "array" or "single_object"
+          - errors: list of structural error messages (empty on success)
+          - warnings: list of non-fatal observations
+          - file_path / file_size: file metadata
     """
     try:
         if ctx:

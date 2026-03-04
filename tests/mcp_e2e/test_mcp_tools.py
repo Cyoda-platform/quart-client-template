@@ -52,38 +52,37 @@ from cyoda_mcp.tools.workflow_management import (
     validate_workflow_file,
 )
 
-# FastMCP wraps each tool function in a FunctionTool descriptor.
-# Access .fn to get the original async Python function for direct invocation.
-_create_entity = create_entity.fn
-_get_entity = get_entity.fn
-_update_entity = update_entity_with_loopback_transition.fn
-_update_entity_with_transition = update_entity_with_transition.fn
-_get_entity_transitions = get_entity_transitions.fn
-_delete_entity = delete_entity.fn
-_delete_all_entities = delete_all_entities.fn
-_bulk_create_entities = bulk_create_entities.fn
-_get_entity_changes = get_entity_changes.fn
-_find_all = find_all.fn
-_search = search.fn
-_import_workflows = import_workflows_from_file.fn
-_export_workflows = export_workflows_to_file.fn
-_list_workflow_files = list_workflow_files.fn
-_validate_workflow_file = validate_workflow_file.fn
-_send_edge_message = send_edge_message.fn
-_get_edge_message = get_edge_message.fn
-_delete_edge_message = delete_edge_message.fn
-_bulk_delete_edge_messages = bulk_delete_edge_messages.fn
-_list_entity_models = list_entity_models.fn
-_get_entity_audit = get_entity_audit.fn
-_get_workflow_finished_event = get_workflow_finished_event.fn
-_get_entity_stats = get_entity_stats.fn
-_get_entity_stats_by_model = get_entity_stats_by_model.fn
-_get_entity_stats_by_state = get_entity_stats_by_state.fn
-_get_entity_stats_by_state_and_model = get_entity_stats_by_state_and_model.fn
-_submit_async_search = submit_async_search.fn
-_get_async_search_results = get_async_search_results.fn
-_get_async_search_status = get_async_search_status.fn
-_cancel_async_search = cancel_async_search.fn
+# FastMCP 3.x decorates tool functions in-place; they are plain callables.
+_create_entity = create_entity
+_get_entity = get_entity
+_update_entity = update_entity_with_loopback_transition
+_update_entity_with_transition = update_entity_with_transition
+_get_entity_transitions = get_entity_transitions
+_delete_entity = delete_entity
+_delete_all_entities = delete_all_entities
+_bulk_create_entities = bulk_create_entities
+_get_entity_changes = get_entity_changes
+_find_all = find_all
+_search = search
+_import_workflows = import_workflows_from_file
+_export_workflows = export_workflows_to_file
+_list_workflow_files = list_workflow_files
+_validate_workflow_file = validate_workflow_file
+_send_edge_message = send_edge_message
+_get_edge_message = get_edge_message
+_delete_edge_message = delete_edge_message
+_bulk_delete_edge_messages = bulk_delete_edge_messages
+_list_entity_models = list_entity_models
+_get_entity_audit = get_entity_audit
+_get_workflow_finished_event = get_workflow_finished_event
+_get_entity_stats = get_entity_stats
+_get_entity_stats_by_model = get_entity_stats_by_model
+_get_entity_stats_by_state = get_entity_stats_by_state
+_get_entity_stats_by_state_and_model = get_entity_stats_by_state_and_model
+_submit_async_search = submit_async_search
+_get_async_search_results = get_async_search_results
+_get_async_search_status = get_async_search_status
+_cancel_async_search = cancel_async_search
 
 ENTITY_MODEL = "e2etestentity"
 ENTITY_VERSION = "1"

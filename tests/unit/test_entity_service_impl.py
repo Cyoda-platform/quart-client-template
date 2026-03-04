@@ -612,6 +612,28 @@ class TestEntityServiceImpl:
         assert result.metadata.id == "test-id"
 
     @pytest.mark.asyncio
+    async def test_create_entity_response_extracts_transaction_id(self, service):
+        """Test that transaction_id is extracted from data into metadata."""
+        data = {
+            "name": "Test",
+            "technical_id": "test-id",
+            "transaction_id": "txn-uuid-abc",
+        }
+
+        result = service._create_entity_response(data)
+
+        assert result.metadata.transaction_id == "txn-uuid-abc"
+
+    @pytest.mark.asyncio
+    async def test_create_entity_response_transaction_id_none_when_absent(self, service):
+        """Test that metadata.transaction_id is None when not present in data."""
+        data = {"name": "Test", "technical_id": "test-id"}
+
+        result = service._create_entity_response(data)
+
+        assert result.metadata.transaction_id is None
+
+    @pytest.mark.asyncio
     async def test_handle_repository_error(self, service):
         """Test handling repository errors."""
         error_data = {"errorMessage": "Something went wrong"}

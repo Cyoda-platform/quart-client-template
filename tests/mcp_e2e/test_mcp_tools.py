@@ -11,83 +11,83 @@ import pytest
 pytestmark = [pytest.mark.e2e, pytest.mark.asyncio(loop_scope="session")]
 
 from cyoda_mcp.tools.async_search import (
-    cancel_async_search_tool,
-    get_async_search_results_tool,
-    get_async_search_status_tool,
-    submit_async_search_tool,
+    cancel_async_search,
+    get_async_search_results,
+    get_async_search_status,
+    submit_async_search,
 )
 from cyoda_mcp.tools.edge_message import (
-    bulk_delete_edge_messages_tool,
-    delete_edge_message_tool,
-    get_edge_message_tool,
-    send_edge_message_tool,
+    bulk_delete_edge_messages,
+    delete_edge_message,
+    get_edge_message,
+    send_edge_message,
 )
 from cyoda_mcp.tools.entity_audit import (
-    get_entity_audit_tool,
-    get_workflow_finished_event_tool,
+    get_entity_audit,
+    get_workflow_finished_event,
 )
 from cyoda_mcp.tools.entity_management import (
-    bulk_create_entities_tool,
-    create_entity_tool,
-    delete_all_entities_tool,
-    delete_entity_tool,
-    get_entity_changes_tool,
-    get_entity_tool,
-    list_entities_tool,
-    update_entity_tool,
+    bulk_create_entities,
+    create_entity,
+    delete_all_entities,
+    delete_entity,
+    get_entity,
+    get_entity_changes,
+    get_entity_transitions,
+    update_entity_with_loopback_transition,
+    update_entity_with_transition,
 )
-from cyoda_mcp.tools.entity_model import list_entity_models_tool
+from cyoda_mcp.tools.entity_model import list_entity_models
 from cyoda_mcp.tools.entity_stats import (
-    get_entity_stats_by_model_tool,
-    get_entity_stats_by_state_and_model_tool,
-    get_entity_stats_by_state_tool,
-    get_entity_stats_tool,
+    get_entity_stats,
+    get_entity_stats_by_model,
+    get_entity_stats_by_state,
+    get_entity_stats_by_state_and_model,
 )
 from cyoda_mcp.tools.search import find_all, search
 from cyoda_mcp.tools.workflow_management import (
-    export_workflows_to_file_tool,
-    import_workflows_from_file_tool,
-    list_workflow_files_tool,
-    validate_workflow_file_tool,
+    export_workflows_to_file,
+    import_workflows_from_file,
+    list_workflow_files,
+    validate_workflow_file,
 )
 
 # FastMCP wraps each tool function in a FunctionTool descriptor.
 # Access .fn to get the original async Python function for direct invocation.
-_create_entity = create_entity_tool.fn
-_get_entity = get_entity_tool.fn
-_list_entities = list_entities_tool.fn
-_update_entity = update_entity_tool.fn
-_delete_entity = delete_entity_tool.fn
-_delete_all_entities = delete_all_entities_tool.fn
-_bulk_create_entities = bulk_create_entities_tool.fn
-_get_entity_changes = get_entity_changes_tool.fn
+_create_entity = create_entity.fn
+_get_entity = get_entity.fn
+_update_entity = update_entity_with_loopback_transition.fn
+_update_entity_with_transition = update_entity_with_transition.fn
+_get_entity_transitions = get_entity_transitions.fn
+_delete_entity = delete_entity.fn
+_delete_all_entities = delete_all_entities.fn
+_bulk_create_entities = bulk_create_entities.fn
+_get_entity_changes = get_entity_changes.fn
 _find_all = find_all.fn
 _search = search.fn
-_import_workflows = import_workflows_from_file_tool.fn
-_export_workflows = export_workflows_to_file_tool.fn
-_list_workflow_files = list_workflow_files_tool.fn
-_validate_workflow_file = validate_workflow_file_tool.fn
-_send_edge_message = send_edge_message_tool.fn
-_get_edge_message = get_edge_message_tool.fn
-_delete_edge_message = delete_edge_message_tool.fn
-_bulk_delete_edge_messages = bulk_delete_edge_messages_tool.fn
-_list_entity_models = list_entity_models_tool.fn
-_get_entity_audit = get_entity_audit_tool.fn
-_get_workflow_finished_event = get_workflow_finished_event_tool.fn
-_get_entity_stats = get_entity_stats_tool.fn
-_get_entity_stats_by_model = get_entity_stats_by_model_tool.fn
-_get_entity_stats_by_state = get_entity_stats_by_state_tool.fn
-_get_entity_stats_by_state_and_model = get_entity_stats_by_state_and_model_tool.fn
-_submit_async_search = submit_async_search_tool.fn
-_get_async_search_results = get_async_search_results_tool.fn
-_get_async_search_status = get_async_search_status_tool.fn
-_cancel_async_search = cancel_async_search_tool.fn
+_import_workflows = import_workflows_from_file.fn
+_export_workflows = export_workflows_to_file.fn
+_list_workflow_files = list_workflow_files.fn
+_validate_workflow_file = validate_workflow_file.fn
+_send_edge_message = send_edge_message.fn
+_get_edge_message = get_edge_message.fn
+_delete_edge_message = delete_edge_message.fn
+_bulk_delete_edge_messages = bulk_delete_edge_messages.fn
+_list_entity_models = list_entity_models.fn
+_get_entity_audit = get_entity_audit.fn
+_get_workflow_finished_event = get_workflow_finished_event.fn
+_get_entity_stats = get_entity_stats.fn
+_get_entity_stats_by_model = get_entity_stats_by_model.fn
+_get_entity_stats_by_state = get_entity_stats_by_state.fn
+_get_entity_stats_by_state_and_model = get_entity_stats_by_state_and_model.fn
+_submit_async_search = submit_async_search.fn
+_get_async_search_results = get_async_search_results.fn
+_get_async_search_status = get_async_search_status.fn
+_cancel_async_search = cancel_async_search.fn
 
-ENTITY_MODEL = "exampleentity"
+ENTITY_MODEL = "e2etestentity"
 ENTITY_VERSION = "1"
-WORKFLOW_FILE = (
-    "example_application/resources/workflow/example_entity/version_1/ExampleEntity.json"
-)
+WORKFLOW_FILE = "tests/mcp_e2e/resources/workflow/E2ETestEntity.json"
 WORKFLOW_BASE_DIR = "example_application/resources/workflow"
 
 TEST_ENTITY_DATA = {
@@ -101,7 +101,7 @@ TEST_ENTITY_DATA = {
 class TestWorkflowTools:
     """Tests for workflow management MCP tools."""
 
-    async def test_import_workflows_from_file_tool(self):
+    async def test_import_workflows_from_file(self):
         result = await _import_workflows(
             entity_name=ENTITY_MODEL,
             model_version=ENTITY_VERSION,
@@ -112,7 +112,7 @@ class TestWorkflowTools:
             result.get("success") is True
         ), f"Workflow import failed: {result.get('error')}"
 
-    async def test_export_workflows_to_file_tool(self, tmp_path):
+    async def test_export_workflows_to_file(self, tmp_path):
         export_path = str(tmp_path / "exported_workflow.json")
         result = await _export_workflows(
             entity_name=ENTITY_MODEL,
@@ -126,7 +126,7 @@ class TestWorkflowTools:
             result.get("workflows_count", 0) > 0
         ), "Expected at least one exported workflow"
 
-    async def test_list_workflow_files_tool(self):
+    async def test_list_workflow_files(self):
         result = await _list_workflow_files(base_path=WORKFLOW_BASE_DIR)
         assert (
             result.get("success") is True
@@ -135,7 +135,7 @@ class TestWorkflowTools:
             result.get("files_count", 0) > 0
         ), "Expected workflow files to exist on disk"
 
-    async def test_validate_workflow_file_tool(self):
+    async def test_validate_workflow_file(self):
         result = await _validate_workflow_file(file_path=WORKFLOW_FILE)
         assert (
             result.get("success") is True
@@ -155,7 +155,7 @@ class TestEntityManagementTools:
 
     entity_id: Optional[str] = None
 
-    async def test_create_entity_tool(self):
+    async def test_create_entity(self):
         result = await _create_entity(
             entity_model=ENTITY_MODEL,
             entity_data=TEST_ENTITY_DATA,
@@ -169,22 +169,9 @@ class TestEntityManagementTools:
         ), "Expected a non-empty entity_id in create response"
         TestEntityManagementTools.entity_id = result["entity_id"]
 
-    async def test_list_entities_tool(self):
-        result = await _list_entities(
-            entity_model=ENTITY_MODEL,
-            entity_version=ENTITY_VERSION,
-        )
-        assert (
-            result.get("success") is True
-        ), f"List entities failed: {result.get('error')}"
-        assert isinstance(
-            result.get("entities"), list
-        ), "Expected 'entities' to be a list"
-        assert "count" in result, "Expected 'count' in list response"
-
-    async def test_get_entity_tool(self):
+    async def test_get_entity(self):
         if not TestEntityManagementTools.entity_id:
-            pytest.skip("Skipped: test_create_entity_tool did not produce an entity_id")
+            pytest.skip("Skipped: test_create_entity did not produce an entity_id")
         result = await _get_entity(
             entity_model=ENTITY_MODEL,
             entity_id=TestEntityManagementTools.entity_id,
@@ -198,9 +185,9 @@ class TestEntityManagementTools:
             result.get("metadata", {}).get("id") == TestEntityManagementTools.entity_id
         )
 
-    async def test_update_entity_tool(self):
+    async def test_update_entity_with_loopback_transition(self):
         if not TestEntityManagementTools.entity_id:
-            pytest.skip("Skipped: test_create_entity_tool did not produce an entity_id")
+            pytest.skip("Skipped: test_create_entity did not produce an entity_id")
         updated_data = {**TEST_ENTITY_DATA, "description": "Updated by MCP e2e test"}
         result = await _update_entity(
             entity_model=ENTITY_MODEL,
@@ -213,9 +200,9 @@ class TestEntityManagementTools:
         ), f"Update entity failed: {result.get('error')}"
         assert result.get("entity_id"), "Expected entity_id in update response"
 
-    async def test_delete_entity_tool(self):
+    async def test_delete_entity(self):
         if not TestEntityManagementTools.entity_id:
-            pytest.skip("Skipped: test_create_entity_tool did not produce an entity_id")
+            pytest.skip("Skipped: test_create_entity did not produce an entity_id")
         result = await _delete_entity(
             entity_model=ENTITY_MODEL,
             entity_id=TestEntityManagementTools.entity_id,
@@ -225,6 +212,92 @@ class TestEntityManagementTools:
             result.get("success") is True
         ), f"Delete entity failed: {result.get('error')}"
         TestEntityManagementTools.entity_id = None
+
+
+class TestTransitionTools:
+    """Tests for get_entity_transitions and update_entity_with_transition.
+
+    Creates its own entity, exercises both transition tools, then cleans up.
+    If create fails, subsequent tests that depend on entity_id are skipped.
+    """
+
+    entity_id: Optional[str] = None
+
+    async def test_create_entity_for_transitions(self):
+        result = await _create_entity(
+            entity_model=ENTITY_MODEL,
+            entity_data=TEST_ENTITY_DATA,
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"Entity creation failed: {result.get('error')}"
+        TestTransitionTools.entity_id = result.get("entity_id")
+
+    async def test_get_entity_transitions(self):
+        if not TestTransitionTools.entity_id:
+            pytest.skip(
+                "Skipped: test_create_entity_for_transitions did not produce an entity_id"
+            )
+        result = await _get_entity_transitions(
+            entity_model=ENTITY_MODEL,
+            entity_id=TestTransitionTools.entity_id,
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"get_entity_transitions failed: {result.get('error')}"
+        assert isinstance(
+            result.get("transitions"), list
+        ), "Expected 'transitions' to be a list"
+
+    async def test_update_entity_with_transition(self):
+        if not TestTransitionTools.entity_id:
+            pytest.skip(
+                "Skipped: test_create_entity_for_transitions did not produce an entity_id"
+            )
+        # Discover which transitions are valid for the entity's current state.
+        transitions_result = await _get_entity_transitions(
+            entity_model=ENTITY_MODEL,
+            entity_id=TestTransitionTools.entity_id,
+            entity_version=ENTITY_VERSION,
+        )
+        transitions = transitions_result.get("transitions", [])
+        if not transitions:
+            pytest.skip("Skipped: no transitions available for entity at this point in time")
+
+        transition = transitions[0]
+        updated_data = {
+            **TEST_ENTITY_DATA,
+            "description": "Updated via explicit transition",
+        }
+        result = await _update_entity_with_transition(
+            entity_model=ENTITY_MODEL,
+            entity_id=TestTransitionTools.entity_id,
+            transition=transition,
+            entity_data=updated_data,
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"update_entity_with_transition failed: {result.get('error')}"
+        assert result.get("entity_id"), "Expected entity_id in update response"
+        assert result.get("transition") == transition
+
+    async def test_delete_entity_for_transitions(self):
+        if not TestTransitionTools.entity_id:
+            pytest.skip(
+                "Skipped: test_create_entity_for_transitions did not produce an entity_id"
+            )
+        result = await _delete_entity(
+            entity_model=ENTITY_MODEL,
+            entity_id=TestTransitionTools.entity_id,
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"Delete entity failed: {result.get('error')}"
+        TestTransitionTools.entity_id = None
 
 
 class TestSearchTools:
@@ -302,7 +375,7 @@ class TestSearchTools:
 class TestEdgeMessageTools:
     """Tests for edge message MCP tools against the live Cyoda backend."""
 
-    async def test_send_edge_message_tool(self):
+    async def test_send_edge_message(self):
         result = await _send_edge_message(
             subject="mcp.e2e.test",
             content={"source": "mcp-e2e-tests", "purpose": "regression detection"},
@@ -313,7 +386,7 @@ class TestEdgeMessageTools:
         ), f"send_edge_message failed: {result.get('error')}"
         assert "entity_ids" in result, "Expected 'entity_ids' in send response"
 
-    async def test_get_edge_message_tool(self):
+    async def test_get_edge_message(self):
         # Send a message without specifying message_id; Cyoda assigns a UUID v1
         send_result = await _send_edge_message(
             subject="mcp.e2e.test",
@@ -338,7 +411,7 @@ class TestEdgeMessageTools:
 class TestEdgeMessageDeleteTools:
     """Tests for edge message delete operations."""
 
-    async def test_delete_edge_message_tool(self):
+    async def test_delete_edge_message(self):
         send_result = await _send_edge_message(
             subject="mcp.e2e.test",
             content={"source": "mcp-e2e-tests", "purpose": "delete-test"},
@@ -353,7 +426,7 @@ class TestEdgeMessageDeleteTools:
             result.get("success") is True
         ), f"delete_edge_message failed: {result.get('error')}"
 
-    async def test_bulk_delete_edge_messages_tool(self):
+    async def test_bulk_delete_edge_messages(self):
         # Send two messages and bulk-delete them
         ids = []
         for i in range(2):
@@ -373,7 +446,7 @@ class TestEdgeMessageDeleteTools:
 class TestEntityModelTools:
     """Tests for entity model discovery tools."""
 
-    async def test_list_entity_models_tool(self):
+    async def test_list_entity_models(self):
         result = await _list_entity_models()
         assert (
             result.get("success") is True
@@ -385,7 +458,7 @@ class TestEntityModelTools:
 class TestEntityAuditTools:
     """Tests for entity audit and workflow event tools."""
 
-    async def test_get_entity_audit_tool(self):
+    async def test_get_entity_audit(self):
         # Create an entity so we have something to audit
         cr = await _create_entity(
             entity_model=ENTITY_MODEL,
@@ -401,7 +474,7 @@ class TestEntityAuditTools:
         ), f"get_entity_audit failed: {result.get('error')}"
         assert result.get("entity_id") == entity_id
 
-    async def test_get_workflow_finished_event_tool(self):
+    async def test_get_workflow_finished_event(self):
         # Create an entity and get its audit to find a transaction_id
         cr = await _create_entity(
             entity_model=ENTITY_MODEL,
@@ -434,13 +507,13 @@ class TestEntityAuditTools:
 class TestEntityStatsTools:
     """Tests for entity statistics tools."""
 
-    async def test_get_entity_stats_tool(self):
+    async def test_get_entity_stats(self):
         result = await _get_entity_stats()
         assert (
             result.get("success") is True
         ), f"get_entity_stats failed: {result.get('error')}"
 
-    async def test_get_entity_stats_by_model_tool(self):
+    async def test_get_entity_stats_by_model(self):
         result = await _get_entity_stats_by_model(
             entity_model=ENTITY_MODEL, entity_version=ENTITY_VERSION
         )
@@ -449,13 +522,13 @@ class TestEntityStatsTools:
         ), f"get_entity_stats_by_model failed: {result.get('error')}"
         assert result.get("entity_model") == ENTITY_MODEL
 
-    async def test_get_entity_stats_by_state_tool(self):
+    async def test_get_entity_stats_by_state(self):
         result = await _get_entity_stats_by_state()
         assert (
             result.get("success") is True
         ), f"get_entity_stats_by_state failed: {result.get('error')}"
 
-    async def test_get_entity_stats_by_state_and_model_tool(self):
+    async def test_get_entity_stats_by_state_and_model(self):
         result = await _get_entity_stats_by_state_and_model(
             entity_model=ENTITY_MODEL, entity_version=ENTITY_VERSION
         )
@@ -469,7 +542,7 @@ class TestEntityManagementExtendedTools:
 
     entity_id: Optional[str] = None
 
-    async def test_bulk_create_entities_tool(self):
+    async def test_bulk_create_entities(self):
         entities = [
             {**TEST_ENTITY_DATA, "description": f"Bulk e2e test entity {i}"}
             for i in range(2)
@@ -484,7 +557,7 @@ class TestEntityManagementExtendedTools:
         ), f"bulk_create_entities failed: {result.get('error')}"
         assert result.get("created_count") == 2
 
-    async def test_get_entity_changes_tool(self):
+    async def test_get_entity_changes(self):
         # Create an entity then query its change history
         cr = await _create_entity(
             entity_model=ENTITY_MODEL,
@@ -502,8 +575,8 @@ class TestEntityManagementExtendedTools:
             result.get("changes"), list
         ), "Expected 'changes' to be a list"
 
-    async def test_delete_all_entities_tool(self):
-        # Deletes all exampleentity instances; runs last in this class
+    async def test_delete_all_entities(self):
+        # Deletes all e2etestentity instances; runs last in this class
         result = await _delete_all_entities(
             entity_model=ENTITY_MODEL, entity_version=ENTITY_VERSION
         )
@@ -517,7 +590,7 @@ class TestAsyncSearchTools:
 
     job_id: Optional[str] = None
 
-    async def test_submit_async_search_tool(self):
+    async def test_submit_async_search(self):
         condition = {
             "type": "group",
             "operator": "AND",
@@ -541,23 +614,23 @@ class TestAsyncSearchTools:
         # Cyoda returns the job_id as a plain UUID string
         TestAsyncSearchTools.job_id = result.get("job_id")
 
-    async def test_get_async_search_status_tool(self):
+    async def test_get_async_search_status(self):
         if not TestAsyncSearchTools.job_id:
-            pytest.skip("Skipped: no job_id from submit_async_search_tool")
+            pytest.skip("Skipped: no job_id from submit_async_search")
         result = await _get_async_search_status(job_id=TestAsyncSearchTools.job_id)
         assert (
             result.get("success") is True
         ), f"get_async_search_status failed: {result.get('error')}"
 
-    async def test_get_async_search_results_tool(self):
+    async def test_get_async_search_results(self):
         if not TestAsyncSearchTools.job_id:
-            pytest.skip("Skipped: no job_id from submit_async_search_tool")
+            pytest.skip("Skipped: no job_id from submit_async_search")
         result = await _get_async_search_results(job_id=TestAsyncSearchTools.job_id)
         assert (
             result.get("success") is True
         ), f"get_async_search_results failed: {result.get('error')}"
 
-    async def test_cancel_async_search_tool(self):
+    async def test_cancel_async_search(self):
         # Submit a fresh job and cancel it
         condition = {"type": "group", "operator": "AND", "conditions": []}
         submit = await _submit_async_search(

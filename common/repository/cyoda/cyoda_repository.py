@@ -172,6 +172,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         meta_payload = payload.get("meta", {}) or {}
         payload_data["current_state"] = meta_payload.get("state")
         payload_data["technical_id"] = entity_id
+        payload_data["transaction_id"] = meta_payload.get("transactionId")
         return payload_data
 
     async def find_all(self, meta: Dict[str, Any]) -> List[Any]:
@@ -421,7 +422,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
                 "?transactional=true&waitForConsistencyAfter=true"
             )
         else:
-            # Use loopback endpoint (stays in same workflow state) when no transition specified
+            # Use loopback endpoint when no transition specified
             path = f"entity/JSON/{technical_id}?transactional=true&waitForConsistencyAfter=true"
         data = json.dumps(entity, default=custom_serializer)
         resp: Dict[str, Any] = await send_cyoda_request(

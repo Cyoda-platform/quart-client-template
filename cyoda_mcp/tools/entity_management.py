@@ -20,7 +20,7 @@ mcp = FastMCP("Entity Management")
 
 
 @mcp.tool
-async def get_entity_tool(
+async def get_entity(
     entity_model: str,
     entity_id: str,
     entity_version: str = ENTITY_VERSION,
@@ -48,25 +48,7 @@ async def get_entity_tool(
 
 
 @mcp.tool
-async def list_entities_tool(
-    entity_model: str, entity_version: str = ENTITY_VERSION
-) -> Dict[str, Any]:
-    """
-    List all entities of a specific type.
-
-    Args:
-        entity_model: The type of entity to list
-        entity_version: The entity model version
-
-    Returns:
-        List of entities or error information
-    """
-    entity_management_service = get_entity_management_service()
-    return await entity_management_service.list_entities(entity_model, entity_version)
-
-
-@mcp.tool
-async def create_entity_tool(
+async def create_entity(
     entity_model: str,
     entity_data: Dict[str, Any],
     entity_version: str = ENTITY_VERSION,
@@ -94,7 +76,7 @@ async def create_entity_tool(
 
 
 @mcp.tool
-async def update_entity_tool(
+async def update_entity_with_loopback_transition(
     entity_model: str,
     entity_id: str,
     entity_data: Dict[str, Any],
@@ -102,20 +84,25 @@ async def update_entity_tool(
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
     """
-    Update an existing entity.
+    Update an entity's data without changing its workflow state (loopback transition).
+
+    Calls PUT /entity/JSON/{entityId} with the platform loopback transition so the
+    entity remains in its current workflow state. Use this to persist data changes
+    when no state progression is needed. To advance the entity through the workflow
+    use update_entity_with_transition instead.
 
     Args:
-        entity_model: The type of entity to update
+        entity_model: The type of entity to update (e.g. 'order', 'laureate')
         entity_id: The technical UUID of the entity
         entity_data: The updated data for the entity
         entity_version: The entity model version
         ctx: FastMCP context for logging
 
     Returns:
-        Updated entity information or error
+        Dictionary with success, entity_id, data, entity_model, transaction_id
     """
     if ctx:
-        await ctx.info(f"Updating {entity_model}:{entity_id}")
+        await ctx.info(f"Updating {entity_model}:{entity_id} (loopback)")
 
     entity_management_service = get_entity_management_service()
     return await entity_management_service.update_entity(
@@ -124,7 +111,78 @@ async def update_entity_tool(
 
 
 @mcp.tool
-async def delete_entity_tool(
+async def update_entity_with_transition(
+    entity_model: str,
+    entity_id: str,
+    transition: str,
+    entity_data: Dict[str, Any],
+    entity_version: str = ENTITY_VERSION,
+    ctx: Optional[Context] = None,
+) -> Dict[str, Any]:
+    """
+    Update an entity's data and advance it through an explicit named workflow transition.
+
+    Calls PUT /entity/JSON/{entityId}/{transition}. Use get_entity_transitions first
+    to discover which transitions are valid for the entity's current state. Note that
+    the list is a point-in-time snapshot and may be stale by the time this call runs.
+
+    Args:
+        entity_model: The type of entity to update (e.g. 'order', 'laureate')
+        entity_id: The technical UUID of the entity
+        transition: The workflow transition name to apply (required)
+        entity_data: The updated data for the entity
+        entity_version: The entity model version
+        ctx: FastMCP context for logging
+
+    Returns:
+        Dictionary with success, entity_id, data, entity_model, transition, transaction_id
+    """
+    if ctx:
+        await ctx.info(
+            f"Updating {entity_model}:{entity_id} via transition '{transition}'"
+        )
+
+    entity_management_service = get_entity_management_service()
+    return await entity_management_service.update_entity_with_transition(
+        entity_model, entity_id, transition, entity_data, entity_version
+    )
+
+
+@mcp.tool
+async def get_entity_transitions(
+    entity_model: str,
+    entity_id: str,
+    entity_version: str = ENTITY_VERSION,
+    ctx: Optional[Context] = None,
+) -> Dict[str, Any]:
+    """
+    Get the workflow transitions available for an entity at the current moment.
+
+    Calls GET /platform-api/entity/fetch/transitions. The result is a point-in-time
+    snapshot — the set of valid transitions may change before a subsequent
+    update_entity_with_transition call completes.
+
+    Args:
+        entity_model: The type of entity (e.g. 'order', 'laureate')
+        entity_id: The technical UUID of the entity
+        entity_version: The entity model version
+        ctx: FastMCP context for logging
+
+    Returns:
+        Dictionary with success, transitions (list of transition name strings),
+        entity_id, entity_model
+    """
+    if ctx:
+        await ctx.info(f"Getting transitions for {entity_model}:{entity_id}")
+
+    entity_management_service = get_entity_management_service()
+    return await entity_management_service.get_entity_transitions(
+        entity_model, entity_id, entity_version
+    )
+
+
+@mcp.tool
+async def delete_entity(
     entity_model: str,
     entity_id: str,
     entity_version: str = ENTITY_VERSION,
@@ -152,7 +210,7 @@ async def delete_entity_tool(
 
 
 @mcp.tool
-async def delete_all_entities_tool(
+async def delete_all_entities(
     entity_model: str,
     entity_version: str = ENTITY_VERSION,
     ctx: Optional[Context] = None,
@@ -178,7 +236,7 @@ async def delete_all_entities_tool(
 
 
 @mcp.tool
-async def bulk_create_entities_tool(
+async def bulk_create_entities(
     entity_model: str,
     entities_data: List[Dict[str, Any]],
     entity_version: str = ENTITY_VERSION,
@@ -206,7 +264,7 @@ async def bulk_create_entities_tool(
 
 
 @mcp.tool
-async def bulk_update_entities_tool(
+async def bulk_update_entities(
     entity_model: str,
     entities_data: Any,
     entity_version: str = ENTITY_VERSION,
@@ -235,7 +293,7 @@ async def bulk_update_entities_tool(
 
 
 @mcp.tool
-async def get_entity_changes_tool(
+async def get_entity_changes(
     entity_id: str,
     point_in_time: Optional[str] = None,
     ctx: Optional[Context] = None,

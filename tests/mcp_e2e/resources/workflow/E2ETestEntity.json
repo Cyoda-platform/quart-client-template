@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "name": "E2ETestEntity Workflow",
+  "desc": "Minimal workflow for e2e MCP tool tests — no external criterion or processor dependencies.",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "created",
+          "manual": false
+        }
+      ]
+    },
+    "created": {
+      "transitions": [
+        {
+          "name": "approve",
+          "next": "approved",
+          "manual": true
+        }
+      ]
+    },
+    "approved": {
+      "transitions": []
+    }
+  }
+}
+

@@ -6,13 +6,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from common.config.config import ENTITY_VERSION
-from common.service.entity_service import (
-    CYODA_OPERATOR_MAPPING,
-    EntityService,
-    LogicalOperator,
-    SearchConditionRequest,
-    SearchOperator,
-)
+from common.service.entity_service import EntityService
 from common.utils.utils import send_cyoda_request
 
 logger = logging.getLogger(__name__)
@@ -68,6 +62,7 @@ class EntityManagementService:
                     "id": result.get_id(),
                     "state": result.metadata.state,
                     "entity_type": entity_model,
+                    "transaction_id": result.metadata.transaction_id,
                 },
             }
 
@@ -79,45 +74,6 @@ class EntityManagementService:
                 "entity_id": entity_id,
                 "entity_model": entity_model,
             }
-
-    async def list_entities(
-        self, entity_model: str, entity_version: str = ENTITY_VERSION
-    ) -> Dict[str, Any]:
-        """
-        List all entities of a specific type.
-
-        Args:
-            entity_model: The type of entity to list
-            entity_version: The entity model version
-
-        Returns:
-            Dictionary containing list of entities or error information
-        """
-        try:
-            if not self.entity_service:
-                return {
-                    "success": False,
-                    "error": "Entity service not available",
-                    "entity_model": entity_model,
-                }
-
-            results = await self.entity_service.find_all(entity_model, entity_version)
-
-            entities = [
-                {"id": r.get_id(), "data": r.data, "state": r.metadata.state}
-                for r in results
-            ]
-
-            return {
-                "success": True,
-                "count": len(entities),
-                "entities": entities,
-                "entity_model": entity_model,
-            }
-
-        except Exception as e:
-            logger.exception("list_entities")
-            return {"success": False, "error": str(e), "entity_model": entity_model}
 
     async def create_entity(
         self,
@@ -153,6 +109,7 @@ class EntityManagementService:
                 "entity_id": result.get_id(),
                 "data": result.data,
                 "entity_model": entity_model,
+                "transaction_id": result.metadata.transaction_id,
             }
 
         except Exception as e:
@@ -201,6 +158,7 @@ class EntityManagementService:
                 "entity_id": result.get_id(),
                 "data": result.data,
                 "entity_model": entity_model,
+                "transaction_id": result.metadata.transaction_id,
             }
 
         except Exception as e:
@@ -210,6 +168,47 @@ class EntityManagementService:
                 "error": str(e),
                 "entity_id": entity_id,
                 "entity_model": entity_model,
+            }
+
+    async def update_entity_with_transition(
+        self,
+        entity_model: str,
+        entity_id: str,
+        transition: str,
+        entity_data: Dict[str, Any],
+        entity_version: str = ENTITY_VERSION,
+    ) -> Dict[str, Any]:
+        """Update entity and move it to the next state via an explicit named transition."""
+        try:
+            if not self.entity_service:
+                return {
+                    "success": False,
+                    "error": "Entity service not available",
+                    "entity_model": entity_model,
+                    "entity_id": entity_id,
+                }
+
+            result = await self.entity_service.update(
+                entity_id, entity_data, entity_model, transition, entity_version
+            )
+
+            return {
+                "success": True,
+                "entity_id": result.get_id(),
+                "data": result.data,
+                "entity_model": entity_model,
+                "transition": transition,
+                "transaction_id": result.metadata.transaction_id,
+            }
+
+        except Exception as e:
+            logger.exception("update_entity_with_transition")
+            return {
+                "success": False,
+                "error": str(e),
+                "entity_id": entity_id,
+                "entity_model": entity_model,
+                "transition": transition,
             }
 
     async def delete_entity(
@@ -253,121 +252,6 @@ class EntityManagementService:
                 "entity_id": entity_id,
                 "entity_model": entity_model,
             }
-
-    async def search_entities(
-        self,
-        entity_model: str,
-        search_conditions: Dict[str, Any],
-        entity_version: str = ENTITY_VERSION,
-    ) -> Dict[str, Any]:
-        """
-        Search entities with Cyoda-style search conditions.
-
-        Args:
-            entity_model: The type of entity to search
-            search_conditions: Cyoda search condition structure or simple field-value pairs
-            entity_version: The entity model version
-
-        Returns:
-            Dictionary containing search results or error information
-        """
-        try:
-            if not self.entity_service:
-                return {
-                    "success": False,
-                    "error": "Entity service not available",
-                    "entity_model": entity_model,
-                }
-
-            # Build search request from conditions
-            builder = SearchConditionRequest.builder()
-
-            # Check if this is a Cyoda-style search condition
-            if (
-                isinstance(search_conditions, dict)
-                and search_conditions.get("type") == "group"
-            ):
-                # Handle complex Cyoda search structure (multiple conditions)
-                operator = search_conditions.get("operator", "AND").upper()
-                if operator == "AND":
-                    builder.operator(LogicalOperator.AND)
-                elif operator == "OR":
-                    builder.operator(LogicalOperator.OR)
-
-                conditions = search_conditions.get("conditions", [])
-                for condition in conditions:
-                    self._process_cyoda_condition(condition, builder)
-
-            elif isinstance(search_conditions, dict) and search_conditions.get(
-                "type"
-            ) in ["simple", "lifecycle"]:
-                # Handle single Cyoda condition (not wrapped in group)
-                self._process_cyoda_condition(search_conditions, builder)
-
-            else:
-                # Handle simple field-value pairs (backward compatibility)
-                for field, value in search_conditions.items():
-                    builder.equals(field, value)
-
-            search_request = builder.build()
-            results = await self.entity_service.search(
-                entity_model, search_request, entity_version
-            )
-
-            entities = [
-                {"id": r.get_id(), "data": r.data, "state": r.metadata.state}
-                for r in results
-            ]
-
-            return {
-                "success": True,
-                "count": len(entities),
-                "entities": entities,
-                "search_conditions": search_conditions,
-                "entity_model": entity_model,
-            }
-
-        except Exception as e:
-            logger.exception("search_entities")
-            return {
-                "success": False,
-                "error": str(e),
-                "search_conditions": search_conditions,
-                "entity_model": entity_model,
-            }
-
-    def _process_cyoda_condition(self, condition: Dict[str, Any], builder: Any) -> None:
-        """Process a single Cyoda condition and add it to the builder."""
-        condition_type = condition.get("type")
-
-        if condition_type == "lifecycle":
-            # Handle lifecycle conditions (entity state)
-            field = condition.get("field", "state")
-            operator_type = condition.get("operatorType", "EQUALS")
-            value = condition.get("value")
-
-            # Map Cyoda operators to internal operators using enum mapping
-            search_operator = CYODA_OPERATOR_MAPPING.get(
-                operator_type, SearchOperator.EQUALS
-            )
-            builder.add_condition(field, search_operator, value)
-
-        elif condition_type == "simple":
-            # Handle simple JSON path conditions
-            json_path = condition.get("jsonPath", "")
-            operator_type = condition.get("operatorType", "EQUALS")
-            value = condition.get("value")
-
-            # Convert JSON path to field name (remove $. prefix)
-            field = (
-                json_path.replace("$.", "") if json_path.startswith("$.") else json_path
-            )
-
-            # Map Cyoda operators to internal operators using enum mapping
-            search_operator = CYODA_OPERATOR_MAPPING.get(
-                operator_type, SearchOperator.EQUALS
-            )
-            builder.add_condition(field, search_operator, value)
 
     async def delete_all_entities(
         self, entity_model: str, entity_version: str = ENTITY_VERSION
@@ -457,3 +341,41 @@ class EntityManagementService:
         except Exception as e:
             logger.exception("get_entity_changes")
             return {"success": False, "error": str(e), "entity_id": entity_id}
+
+    async def get_entity_transitions(
+        self,
+        entity_model: str,
+        entity_id: str,
+        entity_version: str = ENTITY_VERSION,
+    ) -> Dict[str, Any]:
+        """Get available workflow transitions for an entity at the current moment.
+
+        This is a point-in-time snapshot; the set of valid transitions may change
+        before a subsequent update_entity_with_transition call completes.
+        """
+        try:
+            path = (
+                f"platform-api/entity/fetch/transitions"
+                f"?entityClass={entity_model}.{entity_version}"
+                f"&entityId={entity_id}"
+            )
+            resp = await send_cyoda_request(
+                cyoda_auth_service=self._auth_service, method="get", path=path
+            )
+            transitions = resp.get("json", [])
+            if not isinstance(transitions, list):
+                transitions = []
+            return {
+                "success": True,
+                "transitions": transitions,
+                "entity_id": entity_id,
+                "entity_model": entity_model,
+            }
+        except Exception as e:
+            logger.exception("get_entity_transitions")
+            return {
+                "success": False,
+                "error": str(e),
+                "entity_id": entity_id,
+                "entity_model": entity_model,
+            }

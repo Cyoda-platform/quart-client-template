@@ -1,5 +1,5 @@
 # ABOUTME: MCP tools for Cyoda entity audit log and workflow event queries
-# ABOUTME: exposes get_entity_audit_tool and get_workflow_finished_event_tool
+# ABOUTME: exposes get_entity_audit and get_workflow_finished_event tools
 
 import os
 import sys
@@ -17,7 +17,7 @@ mcp = FastMCP("Entity Audit")
 
 
 @mcp.tool
-async def get_entity_audit_tool(
+async def get_entity_audit(
     entity_id: str,
     event_type: Optional[str] = None,
     severity: Optional[str] = None,
@@ -98,7 +98,7 @@ async def get_entity_audit_tool(
 
 
 @mcp.tool
-async def get_workflow_finished_event_tool(
+async def get_workflow_finished_event(
     entity_id: str,
     transaction_id: str,
     ctx: Optional[Context] = None,

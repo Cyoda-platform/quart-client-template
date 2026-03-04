@@ -893,6 +893,52 @@ class TestCyodaRepository:
             assert result["technical_id"] == "test-id"
 
     @pytest.mark.asyncio
+    async def test_find_by_id_extracts_transaction_id_from_meta(
+        self, repository, sample_meta
+    ):
+        """Test that transactionId from meta is extracted as transaction_id."""
+        with patch(
+            "common.repository.cyoda.cyoda_repository.send_cyoda_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": {
+                    "data": {"name": "Test"},
+                    "meta": {
+                        "state": "active",
+                        "id": "test-id",
+                        "transactionId": "txn-uuid-123",
+                    },
+                },
+                "status": 200,
+            }
+
+            result = await repository.find_by_id(sample_meta, "test-id")
+
+            assert result is not None
+            assert result["transaction_id"] == "txn-uuid-123"
+
+    @pytest.mark.asyncio
+    async def test_find_by_id_transaction_id_none_when_missing(
+        self, repository, sample_meta
+    ):
+        """Test that transaction_id is None when transactionId absent from meta."""
+        with patch(
+            "common.repository.cyoda.cyoda_repository.send_cyoda_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": {
+                    "data": {"name": "Test"},
+                    "meta": {"state": "active", "id": "test-id"},
+                },
+                "status": 200,
+            }
+
+            result = await repository.find_by_id(sample_meta, "test-id")
+
+            assert result is not None
+            assert result["transaction_id"] is None
+
+    @pytest.mark.asyncio
     async def test_ensure_technical_id_priority(self, repository):
         """Test technical_id priority: technical_id > meta.id > id."""
         entities = [

@@ -133,11 +133,14 @@ class EntityServiceImpl(EntityService):
         if state is None and isinstance(data, dict):
             state = data.get("current_state") or data.get("state")
 
+        transaction_id = data.get("transaction_id") if isinstance(data, dict) else None
+
         metadata = EntityMetadata(
             id=entity_id or "unknown",
             state=state,
             created_at=datetime.now(),
             entity_type="entity",
+            transaction_id=transaction_id,
         )
 
         return EntityResponse(data=data, metadata=metadata)

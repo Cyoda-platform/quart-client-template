@@ -18,7 +18,7 @@ mcp = FastMCP("Async Search")
 
 
 @mcp.tool
-async def submit_async_search_tool(
+async def submit_async_search(
     entity_model: str,
     condition: Dict[str, Any],
     entity_version: str = ENTITY_VERSION,
@@ -34,9 +34,9 @@ async def submit_async_search_tool(
 
     The job runs in the background across the Cyoda cluster (horizontally
     scalable — query time decreases linearly with cluster size). Poll
-    `get_async_search_status_tool` until status is SUCCESSFUL, then retrieve
-    pages of results with `get_async_search_results_tool`. To abandon a job
-    early use `cancel_async_search_tool`.
+    `get_async_search_status` until status is SUCCESSFUL, then retrieve
+    pages of results with `get_async_search_results`. To abandon a job
+    early use `cancel_async_search`.
 
     *** Job expiration: jobs are automatically deleted after their expiration
     date (visible in the status response). Retrieve all needed data before
@@ -98,13 +98,13 @@ async def submit_async_search_tool(
 
 
 @mcp.tool
-async def get_async_search_results_tool(
+async def get_async_search_results(
     job_id: str, ctx: Optional[Context] = None
 ) -> Dict[str, Any]:
     """
     Retrieve a page of results from a completed async search job.
 
-    Always call `get_async_search_status_tool` first and confirm the job
+    Always call `get_async_search_status` first and confirm the job
     status is SUCCESSFUL before calling this tool. Requesting results while
     the job is still RUNNING will return an empty or partial page.
 
@@ -127,7 +127,7 @@ async def get_async_search_results_tool(
     with `pageNumber` and `pageSize` query parameters.
 
     Args:
-        job_id: UUID returned by `submit_async_search_tool`.
+        job_id: UUID returned by `submit_async_search`.
         ctx: FastMCP context for logging.
 
     Returns:
@@ -144,20 +144,20 @@ async def get_async_search_results_tool(
 
 
 @mcp.tool
-async def get_async_search_status_tool(
+async def get_async_search_status(
     job_id: str, ctx: Optional[Context] = None
 ) -> Dict[str, Any]:
     """
     Check the current status of an async search job.
 
-    Poll this tool after submitting a job with `submit_async_search_tool`.
+    Poll this tool after submitting a job with `submit_async_search`.
     Only fetch results once the status is SUCCESSFUL.
 
     Possible status values:
       - RUNNING    — job is still executing; poll again after a short delay
       - SUCCESSFUL — job finished; results are ready to page through
       - FAILED     — job encountered an error; results are not available
-      - CANCELLED  — job was cancelled via `cancel_async_search_tool`
+      - CANCELLED  — job was cancelled via `cancel_async_search`
       - NOT_FOUND  — job does not exist or has expired
 
     The status response also includes:
@@ -168,7 +168,7 @@ async def get_async_search_status_tool(
       - finishTime: ISO 8601 timestamp when the job completed (null if RUNNING)
 
     Args:
-        job_id: UUID returned by `submit_async_search_tool`.
+        job_id: UUID returned by `submit_async_search`.
         ctx: FastMCP context for logging.
 
     Returns:
@@ -185,7 +185,7 @@ async def get_async_search_status_tool(
 
 
 @mcp.tool
-async def cancel_async_search_tool(
+async def cancel_async_search(
     job_id: str, ctx: Optional[Context] = None
 ) -> Dict[str, Any]:
     """
@@ -197,11 +197,11 @@ async def cancel_async_search_tool(
     (success=True) because the job is no longer consuming resources regardless.
 
     A successful cancellation invalidates the job entry; subsequent calls to
-    `get_async_search_results_tool` or `get_async_search_status_tool` will
+    `get_async_search_results` or `get_async_search_status` will
     return not-found errors.
 
     Args:
-        job_id: UUID returned by `submit_async_search_tool`.
+        job_id: UUID returned by `submit_async_search`.
         ctx: FastMCP context for logging.
 
     Returns:

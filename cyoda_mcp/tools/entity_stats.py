@@ -18,7 +18,7 @@ mcp = FastMCP("Entity Stats")
 
 
 @mcp.tool
-async def get_entity_stats_tool(ctx: Optional[Context] = None) -> Dict[str, Any]:
+async def get_entity_stats(ctx: Optional[Context] = None) -> Dict[str, Any]:
     """
     Get aggregate entity statistics across all models in Cyoda.
 
@@ -36,7 +36,7 @@ async def get_entity_stats_tool(ctx: Optional[Context] = None) -> Dict[str, Any]
 
 
 @mcp.tool
-async def get_entity_stats_by_model_tool(
+async def get_entity_stats_by_model(
     entity_model: str,
     entity_version: str = ENTITY_VERSION,
     point_in_time: Optional[str] = None,
@@ -64,7 +64,7 @@ async def get_entity_stats_by_model_tool(
 
 
 @mcp.tool
-async def get_entity_stats_by_state_tool(
+async def get_entity_stats_by_state(
     states: Optional[List[str]] = None,
     point_in_time: Optional[str] = None,
     ctx: Optional[Context] = None,
@@ -88,7 +88,7 @@ async def get_entity_stats_by_state_tool(
 
 
 @mcp.tool
-async def get_entity_stats_by_state_and_model_tool(
+async def get_entity_stats_by_state_and_model(
     entity_model: str,
     entity_version: str = ENTITY_VERSION,
     states: Optional[List[str]] = None,

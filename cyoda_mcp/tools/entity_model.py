@@ -17,7 +17,7 @@ mcp = FastMCP("Entity Model")
 
 
 @mcp.tool
-async def list_entity_models_tool(ctx: Optional[Context] = None) -> Dict[str, Any]:
+async def list_entity_models(ctx: Optional[Context] = None) -> Dict[str, Any]:
     """
     List all entity models registered in the Cyoda environment.
     Use this before performing entity operations to discover available entity types.

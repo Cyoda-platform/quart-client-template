@@ -183,6 +183,7 @@ class EntityMetadata:
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     entity_type: Optional[str] = None
+    transaction_id: Optional[str] = None
 
 
 @dataclass

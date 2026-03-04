@@ -207,13 +207,14 @@ skip_glob = ["common/proto/*"]
 # pytest configuration
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra -q --strict-markers --strict-config"
+addopts = "-ra -q --strict-markers --strict-config --junit-xml=build/test-results/junit.xml"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
+cache_dir = "build/.pytest_cache"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
@@ -224,6 +225,7 @@ markers = [
 # Coverage configuration (if using pytest-cov)
 [tool.coverage.run]
 source = ["cyoda_mcp", "common", "entity", "service", "workflow", "routes"]
+data_file = "build/.coverage"
 omit = [
     "*/tests/*",
     "*/test_*",
@@ -231,6 +233,9 @@ omit = [
     "*/__pycache__/*",
     "*/.*",
 ]
+
+[tool.coverage.html]
+directory = "build/htmlcov"
 
 [tool.coverage.report]
 exclude_lines = [

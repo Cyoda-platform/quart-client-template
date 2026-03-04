@@ -25,7 +25,7 @@ mcp = FastMCP("Workflow Management")
 
 
 @mcp.tool
-async def export_workflows_to_file_tool(
+async def export_workflows_to_file(
     entity_name: str,
     model_version: str,
     file_path: str,
@@ -39,17 +39,18 @@ async def export_workflows_to_file_tool(
     one at runtime using each workflow's top-level `criterion`), the response is
     always a collection — even if only one workflow is configured.
 
-    The exported file contains a JSON array of WorkflowConfiguration objects.
-    Each configuration includes:
+    The exported file contains a JSON array of workflow configuration objects.
+    The full request and response shapes are defined in
+    `docs/cyoda/openapi-workflow.yml`. Each configuration includes:
       - name / desc       : human-readable identity (name is unique per model)
-      - version           : schema version (currently "1.0")
+      - version           : workflow configuration version (currently "1.0")
       - initialState      : the state assigned to a new entity entering the workflow
       - active            : whether the workflow is live
       - criterion         : optional condition that selects which entities use this
                             workflow (simple / group / function QueryCondition)
       - states            : map of state-code → state definition, where each state
                             lists the transitions available from it:
-          - name     : transition identifier (used when calling update_entity_tool)
+          - name     : transition identifier (used when calling update_entity)
           - next     : target state after the transition
           - manual   : true = caller must trigger; false = Cyoda fires automatically
           - disabled : optional flag to suppress a transition without deleting it
@@ -63,7 +64,7 @@ async def export_workflows_to_file_tool(
     The file is written as a pretty-printed JSON array. Relative `file_path`
     values are resolved from the project root. Parent directories are created
     automatically if they do not exist. The file can be edited and re-imported
-    with `import_workflows_from_file_tool`.
+    with `import_workflows_from_file`.
 
     Args:
         entity_name: Name of the entity model (e.g. "Customer").
@@ -146,7 +147,7 @@ async def export_workflows_to_file_tool(
 
 
 @mcp.tool
-async def import_workflows_from_file_tool(
+async def import_workflows_from_file(
     entity_name: str,
     model_version: str,
     file_path: str,
@@ -160,12 +161,13 @@ async def import_workflows_from_file_tool(
     names are unique per entity model: importing a workflow whose name already
     exists updates that workflow; importing a new name creates it.
 
-    The file must contain a JSON array of WorkflowConfiguration objects (a
+    The file must contain a JSON array of workflow configuration objects (a
     single object is also accepted and wrapped automatically). Required fields
-    per workflow: `version`, `name`, `initialState`, `states`.
+    per workflow: `version`, `name`, `initialState`, `states`. The full schema
+    is defined in `docs/cyoda/openapi-workflow.yml`.
 
-    Use `validate_workflow_file_tool` to check the file structure before
-    importing. Use `export_workflows_to_file_tool` to obtain a valid template
+    Use `validate_workflow_file` to check the file structure before
+    importing. Use `export_workflows_to_file` to obtain a valid template
     from an existing entity model.
 
     Import modes
@@ -292,7 +294,7 @@ async def import_workflows_from_file_tool(
 
 
 @mcp.tool
-async def list_workflow_files_tool(
+async def list_workflow_files(
     base_path: str = "application/resources/workflow",
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
@@ -421,7 +423,7 @@ async def list_workflow_files_tool(
 
 
 @mcp.tool
-async def validate_workflow_file_tool(
+async def validate_workflow_file(
     file_path: str,
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
@@ -429,7 +431,7 @@ async def validate_workflow_file_tool(
     Validate a local workflow JSON file for structural correctness before importing.
 
     This is a local file operation — it does not contact the Cyoda API.
-    Run this before `import_workflows_from_file_tool` to catch obvious errors
+    Run this before `import_workflows_from_file` to catch obvious errors
     early and avoid a failed import.
 
     Checks performed:
@@ -445,8 +447,8 @@ async def validate_workflow_file_tool(
     by the API if, for example, `initialState` references a state not defined
     in `states`, or a processor name does not match any registered gRPC handler.
 
-    Required fields per workflow (per the Cyoda schema):
-      - version      : workflow configuration schema version (use "1.0")
+    Required fields per workflow (see `docs/cyoda/openapi-workflow.yml`):
+      - version      : workflow configuration version (use "1.0")
       - name         : unique identifier within the entity model
       - initialState : state code assigned to newly created entities
       - states       : map of state-code → {transitions: [...]}

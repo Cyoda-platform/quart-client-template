@@ -20,7 +20,7 @@ mcp = FastMCP("Edge Message")
 
 
 @mcp.tool
-async def get_edge_message_tool(
+async def get_edge_message(
     message_id: str, ctx: Optional[Context] = None
 ) -> Dict[str, Any]:
     """
@@ -41,7 +41,7 @@ async def get_edge_message_tool(
 
 
 @mcp.tool
-async def send_edge_message_tool(
+async def send_edge_message(
     subject: str,
     content: Dict[str, Any],
     message_id: Optional[str] = None,
@@ -92,7 +92,7 @@ async def send_edge_message_tool(
 
 
 @mcp.tool
-async def delete_edge_message_tool(
+async def delete_edge_message(
     message_id: str, ctx: Optional[Context] = None
 ) -> Dict[str, Any]:
     """
@@ -113,7 +113,7 @@ async def delete_edge_message_tool(
 
 
 @mcp.tool
-async def bulk_delete_edge_messages_tool(
+async def bulk_delete_edge_messages(
     message_ids: List[str], ctx: Optional[Context] = None
 ) -> Dict[str, Any]:
     """

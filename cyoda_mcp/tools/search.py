@@ -47,13 +47,15 @@ async def find_all(
     model is known to be small. For anything else:
       - Use `search` to filter by conditions (synchronous, up to ~1 000
         results by default, 10 000 hard cap).
-      - Use `submit_async_search_tool` for large or unknown-size collections.
+      - Use `submit_async_search` for large or unknown-size collections.
 
     Each entity in the result includes:
       - id: UUID of the entity
       - data: the entity payload
       - state: current workflow state
       - created_at / updated_at: timestamps
+      - entity_type: entity model name
+      - transaction_id: UUID of the last transaction that saved this entity (null if not available)
 
     Args:
         entity_model: Name of the entity model (e.g. "laureate", "order").
@@ -64,7 +66,8 @@ async def find_all(
         Dictionary with:
           - success: True on success
           - count: number of entities returned
-          - entities: list of entity objects (id, data, state, created_at, updated_at)
+          - entities: list of entity objects (id, data, state, created_at, updated_at,
+                      entity_type, transaction_id)
           - entity_model / entity_version: echoed back
     """
     if ctx:
@@ -88,6 +91,8 @@ async def find_all(
                 "state": r.metadata.state,
                 "created_at": r.metadata.created_at,
                 "updated_at": r.metadata.updated_at,
+                "entity_type": r.metadata.entity_type,
+                "transaction_id": r.metadata.transaction_id,
             }
             for r in results
         ]
@@ -127,7 +132,7 @@ async def search(
       - Default timeout      : 60 seconds (HTTP 408 returned on timeout)
 
     If your query might match more than ~1 000 entities, or if the model is
-    large and the query broad, use `submit_async_search_tool` instead — it is
+    large and the query broad, use `submit_async_search` instead — it is
     distributed across the cluster and supports full pagination.
 
     Passing an empty dict {} returns all entities subject to the default limit.
@@ -172,6 +177,8 @@ async def search(
       - data: the entity payload
       - state: current workflow state
       - created_at / updated_at: timestamps
+      - entity_type: entity model name
+      - transaction_id: UUID of the last transaction that saved this entity (null if not available)
 
     Args:
         entity_model: Name of the entity model to search (e.g. "laureate").
@@ -183,7 +190,8 @@ async def search(
         Dictionary with:
           - success: True on success
           - count: number of entities returned (capped at 10 000)
-          - entities: list of matched entity objects
+          - entities: list of matched entity objects (id, data, state, created_at, updated_at,
+                      entity_type, transaction_id)
           - search_conditions / entity_model / entity_version: echoed back
     """
     if ctx:
@@ -243,6 +251,8 @@ async def search(
                 "state": r.metadata.state,
                 "created_at": r.metadata.created_at,
                 "updated_at": r.metadata.updated_at,
+                "entity_type": r.metadata.entity_type,
+                "transaction_id": r.metadata.transaction_id,
             }
             for r in results
         ]

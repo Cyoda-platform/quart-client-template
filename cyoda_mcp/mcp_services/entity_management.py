@@ -1,6 +1,7 @@
 # ABOUTME: MCP service layer for Cyoda entity management operations
 # ABOUTME: wraps EntityService and provides bulk/delete_all/changes support via auth_service
 
+import dataclasses
 import json
 import logging
 from typing import Any, Dict, List, Optional
@@ -58,12 +59,7 @@ class EntityManagementService:
             return {
                 "success": True,
                 "data": result.data,
-                "metadata": {
-                    "id": result.get_id(),
-                    "state": result.metadata.state,
-                    "entity_type": entity_model,
-                    "transaction_id": result.metadata.transaction_id,
-                },
+                "metadata": dataclasses.asdict(result.metadata),
             }
 
         except Exception as e:

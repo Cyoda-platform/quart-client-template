@@ -193,8 +193,8 @@ async def cancel_async_search(
 
     Cancellation only takes effect when the job is in RUNNING state. If the
     job has already completed (SUCCESSFUL, FAILED) or was previously cancelled,
-    the API returns HTTP 400 — this tool treats that as a non-error outcome
-    (success=True) because the job is no longer consuming resources regardless.
+    `success` is still True — the job is no longer consuming resources
+    regardless.
 
     A successful cancellation invalidates the job entry; subsequent calls to
     `get_async_search_results` or `get_async_search_status` will
@@ -208,8 +208,8 @@ async def cancel_async_search(
         Dictionary with:
           - success: True when the API call completed without an unexpected error
           - job_id: echoed back
-          - status: HTTP status code returned by Cyoda (200 = cancelled,
-                    400 = job was not in RUNNING state)
+          - status: outcome code — 200 means the job was cancelled, 400 means
+                    it was not in RUNNING state (already finished or cancelled)
     """
     if ctx:
         await ctx.info(f"Cancelling async search job {job_id}")

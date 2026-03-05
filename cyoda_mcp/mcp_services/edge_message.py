@@ -93,6 +93,7 @@ class EdgeMessageService:
         content_encoding: Optional[str] = None,
         content_length: Optional[int] = None,
         content_type: str = "application/json",
+        metadata: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Send a new edge message.
@@ -131,6 +132,7 @@ class EdgeMessageService:
                 content_encoding=content_encoding,
                 content_length=content_length,
                 content_type=content_type,
+                metadata=metadata,
             )
 
             logger.info(f"Successfully sent edge message with subject {subject}")

@@ -26,9 +26,8 @@ async def get_edge_message(
     """
     Retrieve a stored edge message by its unique identifier.
 
-    *** message_id MUST be a version 1 (time-based) UUID. The API returns
-    HTTP 400 for any other UUID version and HTTP 404 if no message with
-    that ID exists. ***
+    *** If the message_id does not exist, the tool returns `{"success": False,
+    "error": "..."}`. ***
 
     Response shape (on success):
       - header.subject: routing label the message was sent to
@@ -42,16 +41,18 @@ async def get_edge_message(
       - header.correlationId: correlation ID (if set by sender)
       - metaData.values: typed key-value map of non-indexed metadata
       - metaData.indexedValues: typed key-value map of indexed metadata
+            (contains the `metadata` key-value pairs passed at send time)
       - content: raw JSON string of the message payload
 
     Args:
-        message_id: Version 1 (time-based) UUID of the message to retrieve.
+        message_id: UUID of the message to retrieve (assigned by Cyoda on send).
         ctx: FastMCP context for logging.
 
     Returns:
         Dictionary with:
           - success: True when the API call completed without error
           - message: EdgeMessageDto body (header, metaData, content fields)
+          - message_id: echoed back
     """
     if ctx:
         await ctx.info(f"Retrieving edge message: {message_id}")
@@ -64,6 +65,7 @@ async def get_edge_message(
 async def send_edge_message(
     subject: str,
     content: Dict[str, Any],
+    metadata: Optional[Dict[str, str]] = None,
     message_id: Optional[str] = None,
     user_id: Optional[str] = None,
     recipient: Optional[str] = None,
@@ -82,25 +84,29 @@ async def send_edge_message(
     interpretation of the subject is entirely application-defined; Cyoda stores
     and routes on it verbatim.
 
-    content must be a JSON object with a required `payload` field (any valid
-    JSON value) and an optional `meta-data` object of flat string key-value
-    pairs. The meta-data is indexed for fast server-side searching; `payload`
-    is stored as a raw JSON blob.
+    content is the message payload — any valid JSON object. It is stored as a
+    raw JSON blob under the `payload` field of the Cyoda message body.
 
-    The tool sets the required `Content-Type` and `Content-Length` HTTP headers
-    from the `content_type` parameter and the serialised body length
-    respectively. The optional headers (`Content-Encoding`, `X-Message-ID`,
-    `X-User-ID`, `X-Recipient`, `X-Reply-To`, `X-Correlation-ID`) are forwarded
-    when their corresponding parameters are provided.
+    metadata is an optional flat string→string map stored alongside the payload
+    under the `meta-data` field. These key-value pairs are indexed server-side
+    for fast searching. Use metadata to attach routing, classification, or
+    chunking information without altering the payload itself.
 
-    *** Hard size limit: 10 MB. Requests exceeding this limit receive HTTP 413
-    and are not stored. ***
+    *** Hard size limit: 10 MB per message. Payloads exceeding this limit are
+    rejected and the tool returns `{"success": False, "error": "..."}`.
+    For payloads larger than 10 MB, split the data into chunks and send each
+    chunk as a separate message. Use `correlation_id` to group the chunks and
+    `metadata` to record sequencing information (e.g. `{"chunkIndex": "0",
+    "totalChunks": "3"}`), then reassemble on the reader side by fetching all
+    messages with the same correlation ID. ***
 
     Args:
         subject: Routing label for the message (alphanumeric + `.`, `-`, `_`;
                  max 256 chars).
-        content: Message body dict. Must contain a `payload` key (any JSON
-                 value). May contain a `meta-data` key with a flat str→str map.
+        content: Payload data as a JSON-serialisable dict (any structure).
+        metadata: Optional flat str→str map of indexed key-value pairs stored
+                  as `meta-data` alongside the payload. Useful, for example, for search,
+                  classification, and chunked-message sequencing.
         message_id: Custom message identifier forwarded as X-Message-ID (max
                     1024 chars).
         user_id: Sender identifier forwarded as X-User-ID (max 1024 chars).
@@ -118,7 +124,10 @@ async def send_edge_message(
     Returns:
         Dictionary with:
           - success: True when the message was accepted and stored
-          - result: list of [{entityIds: [...], success: bool}] from the API
+          - entity_ids: list of UUIDs assigned to the stored message(s)
+          - subject: echoed back
+          - message_id: echoed back (None if not provided)
+          - correlation_id: echoed back (None if not provided)
     """
     if ctx:
         await ctx.info(f"Sending edge message with subject: {subject}")
@@ -135,6 +144,7 @@ async def send_edge_message(
         content_encoding=content_encoding,
         content_length=content_length,
         content_type=content_type,
+        metadata=metadata,
     )
 
 
@@ -148,12 +158,11 @@ async def delete_edge_message(
     *** This operation is irreversible — the message and its associated payload
     blob are removed and cannot be recovered. ***
 
-    *** message_id MUST be a version 1 (time-based) UUID. The API returns
-    HTTP 400 for any other UUID version and HTTP 404 if no message with
-    that ID exists. ***
+    *** If the message_id does not exist, the tool returns `{"success": False,
+    "error": "..."}`. ***
 
     Args:
-        message_id: Version 1 (time-based) UUID of the message to delete.
+        message_id: UUID of the message to delete (assigned by Cyoda on send).
         ctx: FastMCP context for logging.
 
     Returns:
@@ -178,16 +187,15 @@ async def bulk_delete_edge_messages(
     *** This operation is irreversible — all matched messages and their
     associated payload blobs are removed and cannot be recovered. ***
 
-    *** Every ID in message_ids MUST be a version 1 (time-based) UUID. A
-    single non-v1 UUID in the list causes HTTP 400 for the entire request;
+    *** If any ID does not exist, the entire request fails (`success: False`);
     no messages are deleted. ***
 
     Deletion is processed in transaction batches (default batch size: 1 000
     messages per batch). The response contains one entry per batch.
 
     Args:
-        message_ids: List of version 1 (time-based) UUIDs of messages to
-                     delete. All IDs must be v1 UUIDs.
+        message_ids: List of message UUIDs to delete (assigned by Cyoda on
+                     send).
         ctx: FastMCP context for logging.
 
     Returns:

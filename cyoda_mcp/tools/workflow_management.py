@@ -34,8 +34,7 @@ async def export_workflows_to_file(
     """
     Export all workflow configurations for an entity model to a local JSON file.
 
-    Calls GET /model/{entityName}/{modelVersion}/workflow/export. Because a
-    single entity type can have multiple workflows (Cyoda selects the applicable
+    Because a single entity type can have multiple workflows (Cyoda selects the applicable
     one at runtime using each workflow's top-level `criterion`), the response is
     always a collection — even if only one workflow is configured.
 
@@ -157,8 +156,7 @@ async def import_workflows_from_file(
     """
     Import workflow configurations from a local JSON file into Cyoda.
 
-    Calls POST /model/{entityName}/{modelVersion}/workflow/import. Workflow
-    names are unique per entity model: importing a workflow whose name already
+    Workflow names are unique per entity model: importing a workflow whose name already
     exists updates that workflow; importing a new name creates it.
 
     The file must contain a JSON array of workflow configuration objects (a

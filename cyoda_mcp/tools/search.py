@@ -129,7 +129,7 @@ async def search(
     Limits and timeouts (applied server-side, not configurable via this tool):
       - Default result limit : 1 000 entities
       - Hard maximum limit   : 10 000 entities (silently truncated if exceeded)
-      - Default timeout      : 60 seconds (HTTP 408 returned on timeout)
+      - Default timeout      : 60 seconds (timeout returns `{"success": False, "error": "..."})`
 
     If your query might match more than ~1 000 entities, or if the model is
     large and the query broad, use `submit_async_search` instead — it is

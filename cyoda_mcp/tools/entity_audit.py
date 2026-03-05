@@ -57,7 +57,7 @@ async def get_entity_audit(
                         processing). High volume; excluded by default.
 
     Args:
-        entity_id: UUID (v1) of the entity whose audit trail to query.
+        entity_id: UUID of the entity whose audit trail to query.
         event_type: Comma-separated list of event types to include:
                     "EntityChange", "StateMachine", "System".
                     Defaults to EntityChange + StateMachine (System excluded).
@@ -67,8 +67,8 @@ async def get_entity_audit(
                        before to_utc_time when omitted.
         to_utc_time: ISO 8601 exclusive end of the time window.
                      Defaults to 10 days after from_utc_time when omitted.
-        transaction_id: UUID (v1) of a specific transaction — narrows results
-                        to events from that transaction only.
+        transaction_id: UUID of a specific transaction — narrows results to
+                        events from that transaction only.
         cursor: Opaque pagination token from `pagination.nextCursor` in a
                 previous response. Omit for the first page.
         limit: Maximum events per page (1–1000, default 100). Use a small
@@ -104,15 +104,32 @@ async def get_workflow_finished_event(
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
     """
-    Retrieve the workflow finished event for a specific entity transaction.
+    Retrieve the workflow FINISHED event for a specific entity transaction.
+
+    Use this after a create or update operation to confirm whether the workflow completed
+    successfully and which state the entity landed in — without needing to page
+    through the full audit log. The `transaction_id` returned by `create_entity`
+    or the update tools can be passed directly here.
+
+    *** If either UUID does not exist or the transaction has not yet finished,
+    the tool returns `{"success": False, "error": "..."}`. ***
+
+    Response shape (on success):
+      - state: workflow state the entity was in when the state machine finished
+      - success: True when the workflow execution completed without error
+      - stopReason: structured reason the state machine stopped (e.g. FINISHED,
+                    TRANSITION_NOT_FOUND, CRITERION_NOT_MATCHED)
 
     Args:
-        entity_id: UUID of the entity
-        transaction_id: UUID of the workflow transaction
-        ctx: FastMCP context for logging
+        entity_id: UUID of the entity.
+        transaction_id: UUID of the transaction whose workflow outcome to
+                        retrieve.
+        ctx: FastMCP context for logging.
 
     Returns:
-        Dictionary with workflow finished event data or error information
+        Dictionary with:
+          - success: True when the event was found
+          - event: {state, success, stopReason} from the API
     """
     if ctx:
         await ctx.info(

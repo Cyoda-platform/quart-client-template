@@ -232,6 +232,7 @@ class EdgeMessageRepository:
         content_encoding: Optional[str] = None,
         content_length: Optional[int] = None,
         content_type: str = "application/json",
+        metadata: Optional[Dict[str, str]] = None,
     ) -> SendMessageResponse:
         """
         Send a new edge message.
@@ -272,8 +273,10 @@ class EdgeMessageRepository:
             if content_encoding:
                 headers["Content-Encoding"] = content_encoding
 
-            # Wrap content in payload field per Cyoda API spec
-            message_body = {"payload": content}
+            # Build message body per Cyoda API spec
+            message_body: Dict[str, Any] = {"payload": content}
+            if metadata:
+                message_body["meta-data"] = metadata
             content_json = json.dumps(message_body)
 
             # Content-Length is required per API spec; use computed value unless caller overrides

@@ -406,6 +406,37 @@ class TestEdgeMessageTools:
         ), f"get_edge_message failed: {result.get('error')}"
         assert result.get("message_id") is not None
 
+    async def test_send_and_get_edge_message_with_metadata(self):
+        test_metadata = {"chunkIndex": "0", "totalChunks": "3", "source": "e2e"}
+        send_result = await _send_edge_message(
+            subject="mcp.e2e.test.metadata",
+            content={"source": "mcp-e2e-tests", "purpose": "metadata-round-trip"},
+            metadata=test_metadata,
+            correlation_id="mcp-e2e-metadata-test",
+        )
+        assert (
+            send_result.get("success") is True
+        ), f"send with metadata failed: {send_result.get('error')}"
+
+        entity_ids = send_result.get("entity_ids", [])
+        assert entity_ids, "Expected at least one entity_id in send response"
+        message_uuid = entity_ids[0]
+
+        get_result = await _get_edge_message(message_id=message_uuid)
+        assert (
+            get_result.get("success") is True
+        ), f"get after metadata send failed: {get_result.get('error')}"
+
+        message = get_result.get("message", {})
+        indexed_values = message.get("metaData", {}).get("indexedValues", {})
+        for key, value in test_metadata.items():
+            assert key in indexed_values, (
+                f"metadata key '{key}' missing from indexedValues: {indexed_values}"
+            )
+            assert indexed_values[key] == value, (
+                f"metadata['{key}'] expected '{value}', got '{indexed_values[key]}'"
+            )
+
 
 class TestEdgeMessageDeleteTools:
     """Tests for edge message delete operations."""

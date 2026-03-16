@@ -1,0 +1,14 @@
+{
+  "name": "Settlement",
+  "modelVersion": 1,
+  "attributes": {
+    "settlementId": "SETT-3001",
+    "tradeId": "T-0000001",
+    "scheduledDate": "2026-03-18",
+    "settledAt": null,
+    "status": "PENDING",
+    "amount": 12345.00,
+    "currency": "USD",
+    "instructions": "Standard settlement via custodial bank"
+  }
+}

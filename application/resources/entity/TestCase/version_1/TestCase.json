@@ -1,0 +1,20 @@
+{
+  "id": "testcase-0001",
+  "title": "Login with valid credentials",
+  "description": "## Login Test\n\nVerify a user can log in with valid credentials.",
+  "preconditions": "User account exists and is active",
+  "steps": [
+    {"step_number": 1, "action": "Navigate to login page", "expected": "Login page is displayed"},
+    {"step_number": 2, "action": "Enter username and password", "expected": "Credentials are entered"},
+    {"step_number": 3, "action": "Click login", "expected": "User is redirected to dashboard"}
+  ],
+  "expected_result": "User lands on the dashboard",
+  "priority": "High",
+  "tags": ["smoke", "auth"],
+  "automation": true,
+  "automation_metadata": {"script_path": "tests/auth/test_login.py", "runner": "pytest", "retry_policy": {"max_retries": 2, "backoff_seconds": 5}},
+  "owner": "user-0001",
+  "status": "Draft",
+  "created_at": "2026-03-16T12:20:00Z",
+  "updated_at": "2026-03-16T12:20:00Z"
+}

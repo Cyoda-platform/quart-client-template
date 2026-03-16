@@ -1,0 +1,10 @@
+{
+  "id": "attachment-0001",
+  "filename": "screenshot-login.png",
+  "content_type": "image/png",
+  "size_bytes": 23456,
+  "linked_to": {"entity": "TestStep", "id": "teststep-0001"},
+  "storage_path": "artifacts/attachments/screenshot-login.png",
+  "created_at": "2026-03-16T12:30:00Z",
+  "updated_at": "2026-03-16T12:30:00Z"
+}

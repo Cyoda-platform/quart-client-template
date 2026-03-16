@@ -1,0 +1,13 @@
+{
+  "id": "user-0001",
+  "name": "Alice Example",
+  "email": "alice@example.com",
+  "role": "Tester",
+  "status": "active",
+  "created_at": "2026-03-16T12:05:00Z",
+  "updated_at": "2026-03-16T12:05:00Z",
+  "credentials": {
+    "auth_provider": "local",
+    "last_login": "2026-03-16T12:05:00Z"
+  }
+}

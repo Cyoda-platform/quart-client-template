@@ -1,0 +1,32 @@
+{
+  "id": "g6b3c4d5-2222-4e5f-9a0b-bbbbbbbbbbbb",
+  "title": "Sprint 42 Regression",
+  "project_id": "c2f7b1e3-5678-4a2b-9c4d-1e2f3a4b5c6d",
+  "created_by": "b6d8a9d4-9f7a-4c1b-9e6a-0b7f9f0a1c2d",
+  "environment": "Staging",
+  "selected_suite_ids": ["d3e9c2f1-2345-4b3c-8d9e-0f1a2b3c4d5e"],
+  "selected_test_case_ids": ["e4f1a2b3-6789-4d5e-9f0a-1b2c3d4e5f60"],
+  "started_at": "2026-03-16T13:00:00Z",
+  "completed_at": null,
+  "status": "Active",
+  "metrics": {
+    "total": 1,
+    "passed": 0,
+    "failed": 0,
+    "untested": 1
+  },
+  "results": [
+    {
+      "test_case_id": "e4f1a2b3-6789-4d5e-9f0a-1b2c3d4e5f60",
+      "status": "Untested",
+      "step_results": [
+        {
+          "step_id": "f5a2b3c4-1111-4d5e-9f0a-aaaaaaaaaaaa",
+          "status": "Untested",
+          "bug_url": null,
+          "attachments": []
+        }
+      ]
+    }
+  ]
+}

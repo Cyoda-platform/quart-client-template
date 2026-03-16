@@ -1,0 +1,5 @@
+{
+  "id": "r1a2b3c4-4444-4d5e-9f0a-dddddddddddd",
+  "name": "Admin",
+  "permissions": ["p1-testcase-create", "p2-testrun-execute", "p3-testcase-export"]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "a1f8e2b4-1234-4cde-8a2e-ffa1b2c3d4e5",
+  "name": "Acme QA Workspace",
+  "owner_user_id": "b6d8a9d4-9f7a-4c1b-9e6a-0b7f9f0a1c2d",
+  "created_at": "2026-03-16T12:00:00Z",
+  "members": ["b6d8a9d4-9f7a-4c1b-9e6a-0b7f9f0a1c2d"]
+}

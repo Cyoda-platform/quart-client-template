@@ -1,0 +1,17 @@
+[
+  {
+    "id": "p1-testcase-create",
+    "key": "testcase.create",
+    "description": "Allows creating and editing test cases"
+  },
+  {
+    "id": "p2-testrun-execute",
+    "key": "testrun.execute",
+    "description": "Allows initiating and executing test runs"
+  },
+  {
+    "id": "p3-testcase-export",
+    "key": "testcase.export",
+    "description": "Allows exporting test cases and suites"
+  }
+]

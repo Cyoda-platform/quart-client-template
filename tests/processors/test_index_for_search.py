@@ -4,11 +4,15 @@ from application.processors.index_for_search import handle
 
 
 def test_index_for_search(monkeypatch):
-    mock_client = MagicMock()
-    mock_client.get_test_case.return_value = {"id":"tc1","title":"Test","description":"d","tags":[],"priority":"High"}
+    # Use the real in-memory data client to ensure index_search_document is invoked
+    from application.clients.data_client import data_client as real_client
+    real_client.create_test_case("tc1", {"id":"tc1","title":"Test","description":"d","tags":[],"priority":"High"})
 
-    with patch("application.processors.index_for_search.data_client", mock_client):
-        res = handle({"test_case_id": "tc1"})
+    res = handle({"test_case_id": "tc1"})
 
     assert res["status"] == "ok"
     assert res["indexed"] is True
+    # verify the document exists in the in-memory search index
+    doc = real_client.get_search_document("tc1")
+    assert doc is not None
+    assert doc["title"] == "Test"

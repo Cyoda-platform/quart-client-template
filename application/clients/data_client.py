@@ -24,6 +24,7 @@ Supported methods (used by processors):
 - update_test_run(run_id, payload)
 - list_test_run_executions_for_run(run_id)
 - list_step_executions_for_run_execution(re_id)
+- index_search_document(doc_id, doc)
 
 """
 from typing import Dict, Any, List, Optional
@@ -44,6 +45,9 @@ class InMemoryDataClient:
         # indices
         self.run_to_runexecs: Dict[str, List[str]] = defaultdict(list)
         self.runexec_to_steps: Dict[str, List[str]] = defaultdict(list)
+
+        # simple in-memory search index
+        self.search_index: Dict[str, Dict[str, Any]] = {}
 
         # id generators
         self._re_counter = itertools.count(1)
@@ -70,6 +74,10 @@ class InMemoryDataClient:
 
     def get_test_case(self, tc_id: str) -> Optional[Dict[str, Any]]:
         return self.test_cases.get(tc_id)
+
+    def update_test_case(self, tc_id: str, payload: Dict[str, Any]) -> None:
+        if tc_id in self.test_cases:
+            self.test_cases[tc_id].update(payload)
 
     # --- TestRunExecution operations ---
     def create_test_run_execution(self, run_id: str, snapshot: Dict[str, Any], created_by: Optional[str] = None) -> str:
@@ -140,6 +148,14 @@ class InMemoryDataClient:
     # --- ExecutionReport operations ---
     def upsert_execution_report(self, run_id: str, metrics: Dict[str, Any]) -> None:
         self.execution_reports[run_id] = metrics
+
+    # --- Search index operations ---
+    def index_search_document(self, doc_id: str, doc: Dict[str, Any]) -> None:
+        """Add or update a search document in the in-memory index."""
+        self.search_index[doc_id] = doc
+
+    def get_search_document(self, doc_id: str) -> Optional[Dict[str, Any]]:
+        return self.search_index.get(doc_id)
 
 
 # Provide a module-level client instance used by processors

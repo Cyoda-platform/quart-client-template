@@ -1,0 +1,20 @@
+{
+  "id": "runexec-0001",
+  "run_id": "run-0001",
+  "test_case_id": "testcase-0001",
+  "snapshot": {
+    "title": "Login with valid credentials",
+    "description": "Verify a user can log in with valid credentials.",
+    "steps": [
+      {"step_number": 1, "action": "Navigate to login page", "expected": "Login page is displayed"},
+      {"step_number": 2, "action": "Enter username and password", "expected": "Credentials are entered"},
+      {"step_number": 3, "action": "Click login", "expected": "User is redirected to dashboard"}
+    ],
+    "automation_metadata": {"script_path": "tests/auth/test_login.py", "runner": "pytest"}
+  },
+  "status": "Queued",
+  "assigned_worker": null,
+  "started_at": null,
+  "finished_at": null,
+  "created_at": "2026-03-16T12:40:00Z"
+}

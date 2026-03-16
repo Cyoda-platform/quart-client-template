@@ -1,0 +1,14 @@
+{
+  "name": "TestRunExecution",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "h1i2j3k4-8901-2cde-f123-12345678def0"},
+      "test_run_id": {"type": "string", "format": "uuid", "example": "g1h2i3j4-7890-1bcd-ef12-01234567cdef"},
+      "test_case_id": {"type": "string", "format": "uuid", "example": "c1d2e3f4-1234-5678-9abc-78901234cdef"},
+      "status": {"type": "string", "enum": ["Untested", "Passed", "Failed", "Skipped"], "example": "Untested"}
+    },
+    "required": ["id", "test_run_id", "test_case_id", "status"]
+  }
+}

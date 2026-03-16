@@ -1,0 +1,17 @@
+{
+  "name": "TestRun",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "g1h2i3j4-7890-1bcd-ef12-01234567cdef"},
+      "project_id": {"type": "string", "format": "uuid", "example": "f1e2d3c4-b5a6-7d8e-9f01-34567890abcd"},
+      "title": {"type": "string", "example": "Sprint 42 Regression"},
+      "environment": {"type": "string", "example": "Staging", "nullable": true},
+      "status": {"type": "string", "enum": ["Active", "Completed"], "example": "Active"},
+      "created_by": {"type": "string", "format": "uuid", "example": "d7a1c3e7-9b2f-4f1a-8c2d-234567890abc"},
+      "created_at": {"type": "string", "format": "date-time", "example": "2026-03-16T12:30:00Z"}
+    },
+    "required": ["id", "project_id", "title", "status", "created_by", "created_at"]
+  }
+}

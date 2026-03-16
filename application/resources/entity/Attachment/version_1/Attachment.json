@@ -1,0 +1,17 @@
+{
+  "name": "Attachment",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "f1g2h3i4-6789-0abc-def1-90123456bcde"},
+      "owner_type": {"type": "string", "enum": ["test_case", "step_execution"], "example": "test_case"},
+      "owner_id": {"type": "string", "format": "uuid", "example": "c1d2e3f4-1234-5678-9abc-78901234cdef"},
+      "filename": {"type": "string", "example": "screenshot.png"},
+      "url": {"type": "string", "format": "uri", "example": "https://s3.cyoda-cloud.example/bucket/screenshot.png"},
+      "content_type": {"type": "string", "example": "image/png"},
+      "uploaded_at": {"type": "string", "format": "date-time", "example": "2026-03-16T12:25:00Z"}
+    },
+    "required": ["id", "owner_type", "owner_id", "filename", "url", "content_type", "uploaded_at"]
+  }
+}

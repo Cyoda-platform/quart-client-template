@@ -1,0 +1,15 @@
+{
+  "name": "TestStep",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "e1f2g3h4-5678-9abc-def0-89012345abcd"},
+      "test_case_id": {"type": "string", "format": "uuid", "example": "c1d2e3f4-1234-5678-9abc-78901234cdef"},
+      "sequence_index": {"type": "integer", "example": 1},
+      "action": {"type": "string", "example": "Enter username 'alice' into the login field"},
+      "expected_result": {"type": "string", "example": "User is redirected to the dashboard"}
+    },
+    "required": ["id", "test_case_id", "sequence_index", "action", "expected_result"]
+  }
+}

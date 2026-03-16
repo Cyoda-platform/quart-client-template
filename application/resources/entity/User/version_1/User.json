@@ -1,0 +1,16 @@
+{
+  "name": "User",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "d7a1c3e7-9b2f-4f1a-8c2d-234567890abc"},
+      "email": {"type": "string", "format": "email", "example": "user@example.com"},
+      "password_hash": {"type": "string", "example": "$2b$12$eImiTXuWVxfM37uY4JANjQ=="},
+      "role": {"type": "string", "enum": ["admin", "tester"], "example": "admin"},
+      "workspace_id": {"type": "string", "format": "uuid", "example": "b3d5f6a2-1f4b-4c2b-9f2e-1234567890ab"},
+      "created_at": {"type": "string", "format": "date-time", "example": "2026-03-16T12:05:00Z"}
+    },
+    "required": ["id", "email", "password_hash", "role", "workspace_id", "created_at"]
+  }
+}

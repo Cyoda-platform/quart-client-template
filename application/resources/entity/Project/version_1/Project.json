@@ -1,0 +1,15 @@
+{
+  "name": "Project",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "f1e2d3c4-b5a6-7d8e-9f01-34567890abcd"},
+      "workspace_id": {"type": "string", "format": "uuid", "example": "b3d5f6a2-1f4b-4c2b-9f2e-1234567890ab"},
+      "name": {"type": "string", "example": "Payments Project"},
+      "description": {"type": "string", "example": "Handles payment-related test cases.", "nullable": true},
+      "created_at": {"type": "string", "format": "date-time", "example": "2026-03-16T12:10:00Z"}
+    },
+    "required": ["id", "workspace_id", "name", "created_at"]
+  }
+}

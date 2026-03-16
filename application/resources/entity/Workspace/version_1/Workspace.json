@@ -1,0 +1,13 @@
+{
+  "name": "Workspace",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "b3d5f6a2-1f4b-4c2b-9f2e-1234567890ab"},
+      "name": {"type": "string", "example": "Acme QA Workspace"},
+      "created_at": {"type": "string", "format": "date-time", "example": "2026-03-16T12:00:00Z"}
+    },
+    "required": ["id", "name", "created_at"]
+  }
+}

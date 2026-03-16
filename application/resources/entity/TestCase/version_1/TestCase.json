@@ -1,0 +1,18 @@
+{
+  "name": "TestCase",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "c1d2e3f4-1234-5678-9abc-78901234cdef"},
+      "suite_id": {"type": "string", "format": "uuid", "example": "a1b2c3d4-e5f6-7a8b-9c0d-4567890abcde"},
+      "title": {"type": "string", "example": "Verify user login"},
+      "description": {"type": "string", "example": "Steps to validate user login flow."},
+      "pre_conditions": {"type": "string", "example": "User account exists with valid credentials.", "nullable": true},
+      "priority": {"type": "string", "enum": ["High", "Medium", "Low"], "example": "High"},
+      "attachments": {"type": "array", "items": {"type": "string", "format": "uuid"}},
+      "created_at": {"type": "string", "format": "date-time", "example": "2026-03-16T12:20:00Z"}
+    },
+    "required": ["id", "suite_id", "title", "description", "priority", "created_at"]
+  }
+}

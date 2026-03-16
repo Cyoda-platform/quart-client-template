@@ -1,0 +1,16 @@
+{
+  "name": "StepExecution",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "i1j2k3l4-9012-3def-0123-23456789ef01"},
+      "test_run_execution_id": {"type": "string", "format": "uuid", "example": "h1i2j3k4-8901-2cde-f123-12345678def0"},
+      "test_step_id": {"type": "string", "format": "uuid", "example": "e1f2g3h4-5678-9abc-def0-89012345abcd"},
+      "status": {"type": "string", "enum": ["Untested", "Passed", "Failed", "Skipped"], "example": "Untested"},
+      "evidence_attachments": {"type": "array", "items": {"type": "string", "format": "uuid"}},
+      "bug_url": {"type": "string", "format": "uri", "nullable": true}
+    },
+    "required": ["id", "test_run_execution_id", "test_step_id", "status"]
+  }
+}

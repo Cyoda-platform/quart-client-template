@@ -1,0 +1,14 @@
+{
+  "name": "Suite",
+  "modelVersion": 1,
+  "schema": {
+    "type": "object",
+    "properties": {
+      "id": {"type": "string", "format": "uuid", "example": "a1b2c3d4-e5f6-7a8b-9c0d-4567890abcde"},
+      "project_id": {"type": "string", "format": "uuid", "example": "f1e2d3c4-b5a6-7d8e-9f01-34567890abcd"},
+      "name": {"type": "string", "example": "Regression Suite"},
+      "created_at": {"type": "string", "format": "date-time", "example": "2026-03-16T12:15:00Z"}
+    },
+    "required": ["id", "project_id", "name", "created_at"]
+  }
+}

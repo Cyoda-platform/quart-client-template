@@ -1,0 +1,21 @@
+{
+  "name": "TestCaseLifecycle",
+  "modelVersion": 1,
+  "description": "Lifecycle for Test Cases (Draft -> Active -> Archived)",
+  "initialState": "Draft",
+  "states": {
+    "Draft": {
+      "transitions": [
+        {"to": "Active", "action": "promote", "processors": ["validate_test_case", "index_for_search"], "description": "Validate and publish test case"}
+      ]
+    },
+    "Active": {
+      "transitions": [
+        {"to": "Archived", "action": "archive", "processors": ["archive_test_case"], "description": "Archive the test case"}
+      ]
+    },
+    "Archived": {"final": false}
+  },
+  "processors": ["validate_test_case", "index_for_search", "archive_test_case"],
+  "sampleCriteria": {}
+}

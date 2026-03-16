@@ -1,0 +1,37 @@
+{
+  "name": "TestRunExecutionWorkflow",
+  "modelVersion": 1,
+  "description": "Drives the lifecycle of a Test Run and its executions.",
+  "fields": {
+    "title": {"type": "string"},
+    "environment": {"type": "string", "nullable": true},
+    "selected_suite_ids": {"type": "array", "items": {"type": "string", "format": "uuid"}},
+    "selected_test_case_ids": {"type": "array", "items": {"type": "string", "format": "uuid"}},
+    "created_by": {"type": "string", "format": "uuid"}
+  },
+  "initialState": "Initialized",
+  "states": {
+    "Initialized": {
+      "onEnter": ["create_test_run", "allocate_test_run_executions"],
+      "transitions": [
+        {"to": "InProgress", "condition": "validation_success", "description": "All selected suites/test cases validated and executions allocated"}
+      ]
+    },
+    "InProgress": {
+      "onEnter": [],
+      "handlers": ["create_step_executions", "update_step_execution"],
+      "transitions": [
+        {"to": "Completed", "condition": "all_executions_final", "description": "All TestRunExecution items are final (Passed/Failed/Skipped)"}
+      ]
+    },
+    "Completed": {
+      "onEnter": ["aggregate_run_metrics", "lock_run"],
+      "final": true
+    }
+  },
+  "processors": ["create_test_run", "allocate_test_run_executions", "create_step_executions", "update_step_execution", "aggregate_run_metrics", "lock_run"],
+  "sampleCriteria": {
+    "validation_success": {"type": "all_selected_exist"},
+    "all_executions_final": {"type": "all_children_final"}
+  }
+}

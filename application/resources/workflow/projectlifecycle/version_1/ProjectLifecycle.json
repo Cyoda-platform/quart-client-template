@@ -1,0 +1,21 @@
+{
+  "name": "ProjectLifecycle",
+  "modelVersion": 1,
+  "description": "Project lifecycle with archive and soft-delete rules",
+  "initialState": "Active",
+  "states": {
+    "Active": {
+      "transitions": [
+        {"to": "Archived", "action": "archive", "processors": ["validate_project_ownership"], "description": "Archive the project (set archived flag)"}
+      ]
+    },
+    "Archived": {
+      "transitions": [
+        {"to": "Deleted", "action": "delete", "processors": ["enforce_data_isolation_on_delete", "cleanup_orphaned_entities"], "condition": "is_archived", "description": "Soft-delete project only when archived"}
+      ]
+    },
+    "Deleted": {"final": true}
+  },
+  "processors": ["validate_project_ownership", "enforce_data_isolation_on_delete", "cleanup_orphaned_entities"],
+  "sampleCriteria": {"is_archived": {"type": "flag_true", "field": "archived"}}
+}

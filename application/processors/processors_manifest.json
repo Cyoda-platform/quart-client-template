@@ -1,0 +1,37 @@
+[
+  {
+    "name": "allocate_test_run_executions",
+    "workflow": "TestRunExecutionWorkflow",
+    "state": "initialized",
+    "executionMode": "SYNC",
+    "attachEntity": true
+  },
+  {
+    "name": "create_step_executions",
+    "workflow": "TestRunExecutionWorkflow",
+    "state": "initialized",
+    "executionMode": "SYNC",
+    "attachEntity": true
+  },
+  {
+    "name": "update_step_execution",
+    "workflow": "TestRunExecutionWorkflow",
+    "event": "UPDATE_STEP_STATUS",
+    "executionMode": "SYNC",
+    "attachEntity": true
+  },
+  {
+    "name": "aggregate_run_metrics",
+    "workflow": "TestRunExecutionWorkflow",
+    "state": "in_progress",
+    "executionMode": "ASYNC_NEW_TX",
+    "attachEntity": false
+  },
+  {
+    "name": "lock_run",
+    "workflow": "TestRunExecutionWorkflow",
+    "state": "completed_locked",
+    "executionMode": "SYNC",
+    "attachEntity": true
+  }
+]

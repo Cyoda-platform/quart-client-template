@@ -1,0 +1,15 @@
+{
+  "name": "Counterparty",
+  "modelVersion": 1,
+  "attributes": {
+    "counterpartyId": "CP-1001",
+    "legalName": "Acme Trading LLC",
+    "shortName": "Acme",
+    "createdAt": "2026-03-16T11:50:00Z",
+    "status": "ACTIVE",
+    "country": "US",
+    "contacts": [
+      {"name": "Jane Doe", "email": "jane.doe@acme.example", "phone": "+1-555-1234"}
+    ]
+  }
+}

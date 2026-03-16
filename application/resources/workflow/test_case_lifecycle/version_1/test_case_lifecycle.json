@@ -1,0 +1,48 @@
+{
+  "version": "1",
+  "name": "TestCaseLifecycle",
+  "desc": "Manages TestCase states from Draft to Active to Archived",
+  "initialState": "draft",
+  "active": true,
+  "states": {
+    "draft": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": true,
+          "allowedRoles": ["Admin"],
+          "description": "Activate a draft test case",
+          "processors": [
+            {
+              "name": "SetPublishTimestamp",
+              "executionMode": "SYNC",
+              "config": { "calculationNodesTags": "cyoda_application", "attachEntity": true }
+            }
+          ]
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": true,
+          "allowedRoles": ["Admin"],
+          "processors": [
+            {
+              "name": "ArchiveTestCase",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": { "calculationNodesTags": "cyoda_application", "attachEntity": false }
+            }
+          ],
+          "description": "Archive an active test case and run ArchiveTestCase processor"
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}

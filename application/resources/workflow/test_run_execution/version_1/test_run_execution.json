@@ -1,0 +1,66 @@
+{
+  "version": "1",
+  "name": "TestRunExecution",
+  "desc": "Manages TestRun lifecycle and step-level execution updates",
+  "initialState": "planned",
+  "active": true,
+  "states": {
+    "planned": {
+      "transitions": [
+        {
+          "name": "start_run",
+          "next": "active",
+          "manual": true,
+          "allowedRoles": ["Admin", "Tester"],
+          "processors": [
+            {
+              "name": "SetStartedAt",
+              "executionMode": "SYNC",
+              "config": { "calculationNodesTags": "cyoda_application", "attachEntity": true }
+            }
+          ],
+          "description": "Start the test run and set started_at"
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "complete_run",
+          "next": "completed",
+          "manual": true,
+          "allowedRoles": ["Admin", "Tester"],
+          "processors": [
+            {
+              "name": "RunCompletionLocker",
+              "executionMode": "ASYNC_NEW_TX",
+              "config": { "calculationNodesTags": "cyoda_application", "attachEntity": false }
+            }
+          ],
+          "description": "Complete the run, set completed_at and lock the run"
+        }
+      ],
+      "onEvents": {
+        "update_step_result": {
+          "manual": false,
+          "processors": [
+            {
+              "name": "AtomicFailureEvaluator",
+              "executionMode": "SYNC",
+              "config": { "calculationNodesTags": "cyoda_application", "attachEntity": false }
+            },
+            {
+              "name": "AttachmentUploader",
+              "executionMode": "ASYNC_SAME_TX",
+              "config": { "calculationNodesTags": "cyoda_application", "attachEntity": true }
+            }
+          ],
+          "description": "Handle step-level result updates and attachments"
+        }
+      }
+    },
+    "completed": {
+      "transitions": []
+    }
+  }
+}

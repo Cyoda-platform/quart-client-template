@@ -2,7 +2,7 @@
 In-memory data client for tests and local development.
 
 Provides a lightweight, mutable data store that implements the minimal
-API expected by the TestRunExecutionWorkflow processors.
+API expected by the processors and workflow tests.
 
 Note: This is a test helper and NOT intended for production.
 
@@ -12,7 +12,10 @@ Usage:
 
 Supported methods (used by processors):
 - get_test_run(run_id)
+- create_test_run(run_id, payload)
 - get_test_case(tc_id)
+- create_test_case(tc_id, payload)
+- update_test_case(tc_id, payload)
 - create_test_run_execution(run_id, snapshot, created_by)
 - get_test_run_execution(re_id)
 - create_step_execution(run_execution_id, payload)
@@ -20,11 +23,13 @@ Supported methods (used by processors):
 - update_step_execution(step_execution_id, payload)
 - get_step_execution(step_execution_id)
 - list_step_executions_for_run(run_id)
-- upsert_execution_report(run_id, metrics)
-- update_test_run(run_id, payload)
-- list_test_run_executions_for_run(run_id)
 - list_step_executions_for_run_execution(re_id)
+- upsert_execution_report(run_id, metrics)
 - index_search_document(doc_id, doc)
+- list_suites_for_project(project_id)
+- update_suite(suite_id, payload)
+- list_test_runs_for_project(project_id)
+- update_test_run(run_id, payload)
 
 """
 from typing import Dict, Any, List, Optional
@@ -41,6 +46,7 @@ class InMemoryDataClient:
         self.test_run_executions: Dict[str, Dict[str, Any]] = {}
         self.step_executions: Dict[str, Dict[str, Any]] = {}
         self.execution_reports: Dict[str, Dict[str, Any]] = {}
+        self.suites: Dict[str, Dict[str, Any]] = {}
 
         # indices
         self.run_to_runexecs: Dict[str, List[str]] = defaultdict(list)
@@ -66,6 +72,9 @@ class InMemoryDataClient:
         if run_id in self.test_runs:
             self.test_runs[run_id].update(payload)
 
+    def list_test_runs_for_project(self, project_id: str) -> List[Dict[str, Any]]:
+        return [r for r in self.test_runs.values() if r.get("project_id") == project_id]
+
     # --- TestCase operations ---
     def create_test_case(self, tc_id: str, payload: Dict[str, Any]):
         payload.setdefault("id", tc_id)
@@ -78,6 +87,22 @@ class InMemoryDataClient:
     def update_test_case(self, tc_id: str, payload: Dict[str, Any]) -> None:
         if tc_id in self.test_cases:
             self.test_cases[tc_id].update(payload)
+
+    # --- Suite operations ---
+    def create_suite(self, suite_id: str, payload: Dict[str, Any]) -> str:
+        payload.setdefault("id", suite_id)
+        self.suites[suite_id] = payload
+        return suite_id
+
+    def get_suite(self, suite_id: str) -> Optional[Dict[str, Any]]:
+        return self.suites.get(suite_id)
+
+    def update_suite(self, suite_id: str, payload: Dict[str, Any]) -> None:
+        if suite_id in self.suites:
+            self.suites[suite_id].update(payload)
+
+    def list_suites_for_project(self, project_id: str) -> List[Dict[str, Any]]:
+        return [s for s in self.suites.values() if s.get("project_id") == project_id]
 
     # --- TestRunExecution operations ---
     def create_test_run_execution(self, run_id: str, snapshot: Dict[str, Any], created_by: Optional[str] = None) -> str:

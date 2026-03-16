@@ -1,0 +1,13 @@
+{
+  "id": "project-0001",
+  "name": "Test Management System - Core",
+  "description": "Project container for TMS core features",
+  "workspace_id": "workspace-0001",
+  "owner": "user-0001",
+  "created_at": "2026-03-16T12:10:00Z",
+  "updated_at": "2026-03-16T12:10:00Z",
+  "settings": {
+    "default_environment": "env-qa-1",
+    "retention_days": 365
+  }
+}

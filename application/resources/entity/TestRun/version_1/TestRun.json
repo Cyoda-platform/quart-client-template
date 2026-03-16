@@ -1,0 +1,12 @@
+{
+  "id": "run-0001",
+  "title": "Nightly Regression Run",
+  "project_id": "project-0001",
+  "suite_id": "suite-0001",
+  "environment": "env-qa-1",
+  "settings": {"parallelism": 4, "retry_failed": true},
+  "scheduled_for": "2026-03-17T02:00:00Z",
+  "created_by": "user-0001",
+  "created_at": "2026-03-16T12:35:00Z",
+  "updated_at": "2026-03-16T12:35:00Z"
+}

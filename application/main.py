@@ -61,6 +61,10 @@ def start_execution(run_id: str, created_by: Optional[str] = None):
     if not tr:
         raise HTTPException(status_code=404, detail=f"TestRun {run_id} not found")
 
+    # Prevent starting a locked run
+    if tr.get("locked"):
+        raise HTTPException(status_code=409, detail=f"TestRun {run_id} is locked and cannot be started")
+
     # Trigger allocate_test_run_executions
     alloc_event = {"run_id": run_id, "project_id": tr.get("project_id"), "created_by": created_by or tr.get("created_by"), "test_case_refs": tr.get("test_case_refs")}    
     alloc_res = allocate_test_run_executions(alloc_event)
@@ -91,12 +95,8 @@ def start_execution(run_id: str, created_by: Optional[str] = None):
 def post_update_step_status(req: UpdateStepStatusRequest):
     # Update step execution and apply Atomic Failure logic
     ev = {"step_execution_id": req.step_execution_id, "new_status": req.new_status, "evidence": req.evidence or []}
-    res = update_step_execution(ev)
-    if res.get("status") != "ok":
-        raise HTTPException(status_code=500, detail=res)
 
-    # Recompute metrics for the run (if possible)
-    # Attempt to determine run_id from step execution
+    # Determine run_id to check lock status
     step = data_client.get_step_execution(req.step_execution_id)
     run_id = None
     if step:
@@ -105,6 +105,17 @@ def post_update_step_status(req: UpdateStepStatusRequest):
         if re:
             run_id = re.get("run_id")
 
+    # If run is locked, reject the update
+    if run_id:
+        tr = data_client.get_test_run(run_id)
+        if tr and tr.get("locked"):
+            raise HTTPException(status_code=409, detail={"error": "run_locked", "message": f"TestRun {run_id} is locked; inbound updates are rejected."})
+
+    res = update_step_execution(ev)
+    if res.get("status") != "ok":
+        raise HTTPException(status_code=500, detail=res)
+
+    # Recompute metrics for the run (if possible)
     if run_id:
         aggregate_run_metrics({"run_id": run_id})
 
@@ -131,6 +142,10 @@ def complete_run(run_id: str):
     tr = data_client.get_test_run(run_id)
     if not tr:
         raise HTTPException(status_code=404, detail=f"TestRun {run_id} not found")
+
+    # If already locked, reject
+    if tr.get("locked"):
+        raise HTTPException(status_code=409, detail={"error": "run_locked", "message": f"TestRun {run_id} is already locked; cannot complete."})
 
     # Mark run as completed and lock
     data_client.update_test_run(run_id, {"status": "completed", "finished_at": datetime.datetime.utcnow().isoformat() + "Z"})

@@ -1,0 +1,12 @@
+{
+  "id": "stepexec-0001",
+  "run_execution_id": "runexec-0001",
+  "test_step_number": 1,
+  "status": "Passed",
+  "logs": "Navigated to login page successfully",
+  "bug_url": null,
+  "evidence": ["artifacts/attachments/screenshot-login.png"],
+  "started_at": "2026-03-16T12:45:00Z",
+  "finished_at": "2026-03-16T12:45:10Z",
+  "created_at": "2026-03-16T12:45:10Z"
+}

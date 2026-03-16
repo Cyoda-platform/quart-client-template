@@ -1,0 +1,14 @@
+{
+  "name": "Instrument",
+  "modelVersion": 1,
+  "attributes": {
+    "instrumentId": "INST-2001",
+    "ticker": "ACME",
+    "isin": "US0000000000",
+    "assetClass": "Equity",
+    "currency": "USD",
+    "lotSize": 1,
+    "createdAt": "2026-03-16T11:45:00Z",
+    "status": "ACTIVE"
+  }
+}

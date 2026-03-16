@@ -1,0 +1,14 @@
+{
+  "name": "Position",
+  "modelVersion": 1,
+  "attributes": {
+    "positionId": "POS-4001",
+    "instrumentId": "INST-2001",
+    "accountId": "ACC-9001",
+    "quantity": 100,
+    "avgPrice": 123.45,
+    "currency": "USD",
+    "updatedAt": "2026-03-16T12:05:00Z",
+    "valuation": 12345.00
+  }
+}

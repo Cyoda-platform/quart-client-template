@@ -47,5 +47,12 @@
     "state": "active",
     "executionMode": "ASYNC_NEW_TX",
     "attachEntity": false
+  },
+  {
+    "name": "cleanup_orphaned_entities",
+    "workflow": "ProjectLifecycle",
+    "state": "deleted",
+    "executionMode": "SYNC",
+    "attachEntity": true
   }
 ]

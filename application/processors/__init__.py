@@ -15,7 +15,7 @@ processors_manifest = [
         "state": "initialized",
         "executionMode": "SYNC",
         "attachEntity": True
-n    },
+    },
     {
         "name": "create_step_executions",
         "workflow": "TestRunExecutionWorkflow",

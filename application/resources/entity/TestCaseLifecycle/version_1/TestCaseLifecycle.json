@@ -1,0 +1,7 @@
+{
+  "id": "workflow-001",
+  "name": "TestCaseLifecycle",
+  "version": 1,
+  "states": ["draft", "active", "archived"],
+  "description": "Lifecycle for test cases: draft -> active -> archived"
+}

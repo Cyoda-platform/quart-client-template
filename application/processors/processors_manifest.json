@@ -33,5 +33,19 @@
     "state": "completed_locked",
     "executionMode": "SYNC",
     "attachEntity": true
+  },
+  {
+    "name": "validate_test_case",
+    "workflow": "TestCaseLifecycle",
+    "state": "draft",
+    "executionMode": "SYNC",
+    "attachEntity": true
+  },
+  {
+    "name": "index_for_search",
+    "workflow": "TestCaseLifecycle",
+    "state": "active",
+    "executionMode": "ASYNC_NEW_TX",
+    "attachEntity": false
   }
 ]

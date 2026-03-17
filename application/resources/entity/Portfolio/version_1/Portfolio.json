@@ -1,0 +1,11 @@
+{
+  "entityName": "Portfolio",
+  "modelVersion": 1,
+  "attributes": {
+    "portfolioId": {"type": "string"},
+    "name": {"type": "string"},
+    "ownerId": {"type": "string"},
+    "currency": {"type": "string"},
+    "createdAt": {"type": "string", "format": "date-time"}
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "entityName": "Trade",
+  "modelVersion": 1,
+  "attributes": {
+    "tradeId": {"type": "string", "format": "uuid"},
+    "orderId": {"type": "string"},
+    "executionVenue": {"type": "string"},
+    "execPrice": {"type": "number"},
+    "execQuantity": {"type": "number"},
+    "execTimestamp": {"type": "string", "format": "date-time"},
+    "fees": {"type": "object", "properties": {"currency": {"type": "string"}, "amount": {"type": "number"}}},
+    "settlementDate": {"type": "string", "format": "date"}
+  }
+}

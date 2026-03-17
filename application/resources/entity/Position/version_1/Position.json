@@ -1,0 +1,15 @@
+{
+  "entityName": "Position",
+  "modelVersion": 1,
+  "attributes": {
+    "positionId": {"type": "string"},
+    "portfolioId": {"type": "string"},
+    "accountId": {"type": "string"},
+    "instrumentId": {"type": "string"},
+    "quantity": {"type": "number"},
+    "avgPrice": {"type": "number"},
+    "realizedPnl": {"type": "number"},
+    "unrealizedPnl": {"type": "number"},
+    "updatedAt": {"type": "string", "format": "date-time"}
+  }
+}

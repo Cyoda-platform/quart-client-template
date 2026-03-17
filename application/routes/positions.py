@@ -99,4 +99,3 @@ async def transition_position(
     except Exception as e:
         logger.error(f"Error transitioning position: {str(e)}")
         return {"error": str(e)}, 400
-

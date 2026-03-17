@@ -81,4 +81,3 @@ async def update_instrument(
     except Exception as e:
         logger.error(f"Error updating instrument: {str(e)}")
         return {"error": str(e)}, 400
-

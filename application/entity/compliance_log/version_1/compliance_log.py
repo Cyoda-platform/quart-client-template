@@ -16,7 +16,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class ComplianceLog(CyodaEntity):
     """
     ComplianceLog represents an immutable audit trail entry in the trading system.
-    
+
     Tracks order decisions, trade events, and regulatory reporting.
     States: logged -> reported -> archived
     """
@@ -26,26 +26,28 @@ class ComplianceLog(CyodaEntity):
 
     # Log identification
     log_id: str = Field(..., alias="logId", description="Unique log entry identifier")
-    
+
     # Event details
     event_type: str = Field(
-        ..., alias="eventType", description="Event type: order_created, order_filled, trade_captured, etc."
+        ...,
+        alias="eventType",
+        description="Event type: order_created, order_filled, trade_captured, etc.",
     )
     entity_type: str = Field(
         ..., alias="entityType", description="Entity type: order, trade, position, etc."
     )
     entity_id: str = Field(..., alias="entityId", description="Related entity ID")
-    
+
     # Account and legal entity
     account_id: str = Field(..., alias="accountId", description="Trading account ID")
     legal_entity: str = Field(..., alias="legalEntity", description="Legal entity code")
-    
+
     # Event details
     description: str = Field(..., description="Event description")
     details: Optional[Dict[str, Any]] = Field(
         default=None, description="Additional event details (JSON)"
     )
-    
+
     # Regulatory reporting
     mifid_reportable: bool = Field(
         default=False, alias="mifidReportable", description="MiFID II reportable"
@@ -54,12 +56,16 @@ class ComplianceLog(CyodaEntity):
         default=False, alias="emirReportable", description="EMIR/ESAAT reportable"
     )
     report_status: str = Field(
-        default="pending", alias="reportStatus", description="Report status: pending, reported, archived"
+        default="pending",
+        alias="reportStatus",
+        description="Report status: pending, reported, archived",
     )
-    
+
     # Timestamps
     event_timestamp: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="eventTimestamp",
         description="Event timestamp (nanosecond precision)",
     )
@@ -69,13 +75,15 @@ class ComplianceLog(CyodaEntity):
     archived_at: Optional[str] = Field(
         default=None, alias="archivedAt", description="Archive timestamp"
     )
-    
+
     # User and system info
     user_id: Optional[str] = Field(
         default=None, alias="userId", description="User who triggered the event"
     )
     system_id: Optional[str] = Field(
-        default=None, alias="systemId", description="System component that logged the event"
+        default=None,
+        alias="systemId",
+        description="System component that logged the event",
     )
 
     @field_validator("event_type")
@@ -123,4 +131,3 @@ class ComplianceLog(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

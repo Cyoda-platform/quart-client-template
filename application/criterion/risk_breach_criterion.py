@@ -56,9 +56,7 @@ class RiskBreachCriterion(CyodaCriteriaChecker):
 
             # Check margin breach
             if risk.available_margin < 0:
-                self.logger.error(
-                    f"Margin breach: available margin is negative"
-                )
+                self.logger.error(f"Margin breach: available margin is negative")
                 return True
 
             self.logger.info("Risk metrics within acceptable limits")
@@ -69,4 +67,3 @@ class RiskBreachCriterion(CyodaCriteriaChecker):
                 f"Error checking risk breach {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

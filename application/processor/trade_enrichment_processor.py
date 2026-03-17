@@ -57,9 +57,7 @@ class TradeEnrichmentProcessor(CyodaProcessor):
                 datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             )
 
-            self.logger.info(
-                f"Trade {trade.trade_id} enriched successfully"
-            )
+            self.logger.info(f"Trade {trade.trade_id} enriched successfully")
 
             return trade
 
@@ -68,4 +66,3 @@ class TradeEnrichmentProcessor(CyodaProcessor):
                 f"Error enriching trade {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

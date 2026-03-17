@@ -69,9 +69,7 @@ class RiskEvaluationProcessor(CyodaProcessor):
                 datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
             )
 
-            self.logger.info(
-                f"Risk evaluation complete: status={risk.risk_status}"
-            )
+            self.logger.info(f"Risk evaluation complete: status={risk.risk_status}")
 
             return risk
 
@@ -100,4 +98,3 @@ class RiskEvaluationProcessor(CyodaProcessor):
         elif position_util >= 80 or exposure_util >= 80 or margin_util >= 80:
             return "warning"
         return "compliant"
-

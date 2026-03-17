@@ -51,9 +51,7 @@ class ComplianceArchivingProcessor(CyodaProcessor):
             # Update report status
             log.report_status = "archived"
 
-            self.logger.info(
-                f"Compliance log {log.log_id} archived"
-            )
+            self.logger.info(f"Compliance log {log.log_id} archived")
 
             return log
 
@@ -62,4 +60,3 @@ class ComplianceArchivingProcessor(CyodaProcessor):
                 f"Error archiving compliance log {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

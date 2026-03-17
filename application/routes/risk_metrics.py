@@ -99,4 +99,3 @@ async def transition_risk_metrics(
     except Exception as e:
         logger.error(f"Error transitioning risk metrics: {str(e)}")
         return {"error": str(e)}, 400
-

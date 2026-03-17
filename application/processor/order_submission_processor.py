@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class OrderSubmissionProcessor(CyodaProcessor):
     """
     Processor for submitting orders to execution venues.
-    
+
     Implements smart order routing and pre-trade risk checks.
     """
 
@@ -54,9 +54,7 @@ class OrderSubmissionProcessor(CyodaProcessor):
             if not order.venue:
                 order.venue = self._determine_venue(order)
 
-            self.logger.info(
-                f"Order {order.order_id} submitted to {order.venue}"
-            )
+            self.logger.info(f"Order {order.order_id} submitted to {order.venue}")
 
             return order
 
@@ -83,4 +81,3 @@ class OrderSubmissionProcessor(CyodaProcessor):
             "GOOGL": "XETRA",
         }
         return venue_map.get(order.symbol, "LSE")
-

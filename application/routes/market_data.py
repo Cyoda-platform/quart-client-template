@@ -99,4 +99,3 @@ async def transition_market_data(
     except Exception as e:
         logger.error(f"Error transitioning market data: {str(e)}")
         return {"error": str(e)}, 400
-

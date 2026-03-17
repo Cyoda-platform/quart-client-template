@@ -97,4 +97,3 @@ async def transition_trade(
     except Exception as e:
         logger.error(f"Error transitioning trade: {str(e)}")
         return {"error": str(e)}, 400
-

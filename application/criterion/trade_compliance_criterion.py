@@ -60,9 +60,7 @@ class TradeComplianceCriterion(CyodaCriteriaChecker):
                 self.logger.warning("OTC trade missing counterparty")
                 return False
 
-            self.logger.info(
-                f"Trade {trade.trade_id} passed compliance validation"
-            )
+            self.logger.info(f"Trade {trade.trade_id} passed compliance validation")
             return True
 
         except Exception as e:
@@ -70,4 +68,3 @@ class TradeComplianceCriterion(CyodaCriteriaChecker):
                 f"Error validating trade compliance {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

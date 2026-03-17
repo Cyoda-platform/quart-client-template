@@ -2,6 +2,7 @@
 """
 Test script to create entities for E2E testing
 """
+
 import asyncio
 import json
 from typing import Optional, Tuple

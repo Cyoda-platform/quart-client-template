@@ -61,4 +61,3 @@ class TradeReportingProcessor(CyodaProcessor):
                 f"Error reporting trade {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

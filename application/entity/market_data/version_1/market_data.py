@@ -16,7 +16,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class MarketData(CyodaEntity):
     """
     MarketData represents real-time market data in the trading system.
-    
+
     Supports Level 1 (top of book) and Level 2 (order book depth) data.
     States: active -> inactive
     """
@@ -30,7 +30,7 @@ class MarketData(CyodaEntity):
     )
     symbol: str = Field(..., description="Trading symbol")
     venue: str = Field(..., description="Data source venue (LSE, Euronext, XETRA)")
-    
+
     # Level 1 data (top of book)
     bid_price: Optional[float] = Field(
         default=None, alias="bidPrice", description="Best bid price"
@@ -50,7 +50,7 @@ class MarketData(CyodaEntity):
     last_size: Optional[float] = Field(
         default=None, alias="lastSize", description="Last traded size"
     )
-    
+
     # Level 2 data (order book depth)
     bid_levels: Optional[str] = Field(
         default=None, alias="bidLevels", description="Bid levels (JSON array)"
@@ -58,7 +58,7 @@ class MarketData(CyodaEntity):
     ask_levels: Optional[str] = Field(
         default=None, alias="askLevels", description="Ask levels (JSON array)"
     )
-    
+
     # Market statistics
     open_price: Optional[float] = Field(
         default=None, alias="openPrice", description="Opening price"
@@ -73,23 +73,29 @@ class MarketData(CyodaEntity):
         default=None, alias="closePrice", description="Closing price"
     )
     volume: Optional[float] = Field(default=None, description="Trading volume")
-    
+
     # Timestamps (nanosecond precision)
     exchange_timestamp: Optional[str] = Field(
-        default=None, alias="exchangeTimestamp", description="Exchange timestamp (nanosecond precision)"
+        default=None,
+        alias="exchangeTimestamp",
+        description="Exchange timestamp (nanosecond precision)",
     )
     received_timestamp: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="receivedTimestamp",
         description="Data received timestamp",
     )
-    
+
     # Data quality
     is_stale: bool = Field(
         default=False, alias="isStale", description="Whether data is stale"
     )
     feed_status: str = Field(
-        default="active", alias="feedStatus", description="Feed status: active, inactive, halted"
+        default="active",
+        alias="feedStatus",
+        description="Feed status: active, inactive, halted",
     )
 
     @field_validator("bid_price", "ask_price", "last_price")
@@ -126,4 +132,3 @@ class MarketData(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

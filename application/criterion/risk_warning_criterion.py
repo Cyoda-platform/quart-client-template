@@ -43,25 +43,19 @@ class RiskWarningCriterion(CyodaCriteriaChecker):
             # Check position utilization
             position_util = risk.position_utilization or 0
             if position_util >= 80:
-                self.logger.warning(
-                    f"Position utilization warning: {position_util}%"
-                )
+                self.logger.warning(f"Position utilization warning: {position_util}%")
                 return True
 
             # Check exposure utilization
             exposure_util = risk.exposure_utilization or 0
             if exposure_util >= 80:
-                self.logger.warning(
-                    f"Exposure utilization warning: {exposure_util}%"
-                )
+                self.logger.warning(f"Exposure utilization warning: {exposure_util}%")
                 return True
 
             # Check margin utilization
             margin_util = risk.margin_utilization or 0
             if margin_util >= 80:
-                self.logger.warning(
-                    f"Margin utilization warning: {margin_util}%"
-                )
+                self.logger.warning(f"Margin utilization warning: {margin_util}%")
                 return True
 
             self.logger.info("Risk metrics within normal thresholds")
@@ -72,4 +66,3 @@ class RiskWarningCriterion(CyodaCriteriaChecker):
                 f"Error checking risk warning {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

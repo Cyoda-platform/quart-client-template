@@ -16,8 +16,8 @@ from common.entity.cyoda_entity import CyodaEntity
 class Order(CyodaEntity):
     """
     Order represents a trading order in the institutional trading system.
-    
-    Manages order lifecycle with states: new -> submitted -> partially_filled -> 
+
+    Manages order lifecycle with states: new -> submitted -> partially_filled ->
     filled/canceled/rejected. Supports multiple order types and venues.
     """
 
@@ -29,23 +29,29 @@ class Order(CyodaEntity):
     client_order_id: Optional[str] = Field(
         default=None, alias="clientOrderId", description="Client-provided order ID"
     )
-    
+
     # Instrument and account
     symbol: str = Field(..., description="Trading symbol (e.g., AAPL, EURUSD)")
     account_id: str = Field(..., alias="accountId", description="Trading account ID")
     legal_entity: str = Field(..., alias="legalEntity", description="Legal entity code")
-    
+
     # Order parameters
     order_type: str = Field(
-        ..., alias="orderType", description="Order type: market, limit, iceberg, stop_limit, FOK, IOC"
+        ...,
+        alias="orderType",
+        description="Order type: market, limit, iceberg, stop_limit, FOK, IOC",
     )
     side: str = Field(..., description="Order side: BUY or SELL")
     quantity: float = Field(..., description="Order quantity")
-    price: Optional[float] = Field(default=None, description="Limit price (if applicable)")
-    stop_price: Optional[float] = Field(
-        default=None, alias="stopPrice", description="Stop price (for stop-limit orders)"
+    price: Optional[float] = Field(
+        default=None, description="Limit price (if applicable)"
     )
-    
+    stop_price: Optional[float] = Field(
+        default=None,
+        alias="stopPrice",
+        description="Stop price (for stop-limit orders)",
+    )
+
     # Execution details
     filled_quantity: float = Field(
         default=0.0, alias="filledQuantity", description="Quantity filled so far"
@@ -53,8 +59,10 @@ class Order(CyodaEntity):
     average_fill_price: Optional[float] = Field(
         default=None, alias="averageFillPrice", description="Average execution price"
     )
-    venue: Optional[str] = Field(default=None, description="Execution venue (LSE, Euronext, etc.)")
-    
+    venue: Optional[str] = Field(
+        default=None, description="Execution venue (LSE, Euronext, etc.)"
+    )
+
     # Risk and compliance
     max_order_size_limit: Optional[float] = Field(
         default=None, alias="maxOrderSizeLimit", description="Pre-trade risk limit"
@@ -62,10 +70,12 @@ class Order(CyodaEntity):
     exposure_limit: Optional[float] = Field(
         default=None, alias="exposureLimit", description="Account exposure limit"
     )
-    
+
     # Timestamps
     created_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="createdAt",
         description="Order creation timestamp",
     )
@@ -119,4 +129,3 @@ class Order(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

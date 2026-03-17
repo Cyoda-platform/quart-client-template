@@ -73,4 +73,3 @@ class PnlCalculationProcessor(CyodaProcessor):
                 f"Error calculating P&L {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

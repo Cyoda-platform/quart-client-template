@@ -16,7 +16,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Position(CyodaEntity):
     """
     Position represents a real-time position in the institutional trading system.
-    
+
     Tracks holdings, average price, and P&L calculations per instrument and account.
     States: open -> closed
     """
@@ -25,20 +25,24 @@ class Position(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     # Position identification
-    position_id: str = Field(..., alias="positionId", description="Unique position identifier")
-    
+    position_id: str = Field(
+        ..., alias="positionId", description="Unique position identifier"
+    )
+
     # Instrument and account
     symbol: str = Field(..., description="Trading symbol")
     account_id: str = Field(..., alias="accountId", description="Trading account ID")
     legal_entity: str = Field(..., alias="legalEntity", description="Legal entity code")
-    
+
     # Position details
     quantity: float = Field(..., description="Current position quantity")
-    average_cost: float = Field(..., alias="averageCost", description="Average cost per unit")
+    average_cost: float = Field(
+        ..., alias="averageCost", description="Average cost per unit"
+    )
     current_price: Optional[float] = Field(
         default=None, alias="currentPrice", description="Current market price"
     )
-    
+
     # P&L calculations
     unrealized_pnl: Optional[float] = Field(
         default=None, alias="unrealizedPnl", description="Unrealized P&L"
@@ -49,7 +53,7 @@ class Position(CyodaEntity):
     total_pnl: Optional[float] = Field(
         default=None, alias="totalPnl", description="Total P&L (realized + unrealized)"
     )
-    
+
     # Risk metrics
     notional_value: Optional[float] = Field(
         default=None, alias="notionalValue", description="Notional position value"
@@ -57,10 +61,12 @@ class Position(CyodaEntity):
     margin_requirement: Optional[float] = Field(
         default=None, alias="marginRequirement", description="Margin requirement"
     )
-    
+
     # Timestamps
     opened_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="openedAt",
         description="Position open timestamp",
     )
@@ -111,4 +117,3 @@ class Position(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

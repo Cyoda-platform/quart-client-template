@@ -97,4 +97,3 @@ async def transition_order(
     except Exception as e:
         logger.error(f"Error transitioning order: {str(e)}")
         return {"error": str(e)}, 400
-

@@ -51,9 +51,7 @@ class ComplianceReportingProcessor(CyodaProcessor):
             # Update report status
             log.report_status = "reported"
 
-            self.logger.info(
-                f"Compliance log {log.log_id} reported: {log.event_type}"
-            )
+            self.logger.info(f"Compliance log {log.log_id} reported: {log.event_type}")
 
             return log
 
@@ -62,4 +60,3 @@ class ComplianceReportingProcessor(CyodaProcessor):
                 f"Error reporting compliance log {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

@@ -64,4 +64,3 @@ class MarketDataUpdateProcessor(CyodaProcessor):
                 f"Error updating market data {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             raise
-

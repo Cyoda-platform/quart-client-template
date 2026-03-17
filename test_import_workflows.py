@@ -2,6 +2,7 @@
 """
 Test script to import workflows for E2E testing
 """
+
 import asyncio
 import json
 from pathlib import Path

@@ -56,15 +56,16 @@ class OrderValidationCriterion(CyodaCriteriaChecker):
                 return False
 
             # Pre-trade risk checks
-            if order.max_order_size_limit and order.quantity > order.max_order_size_limit:
+            if (
+                order.max_order_size_limit
+                and order.quantity > order.max_order_size_limit
+            ):
                 self.logger.warning(
                     f"Order quantity {order.quantity} exceeds limit {order.max_order_size_limit}"
                 )
                 return False
 
-            self.logger.info(
-                f"Order {order.order_id} passed all validation checks"
-            )
+            self.logger.info(f"Order {order.order_id} passed all validation checks")
             return True
 
         except Exception as e:
@@ -72,4 +73,3 @@ class OrderValidationCriterion(CyodaCriteriaChecker):
                 f"Error validating order {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
             )
             return False
-

@@ -15,7 +15,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class RiskMetrics(CyodaEntity):
     """
     RiskMetrics represents real-time risk evaluation in the trading system.
-    
+
     Tracks position limits, margin requirements, VaR, and risk alerts.
     States: compliant -> warning -> breach
     """
@@ -24,10 +24,12 @@ class RiskMetrics(CyodaEntity):
     ENTITY_VERSION: ClassVar[int] = 1
 
     # Risk identification
-    risk_id: str = Field(..., alias="riskId", description="Unique risk metrics identifier")
+    risk_id: str = Field(
+        ..., alias="riskId", description="Unique risk metrics identifier"
+    )
     account_id: str = Field(..., alias="accountId", description="Trading account ID")
     legal_entity: str = Field(..., alias="legalEntity", description="Legal entity code")
-    
+
     # Position limits
     position_limit: float = Field(
         ..., alias="positionLimit", description="Maximum position size allowed"
@@ -36,9 +38,11 @@ class RiskMetrics(CyodaEntity):
         ..., alias="currentPosition", description="Current position size"
     )
     position_utilization: Optional[float] = Field(
-        default=None, alias="positionUtilization", description="Position utilization percentage"
+        default=None,
+        alias="positionUtilization",
+        description="Position utilization percentage",
     )
-    
+
     # Exposure limits
     exposure_limit: float = Field(
         ..., alias="exposureLimit", description="Maximum exposure allowed"
@@ -47,9 +51,11 @@ class RiskMetrics(CyodaEntity):
         ..., alias="currentExposure", description="Current exposure"
     )
     exposure_utilization: Optional[float] = Field(
-        default=None, alias="exposureUtilization", description="Exposure utilization percentage"
+        default=None,
+        alias="exposureUtilization",
+        description="Exposure utilization percentage",
     )
-    
+
     # Margin and collateral
     margin_requirement: float = Field(
         ..., alias="marginRequirement", description="Total margin requirement"
@@ -58,9 +64,11 @@ class RiskMetrics(CyodaEntity):
         ..., alias="availableMargin", description="Available margin"
     )
     margin_utilization: Optional[float] = Field(
-        default=None, alias="marginUtilization", description="Margin utilization percentage"
+        default=None,
+        alias="marginUtilization",
+        description="Margin utilization percentage",
     )
-    
+
     # Risk metrics
     var_95: Optional[float] = Field(
         default=None, alias="var95", description="Value at Risk (95% confidence)"
@@ -68,18 +76,22 @@ class RiskMetrics(CyodaEntity):
     var_99: Optional[float] = Field(
         default=None, alias="var99", description="Value at Risk (99% confidence)"
     )
-    
+
     # Alerts and status
     risk_status: str = Field(
-        default="compliant", alias="riskStatus", description="Risk status: compliant, warning, breach"
+        default="compliant",
+        alias="riskStatus",
+        description="Risk status: compliant, warning, breach",
     )
     alerts: Optional[str] = Field(
         default=None, description="Comma-separated list of active alerts"
     )
-    
+
     # Timestamps
     evaluated_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="evaluatedAt",
         description="Risk evaluation timestamp",
     )
@@ -122,4 +134,3 @@ class RiskMetrics(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

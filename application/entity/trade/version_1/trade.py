@@ -16,7 +16,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Trade(CyodaEntity):
     """
     Trade represents an executed trade in the institutional trading system.
-    
+
     Manages trade lifecycle with states: captured -> enriched -> reported.
     Includes enrichment with venue, execution algo, latency metrics, and counterparty.
     """
@@ -27,7 +27,7 @@ class Trade(CyodaEntity):
     # Trade identification
     trade_id: str = Field(..., alias="tradeId", description="Unique trade identifier")
     order_id: str = Field(..., alias="orderId", description="Related order ID")
-    
+
     # Instrument and parties
     symbol: str = Field(..., description="Trading symbol")
     account_id: str = Field(..., alias="accountId", description="Trading account ID")
@@ -35,33 +35,41 @@ class Trade(CyodaEntity):
     counterparty: Optional[str] = Field(
         default=None, description="Counterparty identifier"
     )
-    
+
     # Trade details
     side: str = Field(..., description="Trade side: BUY or SELL")
     quantity: float = Field(..., description="Trade quantity")
     price: float = Field(..., description="Execution price")
     commission: Optional[float] = Field(default=None, description="Commission paid")
-    
+
     # Execution details
     venue: str = Field(..., description="Execution venue (LSE, Euronext, XETRA, etc.)")
     execution_algo: Optional[str] = Field(
         default=None, alias="executionAlgo", description="Execution algorithm used"
     )
     execution_time: Optional[str] = Field(
-        default=None, alias="executionTime", description="Execution timestamp (nanosecond precision)"
+        default=None,
+        alias="executionTime",
+        description="Execution timestamp (nanosecond precision)",
     )
-    
+
     # Latency metrics
     order_to_execution_latency_us: Optional[float] = Field(
-        default=None, alias="orderToExecutionLatencyUs", description="Latency in microseconds"
+        default=None,
+        alias="orderToExecutionLatencyUs",
+        description="Latency in microseconds",
     )
     market_data_latency_us: Optional[float] = Field(
-        default=None, alias="marketDataLatencyUs", description="Market data latency in microseconds"
+        default=None,
+        alias="marketDataLatencyUs",
+        description="Market data latency in microseconds",
     )
-    
+
     # Timestamps
     created_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="createdAt",
         description="Trade capture timestamp",
     )
@@ -112,4 +120,3 @@ class Trade(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

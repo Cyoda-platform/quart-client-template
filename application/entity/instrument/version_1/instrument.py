@@ -15,7 +15,7 @@ from common.entity.cyoda_entity import CyodaEntity
 class Instrument(CyodaEntity):
     """
     Instrument represents a tradable market instrument in the system.
-    
+
     Supports equities and OTC derivatives with metadata and trading parameters.
     States: active -> inactive
     """
@@ -27,22 +27,28 @@ class Instrument(CyodaEntity):
     symbol: str = Field(..., description="Trading symbol (e.g., AAPL, EURUSD)")
     isin: Optional[str] = Field(default=None, description="ISIN code")
     cusip: Optional[str] = Field(default=None, description="CUSIP code")
-    
+
     # Instrument details
     name: str = Field(..., description="Instrument name")
     instrument_type: str = Field(
-        ..., alias="instrumentType", description="Type: equity, derivative, option, future"
+        ...,
+        alias="instrumentType",
+        description="Type: equity, derivative, option, future",
     )
     currency: str = Field(..., description="Trading currency (EUR, USD, GBP, etc.)")
-    
+
     # Venue information
     primary_venue: str = Field(
-        ..., alias="primaryVenue", description="Primary trading venue (LSE, Euronext, XETRA)"
+        ...,
+        alias="primaryVenue",
+        description="Primary trading venue (LSE, Euronext, XETRA)",
     )
     supported_venues: Optional[str] = Field(
-        default=None, alias="supportedVenues", description="Comma-separated list of supported venues"
+        default=None,
+        alias="supportedVenues",
+        description="Comma-separated list of supported venues",
     )
-    
+
     # Trading parameters
     tick_size: Optional[float] = Field(
         default=None, alias="tickSize", description="Minimum price increment"
@@ -56,10 +62,12 @@ class Instrument(CyodaEntity):
     max_order_size: Optional[float] = Field(
         default=None, alias="maxOrderSize", description="Maximum order size"
     )
-    
+
     # Derivative-specific fields
     underlying_symbol: Optional[str] = Field(
-        default=None, alias="underlyingSymbol", description="Underlying instrument symbol"
+        default=None,
+        alias="underlyingSymbol",
+        description="Underlying instrument symbol",
     )
     expiry_date: Optional[str] = Field(
         default=None, alias="expiryDate", description="Expiry date (for derivatives)"
@@ -67,10 +75,12 @@ class Instrument(CyodaEntity):
     strike_price: Optional[float] = Field(
         default=None, alias="strikePrice", description="Strike price (for options)"
     )
-    
+
     # Timestamps
     created_at: Optional[str] = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        default_factory=lambda: datetime.now(timezone.utc)
+        .isoformat()
+        .replace("+00:00", "Z"),
         alias="createdAt",
         description="Instrument creation timestamp",
     )
@@ -101,4 +111,3 @@ class Instrument(CyodaEntity):
         validate_assignment=True,
         extra="allow",
     )
-

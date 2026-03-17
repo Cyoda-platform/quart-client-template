@@ -1,0 +1,11 @@
+{
+  "entityName": "Counterparty",
+  "modelVersion": 1,
+  "attributes": {
+    "counterpartyId": {"type": "string"},
+    "legalEntityName": {"type": "string"},
+    "legalEntityId": {"type": "string"},
+    "kycStatus": {"type": "string", "enum": ["PENDING", "VERIFIED", "REJECTED"]},
+    "contactInfo": {"type": "object", "properties": {"email": {"type": "string"}, "phone": {"type": "string"}}}
+  }
+}

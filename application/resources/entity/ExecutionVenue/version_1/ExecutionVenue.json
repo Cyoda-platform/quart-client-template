@@ -1,0 +1,11 @@
+{
+  "entityName": "ExecutionVenue",
+  "modelVersion": 1,
+  "attributes": {
+    "venueId": {"type": "string"},
+    "name": {"type": "string"},
+    "mic": {"type": "string"},
+    "venueType": {"type": "string", "enum": ["EXCHANGE", "ATS", "DARKPOOL", "BROKER"]},
+    "latencyMs": {"type": "number"}
+  }
+}

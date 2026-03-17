@@ -1,0 +1,21 @@
+{
+  "riskId": "RISK-ACC-EU-001",
+  "accountId": "ACC-EU-001",
+  "legalEntity": "ACME-EU-LTD",
+  "positionLimit": 10000000.0,
+  "currentPosition": 5000000.0,
+  "positionUtilization": 50.0,
+  "exposureLimit": 50000000.0,
+  "currentExposure": 25000000.0,
+  "exposureUtilization": 50.0,
+  "marginRequirement": 5000000.0,
+  "availableMargin": 3000000.0,
+  "marginUtilization": 62.5,
+  "var95": 250000.0,
+  "var99": 400000.0,
+  "riskStatus": "compliant",
+  "alerts": null,
+  "evaluatedAt": "2026-03-17T10:30:20Z",
+  "lastBreachAt": null
+}
+

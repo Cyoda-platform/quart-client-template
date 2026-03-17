@@ -1,0 +1,21 @@
+{
+  "tradeId": "TRD-20260317-001",
+  "orderId": "ORD-20260317-001",
+  "symbol": "AAPL",
+  "accountId": "ACC-EU-001",
+  "legalEntity": "ACME-EU-LTD",
+  "side": "BUY",
+  "quantity": 500.0,
+  "price": 150.20,
+  "commission": 75.10,
+  "venue": "LSE",
+  "executionAlgo": "VWAP",
+  "executionTime": "2026-03-17T10:30:15.123456789Z",
+  "orderToExecutionLatencyUs": 8500.0,
+  "marketDataLatencyUs": 2300.0,
+  "createdAt": "2026-03-17T10:30:15Z",
+  "enrichedAt": "2026-03-17T10:30:16Z",
+  "reportedAt": null,
+  "counterparty": "GOLDMAN-SACHS"
+}
+

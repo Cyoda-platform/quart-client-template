@@ -1,0 +1,25 @@
+{
+  "logId": "LOG-20260317-001",
+  "eventType": "trade_captured",
+  "entityType": "trade",
+  "entityId": "TRD-20260317-001",
+  "accountId": "ACC-EU-001",
+  "legalEntity": "ACME-EU-LTD",
+  "description": "Trade captured for AAPL 500 shares at 150.20",
+  "details": {
+    "symbol": "AAPL",
+    "quantity": 500.0,
+    "price": 150.20,
+    "venue": "LSE",
+    "counterparty": "GOLDMAN-SACHS"
+  },
+  "mifidReportable": true,
+  "emirReportable": false,
+  "reportStatus": "pending",
+  "eventTimestamp": "2026-03-17T10:30:15.123456789Z",
+  "reportedAt": null,
+  "archivedAt": null,
+  "userId": "TRADER-001",
+  "systemId": "OMS-PRIMARY"
+}
+

@@ -1,0 +1,23 @@
+{
+  "marketDataId": "MD-AAPL-LSE-20260317",
+  "symbol": "AAPL",
+  "venue": "LSE",
+  "bidPrice": 150.20,
+  "bidSize": 50000.0,
+  "askPrice": 150.25,
+  "askSize": 75000.0,
+  "lastPrice": 150.23,
+  "lastSize": 5000.0,
+  "bidLevels": "[{\"price\": 150.20, \"size\": 50000}, {\"price\": 150.15, \"size\": 75000}]",
+  "askLevels": "[{\"price\": 150.25, \"size\": 75000}, {\"price\": 150.30, \"size\": 100000}]",
+  "openPrice": 149.50,
+  "highPrice": 151.00,
+  "lowPrice": 149.25,
+  "closePrice": null,
+  "volume": 5000000.0,
+  "exchangeTimestamp": "2026-03-17T10:30:15.123456789Z",
+  "receivedTimestamp": "2026-03-17T10:30:15.125000000Z",
+  "isStale": false,
+  "feedStatus": "active"
+}
+

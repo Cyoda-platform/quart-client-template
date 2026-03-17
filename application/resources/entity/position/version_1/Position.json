@@ -1,0 +1,18 @@
+{
+  "positionId": "POS-AAPL-ACC-EU-001",
+  "symbol": "AAPL",
+  "accountId": "ACC-EU-001",
+  "legalEntity": "ACME-EU-LTD",
+  "quantity": 1500.0,
+  "averageCost": 149.50,
+  "currentPrice": 150.25,
+  "unrealizedPnl": 1125.0,
+  "realizedPnl": 300.0,
+  "totalPnl": 1425.0,
+  "notionalValue": 225375.0,
+  "marginRequirement": 45075.0,
+  "openedAt": "2026-03-10T09:00:00Z",
+  "closedAt": null,
+  "lastUpdatedAt": "2026-03-17T10:30:20Z"
+}
+

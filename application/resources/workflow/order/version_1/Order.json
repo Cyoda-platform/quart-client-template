@@ -1,0 +1,102 @@
+{
+  "version": "1.0",
+  "name": "Order Workflow",
+  "desc": "Order lifecycle management: new -> submitted -> partially_filled -> filled/canceled/rejected",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "create",
+          "next": "new",
+          "manual": false
+        }
+      ]
+    },
+    "new": {
+      "transitions": [
+        {
+          "name": "validate_order",
+          "next": "validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "OrderValidationCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        },
+        {
+          "name": "reject",
+          "next": "rejected",
+          "manual": true
+        }
+      ]
+    },
+    "validated": {
+      "transitions": [
+        {
+          "name": "submit",
+          "next": "submitted",
+          "manual": false,
+          "processors": [
+            {
+              "name": "OrderSubmissionProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "submitted": {
+      "transitions": [
+        {
+          "name": "fill_partial",
+          "next": "partially_filled",
+          "manual": false
+        },
+        {
+          "name": "fill_complete",
+          "next": "filled",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "canceled",
+          "manual": true
+        }
+      ]
+    },
+    "partially_filled": {
+      "transitions": [
+        {
+          "name": "fill_remaining",
+          "next": "filled",
+          "manual": false
+        },
+        {
+          "name": "cancel",
+          "next": "canceled",
+          "manual": true
+        }
+      ]
+    },
+    "filled": {
+      "transitions": []
+    },
+    "canceled": {
+      "transitions": []
+    },
+    "rejected": {
+      "transitions": []
+    }
+  }
+}
+

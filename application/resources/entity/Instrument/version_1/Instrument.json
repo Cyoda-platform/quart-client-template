@@ -1,0 +1,12 @@
+{
+  "entityName": "Instrument",
+  "modelVersion": 1,
+  "attributes": {
+    "instrumentId": {"type": "string"},
+    "symbol": {"type": "string"},
+    "isin": {"type": ["string", "null"]},
+    "market": {"type": "string"},
+    "instrumentType": {"type": "string", "enum": ["EQUITY", "FUTURE", "OPTION", "SWAP", "BOND"]},
+    "contractDetails": {"type": ["object", "null"], "properties": {"expiryDate": {"type": "string", "format": "date"}, "strike": {"type": "number"}, "optionType": {"type": "string", "enum": ["CALL", "PUT"]}}}
+  }
+}

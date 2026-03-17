@@ -4,12 +4,14 @@ TradeReportingProcessor for institutional trading platform.
 Handles MiFID II transaction reporting and OTC derivatives reporting (EMIR/ESAAT).
 """
 
+from typing import Any
+
 import logging
 from datetime import datetime, timezone
 
+from application.entity.trade.version_1.trade import Trade
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.trade.version_1.trade import Trade
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ class TradeReportingProcessor(CyodaProcessor):
             description="Reports trades to regulatory authorities (MiFID II, EMIR/ESAAT)",
         )
 
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Process trade reporting.
 

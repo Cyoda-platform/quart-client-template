@@ -4,12 +4,14 @@ ComplianceReportingProcessor for institutional trading platform.
 Handles compliance log reporting and audit trail management.
 """
 
+from typing import Any
+
 import logging
 from datetime import datetime, timezone
 
+from application.entity.compliance_log.version_1.compliance_log import ComplianceLog
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.compliance_log.version_1.compliance_log import ComplianceLog
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ class ComplianceReportingProcessor(CyodaProcessor):
             description="Reports compliance logs to regulatory authorities",
         )
 
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Process compliance reporting.
 

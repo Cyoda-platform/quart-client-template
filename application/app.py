@@ -5,19 +5,19 @@ from typing import Callable, Dict, Optional
 from quart import Quart, Response
 from quart_schema import QuartSchema, ResponseSchemaValidationError, hide
 
+from application.routes.compliance_logs import compliance_logs_bp
+from application.routes.instruments import instruments_bp
+from application.routes.market_data import market_data_bp
+
+# Import blueprints for different route groups
+from application.routes.orders import orders_bp
+from application.routes.positions import positions_bp
+from application.routes.risk_metrics import risk_metrics_bp
+from application.routes.trades import trades_bp
 from common.exception.exception_handler import (
     register_error_handlers as _register_error_handlers,
 )
 from services.services import get_grpc_client, initialize_services
-
-# Import blueprints for different route groups
-from application.routes.orders import orders_bp
-from application.routes.trades import trades_bp
-from application.routes.positions import positions_bp
-from application.routes.instruments import instruments_bp
-from application.routes.risk_metrics import risk_metrics_bp
-from application.routes.market_data import market_data_bp
-from application.routes.compliance_logs import compliance_logs_bp
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

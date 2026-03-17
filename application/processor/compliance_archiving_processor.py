@@ -4,12 +4,14 @@ ComplianceArchivingProcessor for institutional trading platform.
 Handles compliance log archiving for long-term retention (7 years MiFID II compliance).
 """
 
+from typing import Any
+
 import logging
 from datetime import datetime, timezone
 
+from application.entity.compliance_log.version_1.compliance_log import ComplianceLog
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.compliance_log.version_1.compliance_log import ComplianceLog
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ class ComplianceArchivingProcessor(CyodaProcessor):
             description="Archives compliance logs for long-term retention",
         )
 
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Process compliance log archiving.
 

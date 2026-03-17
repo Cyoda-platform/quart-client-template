@@ -4,12 +4,14 @@ PnlCalculationProcessor for institutional trading platform.
 Calculates real-time P&L for positions.
 """
 
+from typing import Any
+
 import logging
 from datetime import datetime, timezone
 
+from application.entity.position.version_1.position import Position
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.position.version_1.position import Position
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ class PnlCalculationProcessor(CyodaProcessor):
             description="Calculates real-time P&L for positions",
         )
 
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Process P&L calculation.
 

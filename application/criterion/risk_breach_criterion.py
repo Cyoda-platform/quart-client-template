@@ -6,9 +6,9 @@ Detects when risk metrics exceed breach thresholds (circuit breaker).
 
 from typing import Any
 
+from application.entity.risk_metrics.version_1.risk_metrics import RiskMetrics
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.risk_metrics.version_1.risk_metrics import RiskMetrics
 
 
 class RiskBreachCriterion(CyodaCriteriaChecker):
@@ -56,14 +56,15 @@ class RiskBreachCriterion(CyodaCriteriaChecker):
 
             # Check margin breach
             if risk.available_margin < 0:
-                self.logger.error(f"Margin breach: available margin is negative")
+                self.logger.error("Margin breach: available margin is negative")
                 return True
 
             self.logger.info("Risk metrics within acceptable limits")
             return False
 
         except Exception as e:
+            entity_id = getattr(entity, "technical_id", "<unknown>")
             self.logger.error(
-                f"Error checking risk breach {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
+                f"Error checking risk breach {entity_id}: {str(e)}"
             )
             return False

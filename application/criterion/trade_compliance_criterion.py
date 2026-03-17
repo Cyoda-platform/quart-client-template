@@ -6,9 +6,9 @@ Validates trades for compliance before reporting.
 
 from typing import Any
 
+from application.entity.trade.version_1.trade import Trade
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.trade.version_1.trade import Trade
 
 
 class TradeComplianceCriterion(CyodaCriteriaChecker):

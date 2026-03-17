@@ -4,12 +4,14 @@ OrderSubmissionProcessor for institutional trading platform.
 Handles order submission to execution venues with smart order routing.
 """
 
+from typing import Any
+
 import logging
 from datetime import datetime, timezone
 
+from application.entity.order.version_1.order import Order
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.order.version_1.order import Order
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ class OrderSubmissionProcessor(CyodaProcessor):
             description="Submits orders to execution venues with smart routing",
         )
 
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Process order submission.
 

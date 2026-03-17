@@ -7,7 +7,7 @@ Provides REST API endpoints for order lifecycle management.
 import logging
 from typing import Any
 
-from quart import Blueprint, request
+from quart import Blueprint
 from quart_schema import validate_request, validate_response
 
 from application.entity.order.version_1.order import Order

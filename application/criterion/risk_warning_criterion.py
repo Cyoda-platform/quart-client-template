@@ -6,9 +6,9 @@ Detects when risk metrics trigger warning thresholds.
 
 from typing import Any
 
+from application.entity.risk_metrics.version_1.risk_metrics import RiskMetrics
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaCriteriaChecker, CyodaEntity
-from application.entity.risk_metrics.version_1.risk_metrics import RiskMetrics
 
 
 class RiskWarningCriterion(CyodaCriteriaChecker):

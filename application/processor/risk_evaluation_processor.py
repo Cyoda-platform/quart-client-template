@@ -4,12 +4,14 @@ RiskEvaluationProcessor for institutional trading platform.
 Evaluates real-time risk with position limits, margin checks, and VaR.
 """
 
+from typing import Any
+
 import logging
 from datetime import datetime, timezone
 
+from application.entity.risk_metrics.version_1.risk_metrics import RiskMetrics
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.risk_metrics.version_1.risk_metrics import RiskMetrics
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ class RiskEvaluationProcessor(CyodaProcessor):
             description="Evaluates real-time risk with position and margin checks",
         )
 
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Process risk evaluation.
 

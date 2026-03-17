@@ -4,12 +4,14 @@ MarketDataUpdateProcessor for institutional trading platform.
 Handles real-time market data updates with nanosecond precision timestamps.
 """
 
+from typing import Any
+
 import logging
 from datetime import datetime, timezone
 
+from application.entity.market_data.version_1.market_data import MarketData
 from common.entity.entity_casting import cast_entity
 from common.processor.base import CyodaEntity, CyodaProcessor
-from application.entity.market_data.version_1.market_data import MarketData
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +27,7 @@ class MarketDataUpdateProcessor(CyodaProcessor):
             description="Updates real-time market data with nanosecond precision",
         )
 
-    async def process(self, entity: CyodaEntity, **kwargs) -> CyodaEntity:
+    async def process(self, entity: CyodaEntity, **kwargs: Any) -> CyodaEntity:
         """
         Process market data update.
 

@@ -1,0 +1,18 @@
+{
+  "entityName": "Order",
+  "modelVersion": 1,
+  "attributes": {
+    "orderId": {"type": "string", "format": "uuid"},
+    "accountId": {"type": "string"},
+    "instrumentId": {"type": "string"},
+    "side": {"type": "string", "enum": ["BUY", "SELL"]},
+    "quantity": {"type": "number"},
+    "price": {"type": ["number", "null"]},
+    "orderType": {"type": "string", "enum": ["MARKET", "LIMIT", "IOC", "FOK", "STOP", "TWAP"]},
+    "timeInForce": {"type": "string", "enum": ["GTC", "DAY", "IOC", "FOK"]},
+    "status": {"type": "string", "enum": ["NEW", "PENDING", "ACKED", "PARTIAL_FILL", "FILLED", "CANCELLED", "REJECTED"]},
+    "routeHints": {"type": "array", "items": {"type": "string"}},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "updatedAt": {"type": "string", "format": "date-time"}
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "version": "1.0",
+  "name": "Trade Workflow",
+  "desc": "Trade lifecycle: captured -> enriched -> reported",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "capture",
+          "next": "captured",
+          "manual": false
+        }
+      ]
+    },
+    "captured": {
+      "transitions": [
+        {
+          "name": "enrich",
+          "next": "enriched",
+          "manual": false,
+          "processors": [
+            {
+              "name": "TradeEnrichmentProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "enriched": {
+      "transitions": [
+        {
+          "name": "validate_compliance",
+          "next": "compliance_validated",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "TradeComplianceCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "compliance_validated": {
+      "transitions": [
+        {
+          "name": "report",
+          "next": "reported",
+          "manual": false,
+          "processors": [
+            {
+              "name": "TradeReportingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "reported": {
+      "transitions": []
+    }
+  }
+}
+

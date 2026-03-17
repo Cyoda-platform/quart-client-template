@@ -1,0 +1,45 @@
+{
+  "version": "1.0",
+  "name": "Market Data Workflow",
+  "desc": "Market data lifecycle: active -> inactive",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "activate",
+          "next": "active",
+          "manual": false
+        }
+      ]
+    },
+    "active": {
+      "transitions": [
+        {
+          "name": "update",
+          "next": "active",
+          "manual": false,
+          "processors": [
+            {
+              "name": "MarketDataUpdateProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "deactivate",
+          "next": "inactive",
+          "manual": true
+        }
+      ]
+    },
+    "inactive": {
+      "transitions": []
+    }
+  }
+}
+

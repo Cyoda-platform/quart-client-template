@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "name": "Compliance Log Workflow",
+  "desc": "Compliance log lifecycle: logged -> reported -> archived",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "log",
+          "next": "logged",
+          "manual": false
+        }
+      ]
+    },
+    "logged": {
+      "transitions": [
+        {
+          "name": "report",
+          "next": "reported",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ComplianceReportingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "reported": {
+      "transitions": [
+        {
+          "name": "archive",
+          "next": "archived",
+          "manual": false,
+          "processors": [
+            {
+              "name": "ComplianceArchivingProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "archived": {
+      "transitions": []
+    }
+  }
+}
+

@@ -1,0 +1,83 @@
+{
+  "version": "1.0",
+  "name": "Risk Metrics Workflow",
+  "desc": "Risk evaluation lifecycle: compliant -> warning -> breach",
+  "initialState": "initial_state",
+  "active": true,
+  "states": {
+    "initial_state": {
+      "transitions": [
+        {
+          "name": "evaluate",
+          "next": "compliant",
+          "manual": false
+        }
+      ]
+    },
+    "compliant": {
+      "transitions": [
+        {
+          "name": "re_evaluate",
+          "next": "compliant",
+          "manual": false,
+          "processors": [
+            {
+              "name": "RiskEvaluationProcessor",
+              "executionMode": "SYNC",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          ]
+        },
+        {
+          "name": "trigger_warning",
+          "next": "warning",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "RiskWarningCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "warning": {
+      "transitions": [
+        {
+          "name": "resolve",
+          "next": "compliant",
+          "manual": true
+        },
+        {
+          "name": "trigger_breach",
+          "next": "breach",
+          "manual": false,
+          "criterion": {
+            "type": "function",
+            "function": {
+              "name": "RiskBreachCriterion",
+              "config": {
+                "calculationNodesTags": "cyoda_application"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "breach": {
+      "transitions": [
+        {
+          "name": "resolve",
+          "next": "compliant",
+          "manual": true
+        }
+      ]
+    }
+  }
+}
+

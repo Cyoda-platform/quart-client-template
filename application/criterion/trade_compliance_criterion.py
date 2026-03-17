@@ -64,7 +64,8 @@ class TradeComplianceCriterion(CyodaCriteriaChecker):
             return True
 
         except Exception as e:
+            entity_id = getattr(entity, "technical_id", "<unknown>")
             self.logger.error(
-                f"Error validating trade compliance {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
+                f"Error validating trade compliance {entity_id}: {str(e)}"
             )
             return False

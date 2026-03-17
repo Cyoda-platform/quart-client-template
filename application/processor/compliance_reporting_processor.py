@@ -58,7 +58,6 @@ class ComplianceReportingProcessor(CyodaProcessor):
             return log
 
         except Exception as e:
-            self.logger.error(
-                f"Error reporting compliance log {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
-            )
+            entity_id = getattr(entity, "technical_id", "<unknown>")
+            self.logger.error(f"Error reporting compliance log {entity_id}: {str(e)}")
             raise

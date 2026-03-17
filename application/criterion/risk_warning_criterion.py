@@ -62,7 +62,8 @@ class RiskWarningCriterion(CyodaCriteriaChecker):
             return False
 
         except Exception as e:
+            entity_id = getattr(entity, "technical_id", "<unknown>")
             self.logger.error(
-                f"Error checking risk warning {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
+                f"Error checking risk warning {entity_id}: {str(e)}"
             )
             return False

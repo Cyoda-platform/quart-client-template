@@ -58,7 +58,6 @@ class ComplianceArchivingProcessor(CyodaProcessor):
             return log
 
         except Exception as e:
-            self.logger.error(
-                f"Error archiving compliance log {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
-            )
+            entity_id = getattr(entity, "technical_id", "<unknown>")
+            self.logger.error(f"Error archiving compliance log {entity_id}: {str(e)}")
             raise

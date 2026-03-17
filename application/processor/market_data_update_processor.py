@@ -62,7 +62,6 @@ class MarketDataUpdateProcessor(CyodaProcessor):
             return market_data
 
         except Exception as e:
-            self.logger.error(
-                f"Error updating market data {getattr(entity, 'technical_id', '<unknown>')}: {str(e)}"
-            )
+            entity_id = getattr(entity, "technical_id", "<unknown>")
+            self.logger.error(f"Error updating market data {entity_id}: {str(e)}")
             raise

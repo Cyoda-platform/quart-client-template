@@ -371,6 +371,131 @@ class TestSearchTools:
         ), "Expected 'entities' to be a list"
 
 
+class TestSearchReturnsResults:
+    """Tests that the search tool actually returns matching entities.
+
+    Creates an entity with known data, searches for it using each supported
+    condition style, and asserts the entity appears in the results.
+    If search returns zero results despite Postman returning data for the
+    same query, these tests will fail and surface the bug.
+    """
+
+    entity_id: Optional[str] = None
+
+    async def test_create_entity_for_search(self):
+        result = await _create_entity(
+            entity_model=ENTITY_MODEL,
+            entity_data=TEST_ENTITY_DATA,
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"Entity creation failed: {result.get('error')}"
+        TestSearchReturnsResults.entity_id = result["entity_id"]
+
+    async def test_search_simple_field_returns_results(self):
+        if not TestSearchReturnsResults.entity_id:
+            pytest.skip("Skipped: entity was not created")
+        result = await _search(
+            entity_model=ENTITY_MODEL,
+            search_conditions={"category": "ELECTRONICS"},
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"search (simple) failed: {result.get('error')}"
+        assert result.get("count", 0) > 0, (
+            f"search (simple field) returned 0 results; expected at least 1. "
+            f"Full response: {result}"
+        )
+        entity_ids = [e["id"] for e in result["entities"]]
+        assert TestSearchReturnsResults.entity_id in entity_ids, (
+            f"Created entity {TestSearchReturnsResults.entity_id} not found in search results"
+        )
+
+    async def test_search_cyoda_group_returns_results(self):
+        if not TestSearchReturnsResults.entity_id:
+            pytest.skip("Skipped: entity was not created")
+        result = await _search(
+            entity_model=ENTITY_MODEL,
+            search_conditions={
+                "type": "group",
+                "operator": "AND",
+                "conditions": [
+                    {
+                        "type": "simple",
+                        "jsonPath": "$.category",
+                        "operatorType": "EQUALS",
+                        "value": "ELECTRONICS",
+                    }
+                ],
+            },
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"search (group) failed: {result.get('error')}"
+        assert result.get("count", 0) > 0, (
+            f"search (Cyoda group) returned 0 results; expected at least 1. "
+            f"Full response: {result}"
+        )
+        entity_ids = [e["id"] for e in result["entities"]]
+        assert TestSearchReturnsResults.entity_id in entity_ids, (
+            f"Created entity {TestSearchReturnsResults.entity_id} not found in search results"
+        )
+
+    async def test_search_single_simple_condition_returns_results(self):
+        if not TestSearchReturnsResults.entity_id:
+            pytest.skip("Skipped: entity was not created")
+        result = await _search(
+            entity_model=ENTITY_MODEL,
+            search_conditions={
+                "type": "simple",
+                "jsonPath": "$.category",
+                "operatorType": "EQUALS",
+                "value": "ELECTRONICS",
+            },
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"search (single simple) failed: {result.get('error')}"
+        assert result.get("count", 0) > 0, (
+            f"search (single simple condition) returned 0 results; expected at least 1. "
+            f"Full response: {result}"
+        )
+
+    async def test_search_empty_conditions_returns_all(self):
+        """Empty dict {} should return all entities (like find_all but via search)."""
+        if not TestSearchReturnsResults.entity_id:
+            pytest.skip("Skipped: entity was not created")
+        result = await _search(
+            entity_model=ENTITY_MODEL,
+            search_conditions={},
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"search (empty) failed: {result.get('error')}"
+        assert result.get("count", 0) > 0, (
+            f"search with empty conditions returned 0 results; expected at least 1. "
+            f"Full response: {result}"
+        )
+
+    async def test_cleanup_search_entity(self):
+        if not TestSearchReturnsResults.entity_id:
+            pytest.skip("Skipped: entity was not created")
+        result = await _delete_entity(
+            entity_model=ENTITY_MODEL,
+            entity_id=TestSearchReturnsResults.entity_id,
+            entity_version=ENTITY_VERSION,
+        )
+        assert (
+            result.get("success") is True
+        ), f"Delete entity failed: {result.get('error')}"
+        TestSearchReturnsResults.entity_id = None
+
+
 class TestEdgeMessageTools:
     """Tests for edge message MCP tools against the live Cyoda backend."""
 
@@ -429,12 +554,15 @@ class TestEdgeMessageTools:
 
         message = get_result.get("message", {})
         indexed_values = message.get("metaData", {}).get("indexedValues", {})
+        # Cyoda stores indexed metadata under "strings" with a "." prefix on keys
+        strings = indexed_values.get("strings", {})
         for key, value in test_metadata.items():
-            assert key in indexed_values, (
-                f"metadata key '{key}' missing from indexedValues: {indexed_values}"
+            dotted_key = f".{key}"
+            assert dotted_key in strings, (
+                f"metadata key '{dotted_key}' missing from indexedValues.strings: {strings}"
             )
-            assert indexed_values[key] == value, (
-                f"metadata['{key}'] expected '{value}', got '{indexed_values[key]}'"
+            assert strings[dotted_key] == value, (
+                f"metadata['{dotted_key}'] expected '{value}', got '{strings[dotted_key]}'"
             )
 
 

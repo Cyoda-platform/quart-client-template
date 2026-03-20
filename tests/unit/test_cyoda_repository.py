@@ -740,7 +740,7 @@ class TestCyodaRepository:
         ) as mock_request:
             # Always return RUNNING status
             mock_request.return_value = {
-                "json": {"snapshotStatus": "RUNNING"},
+                "json": {"searchJobStatus": "RUNNING"},
                 "status": 200,
             }
 
@@ -758,7 +758,7 @@ class TestCyodaRepository:
             "common.repository.cyoda.cyoda_repository.send_cyoda_request"
         ) as mock_request:
             mock_request.return_value = {
-                "json": {"snapshotStatus": "FAILED", "error": "Snapshot failed"},
+                "json": {"searchJobStatus": "FAILED", "error": "Snapshot failed"},
                 "status": 200,
             }
 

@@ -104,7 +104,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
     ) -> None:
         """Poll the snapshot status endpoint until SUCCESSFUL or error/timeout."""
         start = time.monotonic()
-        status_path = f"search/snapshot/{snapshot_id}/status"
+        status_path = f"search/async/{snapshot_id}/status"
 
         while True:
             resp: Dict[str, Any] = await send_cyoda_request(
@@ -114,7 +114,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             )
             if resp.get("status") != 200:
                 return
-            status = resp.get("json", {}).get("snapshotStatus")
+            status = resp.get("json", {}).get("searchJobStatus")
             if status == "SUCCESSFUL":
                 return
             if status not in ("RUNNING",):
@@ -196,8 +196,8 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         point_in_time: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
         """Find entities matching specific criteria, optionally at a specific point in time."""
-        # Use direct search endpoint: POST /search/{entityName}/{modelVersion}
-        search_path = f"search/{meta['entity_model']}/{meta['entity_version']}"
+        # Use direct search endpoint: POST /search/direct/{entityName}/{modelVersion}
+        search_path = f"search/direct/{meta['entity_model']}/{meta['entity_version']}"
 
         # Add point_in_time parameter if provided
         if point_in_time:

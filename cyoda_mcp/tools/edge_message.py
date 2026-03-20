@@ -40,8 +40,9 @@ async def get_edge_message(
       - header.replyTo: reply address (if set by sender)
       - header.correlationId: correlation ID (if set by sender)
       - metaData.values: typed key-value map of non-indexed metadata
-      - metaData.indexedValues: typed key-value map of indexed metadata
-            (contains the `metadata` key-value pairs passed at send time)
+      - metaData.indexedValues.strings: the `metadata` key-value pairs passed
+            at send time, with each key prefixed by `.` (e.g. `{".myKey": "val"}`)
+      - metaData.indexedValues.typeReferences: type info for each indexed key
       - content: raw JSON string of the message payload
 
     Args:

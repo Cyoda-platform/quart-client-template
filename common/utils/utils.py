@@ -476,6 +476,19 @@ async def send_get_request(token: str, api_url: str, path: str) -> Dict[str, Any
         raise
 
 
+def _parse_response_content(response: Any) -> Any:
+    content_type = response.headers.get("Content-Type", "")
+    if "application/json" in content_type:
+        return response.json()
+    if "application/x-ndjson" in content_type or "ndjson" in content_type:
+        # Newline-delimited JSON: each line is a separate JSON object
+        import json as json_mod
+
+        lines = response.text.strip().splitlines()
+        return [json_mod.loads(line) for line in lines if line.strip()]
+    return response.text
+
+
 async def send_request(
     headers: Dict[str, str],
     url: str,
@@ -487,37 +500,20 @@ async def send_request(
         method = method.upper()
         if method == "GET":
             response = await client.get(url, headers=headers)
-            # Only process GET responses with status 200 or 404 as in your original code
             if response.status_code in (200, 404):
-                content = (
-                    response.json()
-                    if "application/json" in response.headers.get("Content-Type", "")
-                    else response.text
-                )
+                content = _parse_response_content(response)
             else:
                 content = None
         elif method == "POST":
             response = await client.post(url, headers=headers, data=data, json=json)
-            content = (
-                response.json()
-                if "application/json" in response.headers.get("Content-Type", "")
-                else response.text
-            )
+            content = _parse_response_content(response)
         elif method == "PUT":
             response = await client.put(url, headers=headers, data=data, json=json)
-            content = (
-                response.json()
-                if "application/json" in response.headers.get("Content-Type", "")
-                else response.text
-            )
+            content = _parse_response_content(response)
         elif method == "DELETE":
             # httpx 0.28.x shortcut delete() does not accept a body; use request() instead
             response = await client.request("DELETE", url, headers=headers, content=data)
-            content = (
-                response.json()
-                if "application/json" in response.headers.get("Content-Type", "")
-                else response.text
-            )
+            content = _parse_response_content(response)
         else:
             raise ValueError("Unsupported HTTP method")
 

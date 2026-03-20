@@ -54,15 +54,66 @@ class MockRepository(CrudRepository[Any]):
     ) -> List[Dict[str, Any]]:
         results = []
         for entity in self.storage.values():
-            match = True
-            if isinstance(criteria, dict):
-                for key, value in criteria.items():
-                    if entity.get(key) != value:
-                        match = False
-                        break
-            if match:
+            if self._matches_criteria(entity, criteria):
                 results.append(entity)
         return results
+
+    @staticmethod
+    def _matches_criteria(entity: Dict[str, Any], criteria: Any) -> bool:
+        if not isinstance(criteria, dict):
+            return True
+        # Handle Cyoda-native group format
+        if criteria.get("type") == "group":
+            conditions = criteria.get("conditions", [])
+            if not conditions:
+                return True
+            operator = criteria.get("operator", "AND").upper()
+            if operator == "AND":
+                return all(
+                    MockRepository._matches_condition(entity, c) for c in conditions
+                )
+            return any(
+                MockRepository._matches_condition(entity, c) for c in conditions
+            )
+        # Handle Cyoda-native single condition
+        if criteria.get("type") in ("simple", "lifecycle"):
+            return MockRepository._matches_condition(entity, criteria)
+        # Handle simple field-value pairs (backward compat)
+        for key, value in criteria.items():
+            if entity.get(key) != value:
+                return False
+        return True
+
+    @staticmethod
+    def _matches_condition(entity: Dict[str, Any], condition: Dict[str, Any]) -> bool:
+        ctype = condition.get("type")
+        if ctype == "simple":
+            json_path = condition.get("jsonPath", "")
+            field = json_path.replace("$.", "") if json_path.startswith("$.") else json_path
+        elif ctype == "lifecycle":
+            field = condition.get("field", "state")
+        else:
+            return True
+        op = condition.get("operatorType", "EQUALS")
+        value = condition.get("value")
+        entity_value = entity.get(field)
+        if op == "EQUALS":
+            return entity_value == value
+        if op == "NOT_EQUAL":
+            return entity_value != value
+        if op == "GREATER_THAN":
+            return entity_value is not None and entity_value > value
+        if op == "LESS_THAN":
+            return entity_value is not None and entity_value < value
+        if op == "GREATER_OR_EQUAL":
+            return entity_value is not None and entity_value >= value
+        if op == "LESS_OR_EQUAL":
+            return entity_value is not None and entity_value <= value
+        if op == "CONTAINS":
+            return isinstance(entity_value, str) and value in entity_value
+        if op == "IN":
+            return entity_value in (value if isinstance(value, list) else [value])
+        return entity_value == value
 
     async def save(self, meta: Dict[str, Any], entity: Any) -> Any:
         entity_id = f"id-{len(self.storage) + 1}"
@@ -478,7 +529,14 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert result == {"name": "Test"}
+        assert result["type"] == "group"
+        assert result["operator"] == "AND"
+        assert len(result["conditions"]) == 1
+        cond = result["conditions"][0]
+        assert cond["type"] == "simple"
+        assert cond["jsonPath"] == "$.name"
+        assert cond["operatorType"] == "EQUALS"
+        assert cond["value"] == "Test"
 
     @pytest.mark.asyncio
     async def test_convert_search_condition_multiple(self, service):
@@ -492,8 +550,9 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert "and" in result
-        assert len(result["and"]) == 2
+        assert result["type"] == "group"
+        assert result["operator"] == "AND"
+        assert len(result["conditions"]) == 2
 
     @pytest.mark.asyncio
     async def test_legacy_get_item(self, service, repository):
@@ -985,7 +1044,11 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert result == {"value": {"gt": 10}}
+        assert result["type"] == "group"
+        cond = result["conditions"][0]
+        assert cond["jsonPath"] == "$.value"
+        assert cond["operatorType"] == "GREATER_THAN"
+        assert cond["value"] == 10
 
     @pytest.mark.asyncio
     async def test_convert_search_condition_multiple_with_non_eq(self, service):
@@ -999,8 +1062,9 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert "and" in result
-        assert len(result["and"]) == 2
+        assert result["type"] == "group"
+        assert result["operator"] == "AND"
+        assert len(result["conditions"]) == 2
 
     # Additional Edge Cases and Coverage Tests
 
@@ -1211,7 +1275,10 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert result == {"value": {"lt": 100}}
+        cond = result["conditions"][0]
+        assert cond["jsonPath"] == "$.value"
+        assert cond["operatorType"] == "LESS_THAN"
+        assert cond["value"] == 100
 
     @pytest.mark.asyncio
     async def test_convert_search_condition_with_greater_or_equal(self, service):
@@ -1224,7 +1291,9 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert result == {"value": {"gte": 50}}
+        cond = result["conditions"][0]
+        assert cond["operatorType"] == "GREATER_OR_EQUAL"
+        assert cond["value"] == 50
 
     @pytest.mark.asyncio
     async def test_convert_search_condition_with_less_or_equal(self, service):
@@ -1237,7 +1306,9 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert result == {"value": {"lte": 75}}
+        cond = result["conditions"][0]
+        assert cond["operatorType"] == "LESS_OR_EQUAL"
+        assert cond["value"] == 75
 
     @pytest.mark.asyncio
     async def test_convert_search_condition_with_in_operator(self, service):
@@ -1250,7 +1321,9 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert result == {"status": {"in": ["active", "pending", "completed"]}}
+        cond = result["conditions"][0]
+        assert cond["operatorType"] == "IN"
+        assert cond["value"] == ["active", "pending", "completed"]
 
     @pytest.mark.asyncio
     async def test_convert_search_condition_with_not_equals(self, service):
@@ -1263,7 +1336,9 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert result == {"status": {"ne": "deleted"}}
+        cond = result["conditions"][0]
+        assert cond["operatorType"] == "NOT_EQUAL"
+        assert cond["value"] == "deleted"
 
     @pytest.mark.asyncio
     async def test_convert_search_condition_complex_and(self, service):
@@ -1278,8 +1353,9 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert "and" in result
-        assert len(result["and"]) == 3
+        assert result["type"] == "group"
+        assert result["operator"] == "AND"
+        assert len(result["conditions"]) == 3
 
     @pytest.mark.asyncio
     async def test_convert_search_condition_with_or_operator_multiple(self, service):
@@ -1294,8 +1370,9 @@ class TestEntityServiceImpl:
 
         result = service._convert_search_condition(search_request)
 
-        assert "or" in result
-        assert len(result["or"]) == 2
+        assert result["type"] == "group"
+        assert result["operator"] == "OR"
+        assert len(result["conditions"]) == 2
 
     # Singleton Pattern Tests
 

@@ -314,7 +314,7 @@ class TestCyodaRepository:
 
     @pytest.mark.asyncio
     async def test_update_success(self, repository, sample_meta, sample_entity_data):
-        """Test updating entity successfully."""
+        """Test updating entity successfully using loopback endpoint (no transition)."""
         with patch(
             "common.repository.cyoda.cyoda_repository.send_cyoda_request"
         ) as mock_request:
@@ -328,6 +328,32 @@ class TestCyodaRepository:
             )
 
             assert result == "test-id-123"
+            # No update_transition in meta — must use loopback path (no transition segment)
+            called_path = mock_request.call_args.kwargs["path"]
+            assert "test-id-123" in called_path
+            assert called_path.startswith("entity/JSON/test-id-123?")
+
+    @pytest.mark.asyncio
+    async def test_update_uses_transition_path_when_specified(
+        self, repository, sample_meta, sample_entity_data
+    ):
+        """Test that update uses the transition path when update_transition is in meta."""
+        with patch(
+            "common.repository.cyoda.cyoda_repository.send_cyoda_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": {"entityIds": ["test-id-123"]},
+                "status": 200,
+            }
+
+            meta_with_transition = {**sample_meta, "update_transition": "my_transition"}
+            result = await repository.update(
+                meta_with_transition, "test-id-123", sample_entity_data
+            )
+
+            assert result == "test-id-123"
+            called_path = mock_request.call_args.kwargs["path"]
+            assert "entity/JSON/test-id-123/my_transition" in called_path
 
     @pytest.mark.asyncio
     async def test_update_with_transition(self, repository, sample_meta):
@@ -714,7 +740,7 @@ class TestCyodaRepository:
         ) as mock_request:
             # Always return RUNNING status
             mock_request.return_value = {
-                "json": {"snapshotStatus": "RUNNING"},
+                "json": {"searchJobStatus": "RUNNING"},
                 "status": 200,
             }
 
@@ -732,7 +758,7 @@ class TestCyodaRepository:
             "common.repository.cyoda.cyoda_repository.send_cyoda_request"
         ) as mock_request:
             mock_request.return_value = {
-                "json": {"snapshotStatus": "FAILED", "error": "Snapshot failed"},
+                "json": {"searchJobStatus": "FAILED", "error": "Snapshot failed"},
                 "status": 200,
             }
 
@@ -865,6 +891,52 @@ class TestCyodaRepository:
             assert result is not None
             assert result["current_state"] == "validated"
             assert result["technical_id"] == "test-id"
+
+    @pytest.mark.asyncio
+    async def test_find_by_id_extracts_transaction_id_from_meta(
+        self, repository, sample_meta
+    ):
+        """Test that transactionId from meta is extracted as transaction_id."""
+        with patch(
+            "common.repository.cyoda.cyoda_repository.send_cyoda_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": {
+                    "data": {"name": "Test"},
+                    "meta": {
+                        "state": "active",
+                        "id": "test-id",
+                        "transactionId": "txn-uuid-123",
+                    },
+                },
+                "status": 200,
+            }
+
+            result = await repository.find_by_id(sample_meta, "test-id")
+
+            assert result is not None
+            assert result["transaction_id"] == "txn-uuid-123"
+
+    @pytest.mark.asyncio
+    async def test_find_by_id_transaction_id_none_when_missing(
+        self, repository, sample_meta
+    ):
+        """Test that transaction_id is None when transactionId absent from meta."""
+        with patch(
+            "common.repository.cyoda.cyoda_repository.send_cyoda_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": {
+                    "data": {"name": "Test"},
+                    "meta": {"state": "active", "id": "test-id"},
+                },
+                "status": 200,
+            }
+
+            result = await repository.find_by_id(sample_meta, "test-id")
+
+            assert result is not None
+            assert result["transaction_id"] is None
 
     @pytest.mark.asyncio
     async def test_ensure_technical_id_priority(self, repository):

@@ -75,11 +75,44 @@ def _create_grpc_client(auth_service: IAuthService) -> IGrpcClient:
     return cast(IGrpcClient, GrpcClient(auth=auth_service))  # type: ignore[no-untyped-call]
 
 
-def _create_entity_management_service(entity_service: EntityService) -> Any:
+def _create_entity_management_service(
+    entity_service: EntityService, auth_service: IAuthService
+) -> Any:
     """Create entity management service with lazy import."""
     from cyoda_mcp.mcp_services.entity_management import EntityManagementService
 
-    return cast(Any, EntityManagementService(entity_service=entity_service))  # type: ignore[no-untyped-call]
+    return cast(  # type: ignore[no-untyped-call]
+        Any,
+        EntityManagementService(entity_service=entity_service, auth_service=auth_service),
+    )
+
+
+def _create_entity_model_service(auth_service: IAuthService) -> Any:
+    """Create entity model service with lazy import."""
+    from cyoda_mcp.mcp_services.entity_model import EntityModelService
+
+    return cast(Any, EntityModelService(auth_service=auth_service))  # type: ignore[no-untyped-call]
+
+
+def _create_entity_audit_service(auth_service: IAuthService) -> Any:
+    """Create entity audit service with lazy import."""
+    from cyoda_mcp.mcp_services.entity_audit import EntityAuditService
+
+    return cast(Any, EntityAuditService(auth_service=auth_service))  # type: ignore[no-untyped-call]
+
+
+def _create_entity_stats_service(auth_service: IAuthService) -> Any:
+    """Create entity stats service with lazy import."""
+    from cyoda_mcp.mcp_services.entity_stats import EntityStatsService
+
+    return cast(Any, EntityStatsService(auth_service=auth_service))  # type: ignore[no-untyped-call]
+
+
+def _create_async_search_service(auth_service: IAuthService) -> Any:
+    """Create async search service with lazy import."""
+    from cyoda_mcp.mcp_services.async_search import AsyncSearchService
+
+    return cast(Any, AsyncSearchService(auth_service=auth_service))  # type: ignore[no-untyped-call]
 
 
 def _create_search_service(entity_service: EntityService) -> Any:
@@ -100,7 +133,9 @@ def _create_edge_message_service(edge_message_repository: Any) -> Any:
     """Create edge message service with lazy import."""
     from cyoda_mcp.mcp_services.edge_message import EdgeMessageService
 
-    return cast(Any, EdgeMessageService(edge_message_repository=edge_message_repository))  # type: ignore[no-untyped-call]
+    return cast(  # type: ignore[no-untyped-call]
+        Any, EdgeMessageService(edge_message_repository=edge_message_repository)
+    )
 
 
 def _create_workflow_repository(auth_service: IAuthService) -> Any:
@@ -114,7 +149,9 @@ def _create_workflow_management_service(workflow_repository: Any) -> Any:
     """Create workflow management service with lazy import."""
     from cyoda_mcp.mcp_services.workflow_management import WorkflowManagementService
 
-    return cast(Any, WorkflowManagementService(workflow_repository=workflow_repository))  # type: ignore[no-untyped-call]
+    return cast(  # type: ignore[no-untyped-call]
+        Any, WorkflowManagementService(workflow_repository=workflow_repository)
+    )
 
 
 def _create_deployment_repository(auth_service: IAuthService) -> Any:
@@ -186,6 +223,27 @@ class ServiceContainer(containers.DeclarativeContainer):
     entity_management_service = providers.Singleton(
         _create_entity_management_service,
         entity_service=entity_service,
+        auth_service=auth_service,
+    )
+
+    entity_model_service = providers.Singleton(
+        _create_entity_model_service,
+        auth_service=auth_service,
+    )
+
+    entity_audit_service = providers.Singleton(
+        _create_entity_audit_service,
+        auth_service=auth_service,
+    )
+
+    entity_stats_service = providers.Singleton(
+        _create_entity_stats_service,
+        auth_service=auth_service,
+    )
+
+    async_search_service = providers.Singleton(
+        _create_async_search_service,
+        auth_service=auth_service,
     )
 
     search_service = providers.Singleton(
@@ -377,6 +435,30 @@ def get_deployment_service() -> Any:
     """Get the deployment service."""
     container = _ensure_initialized()
     return container.deployment_service()
+
+
+def get_entity_model_service() -> Any:
+    """Get the entity model service."""
+    container = _ensure_initialized()
+    return container.entity_model_service()
+
+
+def get_entity_audit_service() -> Any:
+    """Get the entity audit service."""
+    container = _ensure_initialized()
+    return container.entity_audit_service()
+
+
+def get_entity_stats_service() -> Any:
+    """Get the entity stats service."""
+    container = _ensure_initialized()
+    return container.entity_stats_service()
+
+
+def get_async_search_service() -> Any:
+    """Get the async search service."""
+    container = _ensure_initialized()
+    return container.async_search_service()
 
 
 def is_initialized() -> bool:

@@ -104,7 +104,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
     ) -> None:
         """Poll the snapshot status endpoint until SUCCESSFUL or error/timeout."""
         start = time.monotonic()
-        status_path = f"search/snapshot/{snapshot_id}/status"
+        status_path = f"search/async/{snapshot_id}/status"
 
         while True:
             resp: Dict[str, Any] = await send_cyoda_request(
@@ -114,7 +114,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             )
             if resp.get("status") != 200:
                 return
-            status = resp.get("json", {}).get("snapshotStatus")
+            status = resp.get("json", {}).get("searchJobStatus")
             if status == "SUCCESSFUL":
                 return
             if status not in ("RUNNING",):
@@ -172,6 +172,7 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         meta_payload = payload.get("meta", {}) or {}
         payload_data["current_state"] = meta_payload.get("state")
         payload_data["technical_id"] = entity_id
+        payload_data["transaction_id"] = meta_payload.get("transactionId")
         return payload_data
 
     async def find_all(self, meta: Dict[str, Any]) -> List[Any]:
@@ -195,8 +196,8 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
         point_in_time: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
         """Find entities matching specific criteria, optionally at a specific point in time."""
-        # Use direct search endpoint: POST /search/{entityName}/{modelVersion}
-        search_path = f"search/{meta['entity_model']}/{meta['entity_version']}"
+        # Use direct search endpoint: POST /search/direct/{entityName}/{modelVersion}
+        search_path = f"search/direct/{meta['entity_model']}/{meta['entity_version']}"
 
         # Add point_in_time parameter if provided
         if point_in_time:
@@ -414,11 +415,15 @@ class CyodaRepository(CrudRepository[Any]):  # type: ignore[type-arg]
             await self._launch_transition(meta=meta, technical_id=str(technical_id))
             return None
 
-        transition: str = meta.get("update_transition", UPDATE_TRANSITION)
-        path = (
-            f"entity/JSON/{technical_id}/{transition}"
-            "?transactional=true&waitForConsistencyAfter=true"
-        )
+        transition: Optional[str] = meta.get("update_transition")
+        if transition:
+            path = (
+                f"entity/JSON/{technical_id}/{transition}"
+                "?transactional=true&waitForConsistencyAfter=true"
+            )
+        else:
+            # Use loopback endpoint when no transition specified
+            path = f"entity/JSON/{technical_id}?transactional=true&waitForConsistencyAfter=true"
         data = json.dumps(entity, default=custom_serializer)
         resp: Dict[str, Any] = await send_cyoda_request(
             cyoda_auth_service=self._cyoda_auth_service,

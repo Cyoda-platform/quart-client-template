@@ -93,6 +93,7 @@ class EdgeMessageService:
         content_encoding: Optional[str] = None,
         content_length: Optional[int] = None,
         content_type: str = "application/json",
+        metadata: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Send a new edge message.
@@ -131,6 +132,7 @@ class EdgeMessageService:
                 content_encoding=content_encoding,
                 content_length=content_length,
                 content_type=content_type,
+                metadata=metadata,
             )
 
             logger.info(f"Successfully sent edge message with subject {subject}")
@@ -263,3 +265,23 @@ class EdgeMessageService:
                 "event_type": event_type,
                 "subject": subject,
             }
+
+    async def delete_message(self, message_id: str) -> Dict[str, Any]:
+        """Delete a single edge message by ID."""
+        try:
+            success = await self.edge_message_repository.delete_message(message_id)
+            return {"success": success, "message_id": message_id}
+        except Exception as e:
+            logger.exception(f"Failed to delete edge message {message_id}: {e}")
+            return {"success": False, "error": str(e), "message_id": message_id}
+
+    async def bulk_delete_messages(self, message_ids: List[str]) -> Dict[str, Any]:
+        """Delete multiple edge messages in bulk."""
+        try:
+            success = await self.edge_message_repository.bulk_delete_messages(
+                message_ids
+            )
+            return {"success": success, "deleted_count": len(message_ids)}
+        except Exception as e:
+            logger.exception(f"Failed to bulk-delete edge messages: {e}")
+            return {"success": False, "error": str(e), "message_ids": message_ids}

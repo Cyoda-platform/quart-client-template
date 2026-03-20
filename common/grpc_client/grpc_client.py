@@ -59,6 +59,10 @@ class GrpcClient:
         except Exception as e:
             logger.exception(e)
 
+    def stop(self) -> None:
+        """Stop the gRPC streaming connection."""
+        self._get_facade().stop()
+
 
 # Re-export constants for backward compatibility
 __all__ = [

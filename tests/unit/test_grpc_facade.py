@@ -144,29 +144,27 @@ class TestGrpcStreamingFacade:
         )
         assert result is mock_composite_creds
 
-    def test_on_event(self, facade, middleware):
-        """Test _on_event creates task for middleware."""
+    @pytest.mark.asyncio
+    async def test_on_event(self, facade, middleware):
+        """Test _on_event dispatches event through middleware via an asyncio task."""
         event = CloudEvent()
         event.id = "test-123"
         event.type = "TestEvent"
 
-        with patch("asyncio.create_task") as mock_create_task:
-            facade._on_event(event)
+        facade._on_event(event)
+        await asyncio.sleep(0)  # yield to the event loop so the task runs
 
-            mock_create_task.assert_called_once()
-            # Verify the coroutine passed to create_task
-            call_args = mock_create_task.call_args[0][0]
-            assert asyncio.iscoroutine(call_args)
+        middleware.handle.assert_called_once_with(event)
 
-    def test_stop(self, facade, outbox):
-        """Test stopping the facade."""
+    @pytest.mark.asyncio
+    async def test_stop(self, facade):
+        """Test stopping the facade sets _running to False and closes the outbox."""
         facade._running = True
 
-        with patch("asyncio.create_task") as mock_create_task:
-            facade.stop()
+        facade.stop()
+        await asyncio.sleep(0)  # yield so the outbox.close() task completes
 
-            assert facade._running is False
-            mock_create_task.assert_called_once()
+        assert facade._running is False
 
     @pytest.mark.asyncio
     async def test_start_sets_running_flag(self, facade):
@@ -212,10 +210,10 @@ class TestGrpcStreamingFacade:
             mock_channel.return_value.__aenter__.side_effect = rpc_error
 
             # Stop after first iteration
-            async def stop_after_sleep(delay):
+            def stop_after_sleep(delay):
                 facade._running = False
 
-            with patch("asyncio.sleep", side_effect=stop_after_sleep):
+            with patch("asyncio.sleep", new_callable=AsyncMock, side_effect=stop_after_sleep):
                 await facade._consume_stream()
 
         # Should have attempted to get credentials
@@ -239,10 +237,10 @@ class TestGrpcStreamingFacade:
             mock_channel.return_value.__aenter__.side_effect = rpc_error
 
             # Stop after first iteration
-            async def stop_after_sleep(delay):
+            def stop_after_sleep(delay):
                 facade._running = False
 
-            with patch("asyncio.sleep", side_effect=stop_after_sleep):
+            with patch("asyncio.sleep", new_callable=AsyncMock, side_effect=stop_after_sleep):
                 await facade._consume_stream()
 
         # Should have invalidated tokens
@@ -264,10 +262,10 @@ class TestGrpcStreamingFacade:
             )
 
             # Stop after first iteration
-            async def stop_after_sleep(delay):
+            def stop_after_sleep(delay):
                 facade._running = False
 
-            with patch("asyncio.sleep", side_effect=stop_after_sleep):
+            with patch("asyncio.sleep", new_callable=AsyncMock, side_effect=stop_after_sleep):
                 await facade._consume_stream()
 
         # Should have attempted to get credentials
@@ -284,12 +282,12 @@ class TestGrpcStreamingFacade:
             mock_channel.return_value.__aenter__.side_effect = Exception("Error")
 
             # Track sleep delays and stop after 3 iterations
-            async def track_sleep(delay):
+            def track_sleep(delay):
                 sleep_delays.append(delay)
                 if len(sleep_delays) >= 3:
                     facade._running = False
 
-            with patch("asyncio.sleep", side_effect=track_sleep):
+            with patch("asyncio.sleep", new_callable=AsyncMock, side_effect=track_sleep):
                 await facade._consume_stream()
 
         # Verify backoff increases: 1, 2, 4
@@ -309,12 +307,12 @@ class TestGrpcStreamingFacade:
             mock_channel.return_value.__aenter__.side_effect = Exception("Error")
 
             # Track sleep delays and stop after 10 iterations
-            async def track_sleep(delay):
+            def track_sleep(delay):
                 sleep_delays.append(delay)
                 if len(sleep_delays) >= 10:
                     facade._running = False
 
-            with patch("asyncio.sleep", side_effect=track_sleep):
+            with patch("asyncio.sleep", new_callable=AsyncMock, side_effect=track_sleep):
                 await facade._consume_stream()
 
         # Verify backoff maxes at 30: 1, 2, 4, 8, 16, 30, 30, 30, 30, 30

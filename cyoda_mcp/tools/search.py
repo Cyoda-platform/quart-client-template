@@ -36,15 +36,39 @@ async def find_all(
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
     """
-    Find all entities of a specific type using entity_service.find_all().
+    Retrieve every entity of a given model with no filtering.
+
+    This calls GET /entity/{entityName}/{modelVersion}, which returns all
+    entities of the model in a single unfiltered response. There is no
+    server-side limit applied — the response size is proportional to the
+    total number of entities in the system.
+
+    Use this tool only when you genuinely need the full collection and the
+    model is known to be small. For anything else:
+      - Use `search` to filter by conditions (synchronous, up to ~1 000
+        results by default, 10 000 hard cap).
+      - Use `submit_async_search` for large or unknown-size collections.
+
+    Each entity in the result includes:
+      - id: UUID of the entity
+      - data: the entity payload
+      - state: current workflow state
+      - created_at / updated_at: timestamps
+      - entity_type: entity model name
+      - transaction_id: UUID of the last transaction that saved this entity (null if not available)
 
     Args:
-        entity_model: The type of entity to retrieve (e.g., 'laureate', 'subscriber', 'job')
-        entity_version: The entity model version (default: from config)
-        ctx: FastMCP context for logging
+        entity_model: Name of the entity model (e.g. "laureate", "order").
+        entity_version: Model version string (default from config).
+        ctx: FastMCP context for logging.
 
     Returns:
-        Dictionary containing all entities or error information
+        Dictionary with:
+          - success: True on success
+          - count: number of entities returned
+          - entities: list of entity objects (id, data, state, created_at, updated_at,
+                      entity_type, transaction_id)
+          - entity_model / entity_version: echoed back
     """
     if ctx:
         await ctx.info(f"Finding all entities of type: {entity_model}")
@@ -67,6 +91,8 @@ async def find_all(
                 "state": r.metadata.state,
                 "created_at": r.metadata.created_at,
                 "updated_at": r.metadata.updated_at,
+                "entity_type": r.metadata.entity_type,
+                "transaction_id": r.metadata.transaction_id,
             }
             for r in results
         ]
@@ -93,38 +119,80 @@ async def search(
     ctx: Optional[Context] = None,
 ) -> Dict[str, Any]:
     """
-    Search entities with Cyoda-native search conditions.
+    Perform a synchronous direct search against a Cyoda entity model.
+
+    Executes immediately and returns results in a single response. Best for
+    interactive or exploratory queries where the result set is expected to be
+    small to medium. The underlying API call is
+    POST /search/direct/{entityName}/{modelVersion}.
+
+    Limits and timeouts (applied server-side, not configurable via this tool):
+      - Default result limit : 1 000 entities
+      - Hard maximum limit   : 10 000 entities (silently truncated if exceeded)
+      - Default timeout      : 60 seconds (timeout returns `{"success": False, "error": "..."})`
+
+    If your query might match more than ~1 000 entities, or if the model is
+    large and the query broad, use `submit_async_search` instead — it is
+    distributed across the cluster and supports full pagination.
+
+    Passing an empty dict {} returns all entities subject to the default limit.
+
+    Condition structure
+    -------------------
+    Three condition types can be composed into any tree:
+
+    Group — combine sub-conditions with AND / OR:
+      {"type": "group", "operator": "AND"|"OR", "conditions": [...]}
+
+    Simple — match entity data using JSONPath:
+      {"type": "simple", "jsonPath": "$.field", "operatorType": "<OP>", "value": <v>}
+
+    Lifecycle — match entity metadata (state, creationDate, previousTransition):
+      {"type": "lifecycle", "field": "state", "operatorType": "EQUALS", "value": "VALIDATED"}
+
+    Available operatorType values:
+      Comparison : EQUALS, NOT_EQUAL, IS_NULL, NOT_NULL,
+                   GREATER_THAN, LESS_THAN, GREATER_OR_EQUAL, LESS_OR_EQUAL,
+                   BETWEEN, BETWEEN_INCLUSIVE
+      String     : CONTAINS, NOT_CONTAINS, STARTS_WITH, NOT_STARTS_WITH,
+                   ENDS_WITH, NOT_ENDS_WITH, MATCHES_PATTERN, LIKE
+      Case-insens: IEQUALS, INOT_EQUAL, ICONTAINS, INOT_CONTAINS,
+                   ISTARTS_WITH, INOT_STARTS_WITH, IENDS_WITH, INOT_ENDS_WITH
+      Change     : IS_UNCHANGED, IS_CHANGED
+
+    Example — find married family members born after 1998:
+      {
+        "type": "group", "operator": "AND", "conditions": [
+          {"type": "simple", "jsonPath": "$.married", "operatorType": "EQUALS", "value": true},
+          {"type": "simple", "jsonPath": "$.birthdate",
+           "operatorType": "GREATER_OR_EQUAL", "value": "1999-01-01"}
+        ]
+      }
+
+    For backward compatibility, simple field-value pairs are also accepted:
+      {"field1": "value1", "field2": "value2"}
+
+    Each entity in the result includes:
+      - id: UUID of the entity
+      - data: the entity payload
+      - state: current workflow state
+      - created_at / updated_at: timestamps
+      - entity_type: entity model name
+      - transaction_id: UUID of the last transaction that saved this entity (null if not available)
 
     Args:
-        entity_model: The type of entity to search (e.g., 'laureate', 'subscriber', 'job')
-        search_conditions: Cyoda search condition structure:
-            {
-                "type": "group",
-                "operator": "AND" | "OR",
-                "conditions": [
-                    {
-                        "type": "lifecycle",
-                        "field": "state",
-                        "operatorType": "EQUALS",
-                        "value": "VALIDATED"
-                    },
-                    {
-                        "type": "simple",
-                        "jsonPath": "$.category",
-                        "operatorType": "EQUALS" | "CONTAINS" | "GREATER_THAN" | "LESS_THAN",
-                        "value": "physics"
-                    }
-                ]
-            }
-
-            For backward compatibility, simple field-value pairs are also supported:
-            {"field1": "value1", "field2": "value2"}
-
-        entity_version: The entity model version (default: from config)
-        ctx: FastMCP context for logging
+        entity_model: Name of the entity model to search (e.g. "laureate").
+        search_conditions: Cyoda search condition tree (see above).
+        entity_version: Model version string (default from config).
+        ctx: FastMCP context for logging.
 
     Returns:
-        Dictionary containing search results or error information
+        Dictionary with:
+          - success: True on success
+          - count: number of entities returned (capped at 10 000)
+          - entities: list of matched entity objects (id, data, state, created_at, updated_at,
+                      entity_type, transaction_id)
+          - search_conditions / entity_model / entity_version: echoed back
     """
     if ctx:
         await ctx.info(
@@ -183,6 +251,8 @@ async def search(
                 "state": r.metadata.state,
                 "created_at": r.metadata.created_at,
                 "updated_at": r.metadata.updated_at,
+                "entity_type": r.metadata.entity_type,
+                "transaction_id": r.metadata.transaction_id,
             }
             for r in results
         ]

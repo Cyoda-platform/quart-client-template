@@ -133,11 +133,14 @@ class EntityServiceImpl(EntityService):
         if state is None and isinstance(data, dict):
             state = data.get("current_state") or data.get("state")
 
+        transaction_id = data.get("transaction_id") if isinstance(data, dict) else None
+
         metadata = EntityMetadata(
             id=entity_id or "unknown",
             state=state,
             created_at=datetime.now(),
             entity_type="entity",
+            transaction_id=transaction_id,
         )
 
         return EntityResponse(data=data, metadata=metadata)
@@ -482,46 +485,66 @@ class EntityServiceImpl(EntityService):
             logger.exception(f"Failed to search entities of type: {entity_class}")
             raise EntityServiceError(f"Search failed: {str(e)}", entity_class)
 
+    # Reverse mapping: internal SearchOperator value → Cyoda operatorType
+    _INTERNAL_TO_CYODA_OPERATOR: Dict[str, str] = {
+        "eq": "EQUALS", "ne": "NOT_EQUAL", "ieq": "IEQUALS", "ine": "INOT_EQUAL",
+        "is_null": "IS_NULL", "not_null": "NOT_NULL",
+        "gt": "GREATER_THAN", "gte": "GREATER_OR_EQUAL",
+        "lt": "LESS_THAN", "lte": "LESS_OR_EQUAL",
+        "contains": "CONTAINS", "not_contains": "NOT_CONTAINS",
+        "startswith": "STARTS_WITH", "not_startswith": "NOT_STARTS_WITH",
+        "endswith": "ENDS_WITH", "not_endswith": "NOT_ENDS_WITH",
+        "icontains": "ICONTAINS", "inot_contains": "INOT_CONTAINS",
+        "istartswith": "ISTARTS_WITH", "inot_startswith": "INOT_STARTS_WITH",
+        "iendswith": "IENDS_WITH", "inot_endswith": "INOT_ENDS_WITH",
+        "matches_pattern": "MATCHES_PATTERN", "like": "LIKE",
+        "between": "BETWEEN", "between_inclusive": "BETWEEN_INCLUSIVE",
+        "in": "IN", "not_in": "NOT_IN",
+        "is_unchanged": "IS_UNCHANGED", "is_changed": "IS_CHANGED",
+    }
+
     def _convert_search_condition(
         self, condition: SearchConditionRequest
     ) -> Dict[str, Any]:
-        """
-        Convert SearchConditionRequest to repository-compatible format.
+        """Convert SearchConditionRequest to Cyoda-native search format."""
+        if not condition.conditions:
+            return {"type": "group", "operator": "AND", "conditions": []}
 
-        Args:
-            condition: Search condition request
-
-        Returns:
-            Repository-compatible criteria dictionary
-        """
-        if len(condition.conditions) == 1:
-            # Single condition - simple format
-            cond: SearchCondition = condition.conditions[0]
-            operator_value = (
+        cyoda_conditions: List[Dict[str, Any]] = []
+        for cond in condition.conditions:
+            internal_op = (
                 cond.operator.value
                 if hasattr(cond.operator, "value")
-                else cond.operator
+                else str(cond.operator)
             )
-            if operator_value == "eq":
-                return {cond.field: cond.value}
+            cyoda_op = self._INTERNAL_TO_CYODA_OPERATOR.get(internal_op, "EQUALS")
+
+            if cond.field in ("state", "current_state"):
+                cyoda_conditions.append({
+                    "type": "lifecycle",
+                    "field": cond.field,
+                    "operatorType": cyoda_op,
+                    "value": cond.value,
+                })
             else:
-                return {cond.field: {operator_value: cond.value}}
-        else:
-            # Multiple conditions - complex format
-            criteria: Dict[str, List[Dict[str, Any]]] = {condition.operator: []}
-            for cond in condition.conditions:
-                operator_value = (
-                    cond.operator.value
-                    if hasattr(cond.operator, "value")
-                    else cond.operator
+                json_path = (
+                    f"$.{cond.field}"
+                    if not cond.field.startswith("$.")
+                    else cond.field
                 )
-                if operator_value == "eq":
-                    criteria[condition.operator].append({cond.field: cond.value})
-                else:
-                    criteria[condition.operator].append(
-                        {cond.field: {operator_value: cond.value}}
-                    )
-            return criteria
+                cyoda_conditions.append({
+                    "type": "simple",
+                    "jsonPath": json_path,
+                    "operatorType": cyoda_op,
+                    "value": cond.value,
+                })
+
+        logical_op = condition.operator.upper() if condition.operator else "AND"
+        return {
+            "type": "group",
+            "operator": logical_op,
+            "conditions": cyoda_conditions,
+        }
 
     # ========================================
     # PRIMARY MUTATION METHODS

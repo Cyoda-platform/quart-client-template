@@ -21,8 +21,12 @@ from typing import Literal  # noqa: E402
 
 from fastmcp import FastMCP  # noqa: E402
 
+from cyoda_mcp.tools.async_search import mcp as mcp_async_search  # noqa: E402
 from cyoda_mcp.tools.edge_message import mcp as mcp_edge_message  # noqa: E402
+from cyoda_mcp.tools.entity_audit import mcp as mcp_entity_audit  # noqa: E402
 from cyoda_mcp.tools.entity_management import mcp as mcp_entity  # noqa: E402
+from cyoda_mcp.tools.entity_model import mcp as mcp_entity_model  # noqa: E402
+from cyoda_mcp.tools.entity_stats import mcp as mcp_entity_stats  # noqa: E402
 from cyoda_mcp.tools.search import mcp as mcp_search  # noqa: E402
 from cyoda_mcp.tools.workflow_management import (  # noqa: E402
     mcp as mcp_workflow_management,
@@ -73,6 +77,10 @@ async def setup() -> None:
         await mcp.import_server(mcp_search, prefix="search")
         await mcp.import_server(mcp_edge_message, prefix="edge_message")
         await mcp.import_server(mcp_workflow_management, prefix="workflow_mgmt")
+        await mcp.import_server(mcp_entity_model, prefix="entity_model")
+        await mcp.import_server(mcp_entity_audit, prefix="entity_audit")
+        await mcp.import_server(mcp_entity_stats, prefix="entity_stats")
+        await mcp.import_server(mcp_async_search, prefix="async_search")
 
         logger.info("All MCP category servers imported successfully")
     except Exception as e:

@@ -84,12 +84,17 @@ class SendMessageResponse:
     success: bool
 
     @classmethod
-    def from_api_response(cls, response_data: Dict[str, Any]) -> "SendMessageResponse":
-        """Create SendMessageResponse from API response data."""
-        return cls(
-            entity_ids=response_data.get("entityIds", []),
-            success=response_data.get("success", False),
-        )
+    def from_api_response(cls, response_data: Any) -> "SendMessageResponse":
+        """Create SendMessageResponse from API response data.
+
+        The Cyoda API returns a list of transaction result objects; take the first entry.
+        When the API omits the 'success' field, infer it from the presence of entity IDs.
+        """
+        if isinstance(response_data, list):
+            response_data = response_data[0] if response_data else {}
+        entity_ids: list[str] = response_data.get("entityIds", [])
+        success: bool = response_data.get("success") or len(entity_ids) > 0
+        return cls(entity_ids=entity_ids, success=success)
 
 
 class EdgeMessageRepository:
@@ -187,7 +192,7 @@ class EdgeMessageRepository:
             Exception: If the API request fails
         """
         try:
-            path = f"message/get/{message_id}"
+            path = f"message/{message_id}"
 
             logger.info(f"Retrieving edge message with ID: {message_id}")
 
@@ -227,6 +232,7 @@ class EdgeMessageRepository:
         content_encoding: Optional[str] = None,
         content_length: Optional[int] = None,
         content_type: str = "application/json",
+        metadata: Optional[Dict[str, str]] = None,
     ) -> SendMessageResponse:
         """
         Send a new edge message.
@@ -266,11 +272,17 @@ class EdgeMessageRepository:
                 headers["X-Correlation-ID"] = correlation_id
             if content_encoding:
                 headers["Content-Encoding"] = content_encoding
-            if content_length:
-                headers["Content-Length"] = str(content_length)
 
-            # Convert content to JSON string
-            content_json = json.dumps(content)
+            # Build message body per Cyoda API spec
+            message_body: Dict[str, Any] = {"payload": content}
+            if metadata:
+                message_body["meta-data"] = metadata
+            content_json = json.dumps(message_body)
+
+            # Content-Length is required per API spec; use computed value unless caller overrides
+            headers["Content-Length"] = str(
+                content_length or len(content_json.encode("utf-8"))
+            )
 
             logger.info(f"Sending edge message with subject: {subject}")
 
@@ -298,4 +310,52 @@ class EdgeMessageRepository:
 
         except Exception as e:
             logger.exception(f"Error sending edge message with subject {subject}: {e}")
+            raise
+
+    async def delete_message(self, message_id: str) -> bool:
+        """
+        Delete a single edge message by ID.
+
+        Args:
+            message_id: The UUID of the message to delete
+
+        Returns:
+            True if deleted successfully, False otherwise
+        """
+        try:
+            path = f"message/{message_id}"
+            response = await send_cyoda_request(
+                cyoda_auth_service=self._cyoda_auth_service, method="delete", path=path
+            )
+            success = response.get("status") in (200, 204)
+            if not success:
+                logger.warning(f"Failed to delete message {message_id}: {response}")
+            return success
+        except Exception as e:
+            logger.exception(f"Error deleting edge message {message_id}: {e}")
+            raise
+
+    async def bulk_delete_messages(self, message_ids: list[str]) -> bool:
+        """
+        Delete multiple edge messages in bulk.
+
+        Args:
+            message_ids: List of UUID strings to delete
+
+        Returns:
+            True if deletion was accepted, False otherwise
+        """
+        try:
+            data = json.dumps(message_ids)
+            response = await self._send_cyoda_request_with_headers(
+                method="delete", path="message", data=data
+            )
+            success = response.get("status") in (200, 204)
+            if not success:
+                logger.warning(
+                    f"Bulk delete failed for {len(message_ids)} messages: {response}"
+                )
+            return success
+        except Exception as e:
+            logger.exception(f"Error bulk-deleting edge messages: {e}")
             raise

@@ -170,7 +170,7 @@ class TestEdgeMessageRepository:
 
     @pytest.mark.asyncio
     async def test_send_message_success(self, repository):
-        """Test sending message successfully."""
+        """Test sending message successfully with dict response (legacy shape)."""
         with patch(
             "common.repository.cyoda.edge_message_repository.send_request"
         ) as mock_request:
@@ -195,6 +195,31 @@ class TestEdgeMessageRepository:
             assert result.entity_ids == ["msg-new-123"]
             assert result.success is True
             mock_request.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_send_message_success_list_response(self, repository):
+        """Test sending message successfully with list response (current Cyoda API shape)."""
+        with patch(
+            "common.repository.cyoda.edge_message_repository.send_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": [{"entityIds": ["msg-list-456"], "success": True}],
+                "status": 200,
+            }
+
+            content = {"data": "test message"}
+            result = await repository.send_message(
+                subject="Test Subject",
+                content=content,
+            )
+
+            from common.repository.cyoda.edge_message_repository import (
+                SendMessageResponse,
+            )
+
+            assert isinstance(result, SendMessageResponse)
+            assert result.entity_ids == ["msg-list-456"]
+            assert result.success is True
 
     @pytest.mark.asyncio
     async def test_send_message_with_all_headers(self, repository):
@@ -302,9 +327,12 @@ class TestEdgeMessageRepository:
 
             assert isinstance(result, SendMessageResponse)
             assert result.success is True
-            # Verify content was serialized
+            # Verify content is wrapped in payload field per Cyoda API spec
             call_args = mock_request.call_args
-            assert call_args is not None
+            import json as _json
+            sent_body = _json.loads(call_args.kwargs["data"])
+            assert "payload" in sent_body
+            assert sent_body["payload"] == content
 
     @pytest.mark.asyncio
     async def test_send_message_with_string_content(self, repository):
@@ -516,3 +544,79 @@ class TestEdgeMessageRepository:
 
         # All instances should be the same
         assert all(inst is instances[0] for inst in instances)
+
+    @pytest.mark.asyncio
+    async def test_send_message_with_metadata(self, repository):
+        """Test that metadata is serialised as a top-level 'meta-data' sibling of 'payload'."""
+        with patch(
+            "common.repository.cyoda.edge_message_repository.send_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": {"entityIds": ["msg-meta-1"], "success": True},
+                "status": 200,
+            }
+
+            content = {"key": "value"}
+            metadata = {"chunkIndex": "0", "totalChunks": "3"}
+            result = await repository.send_message(
+                subject="Test",
+                content=content,
+                metadata=metadata,
+            )
+
+            from common.repository.cyoda.edge_message_repository import (
+                SendMessageResponse,
+            )
+
+            assert isinstance(result, SendMessageResponse)
+            assert result.success is True
+
+            import json as _json
+
+            call_args = mock_request.call_args
+            sent_body = _json.loads(call_args.kwargs["data"])
+            assert sent_body["payload"] == content
+            assert sent_body["meta-data"] == metadata
+
+    @pytest.mark.asyncio
+    async def test_send_message_without_metadata_omits_key(self, repository):
+        """Test that omitting metadata does not include 'meta-data' in the body."""
+        with patch(
+            "common.repository.cyoda.edge_message_repository.send_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": {"entityIds": ["msg-no-meta"]},
+                "status": 200,
+            }
+
+            content = {"key": "value"}
+            await repository.send_message(subject="Test", content=content)
+
+            import json as _json
+
+            call_args = mock_request.call_args
+            sent_body = _json.loads(call_args.kwargs["data"])
+            assert "payload" in sent_body
+            assert "meta-data" not in sent_body
+
+    @pytest.mark.asyncio
+    async def test_send_message_with_empty_metadata_omits_key(self, repository):
+        """Test that passing an empty metadata dict does not include 'meta-data'."""
+        with patch(
+            "common.repository.cyoda.edge_message_repository.send_request"
+        ) as mock_request:
+            mock_request.return_value = {
+                "json": {"entityIds": ["msg-empty-meta"]},
+                "status": 200,
+            }
+
+            content = {"key": "value"}
+            await repository.send_message(
+                subject="Test", content=content, metadata={}
+            )
+
+            import json as _json
+
+            call_args = mock_request.call_args
+            sent_body = _json.loads(call_args.kwargs["data"])
+            assert "meta-data" not in sent_body

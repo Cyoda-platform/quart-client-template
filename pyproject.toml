@@ -52,6 +52,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
 ]
@@ -83,22 +84,16 @@ package-dir = {"" = "."}
 [project.optional-dependencies]
 dev = [
     # Testing framework
-    "pytest==7.4.0",
-    "pytest-asyncio==0.21.0",
-    "pytest-cov==4.1.0",
-    # BDD testing framework
-    "behave==1.3.3",
-    "cucumber-expressions==18.0.1",
-    "cucumber-tag-expressions==6.2.0",
-    "parse==1.20.2",
-    "parse_type==0.6.6",
+    "pytest>=9.0",
+    "pytest-asyncio>=1.0",
+    "pytest-cov>=4.0",
     # Code formatting and quality
-    "black==25.1.0",
-    "isort==6.0.1",
-    "mypy==1.17.1",
-    "flake8==7.1.1",  # Latest available version
-    "flake8-pyproject>=1.2.0",  # Enables pyproject.toml support for flake8
-    "bandit==1.8.6",
+    "black>=25.0",
+    "isort>=5.0",
+    "mypy>=1.0",
+    "flake8>=7.0",
+    "flake8-pyproject>=1.2.0",
+    "bandit>=1.7",
     # Type stubs for better mypy support
     "types-aiofiles>=23.0",
     "types-jsonschema>=4.0",
@@ -107,7 +102,6 @@ dev = [
     # Build and packaging tools
     "build>=0.10",
     "twine>=4.0",
-    "starlette>=0.49.1"
 ]
 # MyPy configuration
 [tool.mypy]
@@ -206,21 +200,26 @@ skip_glob = ["common/proto/*"]
 
 # pytest configuration
 [tool.pytest.ini_options]
-minversion = "7.0"
-addopts = "-ra -q --strict-markers --strict-config"
+minversion = "9.0"
+addopts = "-ra -q --strict-markers --strict-config --junit-xml=build/test-results/junit.xml"
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+cache_dir = "build/.pytest_cache"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "e2e: marks tests as end-to-end tests requiring a live Cyoda backend",
 ]
 
 # Coverage configuration (if using pytest-cov)
 [tool.coverage.run]
 source = ["cyoda_mcp", "common", "entity", "service", "workflow", "routes"]
+data_file = "build/.coverage"
 omit = [
     "*/tests/*",
     "*/test_*",
@@ -228,6 +227,9 @@ omit = [
     "*/__pycache__/*",
     "*/.*",
 ]
+
+[tool.coverage.html]
+directory = "build/htmlcov"
 
 [tool.coverage.report]
 exclude_lines = [

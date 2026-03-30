@@ -6,7 +6,6 @@ Compiles report data from analyses as specified in functional requirements.
 """
 
 import logging
-
 from typing import Any, Dict, List
 
 from application.entity.report.version_1.report import Report
